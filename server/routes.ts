@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, type Question } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, type Question, getStartingEquipment } from "@shared/schema";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -102,12 +102,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Nickname already taken" });
       }
 
+      const characterClass = "knight";
+      const startingEquipment = getStartingEquipment(characterClass);
+
       const student = await storage.createStudent({
         nickname,
         password,
         classCode,
-        characterClass: "knight",
+        characterClass,
         gender: "A",
+        ...startingEquipment,
       });
       const { password: _, ...studentWithoutPassword } = student;
       res.json(studentWithoutPassword);
@@ -123,11 +127,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Auto-create student on first login if they don't exist
     if (!student) {
       try {
+        const characterClass = "knight";
+        const startingEquipment = getStartingEquipment(characterClass);
+        
         student = await storage.createStudent({
           nickname,
           password,
-          characterClass: "knight",
+          characterClass,
           gender: "A",
+          ...startingEquipment,
         });
         const { password: _, ...studentWithoutPassword } = student;
         return res.json(studentWithoutPassword);

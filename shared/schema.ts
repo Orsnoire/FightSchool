@@ -52,6 +52,11 @@ export const insertStudentSchema = createInsertSchema(students).omit({
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
 
+// Loot table item (references equipment items)
+export interface LootItem {
+  itemId: string; // References EQUIPMENT_ITEMS
+}
+
 // Fights table
 export const fights = pgTable("fights", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -62,6 +67,7 @@ export const fights = pgTable("fights", {
   enemies: jsonb("enemies").notNull().$type<Enemy[]>(),
   baseXP: integer("base_xp").notNull().default(10),
   enemyDisplayMode: text("enemy_display_mode").notNull().$type<"simultaneous" | "consecutive">().default("consecutive"),
+  lootTable: jsonb("loot_table").$type<LootItem[]>().default([]),
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
@@ -225,29 +231,192 @@ export interface CombatState {
   phaseStartTime?: number;
 }
 
-// Equipment items (predefined)
-export const EQUIPMENT_ITEMS: Record<EquipmentSlot, Array<{ id: string; name: string; rarity: string }>> = {
-  weapon: [
-    { id: "basic", name: "Basic Weapon", rarity: "common" },
-    { id: "iron_sword", name: "Iron Sword", rarity: "common" },
-    { id: "steel_bow", name: "Steel Bow", rarity: "rare" },
-    { id: "magic_staff", name: "Magic Staff", rarity: "rare" },
-    { id: "legendary_blade", name: "Legendary Blade", rarity: "legendary" },
-  ],
-  headgear: [
-    { id: "basic", name: "Basic Headgear", rarity: "common" },
-    { id: "leather_helm", name: "Leather Helm", rarity: "common" },
-    { id: "steel_helmet", name: "Steel Helmet", rarity: "rare" },
-    { id: "arcane_crown", name: "Arcane Crown", rarity: "epic" },
-  ],
-  armor: [
-    { id: "basic", name: "Basic Armor", rarity: "common" },
-    { id: "leather_armor", name: "Leather Armor", rarity: "common" },
-    { id: "chainmail", name: "Chainmail", rarity: "rare" },
-    { id: "plate_armor", name: "Plate Armor", rarity: "epic" },
-    { id: "dragon_scale", name: "Dragon Scale Armor", rarity: "legendary" },
-  ],
+// Equipment item definition
+export interface EquipmentItem {
+  id: string;
+  name: string;
+  slot: EquipmentSlot;
+  rarity: "common" | "rare" | "epic" | "legendary";
+  stats: {
+    hp?: number;
+    attack?: number;
+    defense?: number;
+  };
+  classRestriction?: CharacterClass[]; // undefined = available to all
+}
+
+// Equipment items database (single source of truth)
+export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
+  // Class-specific basic equipment (starting gear)
+  basic_sword: {
+    id: "basic_sword",
+    name: "Basic Sword",
+    slot: "weapon",
+    rarity: "common",
+    stats: { attack: 1 },
+    classRestriction: ["knight", "paladin", "dark_knight", "monk"],
+  },
+  basic_staff: {
+    id: "basic_staff",
+    name: "Basic Staff",
+    slot: "weapon",
+    rarity: "common",
+    stats: { attack: 1 },
+    classRestriction: ["wizard", "sage", "druid"],
+  },
+  basic_bow: {
+    id: "basic_bow",
+    name: "Basic Bow",
+    slot: "weapon",
+    rarity: "common",
+    stats: { attack: 1 },
+    classRestriction: ["scout", "ranger"],
+  },
+  basic_herbs: {
+    id: "basic_herbs",
+    name: "Basic Herbs",
+    slot: "weapon",
+    rarity: "common",
+    stats: { hp: 1 },
+    classRestriction: ["herbalist", "druid"],
+  },
+  basic_helm: {
+    id: "basic_helm",
+    name: "Basic Helm",
+    slot: "headgear",
+    rarity: "common",
+    stats: { defense: 1 },
+  },
+  basic_armor: {
+    id: "basic_armor",
+    name: "Basic Armor",
+    slot: "armor",
+    rarity: "common",
+    stats: { defense: 1 },
+  },
+  
+  // Common drops
+  iron_sword: {
+    id: "iron_sword",
+    name: "Iron Sword",
+    slot: "weapon",
+    rarity: "common",
+    stats: { attack: 2 },
+    classRestriction: ["knight", "paladin", "dark_knight", "monk"],
+  },
+  steel_bow: {
+    id: "steel_bow",
+    name: "Steel Bow",
+    slot: "weapon",
+    rarity: "rare",
+    stats: { attack: 3 },
+    classRestriction: ["scout", "ranger"],
+  },
+  magic_staff: {
+    id: "magic_staff",
+    name: "Magic Staff",
+    slot: "weapon",
+    rarity: "rare",
+    stats: { attack: 3 },
+    classRestriction: ["wizard", "sage"],
+  },
+  leather_helm: {
+    id: "leather_helm",
+    name: "Leather Helm",
+    slot: "headgear",
+    rarity: "common",
+    stats: { defense: 2 },
+  },
+  steel_helmet: {
+    id: "steel_helmet",
+    name: "Steel Helmet",
+    slot: "headgear",
+    rarity: "rare",
+    stats: { defense: 3, hp: 2 },
+  },
+  arcane_crown: {
+    id: "arcane_crown",
+    name: "Arcane Crown",
+    slot: "headgear",
+    rarity: "epic",
+    stats: { attack: 2, hp: 3 },
+  },
+  leather_armor: {
+    id: "leather_armor",
+    name: "Leather Armor",
+    slot: "armor",
+    rarity: "common",
+    stats: { defense: 2 },
+  },
+  chainmail: {
+    id: "chainmail",
+    name: "Chainmail",
+    slot: "armor",
+    rarity: "rare",
+    stats: { defense: 4 },
+  },
+  plate_armor: {
+    id: "plate_armor",
+    name: "Plate Armor",
+    slot: "armor",
+    rarity: "epic",
+    stats: { defense: 5, hp: 5 },
+  },
+  dragon_scale: {
+    id: "dragon_scale",
+    name: "Dragon Scale Armor",
+    slot: "armor",
+    rarity: "legendary",
+    stats: { defense: 7, hp: 10, attack: 2 },
+  },
+  legendary_blade: {
+    id: "legendary_blade",
+    name: "Legendary Blade",
+    slot: "weapon",
+    rarity: "legendary",
+    stats: { attack: 5, hp: 5 },
+    classRestriction: ["knight", "paladin", "dark_knight"],
+  },
 };
+
+// Get class-specific starting equipment
+export function getStartingEquipment(characterClass: CharacterClass): { weapon: string; headgear: string; armor: string } {
+  const weaponMap: Record<CharacterClass, string> = {
+    knight: "basic_sword",
+    wizard: "basic_staff",
+    scout: "basic_bow",
+    herbalist: "basic_herbs",
+    paladin: "basic_sword",
+    dark_knight: "basic_sword",
+    sage: "basic_staff",
+    ranger: "basic_bow",
+    druid: "basic_herbs",
+    monk: "basic_sword",
+  };
+
+  return {
+    weapon: weaponMap[characterClass],
+    headgear: "basic_helm",
+    armor: "basic_armor",
+  };
+}
+
+// Calculate total equipment bonuses
+export function calculateEquipmentStats(weapon: string, headgear: string, armor: string): { hp: number; attack: number; defense: number } {
+  const stats = { hp: 0, attack: 0, defense: 0 };
+  
+  const items = [weapon, headgear, armor];
+  for (const itemId of items) {
+    const item = EQUIPMENT_ITEMS[itemId];
+    if (item) {
+      stats.hp += item.stats.hp || 0;
+      stats.attack += item.stats.attack || 0;
+      stats.defense += item.stats.defense || 0;
+    }
+  }
+  
+  return stats;
+}
 
 // Character class stats
 export const CLASS_STATS: Record<CharacterClass, { maxHealth: number; damage: number; role: string }> = {
@@ -255,4 +424,10 @@ export const CLASS_STATS: Record<CharacterClass, { maxHealth: number; damage: nu
   wizard: { maxHealth: 10, damage: 2, role: "DPS - Streak bonus damage" },
   scout: { maxHealth: 10, damage: 2, role: "DPS - Streak bonus damage" },
   herbalist: { maxHealth: 12, damage: 1, role: "Healer - Can heal allies" },
+  paladin: { maxHealth: 16, damage: 1, role: "Holy Tank - Knight + Herbalist fusion" },
+  dark_knight: { maxHealth: 14, damage: 2, role: "Aggressive Tank - High damage, self-sustaining" },
+  sage: { maxHealth: 11, damage: 3, role: "Advanced Mage - Wizard evolution" },
+  ranger: { maxHealth: 11, damage: 3, role: "Master Scout - Scout evolution" },
+  druid: { maxHealth: 13, damage: 1, role: "Nature Healer - Herbalist evolution" },
+  monk: { maxHealth: 13, damage: 2, role: "Balanced Fighter - All-rounder" },
 };
