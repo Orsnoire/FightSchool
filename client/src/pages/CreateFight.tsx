@@ -43,6 +43,7 @@ export default function CreateFight() {
       classCode: "",
       questions: [],
       enemies: [],
+      baseXP: 10,
     },
   });
 
@@ -158,6 +159,27 @@ export default function CreateFight() {
                       <FormControl>
                         <Input placeholder="MATH101" {...field} data-testid="input-classcode" />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="baseXP"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Base XP Reward: {field.value}</FormLabel>
+                      <FormControl>
+                        <Slider
+                          min={1}
+                          max={100}
+                          step={1}
+                          value={[field.value || 10]}
+                          onValueChange={(vals) => field.onChange(vals[0])}
+                          data-testid="slider-basexp"
+                        />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground">Base XP awarded for completing this fight (additional XP based on performance)</p>
                       <FormMessage />
                     </FormItem>
                   )}
