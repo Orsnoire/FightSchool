@@ -53,6 +53,13 @@ export default function CreateFight() {
       toast({ title: "Fight created successfully!" });
       navigate("/teacher");
     },
+    onError: (error) => {
+      toast({ 
+        title: "Failed to create fight", 
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive" 
+      });
+    },
   });
 
   const addQuestion = () => {
@@ -68,7 +75,9 @@ export default function CreateFight() {
       correctAnswer: currentQuestion.correctAnswer,
       timeLimit: currentQuestion.timeLimit || 30,
     };
-    setQuestions([...questions, newQuestion]);
+    const updatedQuestions = [...questions, newQuestion];
+    setQuestions(updatedQuestions);
+    form.setValue("questions", updatedQuestions);
     setCurrentQuestion({
       type: "multiple_choice",
       timeLimit: 30,
@@ -87,7 +96,9 @@ export default function CreateFight() {
       image: currentEnemy.image || dragonImg,
       maxHealth: currentEnemy.maxHealth,
     };
-    setEnemies([...enemies, newEnemy]);
+    const updatedEnemies = [...enemies, newEnemy];
+    setEnemies(updatedEnemies);
+    form.setValue("enemies", updatedEnemies);
     setCurrentEnemy({ image: dragonImg, maxHealth: 50 });
   };
 
@@ -146,7 +157,7 @@ export default function CreateFight() {
                     <FormItem>
                       <FormLabel>Class Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="MATH101" {...field} data-testid="input-class-code" />
+                        <Input placeholder="MATH101" {...field} data-testid="input-classcode" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -258,7 +269,11 @@ export default function CreateFight() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => setQuestions(questions.filter((_, idx) => idx !== i))}
+                            onClick={() => {
+                              const updated = questions.filter((_, idx) => idx !== i);
+                              setQuestions(updated);
+                              form.setValue("questions", updated);
+                            }}
                             data-testid={`button-delete-question-${i}`}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -348,7 +363,11 @@ export default function CreateFight() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => setEnemies(enemies.filter((_, idx) => idx !== i))}
+                            onClick={() => {
+                              const updated = enemies.filter((_, idx) => idx !== i);
+                              setEnemies(updated);
+                              form.setValue("enemies", updated);
+                            }}
                             data-testid={`button-delete-enemy-${i}`}
                           >
                             <Trash2 className="h-4 w-4" />
