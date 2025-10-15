@@ -11,9 +11,63 @@ interface ExtendedWebSocket extends WebSocket {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Teacher endpoints
+  // Teacher authentication endpoints
+  app.post("/api/teacher/signup", async (req, res) => {
+    try {
+      const { firstName, lastName, email, password, billingAddress, schoolDistrict, school, subject, gradeLevel } = req.body;
+      
+      // Check if email already exists
+      const existing = await storage.getTeacherByEmail(email);
+      if (existing) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const teacher = await storage.createTeacher({
+        firstName,
+        lastName,
+        email,
+        password,
+        billingAddress,
+        schoolDistrict,
+        school,
+        subject,
+        gradeLevel,
+      });
+      
+      const { password: _, ...teacherWithoutPassword } = teacher;
+      res.json(teacherWithoutPassword);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/teacher/login", async (req, res) => {
+    const { email, password } = req.body;
+    const teacher = await storage.getTeacherByEmail(email);
+    
+    if (!teacher || !verifyPassword(password, teacher.password)) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    
+    const { password: _, ...teacherWithoutPassword } = teacher;
+    res.json(teacherWithoutPassword);
+  });
+
+  app.get("/api/teacher/:id", async (req, res) => {
+    const teacher = await storage.getTeacher(req.params.id);
+    if (!teacher) return res.status(404).json({ error: "Teacher not found" });
+    const { password: _, ...teacherWithoutPassword } = teacher;
+    res.json(teacherWithoutPassword);
+  });
+
+  // Teacher fight endpoints
   app.get("/api/fights", async (req, res) => {
     const fights = await storage.getAllFights();
+    res.json(fights);
+  });
+
+  app.get("/api/teacher/:teacherId/fights", async (req, res) => {
+    const fights = await storage.getFightsByTeacherId(req.params.teacherId);
     res.json(fights);
   });
 
