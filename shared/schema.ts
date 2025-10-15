@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Character classes and equipment types
-export type CharacterClass = "knight" | "wizard" | "scout" | "herbalist";
+export type CharacterClass = "knight" | "wizard" | "scout" | "herbalist" | "paladin" | "dark_knight" | "sage" | "ranger" | "druid" | "monk";
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
@@ -60,10 +60,29 @@ export const fights = pgTable("fights", {
   classCode: text("class_code").notNull(),
   questions: jsonb("questions").notNull().$type<Question[]>(),
   enemies: jsonb("enemies").notNull().$type<Enemy[]>(),
+  baseXP: integer("base_xp").notNull().default(10),
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
 export type DbFight = typeof fights.$inferSelect;
+
+// Student job levels table (tracks progression)
+export const studentJobLevels = pgTable("student_job_levels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull(),
+  jobClass: text("job_class").notNull().$type<CharacterClass>(),
+  level: integer("level").notNull().default(1),
+  experience: integer("experience").notNull().default(0),
+  unlockedAt: bigint("unlocked_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertStudentJobLevelSchema = createInsertSchema(studentJobLevels).omit({
+  id: true,
+  unlockedAt: true,
+});
+
+export type InsertStudentJobLevel = z.infer<typeof insertStudentJobLevelSchema>;
+export type StudentJobLevel = typeof studentJobLevels.$inferSelect;
 
 // Combat sessions table (active game state)
 export const combatSessions = pgTable("combat_sessions", {
@@ -74,6 +93,7 @@ export const combatSessions = pgTable("combat_sessions", {
   enemies: jsonb("enemies").notNull(),
   questionStartTime: bigint("question_start_time", { mode: "number" }),
   phaseStartTime: bigint("phase_start_time", { mode: "number" }),
+  jobLocked: boolean("job_locked").notNull().default(false),
 });
 
 export type DbCombatSession = typeof combatSessions.$inferSelect;
@@ -87,11 +107,15 @@ export const combatStats = pgTable("combat_stats", {
   characterClass: text("character_class").notNull().$type<CharacterClass>(),
   questionsAnswered: integer("questions_answered").notNull().default(0),
   questionsCorrect: integer("questions_correct").notNull().default(0),
+  questionsIncorrect: integer("questions_incorrect").notNull().default(0),
   damageDealt: integer("damage_dealt").notNull().default(0),
+  damageBlocked: integer("damage_blocked").notNull().default(0),
+  bonusDamage: integer("bonus_damage").notNull().default(0),
   healingDone: integer("healing_done").notNull().default(0),
   damageTaken: integer("damage_taken").notNull().default(0),
   deaths: integer("deaths").notNull().default(0),
   survived: boolean("survived").notNull().default(false),
+  xpEarned: integer("xp_earned").notNull().default(0),
   completedAt: bigint("completed_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
@@ -145,6 +169,7 @@ export interface Fight {
   classCode: string;
   questions: Question[];
   enemies: Enemy[];
+  baseXP: number;
   createdAt: number;
 }
 
@@ -154,6 +179,7 @@ export const insertFightSchema = z.object({
   classCode: z.string().min(1),
   questions: z.array(questionSchema).min(1),
   enemies: z.array(enemySchema).default([]),
+  baseXP: z.number().min(1).max(100).default(10),
 });
 
 export type InsertFight = z.infer<typeof insertFightSchema>;
@@ -176,10 +202,13 @@ export interface PlayerState {
   potionCount: number; // For herbalists - starts with 5
   isCreatingPotion: boolean; // For herbalists - choosing to create potion instead of damage
   
-  // Combat statistics tracking
+  // Combat statistics tracking (for XP calculation)
   questionsAnswered: number;
   questionsCorrect: number;
+  questionsIncorrect: number;
   damageDealt: number;
+  damageBlocked: number; // For tanks
+  bonusDamage: number; // Damage exceeding base (streak bonuses)
   healingDone: number;
   damageTaken: number;
   deaths: number;
