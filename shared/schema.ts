@@ -177,6 +177,8 @@ export interface Fight {
   questions: Question[];
   enemies: Enemy[];
   baseXP: number;
+  enemyDisplayMode: "simultaneous" | "consecutive";
+  lootTable: LootItem[];
   createdAt: number;
 }
 
@@ -187,6 +189,8 @@ export const insertFightSchema = z.object({
   questions: z.array(questionSchema).min(1),
   enemies: z.array(enemySchema).default([]),
   baseXP: z.number().min(1).max(100).default(10),
+  enemyDisplayMode: z.enum(["simultaneous", "consecutive"]).default("consecutive"),
+  lootTable: z.array(z.object({ itemId: z.string() })).default([]),
 });
 
 export type InsertFight = z.infer<typeof insertFightSchema>;

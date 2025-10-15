@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, PlusCircle, Trash2 } from "lucide-react";
-import { insertFightSchema, type InsertFight, type Question, type Enemy } from "@shared/schema";
+import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, EQUIPMENT_ITEMS } from "@shared/schema";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
 import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
 import wizardImg from "@assets/generated_images/Dark_wizard_enemy_illustration_a897a309.png";
@@ -23,6 +23,7 @@ export default function CreateFight() {
   const { toast } = useToast();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
+  const [lootTable, setLootTable] = useState<LootItem[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
     type: "multiple_choice",
     timeLimit: 30,
@@ -45,6 +46,7 @@ export default function CreateFight() {
       enemies: [],
       baseXP: 10,
       enemyDisplayMode: "consecutive",
+      lootTable: [],
     },
   });
 
@@ -112,7 +114,19 @@ export default function CreateFight() {
       toast({ title: "Add at least one question", variant: "destructive" });
       return;
     }
-    createMutation.mutate({ ...data, teacherId, questions, enemies });
+    createMutation.mutate({ ...data, teacherId, questions, enemies, lootTable });
+  };
+
+  const addLootItem = (itemId: string) => {
+    const newLootTable = [...lootTable, { itemId }];
+    setLootTable(newLootTable);
+    form.setValue("lootTable", newLootTable);
+  };
+
+  const removeLootItem = (index: number) => {
+    const newLootTable = lootTable.filter((_, i) => i !== index);
+    setLootTable(newLootTable);
+    form.setValue("lootTable", newLootTable);
   };
 
   return (
@@ -211,9 +225,10 @@ export default function CreateFight() {
             </Card>
 
             <Tabs defaultValue="questions" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="questions" data-testid="tab-questions">Questions ({questions.length})</TabsTrigger>
                 <TabsTrigger value="enemies" data-testid="tab-enemies">Enemies ({enemies.length})</TabsTrigger>
+                <TabsTrigger value="loot" data-testid="tab-loot">Loot ({lootTable.length})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="questions" className="space-y-4">
@@ -418,6 +433,70 @@ export default function CreateFight() {
                           </Button>
                         </div>
                       ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="loot" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Add Loot Item</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Select Equipment</label>
+                      <Select onValueChange={(value) => addLootItem(value)}>
+                        <SelectTrigger data-testid="select-loot-item">
+                          <SelectValue placeholder="Choose an item to add" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(EQUIPMENT_ITEMS)
+                            .filter(item => !lootTable.some(l => l.itemId === item.id))
+                            .map(item => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.name} ({item.rarity}) - {item.slot}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground mt-2">Students can choose ONE item from this loot table OR take XP instead</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {lootTable.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Loot Table ({lootTable.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {lootTable.map((loot, i) => {
+                        const item = EQUIPMENT_ITEMS[loot.itemId];
+                        if (!item) return null;
+                        return (
+                          <div key={i} className="flex items-center justify-between p-3 border border-border rounded-md" data-testid={`loot-item-${i}`}>
+                            <div>
+                              <p className="font-medium">{item.name}</p>
+                              <p className="text-sm text-muted-foreground capitalize">
+                                {item.rarity} | {item.slot} | 
+                                {item.stats.hp ? ` +${item.stats.hp} HP` : ''}
+                                {item.stats.attack ? ` +${item.stats.attack} ATK` : ''}
+                                {item.stats.defense ? ` +${item.stats.defense} DEF` : ''}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeLootItem(i)}
+                              data-testid={`button-delete-loot-${i}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
                     </CardContent>
                   </Card>
                 )}
