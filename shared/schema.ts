@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, boolean, jsonb, bigint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -28,6 +28,31 @@ export const insertStudentSchema = createInsertSchema(students).omit({
 
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
+
+// Fights table
+export const fights = pgTable("fights", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  classCode: text("class_code").notNull(),
+  questions: jsonb("questions").notNull().$type<Question[]>(),
+  enemies: jsonb("enemies").notNull().$type<Enemy[]>(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export type DbFight = typeof fights.$inferSelect;
+
+// Combat sessions table (active game state)
+export const combatSessions = pgTable("combat_sessions", {
+  fightId: varchar("fight_id").primaryKey(),
+  currentQuestionIndex: integer("current_question_index").notNull().default(0),
+  currentPhase: text("current_phase").notNull().$type<"waiting" | "question" | "tank_blocking" | "combat" | "game_over">(),
+  players: jsonb("players").notNull().$type<Record<string, PlayerState>>(),
+  enemies: jsonb("enemies").notNull(),
+  questionStartTime: bigint("question_start_time", { mode: "number" }),
+  phaseStartTime: bigint("phase_start_time", { mode: "number" }),
+});
+
+export type DbCombatSession = typeof combatSessions.$inferSelect;
 
 // Question schema
 export interface Question {
