@@ -39,20 +39,20 @@ export interface JobConfig {
 // XP required for each level (1-15)
 export const XP_REQUIREMENTS: Record<number, number> = {
   1: 0,      // Level 1 (starting level)
-  2: 20,     // 20 XP to reach level 2
-  3: 25,     // 25 more XP (45 total)
-  4: 30,     // 30 more XP (75 total)
-  5: 35,     // 35 more XP (110 total)
-  6: 40,     // 40 more XP (150 total)
-  7: 45,     // 45 more XP (195 total)
-  8: 50,     // 50 more XP (245 total)
-  9: 55,     // 55 more XP (300 total)
-  10: 60,    // 60 more XP (360 total)
-  11: 65,    // 65 more XP (425 total)
-  12: 70,    // 70 more XP (495 total)
-  13: 75,    // 75 more XP (570 total)
-  14: 80,    // 80 more XP (650 total)
-  15: 85,    // 85 more XP (735 total) - MAX LEVEL
+  2: 6,      // 6 XP to reach level 2 (total: 6)
+  3: 12,     // 12 more XP (total: 18)
+  4: 18,     // 18 more XP (total: 36)
+  5: 24,     // 24 more XP (total: 60)
+  6: 30,     // 30 more XP (total: 90)
+  7: 36,     // 36 more XP (total: 126)
+  8: 42,     // 42 more XP (total: 168)
+  9: 48,     // 48 more XP (total: 216)
+  10: 54,    // 54 more XP (total: 270)
+  11: 60,    // 60 more XP (total: 330)
+  12: 66,    // 66 more XP (total: 396)
+  13: 72,    // 72 more XP (total: 468)
+  14: 78,    // 78 more XP (total: 546)
+  15: 84,    // 84 more XP (total: 630) - MAX LEVEL
 };
 
 // Calculate total XP needed to reach a specific level
