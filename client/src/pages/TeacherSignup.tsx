@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, Shield } from "lucide-react";
+import type { Teacher } from "@shared/schema";
 
 const signupSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -31,7 +31,7 @@ const signupSchema = z.object({
 type SignupForm = z.infer<typeof signupSchema>;
 
 export default function TeacherSignup() {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   const form = useForm<SignupForm>({
@@ -53,11 +53,12 @@ export default function TeacherSignup() {
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
       const { confirmPassword, ...signupData } = data;
-      return apiRequest("/api/teacher/signup", "POST", signupData);
+      return apiRequest<Teacher>("/api/teacher/signup", "POST", signupData);
     },
     onSuccess: (teacher) => {
       localStorage.setItem("teacherId", teacher.id);
       localStorage.setItem("teacherEmail", teacher.email);
+      localStorage.setItem("teacherClassCode", "");
       toast({ title: "Account created successfully!" });
       navigate("/teacher");
     },

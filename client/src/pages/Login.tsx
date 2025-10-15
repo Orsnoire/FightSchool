@@ -11,21 +11,41 @@ import { Swords, Shield } from "lucide-react";
 export default function Login() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [teacherUsername, setTeacherUsername] = useState("");
+  const [teacherEmail, setTeacherEmail] = useState("");
   const [teacherPassword, setTeacherPassword] = useState("");
   const [teacherClassCode, setTeacherClassCode] = useState("");
   const [studentNickname, setStudentNickname] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
 
-  const handleTeacherLogin = () => {
-    if (teacherUsername === "1" && teacherPassword === "2") {
-      localStorage.setItem("isTeacher", "true");
-      localStorage.setItem("teacherClassCode", teacherClassCode || "DEMO123");
-      navigate("/teacher");
-    } else {
+  const handleTeacherLogin = async () => {
+    try {
+      const response = await fetch("/api/teacher/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: teacherEmail, 
+          password: teacherPassword
+        }),
+      });
+
+      if (response.ok) {
+        const teacher = await response.json();
+        localStorage.setItem("teacherId", teacher.id);
+        localStorage.setItem("teacherEmail", teacher.email);
+        localStorage.setItem("teacherClassCode", teacherClassCode || "");
+        navigate("/teacher");
+      } else {
+        const error = await response.json();
+        toast({ 
+          title: "Invalid credentials", 
+          description: error.error || "Please check your email and password",
+          variant: "destructive" 
+        });
+      }
+    } catch (error) {
       toast({ 
-        title: "Invalid credentials", 
-        description: "Please check your username and password",
+        title: "Error", 
+        description: "Failed to login",
         variant: "destructive" 
       });
     }
@@ -93,13 +113,14 @@ export default function Login() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="teacher-username">Username</Label>
+                  <Label htmlFor="teacher-email">Email</Label>
                   <Input
-                    id="teacher-username"
-                    value={teacherUsername}
-                    onChange={(e) => setTeacherUsername(e.target.value)}
-                    placeholder="Enter username"
-                    data-testid="input-teacher-username"
+                    id="teacher-email"
+                    type="email"
+                    value={teacherEmail}
+                    onChange={(e) => setTeacherEmail(e.target.value)}
+                    placeholder="Enter email"
+                    data-testid="input-teacher-email"
                   />
                 </div>
                 <div>
@@ -114,23 +135,31 @@ export default function Login() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="teacher-classcode">Class Code</Label>
+                  <Label htmlFor="teacher-classcode">Class Code (optional)</Label>
                   <Input
                     id="teacher-classcode"
                     value={teacherClassCode}
                     onChange={(e) => setTeacherClassCode(e.target.value)}
-                    placeholder="Enter your class code (e.g., DEMO123)"
+                    placeholder="Enter your class code (e.g., MATH101)"
                     data-testid="input-teacher-classcode"
                   />
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col gap-3">
                 <Button 
                   className="w-full" 
                   onClick={handleTeacherLogin}
                   data-testid="button-teacher-login"
                 >
                   Login as Teacher
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="w-full" 
+                  onClick={() => navigate("/teacher/signup")}
+                  data-testid="button-teacher-signup"
+                >
+                  Sign up!
                 </Button>
               </CardFooter>
             </Card>
