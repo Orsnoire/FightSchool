@@ -195,6 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isHealing: false,
         healTarget: undefined,
         blockTarget: undefined,
+        isCreatingPotion: false,
       });
     }
 
@@ -215,7 +216,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!session) return;
 
     await storage.updateCombatSession(fightId, { currentPhase: "tank_blocking" });
-    broadcastToCombat(fightId, { type: "phase_change", phase: "Tank Blocking" });
+    broadcastToCombat(fightId, { type: "phase_change", phase: "Tank Blocking & Healing" });
+    
+    // Process potion healing for herbalists
+    for (const [playerId, player] of Object.entries(session.players)) {
+      if (player.isDead) continue;
+      
+      if (player.isHealing && player.healTarget && player.characterClass === "herbalist" && player.potionCount > 0) {
+        const target = session.players[player.healTarget];
+        if (target && !target.isDead) {
+          const healAmount = 1;
+          await storage.updatePlayerState(fightId, player.healTarget, {
+            health: Math.min(target.health + healAmount, target.maxHealth),
+          });
+          // Use up a potion
+          await storage.updatePlayerState(fightId, playerId, {
+            potionCount: player.potionCount - 1,
+            healingDone: player.healingDone + healAmount,
+          });
+        }
+      }
+    }
+    
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
 
@@ -256,8 +278,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           questionsCorrect: player.questionsCorrect + 1,
         });
 
-        if (player.isHealing && player.healTarget && player.characterClass === "herbalist") {
-          // Heal target
+        if (player.isCreatingPotion && player.characterClass === "herbalist") {
+          // Herbalist chose to create a potion instead of dealing damage
+          await storage.updatePlayerState(fightId, playerId, {
+            potionCount: player.potionCount + 1,
+            isCreatingPotion: false,
+          });
+        } else if (player.isHealing && player.healTarget && player.characterClass === "herbalist") {
+          // Heal target (this happens in tank_blocking phase, not here)
+          // This code path is for healing without using a potion (shouldn't happen)
           const target = session.players[player.healTarget];
           if (target && !target.isDead) {
             const healAmount = 1;
@@ -446,6 +475,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             isHealing: true,
             healTarget: message.targetId,
+          });
+        } else if (message.type === "create_potion" && ws.studentId && ws.fightId) {
+          // Herbalist choosing to create a potion instead of dealing damage
+          await storage.updatePlayerState(ws.fightId, ws.studentId, {
+            isCreatingPotion: true,
           });
         }
       } catch (error) {

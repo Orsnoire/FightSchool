@@ -147,6 +147,8 @@ export interface PlayerState {
   isHealing: boolean;
   healTarget?: string; // Student ID to heal
   blockTarget?: string; // Student ID to block (for tanks)
+  potionCount: number; // For herbalists - starts with 5
+  isCreatingPotion: boolean; // For herbalists - choosing to create potion instead of damage
   
   // Combat statistics tracking
   questionsAnswered: number;

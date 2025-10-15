@@ -18,6 +18,7 @@ export default function Combat() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isHealing, setIsHealing] = useState(false);
   const [healTarget, setHealTarget] = useState<string>("");
+  const [isCreatingPotion, setIsCreatingPotion] = useState(false);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -39,6 +40,9 @@ export default function Combat() {
         setCurrentQuestion(message.question);
         setSelectedAnswer("");
         setTimeRemaining(message.question.timeLimit);
+        setIsHealing(false);
+        setHealTarget("");
+        setIsCreatingPotion(false);
       } else if (message.type === "phase_change") {
         toast({ title: message.phase });
       } else if (message.type === "game_over") {
@@ -60,6 +64,11 @@ export default function Combat() {
 
   const submitAnswer = () => {
     if (ws && selectedAnswer) {
+      // If creating potion, send create_potion message first
+      if (isCreatingPotion) {
+        ws.send(JSON.stringify({ type: "create_potion" }));
+      }
+      
       ws.send(JSON.stringify({ 
         type: "answer", 
         answer: selectedAnswer,
@@ -171,31 +180,55 @@ export default function Combat() {
 
               {playerState?.characterClass === "herbalist" && (
                 <div className="mt-6 p-4 border border-health/30 rounded-md bg-health/10">
-                  <label className="flex items-center gap-2 mb-3">
-                    <input
-                      type="checkbox"
-                      checked={isHealing}
-                      onChange={(e) => setIsHealing(e.target.checked)}
-                      className="w-4 h-4"
-                      data-testid="checkbox-healing"
-                    />
-                    <span className="text-sm font-medium text-health">Heal instead of damage</span>
-                  </label>
-                  {isHealing && (
-                    <div className="grid grid-cols-3 gap-2">
-                      {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => (
-                        <Button
-                          key={player.studentId}
-                          variant={healTarget === player.studentId ? "default" : "outline"}
-                          className="h-auto p-2 flex flex-col items-center gap-1"
-                          onClick={() => setHealTarget(player.studentId)}
-                          size="sm"
-                          data-testid={`button-heal-${player.studentId}`}
-                        >
-                          <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
-                          <span className="text-xs">{player.nickname}</span>
-                        </Button>
-                      ))}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-health">Potions: {playerState.potionCount}</span>
+                  </div>
+                  
+                  {playerState.potionCount > 0 ? (
+                    <>
+                      <label className="flex items-center gap-2 mb-3">
+                        <input
+                          type="checkbox"
+                          checked={isHealing}
+                          onChange={(e) => setIsHealing(e.target.checked)}
+                          className="w-4 h-4"
+                          data-testid="checkbox-healing"
+                        />
+                        <span className="text-sm font-medium text-health">Use potion to heal (in Phase 2)</span>
+                      </label>
+                      {isHealing && (
+                        <div className="grid grid-cols-3 gap-2">
+                          {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => (
+                            <Button
+                              key={player.studentId}
+                              variant={healTarget === player.studentId ? "default" : "outline"}
+                              className="h-auto p-2 flex flex-col items-center gap-1"
+                              onClick={() => setHealTarget(player.studentId)}
+                              size="sm"
+                              data-testid={`button-heal-${player.studentId}`}
+                            >
+                              <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+                              <span className="text-xs">{player.nickname}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-3">
+                        <p>No potions remaining!</p>
+                      </div>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={isCreatingPotion}
+                          onChange={(e) => setIsCreatingPotion(e.target.checked)}
+                          className="w-4 h-4"
+                          data-testid="checkbox-create-potion"
+                        />
+                        <span className="text-sm font-medium text-health">Create potion instead of dealing damage</span>
+                      </label>
                     </div>
                   )}
                 </div>
