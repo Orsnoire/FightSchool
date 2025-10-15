@@ -148,6 +148,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stats);
   });
 
+  app.get("/api/students/used-fight-codes/:classCode", async (req, res) => {
+    const students = await storage.getStudentsWhoUsedFightCodes(req.params.classCode);
+    // Remove password from response
+    const studentsWithoutPasswords = students.map(({ password, ...student }) => student);
+    res.json(studentsWithoutPasswords);
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time combat

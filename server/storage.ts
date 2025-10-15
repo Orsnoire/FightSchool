@@ -42,6 +42,9 @@ export interface IStorage {
   getStatsByFight(fightId: string): Promise<CombatStat[]>;
   getStatsByStudent(studentId: string): Promise<CombatStat[]>;
   getStatsByClassCode(classCode: string): Promise<CombatStat[]>;
+  
+  // Get students who participated in fights for a specific class code
+  getStudentsWhoUsedFightCodes(classCode: string): Promise<Student[]>;
 }
 
 // Integration: blueprint:javascript_database
@@ -222,6 +225,42 @@ export class DatabaseStorage implements IStorage {
       allStats.push(...stats);
     }
     return allStats;
+  }
+
+  async getStudentsWhoUsedFightCodes(classCode: string): Promise<Student[]> {
+    // Get all fights for this class code
+    const allFights = await this.getAllFights();
+    const classFights = allFights.filter(f => f.classCode === classCode);
+    const fightIds = classFights.map(f => f.id);
+    
+    if (fightIds.length === 0) return [];
+    
+    const uniqueStudentIds = new Set<string>();
+    
+    // Check combat sessions (active/ongoing fights) for student IDs
+    for (const fightId of fightIds) {
+      const session = await this.getCombatSession(fightId);
+      if (session && session.players) {
+        Object.keys(session.players).forEach(studentId => uniqueStudentIds.add(studentId));
+      }
+    }
+    
+    // Also check combat stats (completed fights) for student IDs
+    for (const fightId of fightIds) {
+      const stats = await this.getStatsByFight(fightId);
+      stats.forEach(stat => uniqueStudentIds.add(stat.studentId));
+    }
+    
+    // Fetch the actual student records
+    const studentsList: Student[] = [];
+    for (const studentId of Array.from(uniqueStudentIds)) {
+      const student = await this.getStudent(studentId);
+      if (student) {
+        studentsList.push(student);
+      }
+    }
+    
+    return studentsList;
   }
 }
 
