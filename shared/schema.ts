@@ -43,6 +43,8 @@ export const students = pgTable("students", {
   weapon: text("weapon").notNull().default("basic"),
   headgear: text("headgear").notNull().default("basic"),
   armor: text("armor").notNull().default("basic"),
+  crossClassAbility1: text("cross_class_ability_1"),
+  crossClassAbility2: text("cross_class_ability_2"),
 });
 
 export const insertStudentSchema = createInsertSchema(students).omit({
