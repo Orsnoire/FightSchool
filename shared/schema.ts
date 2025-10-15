@@ -61,6 +61,7 @@ export const fights = pgTable("fights", {
   questions: jsonb("questions").notNull().$type<Question[]>(),
   enemies: jsonb("enemies").notNull().$type<Enemy[]>(),
   baseXP: integer("base_xp").notNull().default(10),
+  enemyDisplayMode: text("enemy_display_mode").notNull().$type<"simultaneous" | "consecutive">().default("consecutive"),
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 

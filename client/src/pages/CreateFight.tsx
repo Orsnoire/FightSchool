@@ -44,6 +44,7 @@ export default function CreateFight() {
       questions: [],
       enemies: [],
       baseXP: 10,
+      enemyDisplayMode: "consecutive",
     },
   });
 
@@ -180,6 +181,28 @@ export default function CreateFight() {
                         />
                       </FormControl>
                       <p className="text-sm text-muted-foreground">Base XP awarded for completing this fight (additional XP based on performance)</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="enemyDisplayMode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enemy Display Mode</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-enemy-display-mode">
+                            <SelectValue placeholder="Select enemy display mode" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="consecutive">Consecutive (One at a time)</SelectItem>
+                          <SelectItem value="simultaneous">Simultaneous (All at once)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground">Choose how multiple enemies appear in combat</p>
                       <FormMessage />
                     </FormItem>
                   )}
