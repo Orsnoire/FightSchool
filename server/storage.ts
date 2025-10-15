@@ -1,8 +1,9 @@
-import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat } from "@shared/schema";
-import { students, teachers, fights, combatSessions, combatStats, CLASS_STATS } from "@shared/schema";
+import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass } from "@shared/schema";
+import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, CLASS_STATS } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { calculateNewLevel, getTotalXPForLevel, XP_REQUIREMENTS } from "@shared/jobSystem";
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -52,6 +53,13 @@ export interface IStorage {
   
   // Get students who participated in fights for a specific class code
   getStudentsWhoUsedFightCodes(classCode: string): Promise<Student[]>;
+
+  // Student job level operations
+  getStudentJobLevels(studentId: string): Promise<StudentJobLevel[]>;
+  getStudentJobLevel(studentId: string, jobClass: CharacterClass): Promise<StudentJobLevel | undefined>;
+  createStudentJobLevel(jobLevel: InsertStudentJobLevel): Promise<StudentJobLevel>;
+  updateStudentJobLevel(id: string, updates: Partial<StudentJobLevel>): Promise<StudentJobLevel | undefined>;
+  awardXPToJob(studentId: string, jobClass: CharacterClass, xpAmount: number): Promise<{ jobLevel: StudentJobLevel; leveledUp: boolean; newLevel: number }>;
 }
 
 // Integration: blueprint:javascript_database
@@ -307,6 +315,70 @@ export class DatabaseStorage implements IStorage {
     }
     
     return studentsList;
+  }
+
+  // Student job level operations
+  async getStudentJobLevels(studentId: string): Promise<StudentJobLevel[]> {
+    return await db.select().from(studentJobLevels).where(eq(studentJobLevels.studentId, studentId));
+  }
+
+  async getStudentJobLevel(studentId: string, jobClass: CharacterClass): Promise<StudentJobLevel | undefined> {
+    const [jobLevel] = await db
+      .select()
+      .from(studentJobLevels)
+      .where(and(eq(studentJobLevels.studentId, studentId), eq(studentJobLevels.jobClass, jobClass)));
+    return jobLevel || undefined;
+  }
+
+  async createStudentJobLevel(jobLevel: InsertStudentJobLevel): Promise<StudentJobLevel> {
+    const [created] = await db.insert(studentJobLevels).values(jobLevel).returning();
+    return created;
+  }
+
+  async updateStudentJobLevel(id: string, updates: Partial<StudentJobLevel>): Promise<StudentJobLevel | undefined> {
+    const [updated] = await db
+      .update(studentJobLevels)
+      .set(updates)
+      .where(eq(studentJobLevels.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async awardXPToJob(
+    studentId: string,
+    jobClass: CharacterClass,
+    xpAmount: number
+  ): Promise<{ jobLevel: StudentJobLevel; leveledUp: boolean; newLevel: number }> {
+    // Get or create job level record
+    let jobLevel = await this.getStudentJobLevel(studentId, jobClass);
+    
+    if (!jobLevel) {
+      // Create new job level at level 1
+      jobLevel = await this.createStudentJobLevel({
+        studentId,
+        jobClass,
+        level: 1,
+        experience: 0,
+      });
+    }
+
+    // Add XP
+    const newTotalXP = jobLevel.experience + xpAmount;
+    const oldLevel = jobLevel.level;
+    const newLevel = calculateNewLevel(oldLevel, newTotalXP);
+    const leveledUp = newLevel > oldLevel;
+
+    // Update the job level
+    const updated = await this.updateStudentJobLevel(jobLevel.id, {
+      experience: newTotalXP,
+      level: newLevel,
+    });
+
+    return {
+      jobLevel: updated || jobLevel,
+      leveledUp,
+      newLevel,
+    };
   }
 }
 
