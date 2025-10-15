@@ -1,5 +1,5 @@
-import type { Student, InsertStudent, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat } from "@shared/schema";
-import { students, fights, combatSessions, combatStats, CLASS_STATS } from "@shared/schema";
+import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat } from "@shared/schema";
+import { students, teachers, fights, combatSessions, combatStats, CLASS_STATS } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -17,6 +17,12 @@ export function verifyPassword(password: string, storedHash: string): boolean {
 }
 
 export interface IStorage {
+  // Teacher operations
+  getTeacher(id: string): Promise<Teacher | undefined>;
+  getTeacherByEmail(email: string): Promise<Teacher | undefined>;
+  createTeacher(teacher: InsertTeacher): Promise<Teacher>;
+  updateTeacher(id: string, updates: Partial<Teacher>): Promise<Teacher | undefined>;
+
   // Student operations
   getStudent(id: string): Promise<Student | undefined>;
   getStudentByNickname(nickname: string): Promise<Student | undefined>;
@@ -27,6 +33,7 @@ export interface IStorage {
   // Fight operations
   getFight(id: string): Promise<Fight | undefined>;
   getAllFights(): Promise<Fight[]>;
+  getFightsByTeacherId(teacherId: string): Promise<Fight[]>;
   createFight(fight: InsertFight): Promise<Fight>;
   deleteFight(id: string): Promise<boolean>;
 
@@ -49,6 +56,38 @@ export interface IStorage {
 
 // Integration: blueprint:javascript_database
 export class DatabaseStorage implements IStorage {
+  // Teacher operations
+  async getTeacher(id: string): Promise<Teacher | undefined> {
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.id, id));
+    return teacher || undefined;
+  }
+
+  async getTeacherByEmail(email: string): Promise<Teacher | undefined> {
+    const [teacher] = await db.select().from(teachers).where(eq(teachers.email, email));
+    return teacher || undefined;
+  }
+
+  async createTeacher(insertTeacher: InsertTeacher): Promise<Teacher> {
+    const hashedPassword = hashPassword(insertTeacher.password);
+    const [teacher] = await db
+      .insert(teachers)
+      .values({
+        ...insertTeacher,
+        password: hashedPassword,
+      })
+      .returning();
+    return teacher;
+  }
+
+  async updateTeacher(id: string, updates: Partial<Teacher>): Promise<Teacher | undefined> {
+    const [teacher] = await db
+      .update(teachers)
+      .set(updates)
+      .where(eq(teachers.id, id))
+      .returning();
+    return teacher || undefined;
+  }
+
   // Student operations
   async getStudent(id: string): Promise<Student | undefined> {
     const [student] = await db.select().from(students).where(eq(students.id, id));
@@ -100,10 +139,15 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(fights);
   }
 
+  async getFightsByTeacherId(teacherId: string): Promise<Fight[]> {
+    return await db.select().from(fights).where(eq(fights.teacherId, teacherId));
+  }
+
   async createFight(insertFight: InsertFight): Promise<Fight> {
     const [fight] = await db
       .insert(fights)
       .values({
+        teacherId: insertFight.teacherId,
         title: insertFight.title,
         classCode: insertFight.classCode,
         questions: insertFight.questions,
