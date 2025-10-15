@@ -33,9 +33,12 @@ export default function CreateFight() {
     maxHealth: 50,
   });
 
+  const teacherId = localStorage.getItem("teacherId") || "";
+
   const form = useForm<InsertFight>({
     resolver: zodResolver(insertFightSchema),
     defaultValues: {
+      teacherId,
       title: "",
       classCode: "",
       questions: [],
@@ -49,7 +52,7 @@ export default function CreateFight() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/fights"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/teacher", teacherId, "fights"] });
       toast({ title: "Fight created successfully!" });
       navigate("/teacher");
     },
@@ -107,7 +110,7 @@ export default function CreateFight() {
       toast({ title: "Add at least one question", variant: "destructive" });
       return;
     }
-    createMutation.mutate({ ...data, questions, enemies });
+    createMutation.mutate({ ...data, teacherId, questions, enemies });
   };
 
   return (

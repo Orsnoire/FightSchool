@@ -12,10 +12,12 @@ import type { Fight, Student } from "@shared/schema";
 export default function TeacherDashboard() {
   const { toast } = useToast();
   const [studentsDialogOpen, setStudentsDialogOpen] = useState(false);
-  const teacherClassCode = localStorage.getItem("teacherClassCode") || "DEMO123";
+  const teacherId = localStorage.getItem("teacherId");
+  const teacherClassCode = localStorage.getItem("teacherClassCode") || "";
   
   const { data: fights, isLoading } = useQuery<Fight[]>({
-    queryKey: ["/api/fights"],
+    queryKey: ["/api/teacher", teacherId, "fights"],
+    enabled: !!teacherId,
   });
 
   const { data: students, isLoading: studentsLoading } = useQuery<Omit<Student, 'password'>[]>({
