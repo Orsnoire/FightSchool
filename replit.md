@@ -36,19 +36,21 @@ Preferred communication style: Simple, everyday language.
 - Question delivery and answer validation
 - Phase transitions and game over events
 
-**Data Storage Strategy**: In-memory storage (MemStorage class) implementing the IStorage interface:
-- Students: nickname, password hash, class code, character class, gender, equipment
-- Fights: quiz configuration with questions, enemies, and class code
+**Data Storage Strategy**: PostgreSQL database via Neon with Drizzle ORM implementing the IStorage interface:
+- Students: nickname, password hash, optional class code, character class, gender, equipment
+- Fights: quiz configuration with questions, enemies, and class code (fight ID serves as shareable fight code)
 - Combat Sessions: active game state with players, enemies, current phase, and question
+- Combat Stats: post-fight performance tracking (questions answered, damage dealt, healing, deaths)
 
-**Authentication**: Password-based authentication using Node.js crypto (scrypt) for secure password hashing. Student sessions tracked via localStorage on client and WebSocket connections on server.
+**Authentication**: Password-based authentication using Node.js crypto (scrypt) for secure password hashing. Auto-creates student accounts on first login. Student sessions tracked via localStorage on client and WebSocket connections on server.
 
 ### API Structure
 
 **REST Endpoints**:
-- Teacher: `/api/fights` (CRUD operations for quiz battles)
-- Student: `/api/student/register`, `/api/student/login`, character/equipment updates
-- Fight discovery: Students can query available fights by class code
+- Teacher: `/api/fights` (CRUD operations for quiz battles), `/api/combat-stats` (view class statistics)
+- Student: `/api/student/login` (auto-creates account on first login), character/equipment updates
+- Fight access: Students join fights using fight code (fight ID) instead of class code matching
+- Stats: `/api/combat-stats/student/:id` (personal stats), `/api/combat-stats/class/:code` (class stats)
 
 **WebSocket Protocol**: Custom message-based protocol with types:
 - `join`: Student joins combat session

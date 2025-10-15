@@ -63,38 +63,6 @@ export default function Login() {
     }
   };
 
-  const handleStudentRegister = async () => {
-    try {
-      const response = await fetch("/api/student/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nickname: studentNickname,
-          password: studentPassword,
-          classCode: studentClassCode,
-        }),
-      });
-
-      if (response.ok) {
-        const student = await response.json();
-        localStorage.setItem("studentId", student.id);
-        navigate("/student/character-select");
-      } else {
-        const error = await response.json();
-        toast({ 
-          title: "Registration failed", 
-          description: error.error || "Failed to register",
-          variant: "destructive" 
-        });
-      }
-    } catch (error) {
-      toast({ 
-        title: "Error", 
-        description: "Failed to register",
-        variant: "destructive" 
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-black flex items-center justify-center p-4">
