@@ -1,0 +1,50 @@
+import type { CharacterClass, Gender } from "@shared/schema";
+import knightMale from "@assets/generated_images/Knight_male_character_sprite_732b2fa0.png";
+import knightFemale from "@assets/generated_images/Knight_female_character_sprite_3ca497a8.png";
+import wizardMale from "@assets/generated_images/Wizard_male_character_sprite_003e142c.png";
+import wizardFemale from "@assets/generated_images/Wizard_female_character_sprite_99a1f772.png";
+import scoutMale from "@assets/generated_images/Scout_male_character_sprite_975fe8de.png";
+import scoutFemale from "@assets/generated_images/Scout_female_character_sprite_c6a16a9f.png";
+import herbalistMale from "@assets/generated_images/Herbalist_male_character_sprite_d60326a7.png";
+import herbalistFemale from "@assets/generated_images/Herbalist_female_character_sprite_52050434.png";
+
+interface PlayerAvatarProps {
+  characterClass: CharacterClass;
+  gender: Gender;
+  size?: "sm" | "md" | "lg";
+  showBorder?: boolean;
+  className?: string;
+}
+
+const CHARACTER_IMAGES: Record<CharacterClass, Record<Gender, string>> = {
+  knight: { A: knightMale, B: knightFemale },
+  wizard: { A: wizardMale, B: wizardFemale },
+  scout: { A: scoutMale, B: scoutFemale },
+  herbalist: { A: herbalistMale, B: herbalistFemale },
+};
+
+const SIZE_CLASSES = {
+  sm: "w-16 h-16",
+  md: "w-24 h-24",
+  lg: "w-32 h-32",
+};
+
+export function PlayerAvatar({
+  characterClass,
+  gender,
+  size = "md",
+  showBorder = true,
+  className = "",
+}: PlayerAvatarProps) {
+  const image = CHARACTER_IMAGES[characterClass][gender];
+  const borderColor = `border-${characterClass}`;
+
+  return (
+    <div
+      className={`${SIZE_CLASSES[size]} ${showBorder ? `border-2 ${borderColor} rounded-md` : ""} overflow-hidden bg-card ${className}`}
+      data-testid={`avatar-${characterClass}-${gender}`}
+    >
+      <img src={image} alt={`${characterClass} ${gender}`} className="w-full h-full object-cover" />
+    </div>
+  );
+}
