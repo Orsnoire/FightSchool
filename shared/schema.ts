@@ -14,7 +14,7 @@ export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   nickname: text("nickname").notNull(),
   password: text("password").notNull(),
-  classCode: text("class_code").notNull(),
+  classCode: text("class_code"),
   characterClass: text("character_class").notNull().$type<CharacterClass>(),
   gender: text("gender").notNull().$type<Gender>(),
   weapon: text("weapon").notNull().default("basic"),

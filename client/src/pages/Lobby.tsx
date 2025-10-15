@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { EQUIPMENT_ITEMS, type Student, type EquipmentSlot, type Fight } from "@shared/schema";
+import { EQUIPMENT_ITEMS, type Student, type EquipmentSlot } from "@shared/schema";
 import { LogOut, Swords, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -21,6 +22,7 @@ export default function Lobby() {
   const { toast } = useToast();
   const [student, setStudent] = useState<Student | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot>("weapon");
+  const [fightCode, setFightCode] = useState("");
   const studentId = localStorage.getItem("studentId");
 
   useEffect(() => {
@@ -33,13 +35,20 @@ export default function Lobby() {
     loadStudent();
   }, [studentId]);
 
-  const { data: availableFights } = useQuery<Fight[]>({
-    queryKey: ["/api/student", studentId, "available-fights"],
-    enabled: !!studentId,
-  });
+  const joinFight = async () => {
+    if (!fightCode.trim()) {
+      toast({ title: "Please enter a fight code", variant: "destructive" });
+      return;
+    }
 
-  const joinFight = (fightId: string) => {
-    localStorage.setItem("fightId", fightId);
+    // Check if fight exists
+    const response = await fetch(`/api/fights/${fightCode}`);
+    if (!response.ok) {
+      toast({ title: "Invalid fight code", description: "Fight not found", variant: "destructive" });
+      return;
+    }
+
+    localStorage.setItem("fightId", fightCode);
     navigate("/student/combat");
   };
 
@@ -130,36 +139,34 @@ export default function Lobby() {
 
             <Card className="mt-4">
               <CardHeader>
-                <CardTitle>Available Battles</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Swords className="h-5 w-5 text-primary" />
+                  Join Battle
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                {availableFights && availableFights.length > 0 ? (
-                  <div className="space-y-2">
-                    {availableFights.map((fight) => (
-                      <Card key={fight.id} className="p-4 hover-elevate" data-testid={`fight-${fight.id}`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-semibold flex items-center gap-2">
-                              <Swords className="h-4 w-4 text-primary" />
-                              {fight.title}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {fight.questions.length} questions • {fight.enemies.length} enemies
-                            </p>
-                          </div>
-                          <Button onClick={() => joinFight(fight.id)} data-testid={`button-join-${fight.id}`}>
-                            Join Battle
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <p>No battles available yet.</p>
-                    <p className="text-sm mt-2">Ask your teacher to create a fight!</p>
-                  </div>
-                )}
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="fight-code">Fight Code</Label>
+                  <Input
+                    id="fight-code"
+                    value={fightCode}
+                    onChange={(e) => setFightCode(e.target.value)}
+                    placeholder="Enter fight code from your teacher"
+                    data-testid="input-fight-code"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        joinFight();
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your teacher will give you a fight code to enter here
+                  </p>
+                </div>
+                <Button onClick={joinFight} className="w-full" data-testid="button-join-fight">
+                  <Swords className="mr-2 h-4 w-4" />
+                  Join Battle
+                </Button>
               </CardContent>
             </Card>
           </div>

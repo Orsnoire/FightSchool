@@ -2,13 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Swords, Users, BarChart3 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { PlusCircle, Swords, Users, BarChart3, Copy } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import type { Fight } from "@shared/schema";
 
 export default function TeacherDashboard() {
+  const { toast } = useToast();
   const { data: fights, isLoading } = useQuery<Fight[]>({
     queryKey: ["/api/fights"],
   });
+
+  const copyFightCode = (fightId: string) => {
+    navigator.clipboard.writeText(fightId);
+    toast({ title: "Fight code copied!", description: "Share this code with your students" });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,7 +72,21 @@ export default function TeacherDashboard() {
                     <Swords className="h-5 w-5 text-primary" />
                     {fight.title}
                   </CardTitle>
-                  <CardDescription>Class Code: {fight.classCode}</CardDescription>
+                  <CardDescription className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Fight Code:</span>
+                    <Badge variant="secondary" className="font-mono" data-testid={`badge-fight-code-${fight.id}`}>
+                      {fight.id}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => copyFightCode(fight.id)}
+                      data-testid={`button-copy-code-${fight.id}`}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-4 text-sm text-muted-foreground">

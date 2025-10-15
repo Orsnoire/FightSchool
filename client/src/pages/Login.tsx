@@ -16,7 +16,6 @@ export default function Login() {
   const [teacherClassCode, setTeacherClassCode] = useState("");
   const [studentNickname, setStudentNickname] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
-  const [studentClassCode, setStudentClassCode] = useState("");
 
   const handleTeacherLogin = () => {
     if (teacherUsername === "1" && teacherPassword === "2") {
@@ -39,8 +38,7 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           nickname: studentNickname, 
-          password: studentPassword,
-          classCode: studentClassCode || "DEMO123"
+          password: studentPassword
         }),
       });
 
@@ -197,35 +195,17 @@ export default function Login() {
                     data-testid="input-student-password"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="student-classcode">Class Code</Label>
-                  <Input
-                    id="student-classcode"
-                    value={studentClassCode}
-                    onChange={(e) => setStudentClassCode(e.target.value)}
-                    placeholder="DEMO123 (optional)"
-                    data-testid="input-student-classcode"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    First login auto-creates your account
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  First login auto-creates your account
+                </p>
               </CardContent>
-              <CardFooter className="flex gap-2">
+              <CardFooter>
                 <Button 
-                  variant="outline" 
-                  className="flex-1" 
+                  className="w-full" 
                   onClick={handleStudentLogin}
                   data-testid="button-student-login"
                 >
                   Login
-                </Button>
-                <Button 
-                  className="flex-1" 
-                  onClick={handleStudentRegister}
-                  data-testid="button-student-register"
-                >
-                  Register
                 </Button>
               </CardFooter>
             </Card>

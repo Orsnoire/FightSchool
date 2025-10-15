@@ -63,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/student/login", async (req, res) => {
-    const { nickname, password, classCode } = req.body;
+    const { nickname, password } = req.body;
     let student = await storage.getStudentByNickname(nickname);
     
     // Auto-create student on first login if they don't exist
@@ -72,7 +72,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         student = await storage.createStudent({
           nickname,
           password,
-          classCode: classCode || "DEMO123",
           characterClass: "knight",
           gender: "A",
         });
