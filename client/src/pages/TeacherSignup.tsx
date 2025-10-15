@@ -53,7 +53,8 @@ export default function TeacherSignup() {
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
       const { confirmPassword, ...signupData } = data;
-      return apiRequest<Teacher>("/api/teacher/signup", "POST", signupData);
+      const response = await apiRequest("POST", "/api/teacher/signup", signupData);
+      return await response.json() as Teacher;
     },
     onSuccess: (teacher) => {
       localStorage.setItem("teacherId", teacher.id);
