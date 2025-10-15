@@ -9,6 +9,29 @@ export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
 
+// Teachers table
+export const teachers = pgTable("teachers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  billingAddress: text("billing_address").notNull(),
+  schoolDistrict: text("school_district").notNull(),
+  school: text("school").notNull(),
+  subject: text("subject").notNull(),
+  gradeLevel: text("grade_level").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertTeacherSchema = createInsertSchema(teachers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
+export type Teacher = typeof teachers.$inferSelect;
+
 // Students table
 export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -32,6 +55,7 @@ export type Student = typeof students.$inferSelect;
 // Fights table
 export const fights = pgTable("fights", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull(),
   title: text("title").notNull(),
   classCode: text("class_code").notNull(),
   questions: jsonb("questions").notNull().$type<Question[]>(),
@@ -116,6 +140,7 @@ export const enemySchema = z.object({
 // Fight schema (teacher creates)
 export interface Fight {
   id: string;
+  teacherId: string;
   title: string;
   classCode: string;
   questions: Question[];
@@ -124,6 +149,7 @@ export interface Fight {
 }
 
 export const insertFightSchema = z.object({
+  teacherId: z.string().min(1),
   title: z.string().min(1),
   classCode: z.string().min(1),
   questions: z.array(questionSchema).min(1),
