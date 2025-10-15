@@ -1,5 +1,5 @@
-import type { Student, InsertStudent, Fight, InsertFight, CombatState, PlayerState } from "@shared/schema";
-import { students, fights, combatSessions, CLASS_STATS } from "@shared/schema";
+import type { Student, InsertStudent, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat } from "@shared/schema";
+import { students, fights, combatSessions, combatStats, CLASS_STATS } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -36,6 +36,12 @@ export interface IStorage {
   updateCombatSession(fightId: string, updates: Partial<CombatState>): Promise<CombatState | undefined>;
   addPlayerToCombat(fightId: string, student: Student): Promise<void>;
   updatePlayerState(fightId: string, studentId: string, updates: Partial<PlayerState>): Promise<void>;
+
+  // Combat stats operations
+  createCombatStat(stat: InsertCombatStat): Promise<CombatStat>;
+  getStatsByFight(fightId: string): Promise<CombatStat[]>;
+  getStatsByStudent(studentId: string): Promise<CombatStat[]>;
+  getStatsByClassCode(classCode: string): Promise<CombatStat[]>;
 }
 
 // Integration: blueprint:javascript_database
@@ -163,6 +169,12 @@ export class DatabaseStorage implements IStorage {
       isDead: false,
       hasAnswered: false,
       isHealing: false,
+      questionsAnswered: 0,
+      questionsCorrect: 0,
+      damageDealt: 0,
+      healingDone: 0,
+      damageTaken: 0,
+      deaths: 0,
     };
 
     session.players[student.id] = playerState;
@@ -181,6 +193,35 @@ export class DatabaseStorage implements IStorage {
       .update(combatSessions)
       .set({ players: session.players })
       .where(eq(combatSessions.fightId, fightId));
+  }
+
+  // Combat stats operations
+  async createCombatStat(stat: InsertCombatStat): Promise<CombatStat> {
+    const [createdStat] = await db.insert(combatStats).values(stat).returning();
+    return createdStat;
+  }
+
+  async getStatsByFight(fightId: string): Promise<CombatStat[]> {
+    return await db.select().from(combatStats).where(eq(combatStats.fightId, fightId));
+  }
+
+  async getStatsByStudent(studentId: string): Promise<CombatStat[]> {
+    return await db.select().from(combatStats).where(eq(combatStats.studentId, studentId));
+  }
+
+  async getStatsByClassCode(classCode: string): Promise<CombatStat[]> {
+    const classStudents = await this.getStudentsByClassCode(classCode);
+    const studentIds = classStudents.map(s => s.id);
+    
+    if (studentIds.length === 0) return [];
+    
+    // Get all stats for students in this class
+    const allStats: CombatStat[] = [];
+    for (const studentId of studentIds) {
+      const stats = await this.getStatsByStudent(studentId);
+      allStats.push(...stats);
+    }
+    return allStats;
   }
 }
 

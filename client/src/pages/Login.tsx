@@ -13,6 +13,7 @@ export default function Login() {
   const { toast } = useToast();
   const [teacherUsername, setTeacherUsername] = useState("");
   const [teacherPassword, setTeacherPassword] = useState("");
+  const [teacherClassCode, setTeacherClassCode] = useState("");
   const [studentNickname, setStudentNickname] = useState("");
   const [studentPassword, setStudentPassword] = useState("");
   const [studentClassCode, setStudentClassCode] = useState("");
@@ -20,6 +21,7 @@ export default function Login() {
   const handleTeacherLogin = () => {
     if (teacherUsername === "1" && teacherPassword === "2") {
       localStorage.setItem("isTeacher", "true");
+      localStorage.setItem("teacherClassCode", teacherClassCode || "DEMO123");
       navigate("/teacher");
     } else {
       toast({ 
@@ -138,6 +140,16 @@ export default function Login() {
                     onChange={(e) => setTeacherPassword(e.target.value)}
                     placeholder="Enter password"
                     data-testid="input-teacher-password"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="teacher-classcode">Class Code</Label>
+                  <Input
+                    id="teacher-classcode"
+                    value={teacherClassCode}
+                    onChange={(e) => setTeacherClassCode(e.target.value)}
+                    placeholder="Enter your class code (e.g., DEMO123)"
+                    data-testid="input-teacher-classcode"
                   />
                 </div>
               </CardContent>

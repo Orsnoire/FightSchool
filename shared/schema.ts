@@ -54,6 +54,31 @@ export const combatSessions = pgTable("combat_sessions", {
 
 export type DbCombatSession = typeof combatSessions.$inferSelect;
 
+// Combat stats table (post-fight performance tracking)
+export const combatStats = pgTable("combat_stats", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fightId: varchar("fight_id").notNull(),
+  studentId: varchar("student_id").notNull(),
+  nickname: text("nickname").notNull(),
+  characterClass: text("character_class").notNull().$type<CharacterClass>(),
+  questionsAnswered: integer("questions_answered").notNull().default(0),
+  questionsCorrect: integer("questions_correct").notNull().default(0),
+  damageDealt: integer("damage_dealt").notNull().default(0),
+  healingDone: integer("healing_done").notNull().default(0),
+  damageTaken: integer("damage_taken").notNull().default(0),
+  deaths: integer("deaths").notNull().default(0),
+  survived: boolean("survived").notNull().default(false),
+  completedAt: bigint("completed_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertCombatStatSchema = createInsertSchema(combatStats).omit({
+  id: true,
+  completedAt: true,
+});
+
+export type InsertCombatStat = z.infer<typeof insertCombatStatSchema>;
+export type CombatStat = typeof combatStats.$inferSelect;
+
 // Question schema
 export interface Question {
   id: string;
@@ -122,6 +147,14 @@ export interface PlayerState {
   isHealing: boolean;
   healTarget?: string; // Student ID to heal
   blockTarget?: string; // Student ID to block (for tanks)
+  
+  // Combat statistics tracking
+  questionsAnswered: number;
+  questionsCorrect: number;
+  damageDealt: number;
+  healingDone: number;
+  damageTaken: number;
+  deaths: number;
 }
 
 export interface CombatState {

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Swords, Users } from "lucide-react";
+import { PlusCircle, Swords, Users, BarChart3 } from "lucide-react";
 import type { Fight } from "@shared/schema";
 
 export default function TeacherDashboard() {
@@ -17,12 +17,20 @@ export default function TeacherDashboard() {
           <h1 className="text-2xl font-serif font-bold text-primary" data-testid="text-title">
             Quest Master
           </h1>
-          <Link href="/teacher/create">
-            <Button size="default" data-testid="button-create-fight">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Create Fight
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/teacher/stats">
+              <Button variant="outline" size="default" data-testid="button-view-stats">
+                <BarChart3 className="mr-2 h-5 w-5" />
+                Statistics
+              </Button>
+            </Link>
+            <Link href="/teacher/create">
+              <Button size="default" data-testid="button-create-fight">
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Create Fight
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 

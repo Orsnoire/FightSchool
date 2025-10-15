@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { EQUIPMENT_ITEMS, type Student, type EquipmentSlot, type Fight } from "@shared/schema";
-import { LogOut, Swords } from "lucide-react";
+import { LogOut, Swords, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 const RARITY_COLORS = {
   common: "border-gray-400",
@@ -72,10 +73,18 @@ export default function Lobby() {
           <h1 className="text-2xl font-serif font-bold" data-testid="text-lobby-title">
             Battle Lobby
           </h1>
-          <Button variant="ghost" onClick={handleLogout} data-testid="button-logout">
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <Link href={`/student/${studentId}/stats`}>
+              <Button variant="outline" data-testid="button-view-stats">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Stats
+              </Button>
+            </Link>
+            <Button variant="ghost" onClick={handleLogout} data-testid="button-logout">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 

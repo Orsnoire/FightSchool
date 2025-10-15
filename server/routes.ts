@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, type Question } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, type Question } from "@shared/schema";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -103,6 +103,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(availableFights);
   });
 
+  // Combat stats endpoints
+  app.post("/api/combat-stats", async (req, res) => {
+    try {
+      const data = insertCombatStatSchema.parse(req.body);
+      const stat = await storage.createCombatStat(data);
+      res.json(stat);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/combat-stats/fight/:fightId", async (req, res) => {
+    const stats = await storage.getStatsByFight(req.params.fightId);
+    res.json(stats);
+  });
+
+  app.get("/api/combat-stats/student/:studentId", async (req, res) => {
+    const stats = await storage.getStatsByStudent(req.params.studentId);
+    res.json(stats);
+  });
+
+  app.get("/api/combat-stats/class/:classCode", async (req, res) => {
+    const stats = await storage.getStatsByClassCode(req.params.classCode);
+    res.json(stats);
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time combat
@@ -188,9 +214,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     for (const [playerId, player] of Object.entries(session.players)) {
       if (player.isDead) continue;
 
-      const isCorrect = player.currentAnswer?.toLowerCase() === question.correctAnswer.toLowerCase();
+      // Only process if player actually answered
+      if (!player.hasAnswered || !player.currentAnswer) continue;
+
+      // Track question answered
+      await storage.updatePlayerState(fightId, playerId, {
+        questionsAnswered: player.questionsAnswered + 1,
+      });
+
+      const isCorrect = player.currentAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
 
       if (isCorrect) {
+        // Track correct answer
+        await storage.updatePlayerState(fightId, playerId, {
+          questionsCorrect: player.questionsCorrect + 1,
+        });
+
         if (player.isHealing && player.healTarget && player.characterClass === "herbalist") {
           // Heal target
           const target = session.players[player.healTarget];
@@ -198,6 +237,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const healAmount = 1;
             await storage.updatePlayerState(fightId, player.healTarget, {
               health: Math.min(target.health + healAmount, target.maxHealth),
+            });
+            // Track healing done
+            await storage.updatePlayerState(fightId, playerId, {
+              healingDone: player.healingDone + healAmount,
             });
           }
         } else {
@@ -218,6 +261,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const enemy = session.enemies[0];
             enemy.health = Math.max(0, enemy.health - damage);
             await storage.updateCombatSession(fightId, { enemies: session.enemies });
+            
+            // Track damage dealt
+            await storage.updatePlayerState(fightId, playerId, {
+              damageDealt: player.damageDealt + damage,
+            });
           }
         }
       } else {
@@ -231,11 +279,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (!blocked) {
-          const newHealth = Math.max(0, player.health - 1);
+          const damageAmount = 1;
+          const newHealth = Math.max(0, player.health - damageAmount);
+          const wasAlive = !player.isDead;
+          const nowDead = newHealth === 0;
+          
           await storage.updatePlayerState(fightId, playerId, {
             health: newHealth,
-            isDead: newHealth === 0,
-            streakCounter: 0, // Reset DPS streak on damage
+            isDead: nowDead,
+            streakCounter: 0,
+            damageTaken: player.damageTaken + damageAmount,
+            deaths: wasAlive && nowDead ? player.deaths + 1 : player.deaths,
           });
         }
       }
@@ -250,6 +304,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }, 2000);
   }
 
+  async function saveCombatStats(fightId: string) {
+    const session = await storage.getCombatSession(fightId);
+    if (!session) return;
+
+    for (const player of Object.values(session.players)) {
+      await storage.createCombatStat({
+        fightId,
+        studentId: player.studentId,
+        nickname: player.nickname,
+        characterClass: player.characterClass,
+        questionsAnswered: player.questionsAnswered,
+        questionsCorrect: player.questionsCorrect,
+        damageDealt: player.damageDealt,
+        healingDone: player.healingDone,
+        damageTaken: player.damageTaken,
+        deaths: player.deaths,
+        survived: !player.isDead,
+      });
+    }
+  }
+
   async function checkGameState(fightId: string) {
     const session = await storage.getCombatSession(fightId);
     const fight = await storage.getFight(fightId);
@@ -258,6 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if all players dead
     const allPlayersDead = Object.values(session.players).every((p) => p.isDead);
     if (allPlayersDead) {
+      await saveCombatStats(fightId);
       await storage.updateCombatSession(fightId, { currentPhase: "game_over" });
       broadcastToCombat(fightId, {
         type: "game_over",
@@ -270,6 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if all enemies dead
     const allEnemiesDead = session.enemies.every((e) => e.health <= 0);
     if (allEnemiesDead) {
+      await saveCombatStats(fightId);
       await storage.updateCombatSession(fightId, { currentPhase: "game_over" });
       broadcastToCombat(fightId, {
         type: "game_over",
