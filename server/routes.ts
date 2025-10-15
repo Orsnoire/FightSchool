@@ -202,6 +202,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stats);
   });
 
+  // Job progression endpoints
+  app.get("/api/student/:studentId/job-levels", async (req, res) => {
+    const jobLevels = await storage.getStudentJobLevels(req.params.studentId);
+    res.json(jobLevels);
+  });
+
+  app.get("/api/student/:studentId/job-level/:jobClass", async (req, res) => {
+    const jobLevel = await storage.getStudentJobLevel(
+      req.params.studentId,
+      req.params.jobClass as any
+    );
+    if (!jobLevel) {
+      return res.json({ level: 1, experience: 0 }); // Default for new jobs
+    }
+    res.json(jobLevel);
+  });
+
+  app.post("/api/student/:studentId/award-xp", async (req, res) => {
+    try {
+      const { jobClass, xpAmount } = req.body;
+      const result = await storage.awardXPToJob(
+        req.params.studentId,
+        jobClass,
+        xpAmount
+      );
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.get("/api/students/used-fight-codes/:classCode", async (req, res) => {
     const students = await storage.getStudentsWhoUsedFightCodes(req.params.classCode);
     // Remove password from response
