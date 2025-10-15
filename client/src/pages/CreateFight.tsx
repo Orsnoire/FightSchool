@@ -107,10 +107,6 @@ export default function CreateFight() {
       toast({ title: "Add at least one question", variant: "destructive" });
       return;
     }
-    if (enemies.length === 0) {
-      toast({ title: "Add at least one enemy", variant: "destructive" });
-      return;
-    }
     createMutation.mutate({ ...data, questions, enemies });
   };
 

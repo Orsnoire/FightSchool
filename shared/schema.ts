@@ -127,7 +127,7 @@ export const insertFightSchema = z.object({
   title: z.string().min(1),
   classCode: z.string().min(1),
   questions: z.array(questionSchema).min(1),
-  enemies: z.array(enemySchema).min(1),
+  enemies: z.array(enemySchema).default([]),
 });
 
 export type InsertFight = z.infer<typeof insertFightSchema>;

@@ -63,11 +63,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/student/login", async (req, res) => {
-    const { nickname, password } = req.body;
-    const student = await storage.getStudentByNickname(nickname);
-    if (!student || !verifyPassword(password, student.password)) {
+    const { nickname, password, classCode } = req.body;
+    let student = await storage.getStudentByNickname(nickname);
+    
+    // Auto-create student on first login if they don't exist
+    if (!student) {
+      try {
+        student = await storage.createStudent({
+          nickname,
+          password,
+          classCode: classCode || "DEMO123",
+          characterClass: "knight",
+          gender: "A",
+        });
+        const { password: _, ...studentWithoutPassword } = student;
+        return res.json(studentWithoutPassword);
+      } catch (error: any) {
+        return res.status(400).json({ error: error.message });
+      }
+    }
+    
+    // Verify password for existing student
+    if (!verifyPassword(password, student.password)) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+    
     const { password: _, ...studentWithoutPassword } = student;
     res.json(studentWithoutPassword);
   });

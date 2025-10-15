@@ -37,7 +37,11 @@ export default function Login() {
       const response = await fetch("/api/student/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nickname: studentNickname, password: studentPassword }),
+        body: JSON.stringify({ 
+          nickname: studentNickname, 
+          password: studentPassword,
+          classCode: studentClassCode || "DEMO123"
+        }),
       });
 
       if (response.ok) {
@@ -45,9 +49,10 @@ export default function Login() {
         localStorage.setItem("studentId", student.id);
         navigate("/student/character-select");
       } else {
+        const error = await response.json();
         toast({ 
           title: "Login failed", 
-          description: "Invalid credentials",
+          description: error.error || "Failed to login",
           variant: "destructive" 
         });
       }
@@ -193,14 +198,17 @@ export default function Login() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="student-classcode">Class Code (for registration)</Label>
+                  <Label htmlFor="student-classcode">Class Code</Label>
                   <Input
                     id="student-classcode"
                     value={studentClassCode}
                     onChange={(e) => setStudentClassCode(e.target.value)}
-                    placeholder="Enter class code"
+                    placeholder="DEMO123 (optional)"
                     data-testid="input-student-classcode"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    First login auto-creates your account
+                  </p>
                 </div>
               </CardContent>
               <CardFooter className="flex gap-2">
