@@ -394,7 +394,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           // Deal damage to enemy
           let damage = 1;
-          if (player.characterClass === "wizard" || player.characterClass === "scout") {
+          
+          if (player.characterClass === "wizard") {
+            // Wizard Fireball ability: Charges over 2 rounds, +1 damage per round
+            if (player.fireballCooldown > 0) {
+              // On cooldown - do base damage only
+              damage = 1;
+              await storage.updatePlayerState(fightId, playerId, {
+                fireballCooldown: player.fireballCooldown - 1,
+              });
+            } else {
+              // Fireball ready - charge it up
+              const newChargeRounds = player.fireballChargeRounds + 1;
+              
+              if (newChargeRounds === 1) {
+                // First charge round: base + 1
+                damage = 2;
+                await storage.updatePlayerState(fightId, playerId, {
+                  fireballChargeRounds: 1,
+                });
+              } else if (newChargeRounds >= 2) {
+                // Second charge round: RELEASE! base + 2
+                damage = 3;
+                await storage.updatePlayerState(fightId, playerId, {
+                  fireballChargeRounds: 0,
+                  fireballCooldown: 5, // 5 round cooldown
+                });
+              }
+            }
+          } else if (player.characterClass === "scout") {
+            // Scout keeps streak logic
             damage = 2;
             const newStreak = player.streakCounter + 1;
             if (newStreak >= 3) {
@@ -417,6 +446,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } else {
+        // Wrong answer - track incorrect answer
+        await storage.updatePlayerState(fightId, playerId, {
+          questionsIncorrect: player.questionsIncorrect + 1,
+        });
+        
         // Wrong answer - take damage (unless blocked)
         let blocked = false;
         for (const [, blocker] of Object.entries(session.players)) {
@@ -432,13 +466,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const wasAlive = !player.isDead;
           const nowDead = newHealth === 0;
           
-          await storage.updatePlayerState(fightId, playerId, {
+          // Reset ability states on wrong answer
+          const updates: any = {
             health: newHealth,
             isDead: nowDead,
-            streakCounter: 0,
+            streakCounter: 0, // Reset scout streak
             damageTaken: player.damageTaken + damageAmount,
             deaths: wasAlive && nowDead ? player.deaths + 1 : player.deaths,
-          });
+          };
+          
+          // Reset wizard fireball charge on wrong answer
+          if (player.characterClass === "wizard") {
+            updates.fireballChargeRounds = 0;
+          }
+          
+          await storage.updatePlayerState(fightId, playerId, updates);
         }
       }
     }

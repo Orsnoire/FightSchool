@@ -140,15 +140,18 @@ export class DatabaseStorage implements IStorage {
   // Fight operations
   async getFight(id: string): Promise<Fight | undefined> {
     const [fight] = await db.select().from(fights).where(eq(fights.id, id));
-    return fight || undefined;
+    if (!fight) return undefined;
+    return { ...fight, lootTable: fight.lootTable || [] } as Fight;
   }
 
   async getAllFights(): Promise<Fight[]> {
-    return await db.select().from(fights);
+    const results = await db.select().from(fights);
+    return results.map(f => ({ ...f, lootTable: f.lootTable || [] })) as Fight[];
   }
 
   async getFightsByTeacherId(teacherId: string): Promise<Fight[]> {
-    return await db.select().from(fights).where(eq(fights.teacherId, teacherId));
+    const results = await db.select().from(fights).where(eq(fights.teacherId, teacherId));
+    return results.map(f => ({ ...f, lootTable: f.lootTable || [] })) as Fight[];
   }
 
   async createFight(insertFight: InsertFight): Promise<Fight> {
@@ -160,9 +163,12 @@ export class DatabaseStorage implements IStorage {
         classCode: insertFight.classCode,
         questions: insertFight.questions,
         enemies: insertFight.enemies,
+        baseXP: insertFight.baseXP,
+        enemyDisplayMode: insertFight.enemyDisplayMode,
+        lootTable: insertFight.lootTable,
       })
       .returning();
-    return fight;
+    return { ...fight, lootTable: fight.lootTable || [] } as Fight;
   }
 
   async deleteFight(id: string): Promise<boolean> {
@@ -173,7 +179,7 @@ export class DatabaseStorage implements IStorage {
   // Combat session operations
   async getCombatSession(fightId: string): Promise<CombatState | undefined> {
     const [session] = await db.select().from(combatSessions).where(eq(combatSessions.fightId, fightId));
-    return session || undefined;
+    return session as CombatState | undefined;
   }
 
   async createCombatSession(fightId: string, fight: Fight): Promise<CombatState> {
@@ -205,7 +211,7 @@ export class DatabaseStorage implements IStorage {
       .set(updates)
       .where(eq(combatSessions.fightId, fightId))
       .returning();
-    return session || undefined;
+    return session as CombatState | undefined;
   }
 
   async addPlayerToCombat(fightId: string, student: Student): Promise<void> {
