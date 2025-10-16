@@ -97,13 +97,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Student endpoints
   app.post("/api/student/register", async (req, res) => {
     try {
-      const { nickname, password, classCode } = req.body;
+      const { nickname, password, classCode, characterClass = "knight", gender = "A" } = req.body;
       const existing = await storage.getStudentByNickname(nickname);
       if (existing) {
         return res.status(400).json({ error: "Nickname already taken" });
       }
 
-      const characterClass = "knight";
       const startingEquipment = getStartingEquipment(characterClass);
 
       const student = await storage.createStudent({
@@ -111,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password,
         classCode,
         characterClass,
-        gender: "A",
+        gender,
         ...startingEquipment,
       });
       const { password: _, ...studentWithoutPassword } = student;
@@ -122,20 +121,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/student/login", async (req, res) => {
-    const { nickname, password } = req.body;
+    const { nickname, password, characterClass = "knight", gender = "A" } = req.body;
     let student = await storage.getStudentByNickname(nickname);
     
     // Auto-create student on first login if they don't exist
     if (!student) {
       try {
-        const characterClass = "knight";
         const startingEquipment = getStartingEquipment(characterClass);
         
         student = await storage.createStudent({
           nickname,
           password,
           characterClass,
-          gender: "A",
+          gender,
           ...startingEquipment,
         });
         const { password: _, ...studentWithoutPassword } = student;
