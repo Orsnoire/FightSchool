@@ -124,19 +124,19 @@ export default function Lobby() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Weapon:</span>
                     <span className="font-semibold capitalize" data-testid="text-weapon">
-                      {EQUIPMENT_ITEMS.weapon.find((i) => i.id === student.weapon)?.name}
+                      {student.weapon ? EQUIPMENT_ITEMS[student.weapon]?.name : "None"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Headgear:</span>
                     <span className="font-semibold capitalize" data-testid="text-headgear">
-                      {EQUIPMENT_ITEMS.headgear.find((i) => i.id === student.headgear)?.name}
+                      {student.headgear ? EQUIPMENT_ITEMS[student.headgear]?.name : "None"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Armor:</span>
                     <span className="font-semibold capitalize" data-testid="text-armor">
-                      {EQUIPMENT_ITEMS.armor.find((i) => i.id === student.armor)?.name}
+                      {student.armor ? EQUIPMENT_ITEMS[student.armor]?.name : "None"}
                     </span>
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export default function Lobby() {
               <CardHeader>
                 <CardTitle>Equipment</CardTitle>
                 <div className="flex gap-2 mt-4">
-                  {(Object.keys(EQUIPMENT_ITEMS) as EquipmentSlot[]).map((slot) => (
+                  {(["weapon", "headgear", "armor"] as EquipmentSlot[]).map((slot) => (
                     <Button
                       key={slot}
                       variant={selectedSlot === slot ? "default" : "outline"}
@@ -197,29 +197,31 @@ export default function Lobby() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {EQUIPMENT_ITEMS[selectedSlot].map((item) => {
-                    const isEquipped =
-                      student[selectedSlot as keyof Pick<Student, "weapon" | "headgear" | "armor">] === item.id;
+                  {Object.values(EQUIPMENT_ITEMS)
+                    .filter((item) => item.slot === selectedSlot)
+                    .map((item) => {
+                      const isEquipped =
+                        student[selectedSlot as keyof Pick<Student, "weapon" | "headgear" | "armor">] === item.id;
 
-                    return (
-                      <Card
-                        key={item.id}
-                        className={`cursor-pointer hover-elevate ${
-                          isEquipped ? "ring-2 ring-primary" : ""
-                        } border-2 ${RARITY_COLORS[item.rarity as keyof typeof RARITY_COLORS]}`}
-                        onClick={() => updateEquipment(selectedSlot, item.id)}
-                        data-testid={`item-${item.id}`}
-                      >
-                        <CardContent className="p-4 text-center">
-                          <div className="h-16 flex items-center justify-center mb-2">
-                            <div className="text-4xl">🗡️</div>
-                          </div>
-                          <p className="font-semibold text-sm">{item.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">{item.rarity}</p>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                      return (
+                        <Card
+                          key={item.id}
+                          className={`cursor-pointer hover-elevate ${
+                            isEquipped ? "ring-2 ring-primary" : ""
+                          } border-2 ${RARITY_COLORS[item.rarity as keyof typeof RARITY_COLORS]}`}
+                          onClick={() => updateEquipment(selectedSlot, item.id)}
+                          data-testid={`item-${item.id}`}
+                        >
+                          <CardContent className="p-4 text-center">
+                            <div className="h-16 flex items-center justify-center mb-2">
+                              <div className="text-4xl">🗡️</div>
+                            </div>
+                            <p className="font-semibold text-sm">{item.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{item.rarity}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                 </div>
               </CardContent>
             </Card>
