@@ -15,6 +15,7 @@ import CharacterSelect from "@/pages/CharacterSelect";
 import Lobby from "@/pages/Lobby";
 import Combat from "@/pages/Combat";
 import StudentStats from "@/pages/StudentStats";
+import StudentEquipment from "@/pages/StudentEquipment";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/teacher/host/:id" component={HostFight} />
       <Route path="/student/login" component={StudentLogin} />
       <Route path="/student/character-select" component={CharacterSelect} />
+      <Route path="/student/equipment" component={StudentEquipment} />
       <Route path="/student/lobby" component={Lobby} />
       <Route path="/student/combat" component={Combat} />
       <Route path="/student/:id/stats" component={StudentStats} />

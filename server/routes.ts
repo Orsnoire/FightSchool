@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, type Question, getStartingEquipment } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, type Question, getStartingEquipment, type CharacterClass } from "@shared/schema";
+import { getCrossClassAbilities } from "@shared/jobSystem";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -169,10 +170,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.patch("/api/student/:id/equipment", async (req, res) => {
-    const updates = req.body;
-    const student = await storage.updateStudent(req.params.id, updates);
+    const student = await storage.getStudent(req.params.id);
     if (!student) return res.status(404).json({ error: "Student not found" });
-    const { password: _, ...studentWithoutPassword } = student;
+    
+    const updates = req.body;
+    
+    // Validate cross-class abilities
+    if (updates.crossClassAbility1 !== undefined || updates.crossClassAbility2 !== undefined) {
+      const jobLevels = await storage.getStudentJobLevels(req.params.id);
+      const jobLevelMap = jobLevels.reduce((acc, jl) => {
+        acc[jl.jobClass] = jl.level;
+        return acc;
+      }, {} as Record<CharacterClass, number>);
+      
+      const availableAbilities = getCrossClassAbilities(student.characterClass, jobLevelMap);
+      const validAbilityIds = new Set(availableAbilities.map(a => a.id));
+      
+      if (updates.crossClassAbility1 && !validAbilityIds.has(updates.crossClassAbility1)) {
+        return res.status(400).json({ error: "Invalid cross-class ability 1" });
+      }
+      if (updates.crossClassAbility2 && !validAbilityIds.has(updates.crossClassAbility2)) {
+        return res.status(400).json({ error: "Invalid cross-class ability 2" });
+      }
+    }
+    
+    const updatedStudent = await storage.updateStudent(req.params.id, updates);
+    if (!updatedStudent) return res.status(404).json({ error: "Student not found" });
+    const { password: _, ...studentWithoutPassword } = updatedStudent;
     res.json(studentWithoutPassword);
   });
 
@@ -398,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (player.characterClass === "wizard") {
             // Wizard Fireball ability: Charges over 2 rounds, +1 damage per round
             if (player.fireballCooldown > 0) {
-              // On cooldown - do base damage only
+              // On cooldown - do base damage only and decrement cooldown
               damage = 1;
               await storage.updatePlayerState(fightId, playerId, {
                 fireballCooldown: player.fireballCooldown - 1,
@@ -408,17 +432,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const newChargeRounds = player.fireballChargeRounds + 1;
               
               if (newChargeRounds === 1) {
-                // First charge round: base + 1
-                damage = 2;
+                // First charge round: base (1) + charge (1) = 2 damage
+                damage = 1 + newChargeRounds;
                 await storage.updatePlayerState(fightId, playerId, {
-                  fireballChargeRounds: 1,
+                  fireballChargeRounds: newChargeRounds,
                 });
               } else if (newChargeRounds >= 2) {
-                // Second charge round: RELEASE! base + 2
-                damage = 3;
+                // Second charge round: RELEASE! base (1) + charge (2) = 3 damage
+                damage = 1 + newChargeRounds;
                 await storage.updatePlayerState(fightId, playerId, {
                   fireballChargeRounds: 0,
-                  fireballCooldown: 5, // 5 round cooldown
+                  fireballCooldown: 5, // 5 round cooldown starts next round
                 });
               }
             }
@@ -451,6 +475,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           questionsIncorrect: player.questionsIncorrect + 1,
         });
         
+        // Reset ability states on wrong answer (before checking block)
+        const abilityUpdates: any = {
+          streakCounter: 0, // Reset scout streak
+        };
+        
+        // Reset wizard fireball charge and decrement cooldown
+        if (player.characterClass === "wizard") {
+          abilityUpdates.fireballChargeRounds = 0;
+          if (player.fireballCooldown > 0) {
+            abilityUpdates.fireballCooldown = player.fireballCooldown - 1;
+          }
+        }
+        
+        await storage.updatePlayerState(fightId, playerId, abilityUpdates);
+        
         // Wrong answer - take damage (unless blocked)
         let blocked = false;
         for (const [, blocker] of Object.entries(session.players)) {
@@ -466,21 +505,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const wasAlive = !player.isDead;
           const nowDead = newHealth === 0;
           
-          // Reset ability states on wrong answer
-          const updates: any = {
+          await storage.updatePlayerState(fightId, playerId, {
             health: newHealth,
             isDead: nowDead,
-            streakCounter: 0, // Reset scout streak
             damageTaken: player.damageTaken + damageAmount,
             deaths: wasAlive && nowDead ? player.deaths + 1 : player.deaths,
-          };
-          
-          // Reset wizard fireball charge on wrong answer
-          if (player.characterClass === "wizard") {
-            updates.fireballChargeRounds = 0;
-          }
-          
-          await storage.updatePlayerState(fightId, playerId, updates);
+          });
         }
       }
     }

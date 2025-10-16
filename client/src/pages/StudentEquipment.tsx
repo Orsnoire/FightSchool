@@ -123,7 +123,7 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Weapon</p>
                     <p className="text-sm text-muted-foreground">
-                      {EQUIPMENT_ITEMS.get(student.weapon)?.name || "Basic Weapon"}
+                      {EQUIPMENT_ITEMS[student.weapon]?.name || "Basic Weapon"}
                     </p>
                   </div>
                 </div>
@@ -151,7 +151,7 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Headgear</p>
                     <p className="text-sm text-muted-foreground">
-                      {EQUIPMENT_ITEMS.get(student.headgear)?.name || "Basic Headgear"}
+                      {EQUIPMENT_ITEMS[student.headgear]?.name || "Basic Headgear"}
                     </p>
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Armor</p>
                     <p className="text-sm text-muted-foreground">
-                      {EQUIPMENT_ITEMS.get(student.armor)?.name || "Basic Armor"}
+                      {EQUIPMENT_ITEMS[student.armor]?.name || "Basic Armor"}
                     </p>
                   </div>
                 </div>
