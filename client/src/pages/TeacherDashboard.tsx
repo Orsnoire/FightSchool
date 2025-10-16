@@ -25,9 +25,9 @@ export default function TeacherDashboard() {
     enabled: studentsDialogOpen,
   });
 
-  const copyFightCode = (fightId: string) => {
-    navigator.clipboard.writeText(fightId);
-    toast({ title: "Fight code copied!", description: "Share this code with your students" });
+  const copyClassCode = (classCode: string) => {
+    navigator.clipboard.writeText(classCode);
+    toast({ title: "Class code copied!", description: "Share this code with your students" });
   };
 
   return (
@@ -53,7 +53,7 @@ export default function TeacherDashboard() {
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Students Who Used Your Fight Codes</DialogTitle>
+                  <DialogTitle>Students Who Used Your Class Codes</DialogTitle>
                 </DialogHeader>
                 <div className="mt-4">
                   {studentsLoading ? (
@@ -95,7 +95,7 @@ export default function TeacherDashboard() {
                     <div className="text-center py-8">
                       <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                       <p className="text-muted-foreground">
-                        No students have used your fight codes yet
+                        No students have used your class codes yet
                       </p>
                     </div>
                   )}
@@ -143,15 +143,15 @@ export default function TeacherDashboard() {
                     {fight.title}
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Fight Code:</span>
-                    <Badge variant="secondary" className="font-mono" data-testid={`badge-fight-code-${fight.id}`}>
-                      {fight.id}
+                    <span className="text-xs text-muted-foreground">Class Code:</span>
+                    <Badge variant="secondary" className="font-mono" data-testid={`badge-class-code-${fight.id}`}>
+                      {fight.classCode}
                     </Badge>
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => copyFightCode(fight.id)}
+                      onClick={() => copyClassCode(fight.classCode)}
                       data-testid={`button-copy-code-${fight.id}`}
                     >
                       <Copy className="h-3 w-3" />
