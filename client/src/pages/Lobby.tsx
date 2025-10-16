@@ -5,10 +5,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { EQUIPMENT_ITEMS, type Student, type EquipmentSlot } from "@shared/schema";
-import { LogOut, Swords, BarChart3 } from "lucide-react";
+import { EQUIPMENT_ITEMS, type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass } from "@shared/schema";
+import { LogOut, Swords, BarChart3, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { getTotalPassiveBonuses } from "@shared/jobSystem";
 
 const RARITY_COLORS = {
   common: "border-gray-400",
@@ -21,6 +22,7 @@ export default function Lobby() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [student, setStudent] = useState<Student | null>(null);
+  const [jobLevels, setJobLevels] = useState<StudentJobLevel[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot>("weapon");
   const [fightCode, setFightCode] = useState("");
   const studentId = localStorage.getItem("studentId");
@@ -32,7 +34,16 @@ export default function Lobby() {
         setStudent(await response.json());
       }
     };
+    
+    const loadJobLevels = async () => {
+      const response = await fetch(`/api/student/${studentId}/job-levels`);
+      if (response.ok) {
+        setJobLevels(await response.json());
+      }
+    };
+    
     loadStudent();
+    loadJobLevels();
   }, [studentId]);
 
   const joinFight = async () => {
@@ -140,6 +151,78 @@ export default function Lobby() {
                     </span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Class Progression
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(() => {
+                  // Convert job levels array to map
+                  const jobLevelMap: Record<CharacterClass, number> = {
+                    warrior: 0, wizard: 0, scout: 0, herbalist: 0,
+                    knight: 0, paladin: 0, dark_knight: 0, sage: 0, ranger: 0, druid: 0, monk: 0,
+                  };
+                  
+                  jobLevels.forEach(jl => {
+                    jobLevelMap[jl.jobClass] = jl.level;
+                  });
+                  
+                  const currentClassLevel = jobLevelMap[student.characterClass] || 0;
+                  const passiveBonuses = getTotalPassiveBonuses(jobLevelMap);
+                  
+                  return (
+                    <>
+                      <div className="text-center p-3 bg-muted rounded-lg">
+                        <div className="text-sm text-muted-foreground">Current Class Level</div>
+                        <div className="text-3xl font-bold text-primary capitalize">
+                          {student.characterClass} Lv{currentClassLevel}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm font-semibold text-muted-foreground">Passive Bonuses</div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="p-2 bg-muted rounded">
+                            <div className="text-xs text-muted-foreground">HP</div>
+                            <div className="font-bold text-health">+{passiveBonuses.hp || 0}</div>
+                          </div>
+                          <div className="p-2 bg-muted rounded">
+                            <div className="text-xs text-muted-foreground">ATK</div>
+                            <div className="font-bold text-damage">+{passiveBonuses.attack || 0}</div>
+                          </div>
+                          <div className="p-2 bg-muted rounded">
+                            <div className="text-xs text-muted-foreground">DEF</div>
+                            <div className="font-bold text-primary">+{passiveBonuses.defense || 0}</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {jobLevels.length > 1 && (
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Other Jobs</div>
+                          <div className="flex flex-wrap gap-1">
+                            {jobLevels
+                              .filter(jl => jl.jobClass !== student.characterClass)
+                              .map(jl => (
+                                <span 
+                                  key={jl.jobClass}
+                                  className="text-xs px-2 py-1 bg-muted rounded capitalize"
+                                >
+                                  {jl.jobClass} Lv{jl.level}
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
 

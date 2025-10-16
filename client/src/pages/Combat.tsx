@@ -285,11 +285,26 @@ export default function Combat() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-semibold" data-testid="text-player-nickname">{playerState.nickname}</span>
-                {playerState.characterClass === "wizard" || playerState.characterClass === "scout" ? (
-                  <span className="text-sm" data-testid="text-streak">
-                    Streak: {playerState.streakCounter}/3
-                  </span>
-                ) : null}
+                <div className="flex gap-3 text-sm">
+                  {playerState.characterClass === "wizard" && (
+                    <>
+                      {playerState.fireballCooldown > 0 ? (
+                        <span className="text-muted-foreground" data-testid="text-fireball-cooldown">
+                          🔥 Cooldown: {playerState.fireballCooldown}
+                        </span>
+                      ) : (
+                        <span className="text-wizard font-semibold" data-testid="text-fireball-charge">
+                          🔥 Charge: {playerState.fireballChargeRounds}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {playerState.characterClass === "scout" && (
+                    <span className="text-scout font-semibold" data-testid="text-streak">
+                      ⚡ Streak: {playerState.streakCounter}/3
+                    </span>
+                  )}
+                </div>
               </div>
               <HealthBar current={playerState.health} max={playerState.maxHealth} />
             </div>

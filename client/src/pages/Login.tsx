@@ -65,7 +65,14 @@ export default function Login() {
       if (response.ok) {
         const student = await response.json();
         localStorage.setItem("studentId", student.id);
-        navigate("/student/character-select");
+        
+        // Check if student already has a character class
+        // New students need to select their class, existing students go to lobby
+        if (student.characterClass && student.gender) {
+          navigate("/student/lobby");
+        } else {
+          navigate("/student/character-select");
+        }
       } else {
         const error = await response.json();
         toast({ 

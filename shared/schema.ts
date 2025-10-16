@@ -217,6 +217,9 @@ export interface PlayerState {
   potionCount: number; // For herbalists - starts with 5
   isCreatingPotion: boolean; // For herbalists - choosing to create potion instead of damage
   
+  // Job system integration
+  jobLevels: Record<CharacterClass, number>; // Level for each job class (0 if not started)
+  
   // Wizard fireball ability
   fireballChargeRounds: number; // 0-2 rounds charged
   fireballCooldown: number; // Rounds remaining before can use again (0-5)

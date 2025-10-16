@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, type Question, getStartingEquipment, type CharacterClass } from "@shared/schema";
-import { getCrossClassAbilities } from "@shared/jobSystem";
+import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds } from "@shared/jobSystem";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -447,10 +447,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let damage = 1;
           
           if (player.characterClass === "wizard") {
-            // Wizard Fireball ability: Charges over 2 rounds, +1 damage per round
+            // Wizard Fireball ability: Dynamic stats based on wizard level
+            const wizardLevel = player.jobLevels.wizard || 0;
+            const maxChargeRounds = getFireballMaxChargeRounds(wizardLevel);
+            const damageBonus = getFireballDamageBonus(wizardLevel);
+            const cooldownDuration = getFireballCooldown(wizardLevel);
+            
             if (player.fireballCooldown > 0) {
               // On cooldown - do base damage only and decrement cooldown
-              damage = 1;
+              damage = 1 + damageBonus;
               await storage.updatePlayerState(fightId, playerId, {
                 fireballCooldown: player.fireballCooldown - 1,
               });
@@ -458,18 +463,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Fireball ready - charge it up
               const newChargeRounds = player.fireballChargeRounds + 1;
               
-              if (newChargeRounds === 1) {
-                // First charge round: base (1) + charge (1) = 2 damage
-                damage = 1 + newChargeRounds;
+              if (newChargeRounds < maxChargeRounds) {
+                // Charging: base (1) + charge rounds + level bonus
+                damage = 1 + newChargeRounds + damageBonus;
                 await storage.updatePlayerState(fightId, playerId, {
                   fireballChargeRounds: newChargeRounds,
                 });
-              } else if (newChargeRounds >= 2) {
-                // Second charge round: RELEASE! base (1) + charge (2) = 3 damage
-                damage = 1 + newChargeRounds;
+              } else {
+                // Fully charged: RELEASE! base (1) + max charge + level bonus
+                damage = 1 + maxChargeRounds + damageBonus;
                 await storage.updatePlayerState(fightId, playerId, {
                   fireballChargeRounds: 0,
-                  fireballCooldown: 5, // 5 round cooldown starts next round
+                  fireballCooldown: cooldownDuration, // Level-based cooldown
                 });
               }
             }

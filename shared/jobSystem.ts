@@ -446,3 +446,30 @@ export function getUnlockedJobs(jobLevels: Record<CharacterClass, number>): Char
 
   return unlocked;
 }
+
+// Wizard Fireball ability stat calculations based on level
+export function getFireballCooldown(wizardLevel: number): number {
+  let cooldown = 5; // Base cooldown
+  
+  if (wizardLevel >= 2) cooldown -= 1; // Lv2: cooldown -1 (5 → 4)
+  if (wizardLevel >= 7) cooldown -= 1; // Lv7: cooldown -1 (4 → 3)
+  if (wizardLevel >= 11) cooldown -= 1; // Lv11: cooldown -1 (3 → 2)
+  
+  return cooldown;
+}
+
+export function getFireballDamageBonus(wizardLevel: number): number {
+  let bonus = 0; // Base damage bonus
+  
+  if (wizardLevel >= 5) bonus += 1; // Lv5: damage +1
+  if (wizardLevel >= 13) bonus += 1; // Lv13: damage +1
+  
+  return bonus;
+}
+
+export function getFireballMaxChargeRounds(wizardLevel: number): number {
+  if (wizardLevel >= 14) {
+    return 3; // Lv14: can charge for 3 rounds
+  }
+  return 2; // Base: 2 charge rounds
+}

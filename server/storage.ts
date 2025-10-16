@@ -3,7 +3,7 @@ import { students, teachers, fights, combatSessions, combatStats, studentJobLeve
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
-import { calculateNewLevel, getTotalXPForLevel, XP_REQUIREMENTS } from "@shared/jobSystem";
+import { calculateNewLevel, getTotalXPForLevel, XP_REQUIREMENTS, getTotalPassiveBonuses } from "@shared/jobSystem";
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -215,20 +215,49 @@ export class DatabaseStorage implements IStorage {
     const session = await this.getCombatSession(fightId);
     if (!session) return;
 
-    const stats = CLASS_STATS[student.characterClass];
+    // Fetch student's job levels
+    const jobLevelRecords = await this.getStudentJobLevels(student.id);
+    
+    // Convert to map with all classes (default to 0 for unleveled classes)
+    const jobLevelMap: Record<CharacterClass, number> = {
+      warrior: 0,
+      wizard: 0,
+      scout: 0,
+      herbalist: 0,
+      knight: 0,
+      paladin: 0,
+      dark_knight: 0,
+      sage: 0,
+      ranger: 0,
+      druid: 0,
+      monk: 0,
+    };
+    
+    for (const record of jobLevelRecords) {
+      jobLevelMap[record.jobClass] = record.level;
+    }
+    
+    // Get base stats and calculate passive bonuses from all job levels
+    const baseStats = CLASS_STATS[student.characterClass];
+    const passiveBonuses = getTotalPassiveBonuses(jobLevelMap);
+    
+    // Apply bonuses to base stats
+    const maxHealth = baseStats.maxHealth + (passiveBonuses.hp || 0);
+
     const playerState: PlayerState = {
       studentId: student.id,
       nickname: student.nickname,
       characterClass: student.characterClass,
       gender: student.gender,
-      health: stats.maxHealth,
-      maxHealth: stats.maxHealth,
+      health: maxHealth,
+      maxHealth: maxHealth,
       streakCounter: 0,
       isDead: false,
       hasAnswered: false,
       isHealing: false,
       potionCount: student.characterClass === 'herbalist' ? 5 : 0,
       isCreatingPotion: false,
+      jobLevels: jobLevelMap,
       fireballChargeRounds: 0,
       fireballCooldown: 0,
       questionsAnswered: 0,
