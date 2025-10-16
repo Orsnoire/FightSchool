@@ -1,0 +1,17 @@
+|   Lv   |                  Type                 | Description                                                                                                                            |
+| :----: | :-----------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------- |
+|  **1** |                   —                   | Base kit: 10 HP, draws threat when answering correctly, can Block in Phase 2 for minor damage reduction.                               |
+|  **2** |                  Stat                 | +1 HP  +1 DEF                                                                                                                          |
+|  **3** |                  Stat                 | +1 HP                                                                                                                                  |
+|  **4** |       **Ability – Shield Bash**       | *Active, CD 2.* Block this round’s first incoming hit (−1 DMG) **and** deal +1 phys DMG to target enemy.                               |
+|  **5** |                  Stat                 | +1 HP  +1 Base DMG                                                                                                                     |
+|  **6** |                  Stat                 | +1 HP                                                                                                                                  |
+|  **7** |                  Stat                 | +1 HP  +1 DEF                                                                                                                          |
+|  **8** |    **Cross-Class Ability – Block**    | *Passive.* When used on any class, reduces first incoming hit by 1 DMG. (Grants access to Block if another class equips it.)           |
+|  **9** |                  Stat                 | +1 HP                                                                                                                                  |
+| **10** |         **Ability – Provoke**         | *Active, CD 3.* For one round, all “incorrect-answer” damage from enemies is redirected to you. Warrior takes it at normal mitigation. |
+| **11** |                  Stat                 | +1 HP  +1 Base DMG                                                                                                                     |
+| **12** |      **Ability – Crushing Blow**      | *Active, CD 3.* Heavy strike for **4 phys DMG** and +1 threat to all enemies.                                                          |
+| **13** |                  Stat                 | +1 HP                                                                                                                                  |
+| **14** |                  Stat                 | +1 HP  +1 DEF                                                                                                                          |
+| **15** | **Cross-Class Ability – Unbreakable** | *Ultimate, once/encounter.* Become invincible for one round; all enemy damage is blocked and absorbed by you (0 DMG to party).         |
