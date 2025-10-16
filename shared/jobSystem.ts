@@ -119,12 +119,19 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
   wizard: {
     id: "wizard",
     name: "Wizard",
-    description: "DPS - High attack, streak bonus damage",
+    description: "DPS - Fireball master with channeled damage",
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
-      // USER: Fill in levels 1-15 with abilities and passives
-      1: { passives: { attack: 1 } },
+      1: { 
+        passives: { attack: 1 },
+        abilities: [{
+          id: "fireball",
+          name: "Fireball",
+          description: "Channel for 2 rounds. Each correct answer adds +1 damage. Release after 2 rounds for +2 total damage. 5 round cooldown.",
+          isCrossClass: true,
+        }]
+      },
       // Add levels 2-15 here
     }
   },

@@ -205,7 +205,7 @@ export interface PlayerState {
   gender: Gender;
   health: number;
   maxHealth: number;
-  streakCounter: number; // For damage dealers
+  streakCounter: number; // For damage dealers (Scout uses this)
   isDead: boolean;
   currentAnswer?: string;
   hasAnswered: boolean;
@@ -214,6 +214,10 @@ export interface PlayerState {
   blockTarget?: string; // Student ID to block (for tanks)
   potionCount: number; // For herbalists - starts with 5
   isCreatingPotion: boolean; // For herbalists - choosing to create potion instead of damage
+  
+  // Wizard fireball ability
+  fireballChargeRounds: number; // 0-2 rounds charged
+  fireballCooldown: number; // Rounds remaining before can use again (0-5)
   
   // Combat statistics tracking (for XP calculation)
   questionsAnswered: number;
