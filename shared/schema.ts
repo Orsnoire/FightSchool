@@ -5,6 +5,8 @@ import { z } from "zod";
 
 // Character classes and equipment types
 export type CharacterClass = "knight" | "wizard" | "scout" | "herbalist" | "paladin" | "dark_knight" | "sage" | "ranger" | "druid" | "monk";
+export type BaseClass = "knight" | "wizard" | "scout" | "herbalist";
+export const BASE_CLASSES: BaseClass[] = ["knight", "wizard", "scout", "herbalist"];
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";

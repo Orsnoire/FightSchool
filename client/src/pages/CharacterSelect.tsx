@@ -3,11 +3,11 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { CLASS_STATS, type CharacterClass, type Gender } from "@shared/schema";
+import { CLASS_STATS, BASE_CLASSES, type BaseClass, type Gender } from "@shared/schema";
 import { Shield, Sparkles, Target, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const CLASS_INFO: Record<CharacterClass, { icon: any; color: string }> = {
+const CLASS_INFO: Record<BaseClass, { icon: any; color: string }> = {
   knight: { icon: Shield, color: "text-knight" },
   wizard: { icon: Sparkles, color: "text-wizard" },
   scout: { icon: Target, color: "text-scout" },
@@ -17,7 +17,7 @@ const CLASS_INFO: Record<CharacterClass, { icon: any; color: string }> = {
 export default function CharacterSelect() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [selectedClass, setSelectedClass] = useState<CharacterClass | null>(null);
+  const [selectedClass, setSelectedClass] = useState<BaseClass | null>(null);
   const [selectedGender, setSelectedGender] = useState<Gender | null>(null);
 
   const handleConfirm = async () => {
@@ -53,7 +53,7 @@ export default function CharacterSelect() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {(Object.keys(CLASS_STATS) as CharacterClass[]).map((classType) => {
+          {BASE_CLASSES.map((classType) => {
             const Icon = CLASS_INFO[classType].icon;
             const stats = CLASS_STATS[classType];
             const isSelected = selectedClass === classType;
