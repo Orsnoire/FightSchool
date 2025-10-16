@@ -118,7 +118,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...insertStudent,
         password: hashedPassword,
-        characterClass: insertStudent.characterClass || "knight",
+        characterClass: insertStudent.characterClass || "warrior",
         gender: insertStudent.gender || "A",
       })
       .returning();

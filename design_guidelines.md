@@ -22,9 +22,10 @@
 - **Warning/Timer**: 38 95% 55% (Amber for countdown urgency)
 
 ### Class-Specific Colors
-- **Knight (Tank)**: 210 65% 50% (Steel blue)
+- **Warrior (Tank)**: 210 65% 50% (Steel blue)
 - **Wizard/Scout (DPS)**: 280 75% 55% (Arcane purple)
 - **Herbalist (Healer)**: 145 60% 48% (Nature green)
+- **Knight (Advanced)**: 210 65% 50% (Steel blue - unlockable at Warrior Lv10)
 
 ### Light Mode Alternative
 - **Background Light**: 220 30% 96%

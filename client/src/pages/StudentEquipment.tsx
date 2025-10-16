@@ -59,7 +59,7 @@ export default function StudentEquipment() {
   const getEquipmentOptions = (slot: "weapon" | "headgear" | "armor") => {
     return Object.values(EQUIPMENT_ITEMS).filter(item => {
       if (item.slot !== slot) return false;
-      if (item.classRestriction && !item.classRestriction.includes(student?.characterClass || "knight")) return false;
+      if (item.classRestriction && !item.classRestriction.includes(student?.characterClass || "warrior")) return false;
       return true;
     });
   };

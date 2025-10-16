@@ -1,6 +1,6 @@
 import type { CharacterClass, Gender } from "@shared/schema";
-import knightMale from "@assets/generated_images/Knight_male_character_sprite_732b2fa0.png";
-import knightFemale from "@assets/generated_images/Knight_female_character_sprite_3ca497a8.png";
+import warriorMale from "@assets/generated_images/Knight_male_character_sprite_732b2fa0.png";
+import warriorFemale from "@assets/generated_images/Knight_female_character_sprite_3ca497a8.png";
 import wizardMale from "@assets/generated_images/Wizard_male_character_sprite_003e142c.png";
 import wizardFemale from "@assets/generated_images/Wizard_female_character_sprite_99a1f772.png";
 import scoutMale from "@assets/generated_images/Scout_male_character_sprite_975fe8de.png";
@@ -17,10 +17,11 @@ interface PlayerAvatarProps {
 }
 
 const CHARACTER_IMAGES: Record<CharacterClass, Record<Gender, string>> = {
-  knight: { A: knightMale, B: knightFemale },
+  warrior: { A: warriorMale, B: warriorFemale },
   wizard: { A: wizardMale, B: wizardFemale },
   scout: { A: scoutMale, B: scoutFemale },
   herbalist: { A: herbalistMale, B: herbalistFemale },
+  knight: { A: warriorMale, B: warriorFemale }, // Knight as unlockable class uses same sprites
 };
 
 const SIZE_CLASSES = {

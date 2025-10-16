@@ -103,9 +103,9 @@ export function calculateNewLevel(currentLevel: number, newTotalXP: number): num
 // Job tree configuration - USER WILL FILL IN LEVEL REWARDS
 export const JOB_TREE: Record<CharacterClass, JobConfig> = {
   // BASE CLASSES (Available from start)
-  knight: {
-    id: "knight",
-    name: "Knight",
+  warrior: {
+    id: "warrior",
+    name: "Warrior",
     description: "Tank - High health, blocks damage for allies",
     maxLevel: 15,
     unlockRequirements: null,
@@ -113,7 +113,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
       1: { 
         passives: { hp: 2, defense: 1 },
         abilities: [{
-          id: "knight_block",
+          id: "warrior_block",
           name: "Block",
           description: "In Phase 2, reduce minor damage. Draws threat when answering correctly.",
           isCrossClass: false,
@@ -265,12 +265,23 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
   },
 
   // ADVANCED CLASSES (Require job levels to unlock)
+  knight: {
+    id: "knight",
+    name: "Knight",
+    description: "Holy Warrior - Advanced tank specialization",
+    maxLevel: 15,
+    unlockRequirements: { warrior: 10 },
+    levelRewards: {
+      1: { passives: { hp: 2, defense: 1 } },
+    }
+  },
+
   paladin: {
     id: "paladin",
     name: "Paladin",
-    description: "Holy Tank - Knight + Herbalist fusion",
+    description: "Holy Tank - Warrior + Herbalist fusion",
     maxLevel: 15,
-    unlockRequirements: { knight: 5, herbalist: 3 },
+    unlockRequirements: { warrior: 5, herbalist: 3 },
     levelRewards: {
       // USER: Fill in levels 1-15 with abilities and passives
       1: { passives: { hp: 2, defense: 1 } },
@@ -283,7 +294,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     name: "Dark Knight",
     description: "Aggressive Tank - High damage, self-sustaining",
     maxLevel: 15,
-    unlockRequirements: { knight: 7, wizard: 5 },
+    unlockRequirements: { warrior: 7, wizard: 5 },
     levelRewards: {
       // USER: Fill in levels 1-15 with abilities and passives
       1: { passives: { hp: 2, attack: 1 } },
@@ -335,7 +346,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     name: "Monk",
     description: "Balanced Fighter - All-rounder",
     maxLevel: 15,
-    unlockRequirements: { knight: 5, scout: 5 },
+    unlockRequirements: { warrior: 5, scout: 5 },
     levelRewards: {
       // USER: Fill in levels 1-15
       1: { passives: { hp: 1, attack: 1, defense: 1 } },

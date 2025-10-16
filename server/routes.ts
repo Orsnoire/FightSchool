@@ -126,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Student endpoints
   app.post("/api/student/register", async (req, res) => {
     try {
-      const { nickname, password, classCode, characterClass = "knight", gender = "A" } = req.body;
+      const { nickname, password, classCode, characterClass = "warrior", gender = "A" } = req.body;
       const existing = await storage.getStudentByNickname(nickname);
       if (existing) {
         return res.status(400).json({ error: "Nickname already taken" });
@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/student/login", async (req, res) => {
-    const { nickname, password, characterClass = "knight", gender = "A" } = req.body;
+    const { nickname, password, characterClass = "warrior", gender = "A" } = req.body;
     let student = await storage.getStudentByNickname(nickname);
     
     // Auto-create student on first login if they don't exist
@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Wrong answer - take damage (unless blocked)
         let blocked = false;
         for (const [, blocker] of Object.entries(session.players)) {
-          if (blocker.blockTarget === playerId && blocker.characterClass === "knight") {
+          if (blocker.blockTarget === playerId && blocker.characterClass === "warrior") {
             blocked = true;
             break;
           }

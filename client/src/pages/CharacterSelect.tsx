@@ -8,7 +8,7 @@ import { Shield, Sparkles, Target, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CLASS_INFO: Record<BaseClass, { icon: any; color: string }> = {
-  knight: { icon: Shield, color: "text-knight" },
+  warrior: { icon: Shield, color: "text-warrior" },
   wizard: { icon: Sparkles, color: "text-wizard" },
   scout: { icon: Target, color: "text-scout" },
   herbalist: { icon: Heart, color: "text-herbalist" },

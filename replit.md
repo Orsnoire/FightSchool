@@ -2,7 +2,7 @@
 
 ## Overview
 
-An educational platform that transforms quiz-based learning into an immersive RPG combat experience. Teachers create quiz "fights" with questions and enemies, while students join battles as fantasy characters (Knight, Wizard, Scout, Herbalist), answering questions to deal damage and defeat enemies. The system features real-time multiplayer combat, character customization with equipment, and class-based gameplay mechanics.
+An educational platform that transforms quiz-based learning into an immersive RPG combat experience. Teachers create quiz "fights" with questions and enemies, while students join battles as fantasy characters (Warrior, Wizard, Scout, Herbalist), answering questions to deal damage and defeat enemies. The system features real-time multiplayer combat, character customization with equipment, and class-based gameplay mechanics.
 
 ## User Preferences
 
@@ -23,7 +23,7 @@ Preferred communication style: Simple, everyday language.
 
 **Styling Approach**: Tailwind CSS with custom design tokens for RPG theming:
 - Dark fantasy color palette (deep slate backgrounds, vibrant purple accents)
-- Class-specific colors (Knight/blue, Wizard/purple, Scout/DPS, Herbalist/green)
+- Class-specific colors (Warrior/blue, Wizard/purple, Scout/DPS, Herbalist/green)
 - Custom fonts: 'Cinzel' or 'Marcellus' for headers, 'Inter' or 'DM Sans' for body text
 
 ### Backend Architecture
@@ -64,9 +64,10 @@ Preferred communication style: Simple, everyday language.
 ### Game Mechanics Architecture
 
 **Character Classes**: Four base classes available at character creation (advanced classes unlockable via job system):
-- Base Classes: Knight (Tank), Wizard (DPS), Scout (DPS), Herbalist (Healer)
-- Advanced Classes (unlockable): Paladin, Dark Knight, Sage, Ranger, Druid, Monk
+- Base Classes: Warrior (Tank), Wizard (DPS), Scout (DPS), Herbalist (Healer)
+- Advanced Classes (unlockable): Knight, Paladin, Dark Knight, Sage, Ranger, Druid, Monk
 - Each class has unique stats (health, attack, defense) and abilities
+- Note: Knight is now an advanced unlockable class (requires Warrior Lv10), while Warrior is the starting tank class
 
 **Combat System**:
 - Turn-based question phases
@@ -107,4 +108,4 @@ Preferred communication style: Simple, everyday language.
 - **nanoid**: Unique ID generation
 
 ### Asset Management
-The application uses pre-generated character sprites stored in `/attached_assets/generated_images/` for each class and gender combination (Knight, Wizard, Scout, Herbalist × Male/Female).
+The application uses pre-generated character sprites stored in `/attached_assets/generated_images/` for each class and gender combination (Warrior, Wizard, Scout, Herbalist × Male/Female). Note: The Knight sprite filenames are reused for the Warrior class, with Knight reserved as an unlockable advanced class.

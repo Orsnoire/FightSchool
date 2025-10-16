@@ -255,7 +255,7 @@ export default function Combat() {
             </Card>
           )}
 
-          {combatState.currentPhase === "tank_blocking" && playerState?.characterClass === "knight" && (
+          {combatState.currentPhase === "tank_blocking" && playerState?.characterClass === "warrior" && (
             <Card className="p-8">
               <h3 className="text-2xl font-bold mb-6">Select Ally to Protect</h3>
               <div className="grid grid-cols-3 gap-4">
@@ -269,7 +269,7 @@ export default function Combat() {
                   >
                     <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
                     <span className="text-sm font-semibold">{player.nickname}</span>
-                    <Shield className="h-4 w-4 text-knight" />
+                    <Shield className="h-4 w-4 text-warrior" />
                   </Button>
                 ))}
               </div>

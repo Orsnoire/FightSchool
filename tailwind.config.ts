@@ -84,10 +84,11 @@ export default {
         health: "hsl(142 70% 45%)",
         damage: "hsl(0 72% 55%)",
         warning: "hsl(38 95% 55%)",
-        knight: "hsl(210 65% 50%)",
+        warrior: "hsl(210 65% 50%)",
         wizard: "hsl(280 75% 55%)",
         scout: "hsl(280 75% 55%)",
         herbalist: "hsl(145 60% 48%)",
+        knight: "hsl(210 65% 50%)", // Knight (unlockable) uses same color as Warrior
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

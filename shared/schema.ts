@@ -4,9 +4,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Character classes and equipment types
-export type CharacterClass = "knight" | "wizard" | "scout" | "herbalist" | "paladin" | "dark_knight" | "sage" | "ranger" | "druid" | "monk";
-export type BaseClass = "knight" | "wizard" | "scout" | "herbalist";
-export const BASE_CLASSES: BaseClass[] = ["knight", "wizard", "scout", "herbalist"];
+export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "knight" | "paladin" | "dark_knight" | "sage" | "ranger" | "druid" | "monk";
+export type BaseClass = "warrior" | "wizard" | "scout" | "herbalist";
+export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbalist"];
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
@@ -266,7 +266,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "common",
     stats: { attack: 1 },
-    classRestriction: ["knight", "paladin", "dark_knight", "monk"],
+    classRestriction: ["warrior", "knight", "paladin", "dark_knight", "monk"],
   },
   basic_staff: {
     id: "basic_staff",
@@ -314,7 +314,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "common",
     stats: { attack: 2 },
-    classRestriction: ["knight", "paladin", "dark_knight", "monk"],
+    classRestriction: ["warrior", "knight", "paladin", "dark_knight", "monk"],
   },
   steel_bow: {
     id: "steel_bow",
@@ -387,17 +387,18 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "legendary",
     stats: { attack: 5, hp: 5 },
-    classRestriction: ["knight", "paladin", "dark_knight"],
+    classRestriction: ["warrior", "knight", "paladin", "dark_knight"],
   },
 };
 
 // Get class-specific starting equipment
 export function getStartingEquipment(characterClass: CharacterClass): { weapon: string; headgear: string; armor: string } {
   const weaponMap: Record<CharacterClass, string> = {
-    knight: "basic_sword",
+    warrior: "basic_sword",
     wizard: "basic_staff",
     scout: "basic_bow",
     herbalist: "basic_herbs",
+    knight: "basic_sword",
     paladin: "basic_sword",
     dark_knight: "basic_sword",
     sage: "basic_staff",
@@ -432,11 +433,12 @@ export function calculateEquipmentStats(weapon: string, headgear: string, armor:
 
 // Character class stats
 export const CLASS_STATS: Record<CharacterClass, { maxHealth: number; damage: number; role: string }> = {
-  knight: { maxHealth: 15, damage: 1, role: "Tank - Can block for allies" },
+  warrior: { maxHealth: 15, damage: 1, role: "Tank - Can block for allies" },
   wizard: { maxHealth: 10, damage: 2, role: "DPS - Streak bonus damage" },
   scout: { maxHealth: 10, damage: 2, role: "DPS - Streak bonus damage" },
   herbalist: { maxHealth: 12, damage: 1, role: "Healer - Can heal allies" },
-  paladin: { maxHealth: 16, damage: 1, role: "Holy Tank - Knight + Herbalist fusion" },
+  knight: { maxHealth: 16, damage: 1, role: "Unlockable Tank - Advanced combat techniques" },
+  paladin: { maxHealth: 16, damage: 1, role: "Holy Tank - Warrior + Herbalist fusion" },
   dark_knight: { maxHealth: 14, damage: 2, role: "Aggressive Tank - High damage, self-sustaining" },
   sage: { maxHealth: 11, damage: 3, role: "Advanced Mage - Wizard evolution" },
   ranger: { maxHealth: 11, damage: 3, role: "Master Scout - Scout evolution" },
