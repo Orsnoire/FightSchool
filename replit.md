@@ -37,8 +37,8 @@ Preferred communication style: Simple, everyday language.
 - Phase transitions and game over events
 
 **Data Storage Strategy**: PostgreSQL database via Neon with Drizzle ORM implementing the IStorage interface:
-- Students: nickname, password hash, optional class code, character class, gender, equipment
-- Fights: quiz configuration with questions, enemies, and class code (fight ID serves as shareable fight code)
+- Students: nickname, password hash, optional class code, character class, gender, nullable equipment (weapon/headgear/armor start as null)
+- Fights: quiz configuration with questions, enemies, and class code (teachers share class codes like "MATH101" with students)
 - Combat Sessions: active game state with players, enemies, current phase, and question
 - Combat Stats: post-fight performance tracking (questions answered, damage dealt, healing, deaths)
 
@@ -48,8 +48,8 @@ Preferred communication style: Simple, everyday language.
 
 **REST Endpoints**:
 - Teacher: `/api/fights` (CRUD operations for quiz battles), `/api/combat-stats` (view class statistics)
-- Student: `/api/student/login` (auto-creates account on first login), character/equipment updates
-- Fight access: Students join fights using fight code (fight ID) instead of class code matching
+- Student: `/api/student/login` (auto-creates account with null equipment), `/api/student/:id/equipment` (equip/unequip items)
+- Fight access: `/api/fights/active/:classCode` (students join fights using class code, returns only actively hosted fights)
 - Stats: `/api/combat-stats/student/:id` (personal stats), `/api/combat-stats/class/:code` (class stats)
 
 **WebSocket Protocol**: Custom message-based protocol with types:
@@ -63,17 +63,18 @@ Preferred communication style: Simple, everyday language.
 
 ### Game Mechanics Architecture
 
-**Character Classes**: Four distinct classes with unique stats (health, attack, defense):
-- Knight (Tank): High health, moderate attack/defense
-- Wizard/Scout (DPS): High attack, lower health/defense
-- Herbalist (Healer): Balanced stats with healing abilities
+**Character Classes**: Four base classes available at character creation (advanced classes unlockable via job system):
+- Base Classes: Knight (Tank), Wizard (DPS), Scout (DPS), Herbalist (Healer)
+- Advanced Classes (unlockable): Paladin, Dark Knight, Sage, Ranger, Druid, Monk
+- Each class has unique stats (health, attack, defense) and abilities
 
 **Combat System**:
 - Turn-based question phases
 - Correct answers deal damage to enemies
 - Incorrect answers result in player damage
 - Healing mechanics for Herbalist class
-- Equipment system with weapons, headgear, and armor affecting stats
+- Nullable equipment system: students start with no equipment (null), making first loot drops more exciting
+- Equipment (weapon/headgear/armor) can be equipped/unequipped freely to customize stats
 
 **Question Types**: Multiple choice, true/false, and short answer with configurable time limits (5-300 seconds).
 
