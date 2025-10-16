@@ -94,6 +94,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // Find active fight by class code
+  app.get("/api/fights/active/:classCode", async (req, res) => {
+    const { classCode } = req.params;
+    const allFights = await storage.getAllFights();
+    
+    // Find fights with matching class code
+    const matchingFights = allFights.filter(f => f.classCode === classCode);
+    
+    if (matchingFights.length === 0) {
+      return res.status(404).json({ error: "No fight found with this class code" });
+    }
+    
+    // Check which ones have active combat sessions (are being hosted)
+    const activeFights = [];
+    for (const fight of matchingFights) {
+      const session = await storage.getCombatSession(fight.id);
+      if (session) {
+        activeFights.push(fight);
+      }
+    }
+    
+    if (activeFights.length === 0) {
+      return res.status(404).json({ error: "No active fight found with this class code. Make sure your teacher has started hosting the battle." });
+    }
+    
+    // Return the first active fight (there should typically only be one active at a time per class code)
+    res.json(activeFights[0]);
+  });
+
   // Student endpoints
   app.post("/api/student/register", async (req, res) => {
     try {

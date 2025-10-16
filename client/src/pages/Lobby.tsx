@@ -41,14 +41,20 @@ export default function Lobby() {
       return;
     }
 
-    // Check if fight exists
-    const response = await fetch(`/api/fights/${fightCode}`);
+    // Check if an active fight exists with this class code
+    const response = await fetch(`/api/fights/active/${fightCode}`);
     if (!response.ok) {
-      toast({ title: "Invalid fight code", description: "Fight not found", variant: "destructive" });
+      const errorData = await response.json();
+      toast({ 
+        title: "Cannot join fight", 
+        description: errorData.error || "Invalid class code or fight not active", 
+        variant: "destructive" 
+      });
       return;
     }
 
-    localStorage.setItem("fightId", fightCode);
+    const fight = await response.json();
+    localStorage.setItem("fightId", fight.id);
     navigate("/student/combat");
   };
 
@@ -146,12 +152,12 @@ export default function Lobby() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="fight-code">Fight Code</Label>
+                  <Label htmlFor="fight-code">Class Code</Label>
                   <Input
                     id="fight-code"
                     value={fightCode}
                     onChange={(e) => setFightCode(e.target.value)}
-                    placeholder="Enter fight code from your teacher"
+                    placeholder="Enter class code from your teacher"
                     data-testid="input-fight-code"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -160,7 +166,7 @@ export default function Lobby() {
                     }}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Your teacher will give you a fight code to enter here
+                    Your teacher will give you a class code to enter here
                   </p>
                 </div>
                 <Button onClick={joinFight} className="w-full" data-testid="button-join-fight">
