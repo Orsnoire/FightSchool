@@ -4,6 +4,24 @@
 
 An educational platform that transforms quiz-based learning into an immersive RPG combat experience. Teachers create quiz "fights" with questions and enemies, while students join battles as fantasy characters (Warrior, Wizard, Scout, Herbalist), answering questions to deal damage and defeat enemies. The system features real-time multiplayer combat, character customization with equipment, and class-based gameplay mechanics.
 
+## Recent Changes (October 16, 2025)
+
+**Job Level Integration into Combat**:
+- PlayerState now includes jobLevels map enabling access to wizard/scout levels during combat
+- Combat join (`addPlayerToCombat`) fetches student job levels and calculates passive bonuses (HP/ATK/DEF) from all classes
+- Passive bonuses applied to maxHealth when players join combat
+- Lobby page displays Class Progression card showing current class level, passive bonuses, and other job levels
+
+**Fireball Dynamic Upgrades**:
+- Created helper functions (`getFireballCooldown`, `getFireballDamageBonus`, `getFireballMaxChargeRounds`) to calculate Fireball stats from wizard level
+- Fireball mechanics now scale dynamically: cooldown 5→4→3→2 at Lv2/7/11, damage +1 at Lv5/13, max charge 2→3 at Lv14
+- Combat UI displays Fireball charge/cooldown indicators for wizards and streak counter for scouts
+
+**Login Flow Fix**:
+- Fixed critical bug: `/api/student/login` now creates new accounts with null characterClass/gender (was incorrectly defaulting to "warrior"/"A")
+- Login routing: existing students (with characterClass) → lobby, new students (null characterClass) → character select
+- Ensures proper first-time character setup flow
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -42,13 +60,13 @@ Preferred communication style: Simple, everyday language.
 - Combat Sessions: active game state with players, enemies, current phase, and question
 - Combat Stats: post-fight performance tracking (questions answered, damage dealt, healing, deaths)
 
-**Authentication**: Password-based authentication using Node.js crypto (scrypt) for secure password hashing. Auto-creates student accounts on first login. Student sessions tracked via localStorage on client and WebSocket connections on server.
+**Authentication**: Password-based authentication using Node.js crypto (scrypt) for secure password hashing. Auto-creates student accounts on first login with null characterClass/gender (forcing character selection). Student sessions tracked via localStorage on client and WebSocket connections on server.
 
 ### API Structure
 
 **REST Endpoints**:
 - Teacher: `/api/fights` (CRUD operations for quiz battles), `/api/combat-stats` (view class statistics)
-- Student: `/api/student/login` (auto-creates account with null equipment), `/api/student/:id/equipment` (equip/unequip items)
+- Student: `/api/student/login` (auto-creates account with null characterClass/gender/equipment), `/api/student/:id/equipment` (equip/unequip items), `/api/student/:id/job-levels` (fetch job progression)
 - Fight access: `/api/fights/active/:classCode` (students join fights using class code, returns only actively hosted fights)
 - Stats: `/api/combat-stats/student/:id` (personal stats), `/api/combat-stats/class/:code` (class stats)
 
