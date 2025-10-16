@@ -53,7 +53,7 @@ export default function StudentEquipment() {
   };
 
   const handleEquipmentChange = (slot: "weapon" | "headgear" | "armor", itemId: string) => {
-    updateEquipmentMutation.mutate({ [slot]: itemId });
+    updateEquipmentMutation.mutate({ [slot]: itemId === "none" ? null : itemId });
   };
 
   const getEquipmentOptions = (slot: "weapon" | "headgear" | "armor") => {
@@ -123,25 +123,38 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Weapon</p>
                     <p className="text-sm text-muted-foreground">
-                      {EQUIPMENT_ITEMS[student.weapon]?.name || "Basic Weapon"}
+                      {student.weapon ? EQUIPMENT_ITEMS[student.weapon]?.name : "None"}
                     </p>
                   </div>
                 </div>
-                <Select
-                  value={student.weapon}
-                  onValueChange={(value) => handleEquipmentChange("weapon", value)}
-                >
-                  <SelectTrigger className="w-48" data-testid="select-weapon">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getEquipmentOptions("weapon").map(item => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={student.weapon || "none"}
+                    onValueChange={(value) => handleEquipmentChange("weapon", value)}
+                  >
+                    <SelectTrigger className="w-48" data-testid="select-weapon">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {getEquipmentOptions("weapon").map(item => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {student.weapon && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => updateEquipmentMutation.mutate({ weapon: null as any })}
+                      data-testid="button-unequip-weapon"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Headgear */}
@@ -151,25 +164,38 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Headgear</p>
                     <p className="text-sm text-muted-foreground">
-                      {EQUIPMENT_ITEMS[student.headgear]?.name || "Basic Headgear"}
+                      {student.headgear ? EQUIPMENT_ITEMS[student.headgear]?.name : "None"}
                     </p>
                   </div>
                 </div>
-                <Select
-                  value={student.headgear}
-                  onValueChange={(value) => handleEquipmentChange("headgear", value)}
-                >
-                  <SelectTrigger className="w-48" data-testid="select-headgear">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getEquipmentOptions("headgear").map(item => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={student.headgear || "none"}
+                    onValueChange={(value) => handleEquipmentChange("headgear", value)}
+                  >
+                    <SelectTrigger className="w-48" data-testid="select-headgear">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {getEquipmentOptions("headgear").map(item => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {student.headgear && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => updateEquipmentMutation.mutate({ headgear: null as any })}
+                      data-testid="button-unequip-headgear"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {/* Armor */}
@@ -179,25 +205,38 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Armor</p>
                     <p className="text-sm text-muted-foreground">
-                      {EQUIPMENT_ITEMS[student.armor]?.name || "Basic Armor"}
+                      {student.armor ? EQUIPMENT_ITEMS[student.armor]?.name : "None"}
                     </p>
                   </div>
                 </div>
-                <Select
-                  value={student.armor}
-                  onValueChange={(value) => handleEquipmentChange("armor", value)}
-                >
-                  <SelectTrigger className="w-48" data-testid="select-armor">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getEquipmentOptions("armor").map(item => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={student.armor || "none"}
+                    onValueChange={(value) => handleEquipmentChange("armor", value)}
+                  >
+                    <SelectTrigger className="w-48" data-testid="select-armor">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {getEquipmentOptions("armor").map(item => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {student.armor && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => updateEquipmentMutation.mutate({ armor: null as any })}
+                      data-testid="button-unequip-armor"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
