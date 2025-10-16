@@ -42,9 +42,9 @@ export const students = pgTable("students", {
   classCode: text("class_code"),
   characterClass: text("character_class").notNull().$type<CharacterClass>(),
   gender: text("gender").notNull().$type<Gender>(),
-  weapon: text("weapon").notNull().default("basic"),
-  headgear: text("headgear").notNull().default("basic"),
-  armor: text("armor").notNull().default("basic"),
+  weapon: text("weapon"),
+  headgear: text("headgear"),
+  armor: text("armor"),
   crossClassAbility1: text("cross_class_ability_1"),
   crossClassAbility2: text("cross_class_ability_2"),
 });
