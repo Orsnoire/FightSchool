@@ -132,15 +132,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Nickname already taken" });
       }
 
-      const startingEquipment = getStartingEquipment(characterClass);
-
       const student = await storage.createStudent({
         nickname,
         password,
         classCode,
         characterClass,
         gender,
-        ...startingEquipment,
+        weapon: null,
+        headgear: null,
+        armor: null,
       });
       const { password: _, ...studentWithoutPassword } = student;
       res.json(studentWithoutPassword);
@@ -156,14 +156,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Auto-create student on first login if they don't exist
     if (!student) {
       try {
-        const startingEquipment = getStartingEquipment(characterClass);
-        
         student = await storage.createStudent({
           nickname,
           password,
           characterClass,
           gender,
-          ...startingEquipment,
+          weapon: null,
+          headgear: null,
+          armor: null,
         });
         const { password: _, ...studentWithoutPassword } = student;
         return res.json(studentWithoutPassword);

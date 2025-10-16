@@ -120,9 +120,6 @@ export class DatabaseStorage implements IStorage {
         password: hashedPassword,
         characterClass: insertStudent.characterClass || "knight",
         gender: insertStudent.gender || "A",
-        weapon: insertStudent.weapon || "basic",
-        headgear: insertStudent.headgear || "basic",
-        armor: insertStudent.armor || "basic",
       })
       .returning();
     return student;
