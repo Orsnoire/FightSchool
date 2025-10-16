@@ -150,17 +150,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/student/login", async (req, res) => {
-    const { nickname, password, characterClass = "warrior", gender = "A" } = req.body;
+    const { nickname, password } = req.body;
     let student = await storage.getStudentByNickname(nickname);
     
     // Auto-create student on first login if they don't exist
+    // New students start with null characterClass and gender so they must go through character selection
     if (!student) {
       try {
         student = await storage.createStudent({
           nickname,
           password,
-          characterClass,
-          gender,
+          characterClass: null,
+          gender: null,
           weapon: null,
           headgear: null,
           armor: null,
