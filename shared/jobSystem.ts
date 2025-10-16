@@ -110,9 +110,64 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
-      // USER: Fill in levels 1-15 with abilities and passives
-      1: { passives: { hp: 2, defense: 1 } },
-      // Add levels 2-15 here
+      1: { 
+        passives: { hp: 2, defense: 1 },
+        abilities: [{
+          id: "knight_block",
+          name: "Block",
+          description: "In Phase 2, reduce minor damage. Draws threat when answering correctly.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { hp: 1, defense: 1 } },
+      3: { passives: { hp: 1 } },
+      4: { 
+        abilities: [{
+          id: "shield_bash",
+          name: "Shield Bash",
+          description: "Active, CD 2. Block this round's first incoming hit (-1 DMG) and deal +1 phys DMG to target enemy.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { hp: 1, attack: 1 } },
+      6: { passives: { hp: 1 } },
+      7: { passives: { hp: 1, defense: 1 } },
+      8: { 
+        abilities: [{
+          id: "block_crossclass",
+          name: "Block",
+          description: "Passive. When used on any class, reduces first incoming hit by 1 DMG.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { hp: 1 } },
+      10: { 
+        abilities: [{
+          id: "provoke",
+          name: "Provoke",
+          description: "Active, CD 3. For one round, all incorrect-answer damage from enemies is redirected to you. Warrior takes it at normal mitigation.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { hp: 1, attack: 1 } },
+      12: { 
+        abilities: [{
+          id: "crushing_blow",
+          name: "Crushing Blow",
+          description: "Active, CD 3. Heavy strike for 4 phys DMG and +1 threat to all enemies.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { hp: 1 } },
+      14: { passives: { hp: 1, defense: 1 } },
+      15: { 
+        abilities: [{
+          id: "unbreakable",
+          name: "Unbreakable",
+          description: "Ultimate, once/encounter. Become invincible for one round; all enemy damage is blocked and absorbed by you (0 DMG to party).",
+          isCrossClass: true,
+        }]
+      },
     }
   },
 
@@ -124,15 +179,62 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     unlockRequirements: null,
     levelRewards: {
       1: { 
-        passives: { attack: 1 },
         abilities: [{
           id: "fireball",
           name: "Fireball",
-          description: "Channel for 2 rounds. Each correct answer adds +1 damage. Release after 2 rounds for +2 total damage. 5 round cooldown.",
+          description: "Active (cast): Begin a 2-round channel. Each correct answer adds +1 dmg/round. If both rounds are correct → total +2 dmg added when it lands. Base 2 dmg + accumulated fire bonus. CD 5 rds.",
+          isCrossClass: false,
+        }]
+      },
+      2: { }, // Fireball cooldown -1 (→ 4 rds) - mechanic upgrade only
+      3: { passives: { attack: 1 } },
+      4: { 
+        abilities: [{
+          id: "frostbolt",
+          name: "Frostbolt",
+          description: "Phase 2 instant cast: 3 magic DMG to one enemy, always hits; resets streak. CD 3 rds.",
+          isCrossClass: false,
+        }]
+      },
+      5: { }, // Fireball +1 DMG per round (→ +2 → +3 total if full cast) - mechanic upgrade only
+      6: { passives: { hp: 1 } },
+      7: { }, // Fireball cooldown -1 (→ 3 rds) - mechanic upgrade only
+      8: { 
+        abilities: [{
+          id: "fireball_crossclass",
+          name: "Fireball",
+          description: "Grants Fireball as a usable spell for any class equipped with the cross-class slot. Uses current Wizard's cooldown/charge rules.",
           isCrossClass: true,
         }]
       },
-      // Add levels 2-15 here
+      9: { passives: { attack: 1 } },
+      10: { 
+        abilities: [{
+          id: "manashield",
+          name: "Manashield",
+          description: "Reactive, CD 3 rds: absorb the next 2 DMG you take OR preserve an in-progress Fireball if you miss a question.",
+          isCrossClass: false,
+        }]
+      },
+      11: { }, // Fireball +1 DMG per round (→ +4 total if full 2-round cast) - mechanic upgrade only
+      12: { 
+        abilities: [{
+          id: "manaward",
+          name: "Manaward",
+          description: "Party buff, CD 4 rds: all allies gain Barrier 1 vs. next 1 DMG this round.",
+          isCrossClass: false,
+        }]
+      },
+      13: { }, // Fireball can now charge 3 rounds (max bonus +6 DMG if perfect cast) - mechanic upgrade only
+      14: { }, // Fireball +1 DMG per round (→ +5 per round × 3 = 15 potential bonus) - mechanic upgrade only
+      15: { 
+        abilities: [{
+          id: "manabomb",
+          name: "Manabomb",
+          description: "Ultimate, once/encounter Phase 2 cast: deal 10 instant MAG DMG to all enemies on screen. Usable by any class that has unlocked cross-class slots.",
+          isCrossClass: true,
+        }]
+      },
     }
   },
 
