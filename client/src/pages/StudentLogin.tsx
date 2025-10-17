@@ -18,7 +18,6 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   nickname: z.string().min(1, "Nickname is required"),
   password: z.string().min(4, "Password must be at least 4 characters"),
-  classCode: z.string().min(1, "Class code is required"),
 });
 
 export default function StudentLogin() {
@@ -33,7 +32,7 @@ export default function StudentLogin() {
 
   const registerForm = useForm({
     resolver: zodResolver(registerSchema),
-    defaultValues: { nickname: "", password: "", classCode: "" },
+    defaultValues: { nickname: "", password: "" },
   });
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
@@ -64,7 +63,7 @@ export default function StudentLogin() {
       localStorage.setItem("studentId", student.id);
       navigate("/student/character-select");
     } else {
-      toast({ title: "Registration failed", description: "Nickname already taken or invalid class code", variant: "destructive" });
+      toast({ title: "Registration failed", description: "Nickname already taken", variant: "destructive" });
     }
   };
 
@@ -89,25 +88,12 @@ export default function StudentLogin() {
               <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                 <FormField
                   control={registerForm.control}
-                  name="classCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Class Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="MATH101" {...field} data-testid="input-class-code" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={registerForm.control}
                   name="nickname"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nickname</FormLabel>
                       <FormControl>
-                        <Input placeholder="DragonSlayer" {...field} data-testid="input-nickname" />
+                        <Input {...field} data-testid="input-nickname" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -141,7 +127,7 @@ export default function StudentLogin() {
                     <FormItem>
                       <FormLabel>Nickname</FormLabel>
                       <FormControl>
-                        <Input placeholder="DragonSlayer" {...field} data-testid="input-nickname" />
+                        <Input {...field} data-testid="input-nickname" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
