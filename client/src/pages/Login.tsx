@@ -203,21 +203,13 @@ export default function Login() {
                   First login auto-creates your account
                 </p>
               </CardContent>
-              <CardFooter className="flex flex-col gap-3">
+              <CardFooter>
                 <Button 
                   className="w-full" 
                   onClick={handleStudentLogin}
                   data-testid="button-student-login"
                 >
                   Login
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="w-full" 
-                  onClick={handleStudentLogin}
-                  data-testid="button-student-register"
-                >
-                  New? Click Here to Register
                 </Button>
               </CardFooter>
             </Card>

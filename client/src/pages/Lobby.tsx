@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb } from "@shared/schema";
-import { LogOut, Swords, BarChart3, TrendingUp } from "lucide-react";
+import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { getTotalPassiveBonuses } from "@shared/jobSystem";
@@ -340,13 +340,15 @@ export default function Lobby() {
                           >
                             <CardContent className="p-4 text-center">
                               <div className="h-16 flex items-center justify-center mb-2">
-                                <div className="text-4xl">
-                                  {item.iconUrl ? (
-                                    <img src={item.iconUrl} alt={item.name} className="h-12 w-12" />
-                                  ) : (
-                                    "🗡️"
-                                  )}
-                                </div>
+                                {item.iconUrl ? (
+                                  <img src={item.iconUrl} alt={item.name} className="h-12 w-12" />
+                                ) : (
+                                  <div className="text-muted-foreground">
+                                    {item.slot === "weapon" && <Sword className="h-12 w-12" />}
+                                    {item.slot === "armor" && <Shield className="h-12 w-12" />}
+                                    {item.slot === "headgear" && <Crown className="h-12 w-12" />}
+                                  </div>
+                                )}
                               </div>
                               <p className="font-semibold text-sm">{item.name}</p>
                               <p className="text-xs text-muted-foreground capitalize">{item.quality}</p>
