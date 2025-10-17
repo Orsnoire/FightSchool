@@ -662,6 +662,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
 
+    // Auto-advance to enemy AI phase
+    setTimeout(async () => {
+      await enemyAIPhase(fightId);
+    }, 2000);
+  }
+
+  async function enemyAIPhase(fightId: string) {
+    const session = await storage.getCombatSession(fightId);
+    const fight = await storage.getFight(fightId);
+    if (!session || !fight) return;
+
+    broadcastToCombat(fightId, { type: "phase_change", phase: "Enemy Turn" });
+
+    // Default enemy AI: Attack player with highest threat
+    // In the future, this will use fight.enemyScript for custom behavior
+    
+    for (const enemy of session.enemies) {
+      if (enemy.health <= 0) continue; // Dead enemies don't attack
+      
+      // Find alive player with highest threat
+      let highestThreat = 0;
+      let targetId: string | null = null;
+      
+      for (const [playerId, player] of Object.entries(session.players)) {
+        if (player.isDead) continue;
+        if (player.threat > highestThreat) {
+          highestThreat = player.threat;
+          targetId = playerId;
+        }
+      }
+      
+      if (targetId) {
+        const target = session.players[targetId];
+        const damageAmount = (fight.baseEnemyDamage || 1) + 1; // baseEnemyDamage + 1
+        const newHealth = Math.max(0, target.health - damageAmount);
+        const wasAlive = !target.isDead;
+        const nowDead = newHealth === 0;
+        
+        await storage.updatePlayerState(fightId, targetId, {
+          health: newHealth,
+          isDead: nowDead,
+          damageTaken: target.damageTaken + damageAmount,
+          deaths: wasAlive && nowDead ? target.deaths + 1 : target.deaths,
+        });
+      }
+    }
+
+    const updatedSession = await storage.getCombatSession(fightId);
+    broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+
     // Auto-advance to state check
     setTimeout(async () => {
       await checkGameState(fightId);
