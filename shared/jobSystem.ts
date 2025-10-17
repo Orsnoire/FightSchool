@@ -245,9 +245,63 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
-      // USER: Fill in levels 1-15 with abilities and passives
-      1: { passives: { attack: 1 } },
-      // Add levels 2-15 here
+      1: { 
+        abilities: [{
+          id: "headshot",
+          name: "Headshot",
+          description: "Costs 3 Combo Points; CD 5 rounds. Consumes all points to deal heavy single-target damage. Starts with 3-point cap. Combo points gained from correct-answer streaks. If blocked damage preserves streak.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { attack: 1 } }, // +1 Base DMG (early precision buff)
+      3: { passives: { hp: 1 } }, // +1 HP
+      4: { 
+        abilities: [{
+          id: "aim",
+          name: "Aim",
+          description: "Costs 1 Combo Point; CD 2. Doubles the Scout's damage that round. Used in Phase 1 immediately after answering, before Phase 2 begins.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { attack: 1 } }, // +1 Base DMG
+      6: { passives: { hp: 1 } }, // +1 HP
+      7: { }, // Headshot Cooldown -1 round (→ 4 rds) - mechanic upgrade only
+      8: { 
+        abilities: [{
+          id: "headshot_crossclass",
+          name: "Headshot / Combo System",
+          description: "Grants access to Headshot (and combo-point mechanics) for any class equipped with a cross-class slot.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { attack: 1 } }, // +1 Base DMG
+      10: { 
+        abilities: [{
+          id: "mark",
+          name: "Mark",
+          description: "No Cost; CD 3. Marks the current enemy; all players deal double damage to that target this round. (Applied in Phase 1.)",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { hp: 1 } }, // +1 HP
+      12: { 
+        abilities: [{
+          id: "dodge",
+          name: "Dodge",
+          description: "Phase 2 reaction; CD 3. Avoids the next attack entirely and preserves streak if hit that round.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { attack: 1 } }, // +1 Base DMG
+      14: { }, // +3 Maximum Combo Points (cap = 6) - mechanic upgrade only
+      15: { 
+        abilities: [{
+          id: "killshot",
+          name: "Killshot",
+          description: "Costs 5 Combo Points; once/encounter. Deals 20 damage. For each 5% of enemy HP below 45%, adds +10% chance to instantly kill the target (e.g., 30% HP → +40% kill chance).",
+          isCrossClass: true,
+        }]
+      },
     }
   },
 
@@ -472,4 +526,20 @@ export function getFireballMaxChargeRounds(wizardLevel: number): number {
     return 3; // Lv14: can charge for 3 rounds
   }
   return 2; // Base: 2 charge rounds
+}
+
+// Scout Headshot ability stat calculations based on level
+export function getHeadshotCooldown(scoutLevel: number): number {
+  let cooldown = 5; // Base cooldown
+  
+  if (scoutLevel >= 7) cooldown -= 1; // Lv7: cooldown -1 (5 → 4)
+  
+  return cooldown;
+}
+
+export function getHeadshotMaxComboPoints(scoutLevel: number): number {
+  if (scoutLevel >= 14) {
+    return 6; // Lv14: +3 maximum combo points (3 → 6)
+  }
+  return 3; // Base: 3 combo points
 }
