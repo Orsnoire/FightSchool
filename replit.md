@@ -6,6 +6,16 @@ An educational platform that transforms quiz-based learning into an immersive RP
 
 ## Recent Changes (October 17, 2025)
 
+**Equipment & Combat Systems Update**:
+- Added `equipment_items` database table for teacher-created custom equipment with fields: teacherId, name, iconUrl, itemType (expandable enum), quality (common/rare/epic/legendary), slot (weapon/headgear/armor), stat bonuses (HP/ATK/DEF)
+- Created ItemManagement page (`/teacher/items`) allowing teachers to create, edit, delete custom equipment with quality-based visual indicators (common/rare/epic/legendary border colors)
+- Added `inventory` field to students table (nullable string array, starts null on character creation) to track equipment items collected from loot
+- Implemented `baseEnemyDamage` fight configuration field (1-10 slider, default 1) enabling teachers to scale encounter difficulty independently of XP rewards
+- Combat system now uses `fight.baseEnemyDamage` for damage calculation when students answer incorrectly
+- Added defense stats to `CLASS_STATS` for all character classes (Warrior: 3, Wizard: 0, Scout: 0, Herbalist: 1, Knight: 4, etc.)
+- Created `getWarriorBlockAmount()` helper function calculating Warrior blocking power: base defense + equipment defense + job passive defense bonuses
+- API routes for equipment items: GET/POST `/api/equipment-items`, GET `/api/teacher/:teacherId/equipment-items`, PATCH/DELETE `/api/equipment-items/:id`
+
 **Herbalist Level Progression System**:
 - Implemented full Herbalist job tree with 15 levels: passive bonuses (HP +1 at Lv2/7/14) and potion/crafting abilities
 - Created helper functions (`getHealingPower`, `getHealingPotionCapacity`, `getShieldPotionCapacity`, `getCraftEfficiency`, `getPoisonPotionUses`) for dynamic mechanics
@@ -73,8 +83,9 @@ Preferred communication style: Simple, everyday language.
 - Phase transitions and game over events
 
 **Data Storage Strategy**: PostgreSQL database via Neon with Drizzle ORM implementing the IStorage interface:
-- Students: nickname, password hash, optional class code, character class, gender, nullable equipment (weapon/headgear/armor start as null)
-- Fights: quiz configuration with questions, enemies, and class code (teachers share class codes like "MATH101" with students)
+- Students: nickname, password hash, optional class code, character class, gender, nullable equipment (weapon/headgear/armor start as null), inventory (nullable string array for item IDs)
+- Fights: quiz configuration with questions, enemies, class code, baseXP (1-100), baseEnemyDamage (1-10 difficulty scaling), loot tables (references equipment items)
+- Equipment Items: teacher-created custom items with name, iconUrl, itemType, quality, slot, stat bonuses (HP/ATK/DEF)
 - Combat Sessions: active game state with players, enemies, current phase, and question
 - Combat Stats: post-fight performance tracking (questions answered, damage dealt, healing, deaths)
 
@@ -83,8 +94,9 @@ Preferred communication style: Simple, everyday language.
 ### API Structure
 
 **REST Endpoints**:
-- Teacher: `/api/fights` (CRUD operations for quiz battles), `/api/combat-stats` (view class statistics)
-- Student: `/api/student/login` (auto-creates account with null characterClass/gender/equipment), `/api/student/:id/equipment` (equip/unequip items), `/api/student/:id/job-levels` (fetch job progression)
+- Teacher: `/api/fights` (CRUD operations for quiz battles), `/api/combat-stats` (view class statistics), `/api/teacher/:teacherId/equipment-items` (manage custom equipment)
+- Equipment Items: `/api/equipment-items` (POST create), `/api/equipment-items/:id` (GET/PATCH/DELETE)
+- Student: `/api/student/login` (auto-creates account with null characterClass/gender/equipment/inventory), `/api/student/:id/equipment` (equip/unequip items), `/api/student/:id/job-levels` (fetch job progression)
 - Fight access: `/api/fights/active/:classCode` (students join fights using class code, returns only actively hosted fights)
 - Stats: `/api/combat-stats/student/:id` (personal stats), `/api/combat-stats/class/:code` (class stats)
 
@@ -108,10 +120,13 @@ Preferred communication style: Simple, everyday language.
 **Combat System**:
 - Turn-based question phases
 - Correct answers deal damage to enemies
-- Incorrect answers result in player damage
+- Incorrect answers result in player damage scaled by `fight.baseEnemyDamage` (1-10 difficulty setting)
+- Warrior blocking: Uses `getWarriorBlockAmount(level, equipmentDefense)` combining base defense + equipment defense + job passive defense bonuses
 - Healing mechanics for Herbalist class
 - Nullable equipment system: students start with no equipment (null), making first loot drops more exciting
 - Equipment (weapon/headgear/armor) can be equipped/unequipped freely to customize stats
+- Inventory system: students collect equipment item IDs (string array) from loot tables, starts null on account creation
+- Teacher-created custom equipment with quality tiers (common/rare/epic/legendary) and stat bonuses
 
 **Question Types**: Multiple choice, true/false, and short answer with configurable time limits (5-300 seconds).
 
