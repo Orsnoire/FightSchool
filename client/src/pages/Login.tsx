@@ -101,7 +101,7 @@ export default function Login() {
           <p className="text-gray-400">Choose your path to adventure</p>
         </div>
 
-        <Tabs defaultValue="teacher" className="w-full">
+        <Tabs defaultValue="student" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="teacher" data-testid="tab-teacher">
               <Shield className="mr-2 h-4 w-4" />
@@ -203,13 +203,21 @@ export default function Login() {
                   First login auto-creates your account
                 </p>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col gap-3">
                 <Button 
                   className="w-full" 
                   onClick={handleStudentLogin}
                   data-testid="button-student-login"
                 >
                   Login
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="w-full" 
+                  onClick={handleStudentLogin}
+                  data-testid="button-student-register"
+                >
+                  New? Click Here to Register
                 </Button>
               </CardFooter>
             </Card>

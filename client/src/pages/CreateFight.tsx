@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, PlusCircle, Trash2 } from "lucide-react";
-import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, EQUIPMENT_ITEMS } from "@shared/schema";
+import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, type EquipmentItemDb } from "@shared/schema";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
 import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
 import wizardImg from "@assets/generated_images/Dark_wizard_enemy_illustration_a897a309.png";
@@ -35,6 +35,11 @@ export default function CreateFight() {
   });
 
   const teacherId = localStorage.getItem("teacherId") || "";
+
+  const { data: teacherEquipment = [], isLoading: equipmentLoading } = useQuery<EquipmentItemDb[]>({
+    queryKey: [`/api/teacher/${teacherId}/equipment-items`],
+    enabled: !!teacherId,
+  });
 
   const form = useForm<InsertFight>({
     resolver: zodResolver(insertFightSchema),
@@ -464,20 +469,26 @@ export default function CreateFight() {
                   <CardContent className="space-y-4">
                     <div>
                       <label className="text-sm font-medium">Select Equipment</label>
-                      <Select onValueChange={(value) => addLootItem(value)}>
-                        <SelectTrigger data-testid="select-loot-item">
-                          <SelectValue placeholder="Choose an item to add" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(EQUIPMENT_ITEMS)
-                            .filter(item => !lootTable.some(l => l.itemId === item.id))
-                            .map(item => (
-                              <SelectItem key={item.id} value={item.id}>
-                                {item.name} ({item.rarity}) - {item.slot}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                      {equipmentLoading ? (
+                        <p className="text-sm text-muted-foreground">Loading equipment...</p>
+                      ) : teacherEquipment.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No equipment items found. Create items in the Item Management page first.</p>
+                      ) : (
+                        <Select onValueChange={(value) => addLootItem(value)}>
+                          <SelectTrigger data-testid="select-loot-item">
+                            <SelectValue placeholder="Choose an item to add" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {teacherEquipment
+                              .filter(item => !lootTable.some(l => l.itemId === item.id))
+                              .map(item => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.name} ({item.quality}) - {item.slot}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                       <p className="text-sm text-muted-foreground mt-2">Students can choose ONE item from this loot table OR take XP instead</p>
                     </div>
                   </CardContent>
@@ -490,17 +501,17 @@ export default function CreateFight() {
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {lootTable.map((loot, i) => {
-                        const item = EQUIPMENT_ITEMS[loot.itemId];
+                        const item = teacherEquipment.find(eq => eq.id === loot.itemId);
                         if (!item) return null;
                         return (
                           <div key={i} className="flex items-center justify-between p-3 border border-border rounded-md" data-testid={`loot-item-${i}`}>
                             <div>
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-muted-foreground capitalize">
-                                {item.rarity} | {item.slot} | 
-                                {item.stats.hp ? ` +${item.stats.hp} HP` : ''}
-                                {item.stats.attack ? ` +${item.stats.attack} ATK` : ''}
-                                {item.stats.defense ? ` +${item.stats.defense} DEF` : ''}
+                                {item.quality} | {item.slot} | 
+                                {item.hpBonus ? ` +${item.hpBonus} HP` : ''}
+                                {item.attackBonus ? ` +${item.attackBonus} ATK` : ''}
+                                {item.defenseBonus ? ` +${item.defenseBonus} DEF` : ''}
                               </p>
                             </div>
                             <Button

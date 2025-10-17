@@ -166,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Student endpoints
   app.post("/api/student/register", async (req, res) => {
     try {
-      const { nickname, password, classCode, characterClass = "warrior", gender = "A" } = req.body;
+      const { nickname, password, classCode, characterClass = null, gender = null } = req.body;
       const existing = await storage.getStudentByNickname(nickname);
       if (existing) {
         return res.status(400).json({ error: "Nickname already taken" });
@@ -233,6 +233,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { characterClass, gender } = req.body;
     const student = await storage.updateStudent(req.params.id, { characterClass, gender });
     if (!student) return res.status(404).json({ error: "Student not found" });
+    
+    // Create initial job level for the selected class (starts at level 1 by default)
+    const existingJobLevel = await storage.getStudentJobLevels(req.params.id);
+    const hasJobLevel = existingJobLevel.some(jl => jl.jobClass === characterClass);
+    if (!hasJobLevel) {
+      await storage.createStudentJobLevel({
+        studentId: req.params.id,
+        jobClass: characterClass,
+        level: 1,
+        experience: 0,
+      });
+    }
+    
     const { password: _, ...studentWithoutPassword } = student;
     res.json(studentWithoutPassword);
   });

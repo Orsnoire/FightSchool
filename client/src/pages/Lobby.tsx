@@ -31,7 +31,13 @@ export default function Lobby() {
     const loadStudent = async () => {
       const response = await fetch(`/api/student/${studentId}`);
       if (response.ok) {
-        setStudent(await response.json());
+        const data = await response.json();
+        // Redirect to character selection if not completed
+        if (!data.characterClass || !data.gender) {
+          navigate("/student/character-select");
+          return;
+        }
+        setStudent(data);
       }
     };
     
@@ -44,7 +50,7 @@ export default function Lobby() {
     
     loadStudent();
     loadJobLevels();
-  }, [studentId]);
+  }, [studentId, navigate]);
 
   const joinFight = async () => {
     if (!fightCode.trim()) {
@@ -88,7 +94,7 @@ export default function Lobby() {
     navigate("/student/login");
   };
 
-  if (!student) {
+  if (!student || !student.characterClass || !student.gender) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
 
