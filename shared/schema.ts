@@ -213,6 +213,7 @@ export interface Fight {
   baseEnemyDamage: number;
   enemyDisplayMode: "simultaneous" | "consecutive";
   lootTable: LootItem[];
+  randomizeQuestions: boolean;
   createdAt: number;
 }
 
@@ -226,6 +227,7 @@ export const insertFightSchema = z.object({
   baseEnemyDamage: z.number().min(1).max(10).default(1),
   enemyDisplayMode: z.enum(["simultaneous", "consecutive"]).default("consecutive"),
   lootTable: z.array(z.object({ itemId: z.string() })).default([]),
+  randomizeQuestions: z.boolean().default(false),
 });
 
 export type InsertFight = z.infer<typeof insertFightSchema>;

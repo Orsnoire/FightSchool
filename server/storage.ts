@@ -175,6 +175,7 @@ export class DatabaseStorage implements IStorage {
         baseEnemyDamage: insertFight.baseEnemyDamage,
         enemyDisplayMode: insertFight.enemyDisplayMode,
         lootTable: insertFight.lootTable,
+        randomizeQuestions: insertFight.randomizeQuestions,
       })
       .returning();
     return { ...fight, lootTable: fight.lootTable || [] } as Fight;
@@ -192,6 +193,7 @@ export class DatabaseStorage implements IStorage {
         baseEnemyDamage: insertFight.baseEnemyDamage,
         enemyDisplayMode: insertFight.enemyDisplayMode,
         lootTable: insertFight.lootTable,
+        randomizeQuestions: insertFight.randomizeQuestions,
       })
       .where(eq(fights.id, id))
       .returning();
