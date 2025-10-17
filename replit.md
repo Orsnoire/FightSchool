@@ -6,6 +6,11 @@ An educational platform that transforms quiz-based learning into an immersive RP
 
 ## Recent Changes (October 17, 2025)
 
+**UI Improvements - Student Login & Equipment Display**:
+- Simplified student login: removed duplicate "New? Click Here to Register" button from Login.tsx, students now see single clear login action
+- Enhanced equipment icons: inventory items now show slot-specific Lucide icons when no custom iconUrl provided (Sword for weapons, Shield for armor, Crown for headgear in silver/gray)
+- All fallback icons use `text-muted-foreground` class for consistent silver appearance, sized at h-12 w-12 to match custom equipment images
+
 **Shared Equipment System & Database Migration**:
 - Implemented shared default equipment: 18 system items (teacherId='SYSTEM') seeded at server startup for all teachers to access
 - Refactored equipment architecture to be fully database-driven: removed hardcoded EQUIPMENT_ITEMS constant from student flows (Lobby, StudentEquipment)
