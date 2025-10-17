@@ -6,6 +6,16 @@ An educational platform that transforms quiz-based learning into an immersive RP
 
 ## Recent Changes (October 17, 2025)
 
+**Herbalist Level Progression System**:
+- Implemented full Herbalist job tree with 15 levels: passive bonuses (HP +1 at Lv2/7/14) and potion/crafting abilities
+- Created helper functions (`getHealingPower`, `getHealingPotionCapacity`, `getShieldPotionCapacity`, `getCraftEfficiency`, `getPoisonPotionUses`) for dynamic mechanics
+- Healing Power: 1→2 at Lv3, 2→3 at Lv13 (affects how much each healing potion restores)
+- Healing Potion capacity: 5→6 at Lv5 (max charges that can be carried)
+- Shield Potion capacity: unlocks at Lv8 (3 charges), 3→4 at Lv9
+- Craft Efficiency: +1 at Lv6, +2 at Lv11 (stacking bonus - extra charges when crafting Healing/Shield potions)
+- Herbalist abilities: Healing Potion (Lv1), Craft Healing Potion (Lv4), Craft Shield Potion (Lv8), Potion Diffuser (Lv10 - makes next potion affect full raid), Poison Potion (Lv12 - 3 uses/fight), Life Potion (Lv15 cross-class - revive all KO'd allies)
+- Cross-class unlocks: Healing Potion (Lv8), Life Potion (Lv15)
+
 **Scout Level Progression System**:
 - Implemented full Scout job tree with 15 levels: passive bonuses (HP +1 at Lv3/6/11, ATK +1 at Lv2/5/9/13) and ability unlocks
 - Created helper functions (`getHeadshotCooldown`, `getHeadshotMaxComboPoints`) for dynamic Scout ability scaling
