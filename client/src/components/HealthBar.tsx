@@ -16,7 +16,7 @@ export function HealthBar({ current, max, className = "", showText = true }: Hea
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="relative h-6 bg-card border border-card-border rounded-md overflow-hidden">
+      <div className="relative h-6 bg-destructive/30 border border-card-border rounded-md overflow-hidden">
         <div
           className={`h-full ${getColorClass()} transition-all duration-500 ease-out`}
           style={{ width: `${percentage}%` }}
