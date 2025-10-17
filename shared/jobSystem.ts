@@ -655,3 +655,17 @@ export function getPoisonPotionUses(herbalistLevel: number): number {
   }
   return 0; // Not unlocked
 }
+
+// Warrior block damage calculation
+export function getWarriorBlockAmount(
+  warriorLevel: number,
+  baseDefense: number,
+  equipmentDefense: number,
+  allJobLevelsDefense: number
+): number {
+  // Total defense = base class defense + equipment bonuses + job passive bonuses
+  const totalDefense = baseDefense + equipmentDefense + allJobLevelsDefense;
+  
+  // Block amount equals total defense (each point of defense blocks 1 damage)
+  return totalDefense;
+}
