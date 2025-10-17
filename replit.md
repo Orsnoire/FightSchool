@@ -31,8 +31,14 @@ Preferred communication style: Simple, everyday language.
 
 ### Game Mechanics Architecture
 **Character Classes**: Four base classes (Warrior, Wizard, Scout, Herbalist) with unique stats and abilities. Advanced classes (e.g., Knight, Paladin) are unlockable through a job system.
-**Combat System**: Turn-based question phases where correct answers deal damage and incorrect answers result in player damage scaled by `fight.baseEnemyDamage`. Features include Warrior blocking, Herbalist healing mechanics, a nullable equipment system allowing students to collect and equip items from loot tables, and teacher-created custom equipment with quality tiers and stat bonuses.
-**Question Types**: Supports multiple choice, true/false, and short answer questions with configurable time limits.
+**Combat System**: Turn-based question phases where correct answers deal damage and incorrect answers result in player damage scaled by `fight.baseEnemyDamage`. Features include:
+- **Enemy AI**: After players answer questions, each alive enemy attacks the player with the highest threat value (defaults to 1 for all players) for `baseEnemyDamage + 1` damage. Future support for custom enemy scripts via `fight.enemyScript` field.
+- **Combat Flow**: Question Phase → Tank Blocking & Healing → Combat (players attack) → Enemy AI (enemies attack) → State Check → loop.
+- **Warrior Blocking**: Warriors reduce incoming damage.
+- **Herbalist Healing**: Herbalists can heal allies.
+- **Equipment System**: Nullable equipment system allowing students to collect and equip items from loot tables, plus teacher-created custom equipment with quality tiers and stat bonuses.
+- **Visual Feedback**: Health bars display remaining health in green/yellow/red (based on percentage) against a muted red background showing lost health.
+**Question Types**: Supports multiple choice, true/false, and short answer questions with configurable time limits. Questions can be randomized per fight via teacher preference, using Fisher-Yates shuffle at combat start.
 
 ## External Dependencies
 
