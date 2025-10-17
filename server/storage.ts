@@ -169,6 +169,7 @@ export class DatabaseStorage implements IStorage {
         questions: insertFight.questions,
         enemies: insertFight.enemies,
         baseXP: insertFight.baseXP,
+        baseEnemyDamage: insertFight.baseEnemyDamage,
         enemyDisplayMode: insertFight.enemyDisplayMode,
         lootTable: insertFight.lootTable,
       })

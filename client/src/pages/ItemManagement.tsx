@@ -142,7 +142,7 @@ export default function ItemManagement() {
       <header className="sticky top-0 z-50 border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/teacher/dashboard">
+            <Link href="/teacher">
               <Button variant="ghost" size="icon" data-testid="button-back">
                 <ArrowLeft className="h-5 w-5" />
               </Button>

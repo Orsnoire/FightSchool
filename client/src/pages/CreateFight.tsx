@@ -185,16 +185,14 @@ export default function CreateFight() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Base XP Reward: {field.value}</FormLabel>
-                      <FormControl>
-                        <Slider
-                          min={1}
-                          max={100}
-                          step={1}
-                          value={[field.value || 10]}
-                          onValueChange={(vals) => field.onChange(vals[0])}
-                          data-testid="slider-basexp"
-                        />
-                      </FormControl>
+                      <Slider
+                        min={1}
+                        max={100}
+                        step={1}
+                        value={[field.value || 10]}
+                        onValueChange={(vals) => field.onChange(vals[0])}
+                        data-testid="slider-basexp"
+                      />
                       <p className="text-sm text-muted-foreground">Base XP awarded for completing this fight (additional XP based on performance)</p>
                       <FormMessage />
                     </FormItem>
@@ -206,16 +204,14 @@ export default function CreateFight() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Enemy Damage Level: {field.value}</FormLabel>
-                      <FormControl>
-                        <Slider
-                          min={1}
-                          max={10}
-                          step={1}
-                          value={[field.value || 1]}
-                          onValueChange={(vals) => field.onChange(vals[0])}
-                          data-testid="slider-base-enemy-damage"
-                        />
-                      </FormControl>
+                      <Slider
+                        min={1}
+                        max={10}
+                        step={1}
+                        value={[field.value || 1]}
+                        onValueChange={(vals) => field.onChange(vals[0])}
+                        data-testid="slider-base-enemy-damage"
+                      />
                       <p className="text-sm text-muted-foreground">Difficulty scaling: higher values mean enemies deal more damage (1 = easy, 10 = very hard)</p>
                       <FormMessage />
                     </FormItem>
