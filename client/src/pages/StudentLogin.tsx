@@ -28,11 +28,13 @@ export default function StudentLogin() {
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: { nickname: "", password: "" },
+    mode: "onSubmit",
   });
 
   const registerForm = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: { nickname: "", password: "" },
+    mode: "onSubmit",
   });
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
