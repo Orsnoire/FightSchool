@@ -6,6 +6,15 @@ An educational platform that transforms quiz-based learning into an immersive RP
 
 ## Recent Changes (October 17, 2025)
 
+**WebSocket Architecture Fix**:
+- Fixed critical 400 handshake errors by implementing manual WebSocket upgrade handling in server/routes.ts
+- WebSocket server created with `noServer: true`, manually intercepts HTTP 'upgrade' events to route `/ws` connections
+- Upgrade handler filters by pathname: `/ws` → combat WebSocket, other paths → ignored (allowing Vite HMR to function)
+- All WebSocket logic (wss, broadcastToCombat, startQuestion, checkGameState) remains co-located with HTTP routes in registerRoutes()
+- End-to-end testing confirmed: teacher host + student join working, no 400 errors, real-time combat state updates functional
+- Added /teacher/login route to App.tsx for easier navigation
+- CreateFight form now validates teacherId presence and redirects to login if missing
+
 **UI Improvements - Student Login & Equipment Display**:
 - Simplified student login: removed duplicate "New? Click Here to Register" button from Login.tsx, students now see single clear login action
 - Enhanced equipment icons: inventory items now show slot-specific Lucide icons when no custom iconUrl provided (Sword for weapons, Shield for armor, Crown for headgear in silver/gray)
