@@ -8,6 +8,7 @@ import Login from "@/pages/Login";
 import TeacherSignup from "@/pages/TeacherSignup";
 import TeacherDashboard from "@/pages/TeacherDashboard";
 import TeacherStats from "@/pages/TeacherStats";
+import ItemManagement from "@/pages/ItemManagement";
 import CreateFight from "@/pages/CreateFight";
 import HostFight from "@/pages/HostFight";
 import StudentLogin from "@/pages/StudentLogin";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/teacher/signup" component={TeacherSignup} />
       <Route path="/teacher" component={TeacherDashboard} />
       <Route path="/teacher/stats" component={TeacherStats} />
+      <Route path="/teacher/items" component={ItemManagement} />
       <Route path="/teacher/create" component={CreateFight} />
       <Route path="/teacher/host/:id" component={HostFight} />
       <Route path="/student/login" component={StudentLogin} />

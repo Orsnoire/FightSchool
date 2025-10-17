@@ -38,6 +38,12 @@ export default function TeacherDashboard() {
             Quest Master
           </h1>
           <div className="flex gap-2">
+            <Link href="/teacher/items">
+              <Button variant="outline" size="default" data-testid="button-manage-items">
+                <Swords className="mr-2 h-5 w-5" />
+                Manage Items
+              </Button>
+            </Link>
             <Link href="/teacher/stats">
               <Button variant="outline" size="default" data-testid="button-view-stats">
                 <BarChart3 className="mr-2 h-5 w-5" />
