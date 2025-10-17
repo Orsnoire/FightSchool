@@ -580,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (!blocked) {
-          const damageAmount = 1;
+          const damageAmount = fight.baseEnemyDamage || 1;
           const newHealth = Math.max(0, player.health - damageAmount);
           const wasAlive = !player.isDead;
           const nowDead = newHealth === 0;
