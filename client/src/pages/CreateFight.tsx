@@ -317,7 +317,7 @@ export default function CreateFight() {
                       <Input
                         value={currentQuestion.question || ""}
                         onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
-                        placeholder="What is 2 + 2?"
+                        placeholder="Enter your question text"
                         data-testid="input-question"
                       />
                     </div>
@@ -346,7 +346,7 @@ export default function CreateFight() {
                       <Input
                         value={currentQuestion.correctAnswer || ""}
                         onChange={(e) => setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value })}
-                        placeholder="4"
+                        placeholder="Enter the correct answer"
                         data-testid="input-correct-answer"
                       />
                     </div>
