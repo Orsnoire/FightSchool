@@ -10,7 +10,7 @@ export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbali
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
-export type ItemType = "sword" | "wand" | "bow" | "staff" | "light_armor" | "leather_armor" | "helmet" | "cap" | "hat" | "consumable";
+export type ItemType = "sword" | "wand" | "bow" | "staff" | "herbs" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
 export type ItemQuality = "common" | "rare" | "epic" | "legendary";
 
 // Teachers table

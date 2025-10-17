@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getCrossClassAbilities } from "@shared/jobSystem";
-import { EQUIPMENT_ITEMS, type Student, type StudentJobLevel, type CharacterClass } from "@shared/schema";
+import { type Student, type StudentJobLevel, type CharacterClass, type EquipmentItemDb } from "@shared/schema";
 import type { Ability } from "@shared/jobSystem";
 
 export default function StudentEquipment() {
@@ -23,6 +23,36 @@ export default function StudentEquipment() {
     queryKey: [`/api/student/${studentId}/job-levels`],
     enabled: !!studentId,
   });
+
+  // Fetch equipped items
+  const equippedItemIds = [student?.weapon, student?.headgear, student?.armor].filter(Boolean) as string[];
+  const { data: equippedItems = [] } = useQuery<EquipmentItemDb[]>({
+    queryKey: ['equipment-items', { ids: equippedItemIds.sort() }],
+    queryFn: async () => {
+      if (equippedItemIds.length === 0) return [];
+      const response = await fetch(`/api/equipment-items?ids=${equippedItemIds.join(',')}`);
+      return response.json();
+    },
+    enabled: equippedItemIds.length > 0,
+  });
+
+  // Fetch inventory items
+  const inventoryIds = student?.inventory || [];
+  const { data: inventoryItems = [] } = useQuery<EquipmentItemDb[]>({
+    queryKey: ['equipment-items', { ids: inventoryIds.sort() }],
+    queryFn: async () => {
+      if (inventoryIds.length === 0) return [];
+      const response = await fetch(`/api/equipment-items?ids=${inventoryIds.join(',')}`);
+      return response.json();
+    },
+    enabled: inventoryIds.length > 0,
+  });
+
+  // Create lookup map for equipped items
+  const equippedItemsMap = (equippedItems || []).reduce((acc: Record<string, EquipmentItemDb>, item: EquipmentItemDb) => {
+    acc[item.id] = item;
+    return acc;
+  }, {} as Record<string, EquipmentItemDb>);
 
   const updateEquipmentMutation = useMutation({
     mutationFn: async (data: { weapon?: string; headgear?: string; armor?: string; crossClassAbility1?: string | null; crossClassAbility2?: string | null }) => {
@@ -42,7 +72,7 @@ export default function StudentEquipment() {
     return acc;
   }, {} as Record<CharacterClass, number>);
 
-  const availableAbilities = student ? getCrossClassAbilities(student.characterClass, jobLevelMap) : [];
+  const availableAbilities = student && student.characterClass ? getCrossClassAbilities(student.characterClass, jobLevelMap) : [];
 
   const handleEquipAbility = (slot: 1 | 2, abilityId: string | null) => {
     if (slot === 1) {
@@ -57,11 +87,7 @@ export default function StudentEquipment() {
   };
 
   const getEquipmentOptions = (slot: "weapon" | "headgear" | "armor") => {
-    return Object.values(EQUIPMENT_ITEMS).filter(item => {
-      if (item.slot !== slot) return false;
-      if (item.classRestriction && !item.classRestriction.includes(student?.characterClass || "warrior")) return false;
-      return true;
-    });
+    return inventoryItems.filter(item => item.slot === slot);
   };
 
   if (studentLoading || levelsLoading) {
@@ -123,7 +149,7 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Weapon</p>
                     <p className="text-sm text-muted-foreground">
-                      {student.weapon ? EQUIPMENT_ITEMS[student.weapon]?.name : "None"}
+                      {student.weapon ? equippedItemsMap[student.weapon]?.name || "None" : "None"}
                     </p>
                   </div>
                 </div>
@@ -164,7 +190,7 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Headgear</p>
                     <p className="text-sm text-muted-foreground">
-                      {student.headgear ? EQUIPMENT_ITEMS[student.headgear]?.name : "None"}
+                      {student.headgear ? equippedItemsMap[student.headgear]?.name || "None" : "None"}
                     </p>
                   </div>
                 </div>
@@ -205,7 +231,7 @@ export default function StudentEquipment() {
                   <div>
                     <p className="font-medium">Armor</p>
                     <p className="text-sm text-muted-foreground">
-                      {student.armor ? EQUIPMENT_ITEMS[student.armor]?.name : "None"}
+                      {student.armor ? equippedItemsMap[student.armor]?.name || "None" : "None"}
                     </p>
                   </div>
                 </div>

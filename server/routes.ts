@@ -174,6 +174,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // Get equipment items by IDs (for student inventory)
+  app.get("/api/equipment-items", async (req, res) => {
+    const ids = req.query.ids as string;
+    if (!ids) {
+      return res.json([]);
+    }
+    const idArray = ids.split(',').filter(id => id.trim());
+    if (idArray.length === 0) {
+      return res.json([]);
+    }
+    const items = await storage.getEquipmentItemsByIds(idArray);
+    res.json(items);
+  });
+
   // Student endpoints
   app.post("/api/student/register", async (req, res) => {
     try {

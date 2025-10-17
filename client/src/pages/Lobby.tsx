@@ -5,11 +5,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { EQUIPMENT_ITEMS, type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass } from "@shared/schema";
+import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb } from "@shared/schema";
 import { LogOut, Swords, BarChart3, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { getTotalPassiveBonuses } from "@shared/jobSystem";
+import { useQuery } from "@tanstack/react-query";
 
 const RARITY_COLORS = {
   common: "border-gray-400",
@@ -51,6 +52,36 @@ export default function Lobby() {
     loadStudent();
     loadJobLevels();
   }, [studentId, navigate]);
+
+  // Fetch equipped items
+  const equippedItemIds = [student?.weapon, student?.headgear, student?.armor].filter(Boolean) as string[];
+  const { data: equippedItems = [] } = useQuery<EquipmentItemDb[]>({
+    queryKey: ['equipment-items', { ids: equippedItemIds.sort() }],
+    queryFn: async () => {
+      if (equippedItemIds.length === 0) return [];
+      const response = await fetch(`/api/equipment-items?ids=${equippedItemIds.join(',')}`);
+      return response.json();
+    },
+    enabled: equippedItemIds.length > 0,
+  });
+
+  // Fetch inventory items
+  const inventoryIds = student?.inventory || [];
+  const { data: inventoryItems = [] } = useQuery<EquipmentItemDb[]>({
+    queryKey: ['equipment-items', { ids: inventoryIds.sort() }],
+    queryFn: async () => {
+      if (inventoryIds.length === 0) return [];
+      const response = await fetch(`/api/equipment-items?ids=${inventoryIds.join(',')}`);
+      return response.json();
+    },
+    enabled: inventoryIds.length > 0,
+  });
+
+  // Create a lookup map for equipped items
+  const equippedItemsMap = (equippedItems || []).reduce((acc: Record<string, EquipmentItemDb>, item: EquipmentItemDb) => {
+    acc[item.id] = item;
+    return acc;
+  }, {} as Record<string, EquipmentItemDb>);
 
   const joinFight = async () => {
     if (!fightCode.trim()) {
@@ -141,19 +172,19 @@ export default function Lobby() {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Weapon:</span>
                     <span className="font-semibold capitalize" data-testid="text-weapon">
-                      {student.weapon ? EQUIPMENT_ITEMS[student.weapon]?.name : "None"}
+                      {student.weapon ? equippedItemsMap[student.weapon]?.name || "None" : "None"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Headgear:</span>
                     <span className="font-semibold capitalize" data-testid="text-headgear">
-                      {student.headgear ? EQUIPMENT_ITEMS[student.headgear]?.name : "None"}
+                      {student.headgear ? equippedItemsMap[student.headgear]?.name || "None" : "None"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Armor:</span>
                     <span className="font-semibold capitalize" data-testid="text-armor">
-                      {student.armor ? EQUIPMENT_ITEMS[student.armor]?.name : "None"}
+                      {student.armor ? equippedItemsMap[student.armor]?.name || "None" : "None"}
                     </span>
                   </div>
                 </div>
@@ -285,33 +316,51 @@ export default function Lobby() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {Object.values(EQUIPMENT_ITEMS)
-                    .filter((item) => item.slot === selectedSlot)
-                    .map((item) => {
-                      const isEquipped =
-                        student[selectedSlot as keyof Pick<Student, "weapon" | "headgear" | "armor">] === item.id;
+                {inventoryItems.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No equipment in inventory</p>
+                    <p className="text-xs mt-2">Defeat enemies to collect loot!</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {inventoryItems
+                      .filter((item) => item.slot === selectedSlot)
+                      .map((item) => {
+                        const isEquipped =
+                          student[selectedSlot as keyof Pick<Student, "weapon" | "headgear" | "armor">] === item.id;
 
-                      return (
-                        <Card
-                          key={item.id}
-                          className={`cursor-pointer hover-elevate ${
-                            isEquipped ? "ring-2 ring-primary" : ""
-                          } border-2 ${RARITY_COLORS[item.rarity as keyof typeof RARITY_COLORS]}`}
-                          onClick={() => updateEquipment(selectedSlot, item.id)}
-                          data-testid={`item-${item.id}`}
-                        >
-                          <CardContent className="p-4 text-center">
-                            <div className="h-16 flex items-center justify-center mb-2">
-                              <div className="text-4xl">🗡️</div>
-                            </div>
-                            <p className="font-semibold text-sm">{item.name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{item.rarity}</p>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                </div>
+                        return (
+                          <Card
+                            key={item.id}
+                            className={`cursor-pointer hover-elevate ${
+                              isEquipped ? "ring-2 ring-primary" : ""
+                            } border-2 ${RARITY_COLORS[item.quality as keyof typeof RARITY_COLORS]}`}
+                            onClick={() => updateEquipment(selectedSlot, item.id)}
+                            data-testid={`item-${item.id}`}
+                          >
+                            <CardContent className="p-4 text-center">
+                              <div className="h-16 flex items-center justify-center mb-2">
+                                <div className="text-4xl">
+                                  {item.iconUrl ? (
+                                    <img src={item.iconUrl} alt={item.name} className="h-12 w-12" />
+                                  ) : (
+                                    "🗡️"
+                                  )}
+                                </div>
+                              </div>
+                              <p className="font-semibold text-sm">{item.name}</p>
+                              <p className="text-xs text-muted-foreground capitalize">{item.quality}</p>
+                              <div className="text-xs mt-1 space-y-0.5">
+                                {item.hpBonus > 0 && <div className="text-health">+{item.hpBonus} HP</div>}
+                                {item.attackBonus > 0 && <div className="text-damage">+{item.attackBonus} ATK</div>}
+                                {item.defenseBonus > 0 && <div className="text-primary">+{item.defenseBonus} DEF</div>}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

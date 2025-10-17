@@ -2,7 +2,7 @@ import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight
 import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 import { calculateNewLevel, getTotalXPForLevel, XP_REQUIREMENTS, getTotalPassiveBonuses } from "@shared/jobSystem";
 
 function hashPassword(password: string): string {
@@ -64,10 +64,12 @@ export interface IStorage {
   
   // Equipment items operations
   getEquipmentItem(id: string): Promise<EquipmentItemDb | undefined>;
+  getEquipmentItemsByIds(ids: string[]): Promise<EquipmentItemDb[]>;
   getEquipmentItemsByTeacher(teacherId: string): Promise<EquipmentItemDb[]>;
   createEquipmentItem(item: InsertEquipmentItem): Promise<EquipmentItemDb>;
   updateEquipmentItem(id: string, updates: Partial<EquipmentItemDb>): Promise<EquipmentItemDb | undefined>;
   deleteEquipmentItem(id: string): Promise<boolean>;
+  seedDefaultEquipment(): Promise<void>;
 }
 
 // Integration: blueprint:javascript_database
@@ -461,8 +463,22 @@ export class DatabaseStorage implements IStorage {
     return item || undefined;
   }
 
+  async getEquipmentItemsByIds(ids: string[]): Promise<EquipmentItemDb[]> {
+    if (ids.length === 0) return [];
+    return await db.select().from(equipmentItems).where(inArray(equipmentItems.id, ids));
+  }
+
   async getEquipmentItemsByTeacher(teacherId: string): Promise<EquipmentItemDb[]> {
-    return await db.select().from(equipmentItems).where(eq(equipmentItems.teacherId, teacherId));
+    // Return both teacher's custom items AND shared system items
+    return await db
+      .select()
+      .from(equipmentItems)
+      .where(
+        or(
+          eq(equipmentItems.teacherId, teacherId),
+          eq(equipmentItems.teacherId, 'SYSTEM')
+        )
+      );
   }
 
   async createEquipmentItem(item: InsertEquipmentItem): Promise<EquipmentItemDb> {
@@ -487,6 +503,59 @@ export class DatabaseStorage implements IStorage {
   async deleteEquipmentItem(id: string): Promise<boolean> {
     const result = await db.delete(equipmentItems).where(eq(equipmentItems.id, id));
     return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async seedDefaultEquipment(): Promise<void> {
+    // Check if system items already exist
+    const existingSystemItems = await db
+      .select()
+      .from(equipmentItems)
+      .where(eq(equipmentItems.teacherId, 'SYSTEM'));
+    
+    if (existingSystemItems.length > 0) {
+      return; // Already seeded
+    }
+
+    // Define default equipment items from EQUIPMENT_ITEMS constant
+    const defaultItems = [
+      // Basic starting gear
+      { id: 'basic_sword', name: 'Basic Sword', slot: 'weapon' as const, quality: 'common' as const, itemType: 'sword' as const, attackBonus: 1, hpBonus: 0, defenseBonus: 0 },
+      { id: 'basic_staff', name: 'Basic Staff', slot: 'weapon' as const, quality: 'common' as const, itemType: 'staff' as const, attackBonus: 1, hpBonus: 0, defenseBonus: 0 },
+      { id: 'basic_bow', name: 'Basic Bow', slot: 'weapon' as const, quality: 'common' as const, itemType: 'bow' as const, attackBonus: 1, hpBonus: 0, defenseBonus: 0 },
+      { id: 'basic_herbs', name: 'Basic Herbs', slot: 'weapon' as const, quality: 'common' as const, itemType: 'herbs' as const, attackBonus: 0, hpBonus: 1, defenseBonus: 0 },
+      { id: 'basic_helm', name: 'Basic Helm', slot: 'headgear' as const, quality: 'common' as const, itemType: 'helmet' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 1 },
+      { id: 'basic_armor', name: 'Basic Armor', slot: 'armor' as const, quality: 'common' as const, itemType: 'armor' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 1 },
+      
+      // Common drops
+      { id: 'iron_sword', name: 'Iron Sword', slot: 'weapon' as const, quality: 'common' as const, itemType: 'sword' as const, attackBonus: 2, hpBonus: 0, defenseBonus: 0 },
+      { id: 'steel_bow', name: 'Steel Bow', slot: 'weapon' as const, quality: 'rare' as const, itemType: 'bow' as const, attackBonus: 3, hpBonus: 0, defenseBonus: 0 },
+      { id: 'magic_staff', name: 'Magic Staff', slot: 'weapon' as const, quality: 'rare' as const, itemType: 'staff' as const, attackBonus: 3, hpBonus: 0, defenseBonus: 0 },
+      { id: 'leather_helm', name: 'Leather Helm', slot: 'headgear' as const, quality: 'common' as const, itemType: 'helmet' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 2 },
+      { id: 'steel_helmet', name: 'Steel Helmet', slot: 'headgear' as const, quality: 'rare' as const, itemType: 'helmet' as const, attackBonus: 0, hpBonus: 2, defenseBonus: 3 },
+      { id: 'arcane_crown', name: 'Arcane Crown', slot: 'headgear' as const, quality: 'epic' as const, itemType: 'helmet' as const, attackBonus: 2, hpBonus: 3, defenseBonus: 0 },
+      { id: 'leather_armor', name: 'Leather Armor', slot: 'armor' as const, quality: 'common' as const, itemType: 'armor' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 2 },
+      { id: 'chainmail', name: 'Chainmail', slot: 'armor' as const, quality: 'rare' as const, itemType: 'armor' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 4 },
+      { id: 'plate_armor', name: 'Plate Armor', slot: 'armor' as const, quality: 'epic' as const, itemType: 'armor' as const, attackBonus: 0, hpBonus: 5, defenseBonus: 5 },
+      { id: 'dragon_scale', name: 'Dragon Scale Armor', slot: 'armor' as const, quality: 'legendary' as const, itemType: 'armor' as const, attackBonus: 2, hpBonus: 10, defenseBonus: 7 },
+      { id: 'legendary_blade', name: 'Legendary Blade', slot: 'weapon' as const, quality: 'legendary' as const, itemType: 'sword' as const, attackBonus: 5, hpBonus: 5, defenseBonus: 0 },
+    ];
+
+    // Insert all default items with teacherId='SYSTEM'
+    const itemsToInsert = defaultItems.map(item => ({
+      id: item.id,
+      teacherId: 'SYSTEM' as string,
+      name: item.name,
+      slot: item.slot,
+      quality: item.quality,
+      itemType: item.itemType,
+      iconUrl: null as string | null,
+      hpBonus: item.hpBonus,
+      attackBonus: item.attackBonus,
+      defenseBonus: item.defenseBonus,
+    }));
+
+    // Use a transaction to insert all items
+    await db.insert(equipmentItems).values(itemsToInsert);
   }
 }
 
