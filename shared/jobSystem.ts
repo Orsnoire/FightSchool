@@ -312,9 +312,77 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
-      // USER: Fill in levels 1-15 with abilities and passives
-      1: { passives: { hp: 1 } },
-      // Add levels 2-15 here
+      1: { 
+        abilities: [{
+          id: "healing_potion",
+          name: "Healing Potion",
+          description: "Phase 2 use. Restore up to 1 HP to one ally (no overheal). Starts with 5 charges each combat.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { hp: 1 } },
+      3: { }, // +1 Healing Power (potions now heal 2) - mechanic upgrade only
+      4: { 
+        abilities: [{
+          id: "craft_healing_potion",
+          name: "Craft Healing Potion",
+          description: "Phase 1 action (instead of dealing damage): Add +1 Healing Potion (modified by craft bonuses).",
+          isCrossClass: false,
+        }]
+      },
+      5: { }, // +1 Max Healing Potion capacity (5 → 6) - mechanic upgrade only
+      6: { }, // Craft Efficiency +1: when crafting Healing or Shield potions, create +1 extra charge - mechanic upgrade only
+      7: { passives: { hp: 1 } },
+      8: { 
+        abilities: [
+          {
+            id: "healing_potion_crossclass",
+            name: "Healing Potion",
+            description: "Grants Healing Potion (5 charges) to cross-class slot users.",
+            isCrossClass: true,
+          },
+          {
+            id: "craft_shield_potion",
+            name: "Craft Shield Potion",
+            description: "Phase 1 action. You can craft Shield Potions (carry up to 3 by default).",
+            isCrossClass: false,
+          },
+          {
+            id: "shield_potion",
+            name: "Shield Potion",
+            description: "Use in Phase 2: The target blocks the next 2 damage they would take.",
+            isCrossClass: false,
+          }
+        ]
+      },
+      9: { }, // +1 Max Shield Potion capacity (3 → 4) - mechanic upgrade only
+      10: { 
+        abilities: [{
+          id: "potion_diffuser",
+          name: "Potion Diffuser",
+          description: "Use after answering, before Phase 2: The next potion you use this round affects the full raid (consumes only the one charge you use).",
+          isCrossClass: false,
+        }]
+      },
+      11: { }, // Craft Efficiency +1 (stacks with Lv 6) - mechanic upgrade only
+      12: { 
+        abilities: [{
+          id: "poison_potion",
+          name: "Poison Potion",
+          description: "Use after answering, before Phase 2: Chosen enemy takes +1 damage from each source for the rest of this round. (Max 3 uses per fight.)",
+          isCrossClass: false,
+        }]
+      },
+      13: { }, // +1 Healing Power (healing potions now heal 3 each) - mechanic upgrade only
+      14: { passives: { hp: 1 } },
+      15: { 
+        abilities: [{
+          id: "life_potion",
+          name: "Life Potion",
+          description: "Phase 2 instant. Revive all KO'd allies (return each to at least 1 HP). Cross-class unlock.",
+          isCrossClass: true,
+        }]
+      },
     }
   },
 
