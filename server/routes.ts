@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, type Question, getStartingEquipment, type CharacterClass } from "@shared/schema";
-import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds } from "@shared/jobSystem";
+import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints } from "@shared/jobSystem";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -200,6 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/student/:id/equipment", async (req, res) => {
     const student = await storage.getStudent(req.params.id);
     if (!student) return res.status(404).json({ error: "Student not found" });
+    if (!student.characterClass) return res.status(400).json({ error: "Student must select a character class first" });
     
     const updates = req.body;
     
@@ -480,14 +481,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
           } else if (player.characterClass === "scout") {
-            // Scout keeps streak logic
-            damage = 2;
-            const newStreak = player.streakCounter + 1;
-            if (newStreak >= 3) {
-              damage = 6;
+            // Scout builds combo points with correct answers
+            // Get scout level to determine max combo points
+            const scoutLevel = player.jobLevels?.scout || 0;
+            const maxComboPoints = getHeadshotMaxComboPoints(scoutLevel);
+            
+            damage = 2; // Base damage
+            const newComboPoints = player.streakCounter + 1;
+            
+            if (newComboPoints >= maxComboPoints) {
+              // Headshot: consume all combo points for heavy damage
+              damage = 6 + (newComboPoints - 3); // 6 base Headshot damage + bonus for extra points beyond 3
               await storage.updatePlayerState(fightId, playerId, { streakCounter: 0 });
             } else {
-              await storage.updatePlayerState(fightId, playerId, { streakCounter: newStreak });
+              await storage.updatePlayerState(fightId, playerId, { streakCounter: newComboPoints });
             }
           }
 
