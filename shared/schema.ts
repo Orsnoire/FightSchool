@@ -70,6 +70,7 @@ export const fights = pgTable("fights", {
   questions: jsonb("questions").notNull().$type<Question[]>(),
   enemies: jsonb("enemies").notNull().$type<Enemy[]>(),
   baseXP: integer("base_xp").notNull().default(10),
+  baseEnemyDamage: integer("base_enemy_damage").notNull().default(1),
   enemyDisplayMode: text("enemy_display_mode").notNull().$type<"simultaneous" | "consecutive">().default("consecutive"),
   lootTable: jsonb("loot_table").$type<LootItem[]>().default([]),
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
@@ -181,6 +182,7 @@ export interface Fight {
   questions: Question[];
   enemies: Enemy[];
   baseXP: number;
+  baseEnemyDamage: number;
   enemyDisplayMode: "simultaneous" | "consecutive";
   lootTable: LootItem[];
   createdAt: number;
@@ -193,6 +195,7 @@ export const insertFightSchema = z.object({
   questions: z.array(questionSchema).min(1),
   enemies: z.array(enemySchema).default([]),
   baseXP: z.number().min(1).max(100).default(10),
+  baseEnemyDamage: z.number().min(1).max(10).default(1),
   enemyDisplayMode: z.enum(["simultaneous", "consecutive"]).default("consecutive"),
   lootTable: z.array(z.object({ itemId: z.string() })).default([]),
 });
