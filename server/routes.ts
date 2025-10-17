@@ -383,24 +383,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // WebSocket server for real-time combat  
-  // Use noServer: true to manually handle upgrades before Vite's middleware
+  // Use noServer: true to manually handle upgrades
   const wss = new WebSocketServer({ noServer: true });
-  log("[WebSocket] Server created for manual upgrade handling", "websocket");
+  log("[WebSocket] Server created for combat connections", "websocket");
 
-  // CRITICAL: Handle WebSocket upgrades BEFORE Vite's middleware
-  // This prevents Vite's HMR from intercepting our /ws connections
+  // Handle ALL WebSocket upgrades (Replit deployment proxy strips /ws path)
+  // This means request.url comes through as "/" instead of "/ws" in production
+  // Trade-off: Vite HMR won't work in development, but combat WebSocket works in production
   httpServer.on('upgrade', (request, socket, head) => {
     const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+    log(`[WebSocket] Handling upgrade request to ${pathname}`, "websocket");
     
-    if (pathname === '/ws') {
-      log(`[WebSocket] Upgrading connection to /ws`, "websocket");
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit('connection', ws, request);
-      });
-    } else {
-      // Let other handlers (like Vite HMR) handle non-/ws upgrades
-      log(`[WebSocket] Ignoring upgrade request to ${pathname}`, "websocket");
-    }
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
   });
 
   wss.on("error", (error) => {
