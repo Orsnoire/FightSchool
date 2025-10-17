@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass } from "@shared/schema";
+import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints } from "@shared/jobSystem";
 
 interface ExtendedWebSocket extends WebSocket {
@@ -381,11 +382,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
+  // Log all WebSocket upgrade requests
+  httpServer.on('upgrade', (request, socket, head) => {
+    log(`[HTTP] WebSocket upgrade request to path: ${request.url}`, "websocket");
+  });
+
   // WebSocket server for real-time combat
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+  log("[WebSocket] Server created at path /ws", "websocket");
 
   wss.on("error", (error) => {
-    console.error("[WebSocket Server] Error:", error);
+    log(`[WebSocket Server] Error: ${error}`, "websocket");
   });
 
   const combatTimers: Map<string, NodeJS.Timeout> = new Map();
@@ -706,12 +713,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   wss.on("connection", (ws: ExtendedWebSocket) => {
-    console.log("[WebSocket] New connection established");
+    log("[WebSocket] New connection established", "websocket");
     
     ws.on("message", async (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log("[WebSocket] Received message:", message.type, message);
+        log(`[WebSocket] Received message: ${message.type}`, "websocket");
 
         if (message.type === "host") {
           ws.fightId = message.fightId;
@@ -773,7 +780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } catch (error) {
-        console.error("WebSocket error:", error);
+        log(`[WebSocket] Error: ${error}`, "websocket");
       }
     });
 
