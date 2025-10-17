@@ -133,6 +133,7 @@ export const combatSessions = pgTable("combat_sessions", {
   questionStartTime: bigint("question_start_time", { mode: "number" }),
   phaseStartTime: bigint("phase_start_time", { mode: "number" }),
   jobLocked: boolean("job_locked").notNull().default(false),
+  questionOrder: jsonb("question_order").$type<number[]>(),
 });
 
 export type DbCombatSession = typeof combatSessions.$inferSelect;
@@ -274,6 +275,7 @@ export interface CombatState {
   enemies: Array<{ id: string; name: string; image: string; health: number; maxHealth: number }>;
   questionStartTime?: number;
   phaseStartTime?: number;
+  questionOrder?: number[]; // Array of question indices (shuffled if randomizeQuestions is true)
 }
 
 // Equipment item definition

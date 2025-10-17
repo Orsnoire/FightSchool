@@ -210,12 +210,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCombatSession(fightId: string, fight: Fight): Promise<CombatState> {
+    // Generate question order (shuffle if randomizeQuestions is true)
+    const questionOrder = Array.from({ length: fight.questions.length }, (_, i) => i);
+    if (fight.randomizeQuestions) {
+      // Fisher-Yates shuffle algorithm
+      for (let i = questionOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questionOrder[i], questionOrder[j]] = [questionOrder[j], questionOrder[i]];
+      }
+    }
+    
     const session: CombatState = {
       fightId,
       currentQuestionIndex: 0,
       currentPhase: "waiting",
       players: {},
       enemies: fight.enemies.map((e) => ({ ...e, health: e.maxHealth })),
+      questionOrder,
     };
     
     // Delete existing session if it exists, then insert new one
@@ -227,6 +238,7 @@ export class DatabaseStorage implements IStorage {
       currentPhase: session.currentPhase,
       players: session.players,
       enemies: session.enemies,
+      questionOrder: session.questionOrder,
     });
     
     return session;

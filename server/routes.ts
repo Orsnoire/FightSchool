@@ -419,12 +419,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const fight = await storage.getFight(fightId);
     if (!session || !fight) return;
 
+    // Loop questions: if we've reached the end, go back to the start
     if (session.currentQuestionIndex >= fight.questions.length) {
-      await checkGameState(fightId);
-      return;
+      await storage.updateCombatSession(fightId, { currentQuestionIndex: 0 });
+      const updatedSession = await storage.getCombatSession(fightId);
+      if (!updatedSession) return;
+      session.currentQuestionIndex = 0;
     }
 
-    const question = fight.questions[session.currentQuestionIndex];
+    // Use questionOrder array to get the actual question index (supports randomization)
+    const actualQuestionIndex = session.questionOrder 
+      ? session.questionOrder[session.currentQuestionIndex] 
+      : session.currentQuestionIndex;
+    const question = fight.questions[actualQuestionIndex];
     await storage.updateCombatSession(fightId, {
       currentPhase: "question",
       questionStartTime: Date.now(),
