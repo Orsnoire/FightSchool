@@ -10,6 +10,8 @@ export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbali
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
+export type ItemType = "sword" | "wand" | "bow" | "staff" | "light_armor" | "leather_armor" | "helmet" | "cap" | "hat" | "consumable";
+export type ItemQuality = "common" | "rare" | "epic" | "legendary";
 
 // Teachers table
 export const teachers = pgTable("teachers", {
@@ -47,6 +49,7 @@ export const students = pgTable("students", {
   armor: text("armor"),
   crossClassAbility1: text("cross_class_ability_1"),
   crossClassAbility2: text("cross_class_ability_2"),
+  inventory: jsonb("inventory").$type<string[]>(), // Array of equipment item IDs, starts null
 });
 
 export const insertStudentSchema = createInsertSchema(students).omit({
@@ -55,6 +58,29 @@ export const insertStudentSchema = createInsertSchema(students).omit({
 
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
+
+// Equipment items table (teacher-created custom items)
+export const equipmentItems = pgTable("equipment_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull(),
+  name: text("name").notNull(),
+  iconUrl: text("icon_url"),
+  itemType: text("item_type").notNull().$type<ItemType>(),
+  quality: text("quality").notNull().$type<ItemQuality>(),
+  slot: text("slot").notNull().$type<EquipmentSlot>(),
+  hpBonus: integer("hp_bonus").notNull().default(0),
+  attackBonus: integer("attack_bonus").notNull().default(0),
+  defenseBonus: integer("defense_bonus").notNull().default(0),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertEquipmentItemSchema = createInsertSchema(equipmentItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertEquipmentItem = z.infer<typeof insertEquipmentItemSchema>;
+export type EquipmentItemDb = typeof equipmentItems.$inferSelect;
 
 // Loot table item (references equipment items)
 export interface LootItem {
