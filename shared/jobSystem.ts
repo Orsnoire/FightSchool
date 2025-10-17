@@ -611,3 +611,47 @@ export function getHeadshotMaxComboPoints(scoutLevel: number): number {
   }
   return 3; // Base: 3 combo points
 }
+
+// Herbalist ability stat calculations based on level
+export function getHealingPower(herbalistLevel: number): number {
+  let power = 1; // Base healing power
+  
+  if (herbalistLevel >= 3) power += 1; // Lv3: +1 healing power (potions heal 2)
+  if (herbalistLevel >= 13) power += 1; // Lv13: +1 healing power (potions heal 3)
+  
+  return power;
+}
+
+export function getHealingPotionCapacity(herbalistLevel: number): number {
+  let capacity = 5; // Base capacity
+  
+  if (herbalistLevel >= 5) capacity += 1; // Lv5: +1 max capacity (5 → 6)
+  
+  return capacity;
+}
+
+export function getShieldPotionCapacity(herbalistLevel: number): number {
+  if (herbalistLevel < 8) return 0; // Shield potions unlock at Lv8
+  
+  let capacity = 3; // Base capacity at Lv8
+  
+  if (herbalistLevel >= 9) capacity += 1; // Lv9: +1 max capacity (3 → 4)
+  
+  return capacity;
+}
+
+export function getCraftEfficiency(herbalistLevel: number): number {
+  let efficiency = 0; // No bonus by default
+  
+  if (herbalistLevel >= 6) efficiency += 1; // Lv6: +1 craft efficiency
+  if (herbalistLevel >= 11) efficiency += 1; // Lv11: +1 craft efficiency (stacks)
+  
+  return efficiency;
+}
+
+export function getPoisonPotionUses(herbalistLevel: number): number {
+  if (herbalistLevel >= 12) {
+    return 3; // Lv12: 3 uses per fight
+  }
+  return 0; // Not unlocked
+}
