@@ -62,7 +62,7 @@ export default function CreateFight() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/teacher", teacherId, "fights"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/teacher/${teacherId}/fights`] });
       toast({ title: "Fight created successfully!" });
       navigate("/teacher");
     },

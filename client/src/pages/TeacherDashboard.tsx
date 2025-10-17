@@ -16,12 +16,12 @@ export default function TeacherDashboard() {
   const teacherClassCode = localStorage.getItem("teacherClassCode") || "";
   
   const { data: fights, isLoading } = useQuery<Fight[]>({
-    queryKey: ["/api/teacher", teacherId, "fights"],
+    queryKey: [`/api/teacher/${teacherId}/fights`],
     enabled: !!teacherId,
   });
 
   const { data: students, isLoading: studentsLoading } = useQuery<Omit<Student, 'password'>[]>({
-    queryKey: ["/api/students/used-fight-codes", teacherClassCode],
+    queryKey: [`/api/students/used-fight-codes/${teacherClassCode}`],
     enabled: studentsDialogOpen,
   });
 

@@ -42,7 +42,7 @@ export default function ItemManagement() {
   const [editingItem, setEditingItem] = useState<EquipmentItemDb | null>(null);
 
   const { data: items, isLoading } = useQuery<EquipmentItemDb[]>({
-    queryKey: ["/api/teacher", teacherId, "equipment-items"],
+    queryKey: [`/api/teacher/${teacherId}/equipment-items`],
     enabled: !!teacherId,
   });
 
@@ -67,7 +67,7 @@ export default function ItemManagement() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/teacher", teacherId, "equipment-items"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/teacher/${teacherId}/equipment-items`] });
       setCreateDialogOpen(false);
       form.reset();
       toast({ title: "Item created!", description: "Your equipment item has been added" });
@@ -83,7 +83,7 @@ export default function ItemManagement() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/teacher", teacherId, "equipment-items"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/teacher/${teacherId}/equipment-items`] });
       setEditingItem(null);
       form.reset();
       toast({ title: "Item updated!", description: "Your equipment item has been updated" });
@@ -99,7 +99,7 @@ export default function ItemManagement() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/teacher", teacherId, "equipment-items"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/teacher/${teacherId}/equipment-items`] });
       toast({ title: "Item deleted", description: "Equipment item has been removed" });
     },
     onError: (error: Error) => {

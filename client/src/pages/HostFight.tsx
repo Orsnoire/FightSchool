@@ -16,7 +16,7 @@ export default function HostFight() {
   const fightId = params?.id;
 
   const { data: fight } = useQuery<Fight>({
-    queryKey: ["/api/fights", fightId],
+    queryKey: [`/api/fights/${fightId}`],
     enabled: !!fightId,
   });
 
