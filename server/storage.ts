@@ -316,6 +316,7 @@ export class DatabaseStorage implements IStorage {
       healingDone: 0,
       damageTaken: 0,
       deaths: 0,
+      threat: 1, // Default threat level for enemy AI targeting
     };
 
     session.players[student.id] = playerState;

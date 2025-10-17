@@ -100,6 +100,7 @@ export const fights = pgTable("fights", {
   enemyDisplayMode: text("enemy_display_mode").notNull().$type<"simultaneous" | "consecutive">().default("consecutive"),
   lootTable: jsonb("loot_table").$type<LootItem[]>().default([]),
   randomizeQuestions: boolean("randomize_questions").notNull().default(false),
+  enemyScript: text("enemy_script"), // Future: custom AI behavior script
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
@@ -214,6 +215,7 @@ export interface Fight {
   enemyDisplayMode: "simultaneous" | "consecutive";
   lootTable: LootItem[];
   randomizeQuestions: boolean;
+  enemyScript?: string; // Future: custom AI behavior script
   createdAt: number;
 }
 
@@ -267,6 +269,9 @@ export interface PlayerState {
   healingDone: number;
   damageTaken: number;
   deaths: number;
+  
+  // Enemy AI targeting
+  threat: number; // Enemy targeting priority (default 1)
 }
 
 export interface CombatState {
