@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +72,7 @@ export default function CreateFight() {
       baseEnemyDamage: 1,
       enemyDisplayMode: "consecutive",
       lootTable: [],
+      randomizeQuestions: false,
     },
   });
 
@@ -87,6 +89,7 @@ export default function CreateFight() {
         baseEnemyDamage: existingFight.baseEnemyDamage,
         enemyDisplayMode: existingFight.enemyDisplayMode,
         lootTable: existingFight.lootTable,
+        randomizeQuestions: existingFight.randomizeQuestions,
       });
       setQuestions(existingFight.questions);
       setEnemies(existingFight.enemies);
@@ -284,6 +287,29 @@ export default function CreateFight() {
                       </Select>
                       <p className="text-sm text-muted-foreground">Choose how multiple enemies appear in combat</p>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="randomizeQuestions"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-randomize-questions"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Randomize Question Order
+                        </FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Present questions in random order each time the fight is hosted (prevents memorization)
+                        </p>
+                      </div>
                     </FormItem>
                   )}
                 />

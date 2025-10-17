@@ -99,6 +99,7 @@ export const fights = pgTable("fights", {
   baseEnemyDamage: integer("base_enemy_damage").notNull().default(1),
   enemyDisplayMode: text("enemy_display_mode").notNull().$type<"simultaneous" | "consecutive">().default("consecutive"),
   lootTable: jsonb("loot_table").$type<LootItem[]>().default([]),
+  randomizeQuestions: boolean("randomize_questions").notNull().default(false),
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
