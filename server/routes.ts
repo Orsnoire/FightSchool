@@ -384,6 +384,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WebSocket server for real-time combat
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
+  wss.on("error", (error) => {
+    console.error("[WebSocket Server] Error:", error);
+  });
+
   const combatTimers: Map<string, NodeJS.Timeout> = new Map();
 
   function broadcastToCombat(fightId: string, message: any) {
@@ -702,9 +706,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   wss.on("connection", (ws: ExtendedWebSocket) => {
+    console.log("[WebSocket] New connection established");
+    
     ws.on("message", async (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
+        console.log("[WebSocket] Received message:", message.type, message);
 
         if (message.type === "host") {
           ws.fightId = message.fightId;
