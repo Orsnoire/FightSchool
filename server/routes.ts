@@ -382,14 +382,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  // Log all WebSocket upgrade requests
-  httpServer.on('upgrade', (request, socket, head) => {
-    log(`[HTTP] WebSocket upgrade request to path: ${request.url}`, "websocket");
-  });
+  // WebSocket server for real-time combat  
+  // Use noServer: true to manually handle upgrades before Vite's middleware
+  const wss = new WebSocketServer({ noServer: true });
+  log("[WebSocket] Server created for manual upgrade handling", "websocket");
 
-  // WebSocket server for real-time combat
-  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
-  log("[WebSocket] Server created at path /ws", "websocket");
+  // CRITICAL: Handle WebSocket upgrades BEFORE Vite's middleware
+  // This prevents Vite's HMR from intercepting our /ws connections
+  httpServer.on('upgrade', (request, socket, head) => {
+    const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+    
+    if (pathname === '/ws') {
+      log(`[WebSocket] Upgrading connection to /ws`, "websocket");
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else {
+      // Let other handlers (like Vite HMR) handle non-/ws upgrades
+      log(`[WebSocket] Ignoring upgrade request to ${pathname}`, "websocket");
+    }
+  });
 
   wss.on("error", (error) => {
     log(`[WebSocket Server] Error: ${error}`, "websocket");

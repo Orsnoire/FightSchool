@@ -40,6 +40,14 @@ export default function CreateFight() {
 
   const teacherId = localStorage.getItem("teacherId") || "";
 
+  // Redirect to login if no teacher ID
+  useEffect(() => {
+    if (!teacherId) {
+      toast({ title: "Please log in first", variant: "destructive" });
+      navigate("/teacher/login");
+    }
+  }, [teacherId, navigate, toast]);
+
   // Load existing fight data in edit mode
   const { data: existingFight, isLoading: fightLoading } = useQuery<Fight>({
     queryKey: [`/api/fights/${fightId}`],
