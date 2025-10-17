@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, type Question, getStartingEquipment, type CharacterClass } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass } from "@shared/schema";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints } from "@shared/jobSystem";
 
 interface ExtendedWebSocket extends WebSocket {
@@ -121,6 +121,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Return the first active fight (there should typically only be one active at a time per class code)
     res.json(activeFights[0]);
+  });
+
+  // Equipment items endpoints
+  app.get("/api/teacher/:teacherId/equipment-items", async (req, res) => {
+    const items = await storage.getEquipmentItemsByTeacher(req.params.teacherId);
+    res.json(items);
+  });
+
+  app.get("/api/equipment-items/:id", async (req, res) => {
+    const item = await storage.getEquipmentItem(req.params.id);
+    if (!item) return res.status(404).json({ error: "Equipment item not found" });
+    res.json(item);
+  });
+
+  app.post("/api/equipment-items", async (req, res) => {
+    try {
+      const data = insertEquipmentItemSchema.parse(req.body);
+      const item = await storage.createEquipmentItem(data);
+      res.json(item);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/equipment-items/:id", async (req, res) => {
+    try {
+      const item = await storage.getEquipmentItem(req.params.id);
+      if (!item) return res.status(404).json({ error: "Equipment item not found" });
+      
+      const updated = await storage.updateEquipmentItem(req.params.id, req.body);
+      res.json(updated);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/equipment-items/:id", async (req, res) => {
+    const deleted = await storage.deleteEquipmentItem(req.params.id);
+    if (!deleted) return res.status(404).json({ error: "Equipment item not found" });
+    res.json({ success: true });
   });
 
   // Student endpoints
