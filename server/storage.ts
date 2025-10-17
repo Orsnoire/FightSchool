@@ -1,5 +1,5 @@
-import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass } from "@shared/schema";
-import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, CLASS_STATS } from "@shared/schema";
+import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot } from "@shared/schema";
+import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -60,6 +60,13 @@ export interface IStorage {
   createStudentJobLevel(jobLevel: InsertStudentJobLevel): Promise<StudentJobLevel>;
   updateStudentJobLevel(id: string, updates: Partial<StudentJobLevel>): Promise<StudentJobLevel | undefined>;
   awardXPToJob(studentId: string, jobClass: CharacterClass, xpAmount: number): Promise<{ jobLevel: StudentJobLevel; leveledUp: boolean; newLevel: number }>;
+  
+  // Equipment items operations
+  getEquipmentItem(id: string): Promise<EquipmentItemDb | undefined>;
+  getEquipmentItemsByTeacher(teacherId: string): Promise<EquipmentItemDb[]>;
+  createEquipmentItem(item: InsertEquipmentItem): Promise<EquipmentItemDb>;
+  updateEquipmentItem(id: string, updates: Partial<EquipmentItemDb>): Promise<EquipmentItemDb | undefined>;
+  deleteEquipmentItem(id: string): Promise<boolean>;
 }
 
 // Integration: blueprint:javascript_database
@@ -115,12 +122,13 @@ export class DatabaseStorage implements IStorage {
     const hashedPassword = hashPassword(insertStudent.password);
     const [student] = await db
       .insert(students)
-      .values({
+      .values([{
         ...insertStudent,
         password: hashedPassword,
-        characterClass: insertStudent.characterClass || "warrior",
-        gender: insertStudent.gender || "A",
-      })
+        characterClass: insertStudent.characterClass as CharacterClass | null | undefined,
+        gender: insertStudent.gender as Gender | null | undefined,
+        inventory: insertStudent.inventory as string[] | null | undefined,
+      }])
       .returning();
     return student;
   }
@@ -214,6 +222,9 @@ export class DatabaseStorage implements IStorage {
   async addPlayerToCombat(fightId: string, student: Student): Promise<void> {
     const session = await this.getCombatSession(fightId);
     if (!session) return;
+    
+    // Student must have completed character selection
+    if (!student.characterClass || !student.gender) return;
 
     // Fetch student's job levels
     const jobLevelRecords = await this.getStudentJobLevels(student.id);
@@ -291,7 +302,10 @@ export class DatabaseStorage implements IStorage {
 
   // Combat stats operations
   async createCombatStat(stat: InsertCombatStat): Promise<CombatStat> {
-    const [createdStat] = await db.insert(combatStats).values(stat).returning();
+    const [createdStat] = await db.insert(combatStats).values([{
+      ...stat,
+      characterClass: stat.characterClass as CharacterClass,
+    }]).returning();
     return createdStat;
   }
 
@@ -368,7 +382,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createStudentJobLevel(jobLevel: InsertStudentJobLevel): Promise<StudentJobLevel> {
-    const [created] = await db.insert(studentJobLevels).values(jobLevel).returning();
+    const [created] = await db.insert(studentJobLevels).values([{
+      ...jobLevel,
+      jobClass: jobLevel.jobClass as CharacterClass,
+    }]).returning();
     return created;
   }
 
@@ -416,6 +433,40 @@ export class DatabaseStorage implements IStorage {
       leveledUp,
       newLevel,
     };
+  }
+
+  // Equipment items operations
+  async getEquipmentItem(id: string): Promise<EquipmentItemDb | undefined> {
+    const [item] = await db.select().from(equipmentItems).where(eq(equipmentItems.id, id));
+    return item || undefined;
+  }
+
+  async getEquipmentItemsByTeacher(teacherId: string): Promise<EquipmentItemDb[]> {
+    return await db.select().from(equipmentItems).where(eq(equipmentItems.teacherId, teacherId));
+  }
+
+  async createEquipmentItem(item: InsertEquipmentItem): Promise<EquipmentItemDb> {
+    const [created] = await db.insert(equipmentItems).values([{
+      ...item,
+      itemType: item.itemType as ItemType,
+      quality: item.quality as ItemQuality,
+      slot: item.slot as EquipmentSlot,
+    }]).returning();
+    return created;
+  }
+
+  async updateEquipmentItem(id: string, updates: Partial<EquipmentItemDb>): Promise<EquipmentItemDb | undefined> {
+    const [updated] = await db
+      .update(equipmentItems)
+      .set(updates)
+      .where(eq(equipmentItems.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteEquipmentItem(id: string): Promise<boolean> {
+    const result = await db.delete(equipmentItems).where(eq(equipmentItems.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
   }
 }
 
