@@ -4,20 +4,28 @@
 
 An educational platform that transforms quiz-based learning into an immersive RPG combat experience. Teachers create quiz "fights" with questions and enemies, while students join battles as fantasy characters (Warrior, Wizard, Scout, Herbalist), answering questions to deal damage and defeat enemies. The system features real-time multiplayer combat, character customization with equipment, and class-based gameplay mechanics.
 
-## Recent Changes (October 16, 2025)
+## Recent Changes (October 17, 2025)
 
-**Job Level Integration into Combat**:
+**Scout Level Progression System**:
+- Implemented full Scout job tree with 15 levels: passive bonuses (HP +1 at Lv3/6/11, ATK +1 at Lv2/5/9/13) and ability unlocks
+- Created helper functions (`getHeadshotCooldown`, `getHeadshotMaxComboPoints`) for dynamic Scout ability scaling
+- Headshot mechanics: cooldown 5→4 rounds at Lv7, max combo points 3→6 at Lv14
+- Combat system uses dynamic max combo points for Headshot trigger (auto-fires when combo points = max)
+- Scout abilities include: Headshot (Lv1), Aim (Lv4), Mark (Lv10), Dodge (Lv12), Killshot (Lv15 cross-class)
+- Schema updated: characterClass and gender now nullable to support new student creation flow
+
+**Job Level Integration into Combat** (October 16):
 - PlayerState now includes jobLevels map enabling access to wizard/scout levels during combat
 - Combat join (`addPlayerToCombat`) fetches student job levels and calculates passive bonuses (HP/ATK/DEF) from all classes
 - Passive bonuses applied to maxHealth when players join combat
 - Lobby page displays Class Progression card showing current class level, passive bonuses, and other job levels
 
-**Fireball Dynamic Upgrades**:
+**Fireball Dynamic Upgrades** (October 16):
 - Created helper functions (`getFireballCooldown`, `getFireballDamageBonus`, `getFireballMaxChargeRounds`) to calculate Fireball stats from wizard level
 - Fireball mechanics now scale dynamically: cooldown 5→4→3→2 at Lv2/7/11, damage +1 at Lv5/13, max charge 2→3 at Lv14
 - Combat UI displays Fireball charge/cooldown indicators for wizards and streak counter for scouts
 
-**Login Flow Fix**:
+**Login Flow Fix** (October 16):
 - Fixed critical bug: `/api/student/login` now creates new accounts with null characterClass/gender (was incorrectly defaulting to "warrior"/"A")
 - Login routing: existing students (with characterClass) → lobby, new students (null characterClass) → character select
 - Ensures proper first-time character setup flow
