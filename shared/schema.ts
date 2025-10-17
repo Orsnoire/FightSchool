@@ -435,16 +435,16 @@ export function calculateEquipmentStats(weapon: string, headgear: string, armor:
 }
 
 // Character class stats
-export const CLASS_STATS: Record<CharacterClass, { maxHealth: number; damage: number; role: string }> = {
-  warrior: { maxHealth: 15, damage: 1, role: "Tank - Can block for allies" },
-  wizard: { maxHealth: 10, damage: 2, role: "DPS - Streak bonus damage" },
-  scout: { maxHealth: 10, damage: 2, role: "DPS - Streak bonus damage" },
-  herbalist: { maxHealth: 12, damage: 1, role: "Healer - Can heal allies" },
-  knight: { maxHealth: 16, damage: 1, role: "Unlockable Tank - Advanced combat techniques" },
-  paladin: { maxHealth: 16, damage: 1, role: "Holy Tank - Warrior + Herbalist fusion" },
-  dark_knight: { maxHealth: 14, damage: 2, role: "Aggressive Tank - High damage, self-sustaining" },
-  sage: { maxHealth: 11, damage: 3, role: "Advanced Mage - Wizard evolution" },
-  ranger: { maxHealth: 11, damage: 3, role: "Master Scout - Scout evolution" },
-  druid: { maxHealth: 13, damage: 1, role: "Nature Healer - Herbalist evolution" },
-  monk: { maxHealth: 13, damage: 2, role: "Balanced Fighter - All-rounder" },
+export const CLASS_STATS: Record<CharacterClass, { maxHealth: number; damage: number; defense: number; role: string }> = {
+  warrior: { maxHealth: 15, damage: 1, defense: 2, role: "Tank - Can block for allies" },
+  wizard: { maxHealth: 10, damage: 2, defense: 0, role: "DPS - Streak bonus damage" },
+  scout: { maxHealth: 10, damage: 2, defense: 0, role: "DPS - Streak bonus damage" },
+  herbalist: { maxHealth: 12, damage: 1, defense: 0, role: "Healer - Can heal allies" },
+  knight: { maxHealth: 16, damage: 1, defense: 3, role: "Unlockable Tank - Advanced combat techniques" },
+  paladin: { maxHealth: 16, damage: 1, defense: 2, role: "Holy Tank - Warrior + Herbalist fusion" },
+  dark_knight: { maxHealth: 14, damage: 2, defense: 1, role: "Aggressive Tank - High damage, self-sustaining" },
+  sage: { maxHealth: 11, damage: 3, defense: 0, role: "Advanced Mage - Wizard evolution" },
+  ranger: { maxHealth: 11, damage: 3, defense: 0, role: "Master Scout - Scout evolution" },
+  druid: { maxHealth: 13, damage: 1, defense: 1, role: "Nature Healer - Herbalist evolution" },
+  monk: { maxHealth: 13, damage: 2, defense: 1, role: "Balanced Fighter - All-rounder" },
 };
