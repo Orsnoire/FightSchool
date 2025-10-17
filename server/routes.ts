@@ -742,10 +742,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (message.type === "join") {
           const student = await storage.getStudent(message.studentId);
           const fightId = message.fightId;
-          if (!student || !fightId) return;
+          
+          if (!student) {
+            log(`[WebSocket] Join failed: Student not found (${message.studentId})`, "websocket");
+            return;
+          }
+          if (!fightId) {
+            log(`[WebSocket] Join failed: No fightId provided`, "websocket");
+            return;
+          }
 
           const fight = await storage.getFight(fightId);
-          if (!fight || fight.classCode !== student.classCode) return;
+          if (!fight) {
+            log(`[WebSocket] Join failed: Fight not found (${fightId})`, "websocket");
+            return;
+          }
+
+          log(`[WebSocket] Student ${student.nickname} joining fight ${fight.title}`, "websocket");
 
           ws.studentId = student.id;
           ws.fightId = fightId;
@@ -761,6 +774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const updatedSession = await storage.getCombatSession(fightId);
           broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+          log(`[WebSocket] Student ${student.nickname} successfully joined fight`, "websocket");
         } else if (message.type === "start_fight" && ws.isHost && ws.fightId) {
           await startQuestion(ws.fightId);
         } else if (message.type === "answer" && ws.studentId && ws.fightId) {
