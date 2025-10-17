@@ -6,6 +6,15 @@ An educational platform that transforms quiz-based learning into an immersive RP
 
 ## Recent Changes (October 17, 2025)
 
+**Shared Equipment System & Database Migration**:
+- Implemented shared default equipment: 18 system items (teacherId='SYSTEM') seeded at server startup for all teachers to access
+- Refactored equipment architecture to be fully database-driven: removed hardcoded EQUIPMENT_ITEMS constant from student flows (Lobby, StudentEquipment)
+- Fixed equipment query performance: replaced N+1 pattern with batched `inArray` queries, implemented structured query keys `['equipment-items', { ids: sortedIds }]` to prevent stale cache bugs
+- Updated ItemType schema to include "herbs" and "armor" types for equipment diversity
+- Teachers now see both their custom equipment items AND shared SYSTEM items when creating fights in loot tables
+- Equipment queries use GET `/api/equipment-items?ids=id1,id2` with single batched SELECT for performance
+- Students display inventory items in Lobby with quality-based border colors (common/rare/epic/legendary) and stat bonuses
+
 **Equipment & Combat Systems Update**:
 - Added `equipment_items` database table for teacher-created custom equipment with fields: teacherId, name, iconUrl, itemType (expandable enum), quality (common/rare/epic/legendary), slot (weapon/headgear/armor), stat bonuses (HP/ATK/DEF)
 - Created ItemManagement page (`/teacher/items`) allowing teachers to create, edit, delete custom equipment with quality-based visual indicators (common/rare/epic/legendary border colors)
