@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useRoute } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -13,14 +13,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, PlusCircle, Trash2 } from "lucide-react";
-import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, type EquipmentItemDb } from "@shared/schema";
+import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, type EquipmentItemDb, type Fight } from "@shared/schema";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
 import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
 import wizardImg from "@assets/generated_images/Dark_wizard_enemy_illustration_a897a309.png";
 
 export default function CreateFight() {
   const [, navigate] = useLocation();
+  const [, params] = useRoute("/teacher/edit/:id");
   const { toast } = useToast();
+  const fightId = params?.id;
+  const isEditMode = !!fightId;
+  
   const [questions, setQuestions] = useState<Question[]>([]);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [lootTable, setLootTable] = useState<LootItem[]>([]);
@@ -35,6 +39,12 @@ export default function CreateFight() {
   });
 
   const teacherId = localStorage.getItem("teacherId") || "";
+
+  // Load existing fight data in edit mode
+  const { data: existingFight, isLoading: fightLoading } = useQuery<Fight>({
+    queryKey: [`/api/fights/${fightId}`],
+    enabled: isEditMode && !!fightId,
+  });
 
   const { data: teacherEquipment = [], isLoading: equipmentLoading } = useQuery<EquipmentItemDb[]>({
     queryKey: [`/api/teacher/${teacherId}/equipment-items`],
@@ -56,19 +66,44 @@ export default function CreateFight() {
     },
   });
 
-  const createMutation = useMutation({
+  // Populate form with existing fight data in edit mode
+  useEffect(() => {
+    if (existingFight && isEditMode) {
+      form.reset({
+        teacherId: existingFight.teacherId,
+        title: existingFight.title,
+        classCode: existingFight.classCode,
+        questions: existingFight.questions,
+        enemies: existingFight.enemies,
+        baseXP: existingFight.baseXP,
+        baseEnemyDamage: existingFight.baseEnemyDamage,
+        enemyDisplayMode: existingFight.enemyDisplayMode,
+        lootTable: existingFight.lootTable,
+      });
+      setQuestions(existingFight.questions);
+      setEnemies(existingFight.enemies);
+      setLootTable(existingFight.lootTable || []);
+    }
+  }, [existingFight, isEditMode, form]);
+
+  const saveMutation = useMutation({
     mutationFn: async (data: InsertFight) => {
-      const response = await apiRequest("POST", "/api/fights", data);
+      const method = isEditMode ? "PATCH" : "POST";
+      const url = isEditMode ? `/api/fights/${fightId}` : "/api/fights";
+      const response = await apiRequest(method, url, data);
       return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/teacher/${teacherId}/fights`] });
-      toast({ title: "Fight created successfully!" });
+      if (isEditMode) {
+        queryClient.invalidateQueries({ queryKey: [`/api/fights/${fightId}`] });
+      }
+      toast({ title: isEditMode ? "Fight updated successfully!" : "Fight created successfully!" });
       navigate("/teacher");
     },
     onError: (error) => {
       toast({ 
-        title: "Failed to create fight", 
+        title: isEditMode ? "Failed to update fight" : "Failed to create fight", 
         description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive" 
       });
@@ -120,7 +155,7 @@ export default function CreateFight() {
       toast({ title: "Add at least one question", variant: "destructive" });
       return;
     }
-    createMutation.mutate({ ...data, teacherId, questions, enemies, lootTable });
+    saveMutation.mutate({ ...data, teacherId, questions, enemies, lootTable });
   };
 
   const addLootItem = (itemId: string) => {
@@ -148,7 +183,7 @@ export default function CreateFight() {
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <h1 className="text-4xl font-serif font-bold mb-8" data-testid="text-create-title">
-          Create New Fight
+          {isEditMode ? "Edit Fight" : "Create New Fight"}
         </h1>
 
         <Form {...form}>
@@ -536,10 +571,12 @@ export default function CreateFight() {
               type="submit"
               size="lg"
               className="w-full"
-              disabled={createMutation.isPending}
+              disabled={saveMutation.isPending}
               data-testid="button-create-fight-submit"
             >
-              {createMutation.isPending ? "Creating..." : "Create Fight"}
+              {saveMutation.isPending 
+                ? (isEditMode ? "Updating..." : "Creating...") 
+                : (isEditMode ? "Update Fight" : "Create Fight")}
             </Button>
           </form>
         </Form>

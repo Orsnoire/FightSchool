@@ -36,6 +36,7 @@ export interface IStorage {
   getAllFights(): Promise<Fight[]>;
   getFightsByTeacherId(teacherId: string): Promise<Fight[]>;
   createFight(fight: InsertFight): Promise<Fight>;
+  updateFight(id: string, fight: InsertFight): Promise<Fight | undefined>;
   deleteFight(id: string): Promise<boolean>;
 
   // Combat session operations
@@ -175,6 +176,24 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return { ...fight, lootTable: fight.lootTable || [] } as Fight;
+  }
+
+  async updateFight(id: string, insertFight: InsertFight): Promise<Fight | undefined> {
+    const [fight] = await db
+      .update(fights)
+      .set({
+        title: insertFight.title,
+        classCode: insertFight.classCode,
+        questions: insertFight.questions,
+        enemies: insertFight.enemies,
+        baseXP: insertFight.baseXP,
+        baseEnemyDamage: insertFight.baseEnemyDamage,
+        enemyDisplayMode: insertFight.enemyDisplayMode,
+        lootTable: insertFight.lootTable,
+      })
+      .where(eq(fights.id, id))
+      .returning();
+    return fight ? { ...fight, lootTable: fight.lootTable || [] } as Fight : undefined;
   }
 
   async deleteFight(id: string): Promise<boolean> {

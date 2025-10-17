@@ -88,6 +88,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/fights/:id", async (req, res) => {
+    try {
+      const data = insertFightSchema.parse(req.body);
+      const fight = await storage.updateFight(req.params.id, data);
+      if (!fight) return res.status(404).json({ error: "Fight not found" });
+      res.json(fight);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.delete("/api/fights/:id", async (req, res) => {
     const deleted = await storage.deleteFight(req.params.id);
     if (!deleted) return res.status(404).json({ error: "Fight not found" });

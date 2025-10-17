@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusCircle, Swords, Users, BarChart3, Copy, UserCheck } from "lucide-react";
+import { PlusCircle, Swords, Users, BarChart3, Copy, UserCheck, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Fight, Student } from "@shared/schema";
 
@@ -171,6 +171,12 @@ export default function TeacherDashboard() {
                   </div>
                 </CardContent>
                 <CardFooter className="flex gap-2">
+                  <Link href={`/teacher/edit/${fight.id}`} className="flex-1">
+                    <Button variant="outline" className="w-full" data-testid={`button-edit-${fight.id}`}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                  </Link>
                   <Link href={`/teacher/host/${fight.id}`} className="flex-1">
                     <Button variant="default" className="w-full" data-testid={`button-host-${fight.id}`}>
                       <Users className="mr-2 h-4 w-4" />

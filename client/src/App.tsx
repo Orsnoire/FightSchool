@@ -27,6 +27,7 @@ function Router() {
       <Route path="/teacher/stats" component={TeacherStats} />
       <Route path="/teacher/items" component={ItemManagement} />
       <Route path="/teacher/create" component={CreateFight} />
+      <Route path="/teacher/edit/:id" component={CreateFight} />
       <Route path="/teacher/host/:id" component={HostFight} />
       <Route path="/student/login" component={StudentLogin} />
       <Route path="/student/character-select" component={CharacterSelect} />
