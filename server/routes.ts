@@ -381,6 +381,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
+  // Log all upgrade requests to debug WebSocket issues
+  httpServer.on('upgrade', (request, socket, head) => {
+    console.log("[HTTP Server] Upgrade request received:", {
+      url: request.url,
+      headers: request.headers
+    });
+  });
+
   // WebSocket server for real-time combat
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
