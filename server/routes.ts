@@ -785,7 +785,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             healTarget: message.healTarget,
           });
           const session = await storage.getCombatSession(ws.fightId);
+          if (!session) return;
+          
           broadcastToCombat(ws.fightId, { type: "combat_state", state: session });
+
+          // Check if all players have answered - if so, end question phase early
+          const allPlayers = Object.values(session.players);
+          const allAnswered = allPlayers.every(player => player.hasAnswered);
+          
+          if (allAnswered && allPlayers.length > 0) {
+            log(`[WebSocket] All ${allPlayers.length} students answered - ending question phase early`, "websocket");
+            
+            // Clear the question timer
+            const timer = combatTimers.get(ws.fightId);
+            if (timer) {
+              clearTimeout(timer);
+              combatTimers.delete(ws.fightId);
+            }
+            
+            // Immediately proceed to tank blocking phase
+            await tankBlockingPhase(ws.fightId);
+          }
         } else if (message.type === "block" && ws.studentId && ws.fightId) {
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             blockTarget: message.targetId,
