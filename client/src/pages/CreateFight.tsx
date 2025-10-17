@@ -45,6 +45,7 @@ export default function CreateFight() {
       questions: [],
       enemies: [],
       baseXP: 10,
+      baseEnemyDamage: 1,
       enemyDisplayMode: "consecutive",
       lootTable: [],
     },
@@ -195,6 +196,27 @@ export default function CreateFight() {
                         />
                       </FormControl>
                       <p className="text-sm text-muted-foreground">Base XP awarded for completing this fight (additional XP based on performance)</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="baseEnemyDamage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enemy Damage Level: {field.value}</FormLabel>
+                      <FormControl>
+                        <Slider
+                          min={1}
+                          max={10}
+                          step={1}
+                          value={[field.value || 1]}
+                          onValueChange={(vals) => field.onChange(vals[0])}
+                          data-testid="slider-base-enemy-damage"
+                        />
+                      </FormControl>
+                      <p className="text-sm text-muted-foreground">Difficulty scaling: higher values mean enemies deal more damage (1 = easy, 10 = very hard)</p>
                       <FormMessage />
                     </FormItem>
                   )}
