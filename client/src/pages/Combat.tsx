@@ -132,13 +132,34 @@ export default function Combat() {
       <div className="flex-1 flex p-4 gap-4">
         {/* Left column: Player avatars */}
         <div className="w-32 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-left-column">
-          {leftPlayers.map((player) => (
-            <div key={player.studentId} className={`p-2 rounded-md bg-card border ${player.isDead ? 'opacity-50' : ''}`} data-testid={`avatar-left-${player.studentId}`}>
-              <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
-              <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
-              <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
-            </div>
-          ))}
+          {leftPlayers.map((player) => {
+            const isBeingBlocked = Object.values(combatState.players).some(
+              p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
+            );
+            const isBeingHealed = Object.values(combatState.players).some(
+              p => p.isHealing && p.healTarget === player.studentId && p.characterClass === "herbalist" && !p.isDead
+            );
+            
+            return (
+              <div 
+                key={player.studentId} 
+                className={`p-2 rounded-md bg-card border ${
+                  player.isDead ? 'opacity-50' : ''
+                } ${isBeingBlocked ? 'border-warrior border-2' : isBeingHealed ? 'border-health border-2' : ''}`} 
+                data-testid={`avatar-left-${player.studentId}`}
+              >
+                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+                <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
+                <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
+                {(isBeingBlocked || isBeingHealed) && (
+                  <div className="flex items-center justify-center mt-1">
+                    {isBeingBlocked && <Shield className="h-3 w-3 text-warrior" />}
+                    {isBeingHealed && <span className="text-health text-xs">+</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Center column: Main content */}
@@ -223,19 +244,40 @@ export default function Combat() {
                       </label>
                       {isHealing && (
                         <div className="grid grid-cols-3 gap-2">
-                          {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => (
-                            <Button
-                              key={player.studentId}
-                              variant={healTarget === player.studentId ? "default" : "outline"}
-                              className="h-auto p-2 flex flex-col items-center gap-1"
-                              onClick={() => setHealTarget(player.studentId)}
-                              size="sm"
-                              data-testid={`button-heal-${player.studentId}`}
-                            >
-                              <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
-                              <span className="text-xs">{player.nickname}</span>
-                            </Button>
-                          ))}
+                          {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => {
+                            const isMyTarget = healTarget === player.studentId;
+                            const allHealers = Object.values(combatState.players).filter(
+                              p => p.isHealing && 
+                              p.healTarget === player.studentId && 
+                              p.characterClass === "herbalist" && 
+                              !p.isDead
+                            );
+                            const otherHealers = allHealers.filter(p => p.studentId !== studentId);
+                            const isBeingHealed = allHealers.length > 0;
+                            
+                            return (
+                              <Button
+                                key={player.studentId}
+                                variant={isBeingHealed ? "default" : "outline"}
+                                className={`h-auto p-2 flex flex-col items-center gap-1 ${
+                                  isBeingHealed ? 'bg-health border-health text-white' : ''
+                                }`}
+                                onClick={() => setHealTarget(player.studentId)}
+                                size="sm"
+                                data-testid={`button-heal-${player.studentId}`}
+                              >
+                                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+                                <span className="text-xs">{player.nickname}</span>
+                                <HealthBar current={player.health} max={player.maxHealth} showText={false} className="w-full" />
+                                <div className="flex items-center gap-1 text-xs">
+                                  {isMyTarget && <span>✓</span>}
+                                  {otherHealers.length > 0 && (
+                                    <span>{otherHealers.length} other healer{otherHealers.length > 1 ? 's' : ''}</span>
+                                  )}
+                                </div>
+                              </Button>
+                            );
+                          })}
                         </div>
                       )}
                     </>
@@ -297,23 +339,42 @@ export default function Combat() {
             </Card>
           )}
 
-          {combatState.currentPhase === "tank_blocking" && playerState?.characterClass === "warrior" && (
+          {combatState.currentPhase === "tank_blocking" && playerState?.characterClass === "warrior" && !playerState.isDead && (
             <Card className="p-8">
               <h3 className="text-2xl font-bold mb-6">Select Ally to Protect</h3>
               <div className="grid grid-cols-3 gap-4">
-                {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => (
-                  <Button
-                    key={player.studentId}
-                    variant="outline"
-                    className="h-auto p-4 flex flex-col items-center gap-2"
-                    onClick={() => selectBlockTarget(player.studentId)}
-                    data-testid={`button-block-${player.studentId}`}
-                  >
-                    <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
-                    <span className="text-sm font-semibold">{player.nickname}</span>
-                    <Shield className="h-4 w-4 text-warrior" />
-                  </Button>
-                ))}
+                {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => {
+                  const isMyTarget = playerState.blockTarget === player.studentId;
+                  const allBlockers = Object.values(combatState.players).filter(
+                    p => p.blockTarget === player.studentId && 
+                    p.characterClass === "warrior" && 
+                    !p.isDead
+                  );
+                  const otherBlockers = allBlockers.filter(p => p.studentId !== studentId);
+                  const isBeingBlocked = allBlockers.length > 0;
+                  
+                  return (
+                    <Button
+                      key={player.studentId}
+                      variant={isBeingBlocked ? "default" : "outline"}
+                      className={`h-auto p-4 flex flex-col items-center gap-2 ${
+                        isBeingBlocked ? 'bg-warrior border-warrior text-white' : ''
+                      }`}
+                      onClick={() => selectBlockTarget(player.studentId)}
+                      data-testid={`button-block-${player.studentId}`}
+                    >
+                      <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+                      <span className="text-sm font-semibold">{player.nickname}</span>
+                      <HealthBar current={player.health} max={player.maxHealth} showText={false} className="w-full" />
+                      <div className="flex items-center gap-1">
+                        {isMyTarget && <Shield className="h-4 w-4" />}
+                        {otherBlockers.length > 0 && (
+                          <div className="text-xs">{otherBlockers.length} other tank{otherBlockers.length > 1 ? 's' : ''}</div>
+                        )}
+                      </div>
+                    </Button>
+                  );
+                })}
               </div>
             </Card>
           )}
@@ -322,13 +383,34 @@ export default function Combat() {
 
         {/* Right column: Player avatars */}
         <div className="w-32 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-right-column">
-          {rightPlayers.map((player) => (
-            <div key={player.studentId} className={`p-2 rounded-md bg-card border ${player.isDead ? 'opacity-50' : ''}`} data-testid={`avatar-right-${player.studentId}`}>
-              <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
-              <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
-              <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
-            </div>
-          ))}
+          {rightPlayers.map((player) => {
+            const isBeingBlocked = Object.values(combatState.players).some(
+              p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
+            );
+            const isBeingHealed = Object.values(combatState.players).some(
+              p => p.isHealing && p.healTarget === player.studentId && p.characterClass === "herbalist" && !p.isDead
+            );
+            
+            return (
+              <div 
+                key={player.studentId} 
+                className={`p-2 rounded-md bg-card border ${
+                  player.isDead ? 'opacity-50' : ''
+                } ${isBeingBlocked ? 'border-warrior border-2' : isBeingHealed ? 'border-health border-2' : ''}`} 
+                data-testid={`avatar-right-${player.studentId}`}
+              >
+                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+                <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
+                <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
+                {(isBeingBlocked || isBeingHealed) && (
+                  <div className="flex items-center justify-center mt-1">
+                    {isBeingBlocked && <Shield className="h-3 w-3 text-warrior" />}
+                    {isBeingHealed && <span className="text-health text-xs">+</span>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

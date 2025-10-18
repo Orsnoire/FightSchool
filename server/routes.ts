@@ -404,6 +404,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const combatTimers: Map<string, NodeJS.Timeout> = new Map();
+  const inactivityTimers: Map<string, NodeJS.Timeout> = new Map();
+  const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+
+  function resetInactivityTimer(fightId: string) {
+    // Clear existing inactivity timer
+    const existingTimer = inactivityTimers.get(fightId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    
+    // Set new inactivity timer
+    const timer = setTimeout(async () => {
+      log(`[WebSocket] Fight ${fightId} ending due to 10 minutes of inactivity`, "websocket");
+      
+      // Clear combat timer if any
+      const combatTimer = combatTimers.get(fightId);
+      if (combatTimer) {
+        clearTimeout(combatTimer);
+        combatTimers.delete(fightId);
+      }
+      
+      // Save combat stats
+      await saveCombatStats(fightId);
+      
+      // End the fight
+      broadcastToCombat(fightId, {
+        type: "game_over",
+        victory: false,
+        message: "Fight ended due to inactivity (10 minutes)",
+      });
+      
+      // Update combat session
+      await storage.updateCombatSession(fightId, { currentPhase: "game_over" });
+      
+      // Disconnect all players after a short delay to ensure they receive the message
+      setTimeout(() => {
+        disconnectAllPlayers(fightId);
+      }, 2000);
+      
+      // Clean up
+      inactivityTimers.delete(fightId);
+    }, INACTIVITY_TIMEOUT);
+    
+    inactivityTimers.set(fightId, timer);
+  }
 
   function broadcastToCombat(fightId: string, message: any) {
     wss.clients.forEach((client) => {
@@ -414,10 +459,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  function disconnectAllPlayers(fightId: string) {
+    // Close all WebSocket connections for this fight
+    wss.clients.forEach((client) => {
+      const ws = client as ExtendedWebSocket;
+      if (ws.fightId === fightId && ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, "Fight ended");
+      }
+    });
+  }
+
   async function startQuestion(fightId: string) {
     const session = await storage.getCombatSession(fightId);
     const fight = await storage.getFight(fightId);
     if (!session || !fight) return;
+    
+    // Reset inactivity timer on new question
+    resetInactivityTimer(fightId);
 
     // Loop questions: if we've reached the end, go back to the start
     if (session.currentQuestionIndex >= fight.questions.length) {
@@ -844,6 +902,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             combatTimers.delete(ws.fightId);
           }
           
+          // Clear inactivity timer
+          const inactivityTimer = inactivityTimers.get(ws.fightId);
+          if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+            inactivityTimers.delete(ws.fightId);
+          }
+          
           // Save combat stats before ending
           await saveCombatStats(ws.fightId);
           
@@ -857,6 +922,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Update combat session to game_over phase
           await storage.updateCombatSession(ws.fightId, { currentPhase: "game_over" });
           
+          // Disconnect all players after a short delay to ensure they receive the message
+          const fightIdToClose = ws.fightId;
+          setTimeout(() => {
+            disconnectAllPlayers(fightIdToClose);
+          }, 2000);
+          
           log(`[WebSocket] Fight ${ws.fightId} ended by teacher`, "websocket");
         } else if (message.type === "answer" && ws.studentId && ws.fightId) {
           const session = await storage.getCombatSession(ws.fightId);
@@ -868,6 +939,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log(`[WebSocket] Ignoring answer from dead/missing player ${ws.studentId}`, "websocket");
             return;
           }
+          
+          // Reset inactivity timer on player action
+          resetInactivityTimer(ws.fightId);
           
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             currentAnswer: message.answer,
@@ -909,6 +983,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
+          // Reset inactivity timer on player action
+          resetInactivityTimer(ws.fightId);
+          
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             blockTarget: message.targetId,
           });
@@ -925,6 +1002,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log(`[WebSocket] Ignoring heal from dead/missing player ${ws.studentId}`, "websocket");
             return;
           }
+          
+          // Reset inactivity timer on player action
+          resetInactivityTimer(ws.fightId);
           
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             isHealing: true,
@@ -976,7 +1056,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     ws.on("close", () => {
-      // Cleanup
+      // Cleanup on connection close
+      if (ws.fightId && ws.studentId) {
+        log(`[WebSocket] Student ${ws.studentId} disconnected from fight ${ws.fightId}`, "websocket");
+      }
+      if (ws.isHost && ws.fightId) {
+        log(`[WebSocket] Host disconnected from fight ${ws.fightId}`, "websocket");
+      }
     });
   });
 
