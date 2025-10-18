@@ -7,6 +7,7 @@ import { HealthBar } from "@/components/HealthBar";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield } from "lucide-react";
 import type { CombatState, Question } from "@shared/schema";
+import { getFireballMaxChargeRounds } from "@shared/jobSystem";
 
 export default function Combat() {
   const [, navigate] = useLocation();
@@ -44,7 +45,7 @@ export default function Combat() {
         setIsHealing(false);
         setHealTarget("");
         setIsCreatingPotion(false);
-        setIsChargingFireball(false);
+        // Don't reset isChargingFireball - let it persist from server state
       } else if (message.type === "phase_change") {
         toast({ title: message.phase });
       } else if (message.type === "game_over") {
@@ -63,6 +64,17 @@ export default function Combat() {
       return () => clearTimeout(timer);
     }
   }, [timeRemaining, combatState?.currentPhase]);
+
+  // Sync charging state from server
+  useEffect(() => {
+    const studentId = localStorage.getItem("studentId");
+    if (combatState && studentId) {
+      const playerState = combatState.players[studentId];
+      if (playerState?.isChargingFireball !== undefined) {
+        setIsChargingFireball(playerState.isChargingFireball);
+      }
+    }
+  }, [combatState]);
 
   const submitAnswer = () => {
     if (ws && selectedAnswer) {
@@ -298,25 +310,31 @@ export default function Combat() {
                 </div>
               )}
 
-              {playerState?.characterClass === "wizard" && playerState.fireballCooldown === 0 && (
-                <div className="mt-6 p-4 border border-wizard/30 rounded-md bg-wizard/10">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={isChargingFireball}
-                      onChange={(e) => setIsChargingFireball(e.target.checked)}
-                      className="w-4 h-4"
-                      data-testid="checkbox-charge-fireball"
-                    />
-                    <span className="text-sm font-medium text-wizard">Charge fireball (takes 3 turns, deals 2x damage)</span>
-                  </label>
-                  {playerState.fireballChargeRounds > 0 && (
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      Charging: {playerState.fireballChargeRounds} / 3 turns
-                    </div>
-                  )}
-                </div>
-              )}
+              {playerState?.characterClass === "wizard" && playerState.fireballCooldown === 0 && (() => {
+                const wizardLevel = playerState.jobLevels?.wizard || 0;
+                const maxChargeRounds = getFireballMaxChargeRounds(wizardLevel);
+                return (
+                  <div className="mt-6 p-4 border border-wizard/30 rounded-md bg-wizard/10">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isChargingFireball}
+                        onChange={(e) => setIsChargingFireball(e.target.checked)}
+                        className="w-4 h-4"
+                        data-testid="checkbox-charge-fireball"
+                      />
+                      <span className="text-sm font-medium text-wizard">
+                        Charge fireball (takes {maxChargeRounds} turns, deals 2x damage)
+                      </span>
+                    </label>
+                    {playerState.fireballChargeRounds > 0 && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Charging: {playerState.fireballChargeRounds} / {maxChargeRounds} turns
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <Button
                 size="lg"

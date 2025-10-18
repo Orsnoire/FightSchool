@@ -617,31 +617,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 isChargingFireball: false,
               });
             } else if (player.isChargingFireball) {
-              // Wizard chose to charge fireball
+              // Wizard is charging fireball - automatically continue charging
               const newChargeRounds = player.fireballChargeRounds + 1;
               
               if (newChargeRounds < maxChargeRounds) {
-                // Charging: base (1) + charge rounds + level bonus
-                damage = 1 + newChargeRounds + damageBonus;
+                // Still charging: no damage while charging
+                // Keep isChargingFireball true to auto-continue next round
+                damage = 0;
                 await storage.updatePlayerState(fightId, playerId, {
                   fireballChargeRounds: newChargeRounds,
-                  isChargingFireball: false,
+                  isChargingFireball: true, // Keep charging
                 });
               } else {
-                // Fully charged: RELEASE! base (1) + max charge + level bonus
-                damage = 1 + maxChargeRounds + damageBonus;
+                // Fully charged: RELEASE! Deal 2x normal damage
+                const baseDamage = 1 + damageBonus;
+                damage = baseDamage * 2;
                 await storage.updatePlayerState(fightId, playerId, {
                   fireballChargeRounds: 0,
                   fireballCooldown: cooldownDuration, // Level-based cooldown
-                  isChargingFireball: false,
+                  isChargingFireball: false, // Stop charging after release
                 });
               }
             } else {
               // Not charging - do base damage only
               damage = 1 + damageBonus;
-              await storage.updatePlayerState(fightId, playerId, {
-                isChargingFireball: false,
-              });
             }
           } else if (player.characterClass === "scout") {
             // Scout builds combo points with correct answers
