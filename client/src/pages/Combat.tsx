@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
+import { VictoryModal } from "@/components/VictoryModal";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield } from "lucide-react";
-import type { CombatState, Question } from "@shared/schema";
+import type { CombatState, Question, LootItem } from "@shared/schema";
 import { getFireballMaxChargeRounds } from "@shared/jobSystem";
 
 export default function Combat() {
@@ -21,6 +22,14 @@ export default function Combat() {
   const [healTarget, setHealTarget] = useState<string>("");
   const [isCreatingPotion, setIsCreatingPotion] = useState(false);
   const [isChargingFireball, setIsChargingFireball] = useState(false);
+  const [showVictoryModal, setShowVictoryModal] = useState(false);
+  const [victoryData, setVictoryData] = useState<{
+    xpGained: number;
+    leveledUp: boolean;
+    newLevel: number;
+    currentXP: number;
+    lootTable: LootItem[];
+  } | null>(null);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -49,8 +58,21 @@ export default function Combat() {
       } else if (message.type === "phase_change") {
         toast({ title: message.phase });
       } else if (message.type === "game_over") {
-        toast({ title: message.victory ? "Victory!" : "Defeat", description: message.message });
-        setTimeout(() => navigate("/student/lobby"), 3000);
+        if (message.victory && message.xpGained !== undefined) {
+          // Victory with XP data - show victory modal
+          setVictoryData({
+            xpGained: message.xpGained,
+            leveledUp: message.leveledUp,
+            newLevel: message.newLevel,
+            currentXP: message.currentXP,
+            lootTable: message.lootTable || [],
+          });
+          setShowVictoryModal(true);
+        } else {
+          // Defeat or basic game over - show toast and navigate
+          toast({ title: message.victory ? "Victory!" : "Defeat", description: message.message });
+          setTimeout(() => navigate("/student/lobby"), 3000);
+        }
       }
     };
 
@@ -464,6 +486,20 @@ export default function Combat() {
             </div>
           </div>
         </div>
+      )}
+      
+      {showVictoryModal && victoryData && playerState && (
+        <VictoryModal
+          fightId={localStorage.getItem("fightId") || ""}
+          characterClass={playerState.characterClass}
+          gender={playerState.gender}
+          xpGained={victoryData.xpGained}
+          leveledUp={victoryData.leveledUp}
+          newLevel={victoryData.newLevel}
+          currentXP={victoryData.currentXP}
+          lootTable={victoryData.lootTable}
+          onClose={() => navigate("/student/lobby")}
+        />
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass } from "@shared/schema";
 import { log } from "./vite";
-import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints } from "@shared/jobSystem";
+import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP } from "@shared/jobSystem";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -314,6 +314,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const fights = await storage.getAllFights();
     const availableFights = fights.filter(f => f.classCode === student.classCode);
     res.json(availableFights);
+  });
+
+  app.post("/api/student/:id/claim-loot", async (req, res) => {
+    const { itemId, fightId } = req.body;
+    if (!itemId || !fightId) return res.status(400).json({ error: "Item ID and Fight ID required" });
+    
+    const student = await storage.getStudent(req.params.id);
+    if (!student) return res.status(404).json({ error: "Student not found" });
+    
+    const fight = await storage.getFight(fightId);
+    if (!fight) return res.status(404).json({ error: "Fight not found" });
+    
+    // Validate item is in the fight's loot table
+    const lootTable = fight.lootTable || [];
+    const validLoot = lootTable.find(item => item.itemId === itemId);
+    if (!validLoot) return res.status(400).json({ error: "Invalid loot item for this fight" });
+    
+    // Atomically claim loot using conditional update
+    const claimed = await storage.claimLootAtomically(fightId, req.params.id, itemId);
+    if (!claimed) {
+      return res.status(400).json({ error: "Loot already claimed from this fight or no combat record found" });
+    }
+    
+    // Add item to inventory
+    const currentInventory = student.inventory || [];
+    const updatedInventory = [...currentInventory, itemId];
+    
+    const updatedStudent = await storage.updateStudent(req.params.id, { inventory: updatedInventory });
+    if (!updatedStudent) return res.status(404).json({ error: "Student not found" });
+    
+    const { password: _, ...studentWithoutPassword } = updatedStudent;
+    res.json(studentWithoutPassword);
   });
 
   // Combat stats endpoints
@@ -821,11 +853,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (allEnemiesDead) {
       await saveCombatStats(fightId);
       await storage.updateCombatSession(fightId, { currentPhase: "game_over" });
-      broadcastToCombat(fightId, {
-        type: "game_over",
-        victory: true,
-        message: "Victory! All enemies defeated!",
+      
+      // Calculate and award XP for each player
+      const victoryData: Record<string, any> = {};
+      for (const player of Object.values(session.players)) {
+        // Calculate XP based on combat performance
+        const xpGained = calculateXP({
+          questionsCorrect: player.questionsCorrect,
+          questionsIncorrect: player.questionsIncorrect,
+          damageBlocked: 0, // Warriors block damage but this isn't tracked currently
+          healingDone: player.healingDone || 0,
+          bonusDamage: Math.max(0, player.damageDealt - player.questionsCorrect), // Bonus damage above base
+          baseFightXP: fight.baseXP || 10,
+        });
+        
+        // Award XP to the player's current class
+        const result = await storage.awardXPToJob(
+          player.studentId,
+          player.characterClass,
+          xpGained
+        );
+        
+        victoryData[player.studentId] = {
+          xpGained,
+          leveledUp: result.leveledUp,
+          newLevel: result.newLevel,
+          currentXP: result.jobLevel.experience,
+        };
+      }
+      
+      // Send individual victory messages to each player with their XP data
+      wss.clients.forEach((client) => {
+        const playerWs = client as ExtendedWebSocket;
+        if (playerWs.readyState === WebSocket.OPEN && playerWs.fightId === fightId && playerWs.studentId) {
+          const playerData = victoryData[playerWs.studentId];
+          playerWs.send(JSON.stringify({
+            type: "game_over",
+            victory: true,
+            message: "Victory! All enemies defeated!",
+            xpGained: playerData?.xpGained || 0,
+            leveledUp: playerData?.leveledUp || false,
+            newLevel: playerData?.newLevel || 1,
+            currentXP: playerData?.currentXP || 0,
+            lootTable: fight.lootTable || [],
+          }));
+        } else if (playerWs.readyState === WebSocket.OPEN && (playerWs.fightId === fightId || playerWs.isHost)) {
+          // Send basic victory message to host
+          playerWs.send(JSON.stringify({
+            type: "game_over",
+            victory: true,
+            message: "Victory! All enemies defeated!",
+          }));
+        }
       });
+      
       return;
     }
 

@@ -157,6 +157,7 @@ export const combatStats = pgTable("combat_stats", {
   deaths: integer("deaths").notNull().default(0),
   survived: boolean("survived").notNull().default(false),
   xpEarned: integer("xp_earned").notNull().default(0),
+  lootItemClaimed: varchar("loot_item_claimed"), // Item ID claimed from this fight's loot table
   completedAt: bigint("completed_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 

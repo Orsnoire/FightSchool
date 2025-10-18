@@ -48,6 +48,9 @@ export interface IStorage {
 
   // Combat stats operations
   createCombatStat(stat: InsertCombatStat): Promise<CombatStat>;
+  getCombatStatByFightAndStudent(fightId: string, studentId: string): Promise<CombatStat | undefined>;
+  updateCombatStat(id: string, updates: Partial<CombatStat>): Promise<CombatStat | undefined>;
+  claimLootAtomically(fightId: string, studentId: string, itemId: string): Promise<boolean>;
   getStatsByFight(fightId: string): Promise<CombatStat[]>;
   getStatsByStudent(studentId: string): Promise<CombatStat[]>;
   getStatsByClassCode(classCode: string): Promise<CombatStat[]>;
@@ -345,6 +348,41 @@ export class DatabaseStorage implements IStorage {
       characterClass: stat.characterClass as CharacterClass,
     }]).returning();
     return createdStat;
+  }
+
+  async getCombatStatByFightAndStudent(fightId: string, studentId: string): Promise<CombatStat | undefined> {
+    const [stat] = await db
+      .select()
+      .from(combatStats)
+      .where(and(eq(combatStats.fightId, fightId), eq(combatStats.studentId, studentId)));
+    return stat || undefined;
+  }
+
+  async updateCombatStat(id: string, updates: Partial<CombatStat>): Promise<CombatStat | undefined> {
+    const [updatedStat] = await db
+      .update(combatStats)
+      .set(updates)
+      .where(eq(combatStats.id, id))
+      .returning();
+    return updatedStat || undefined;
+  }
+
+  async claimLootAtomically(fightId: string, studentId: string, itemId: string): Promise<boolean> {
+    // Atomically update the loot claim only if it hasn't been claimed yet
+    const [updatedStat] = await db
+      .update(combatStats)
+      .set({ lootItemClaimed: itemId })
+      .where(
+        and(
+          eq(combatStats.fightId, fightId),
+          eq(combatStats.studentId, studentId),
+          sql`${combatStats.lootItemClaimed} IS NULL`
+        )
+      )
+      .returning();
+    
+    // Return true if update succeeded (row was found and updated), false otherwise
+    return !!updatedStat;
   }
 
   async getStatsByFight(fightId: string): Promise<CombatStat[]> {
