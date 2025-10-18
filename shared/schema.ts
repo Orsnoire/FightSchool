@@ -256,6 +256,7 @@ export interface PlayerState {
   jobLevels: Record<CharacterClass, number>; // Level for each job class (0 if not started)
   
   // Wizard fireball ability
+  isChargingFireball: boolean; // For wizards - manually charging fireball
   fireballChargeRounds: number; // 0-2 rounds charged
   fireballCooldown: number; // Rounds remaining before can use again (0-5)
   

@@ -556,9 +556,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               damage = 1 + damageBonus;
               await storage.updatePlayerState(fightId, playerId, {
                 fireballCooldown: player.fireballCooldown - 1,
+                isChargingFireball: false,
               });
-            } else {
-              // Fireball ready - charge it up
+            } else if (player.isChargingFireball) {
+              // Wizard chose to charge fireball
               const newChargeRounds = player.fireballChargeRounds + 1;
               
               if (newChargeRounds < maxChargeRounds) {
@@ -566,6 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 damage = 1 + newChargeRounds + damageBonus;
                 await storage.updatePlayerState(fightId, playerId, {
                   fireballChargeRounds: newChargeRounds,
+                  isChargingFireball: false,
                 });
               } else {
                 // Fully charged: RELEASE! base (1) + max charge + level bonus
@@ -573,8 +575,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 await storage.updatePlayerState(fightId, playerId, {
                   fireballChargeRounds: 0,
                   fireballCooldown: cooldownDuration, // Level-based cooldown
+                  isChargingFireball: false,
                 });
               }
+            } else {
+              // Not charging - do base damage only
+              damage = 1 + damageBonus;
+              await storage.updatePlayerState(fightId, playerId, {
+                isChargingFireball: false,
+              });
             }
           } else if (player.characterClass === "scout") {
             // Scout builds combo points with correct answers
@@ -937,6 +946,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Herbalist choosing to create a potion instead of dealing damage
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             isCreatingPotion: true,
+          });
+          
+          const updatedSession = await storage.getCombatSession(ws.fightId);
+          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
+        } else if (message.type === "charge_fireball" && ws.studentId && ws.fightId) {
+          const session = await storage.getCombatSession(ws.fightId);
+          if (!session) return;
+          
+          // Only allow alive wizards to charge fireballs
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead || player.characterClass !== "wizard") {
+            log(`[WebSocket] Ignoring charge_fireball from non-wizard/dead player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
+          // Wizard starting to charge a fireball
+          await storage.updatePlayerState(ws.fightId, ws.studentId, {
+            isChargingFireball: true,
           });
           
           const updatedSession = await storage.getCombatSession(ws.fightId);

@@ -19,6 +19,7 @@ export default function Combat() {
   const [isHealing, setIsHealing] = useState(false);
   const [healTarget, setHealTarget] = useState<string>("");
   const [isCreatingPotion, setIsCreatingPotion] = useState(false);
+  const [isChargingFireball, setIsChargingFireball] = useState(false);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -43,6 +44,7 @@ export default function Combat() {
         setIsHealing(false);
         setHealTarget("");
         setIsCreatingPotion(false);
+        setIsChargingFireball(false);
       } else if (message.type === "phase_change") {
         toast({ title: message.phase });
       } else if (message.type === "game_over") {
@@ -67,6 +69,11 @@ export default function Combat() {
       // If creating potion, send create_potion message first
       if (isCreatingPotion) {
         ws.send(JSON.stringify({ type: "create_potion" }));
+      }
+      
+      // If charging fireball, send charge_fireball message first
+      if (isChargingFireball) {
+        ws.send(JSON.stringify({ type: "charge_fireball" }));
       }
       
       ws.send(JSON.stringify({ 
@@ -98,11 +105,16 @@ export default function Combat() {
   const playerState = studentId ? combatState.players[studentId] : null;
   const enemy = combatState.enemies[0];
 
+  // Split players into left and right columns (max 32 total, 16 per side)
+  const allPlayers = Object.values(combatState.players).slice(0, 32);
+  const leftPlayers = allPlayers.slice(0, 16);
+  const rightPlayers = allPlayers.slice(16, 32);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {enemy && (
         <div className="bg-card border-b border-border p-6">
-          <div className="container mx-auto max-w-4xl">
+          <div className="container mx-auto max-w-7xl">
             <div className="flex flex-col items-center gap-4">
               <img
                 src={enemy.image}
@@ -117,8 +129,21 @@ export default function Combat() {
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="container mx-auto max-w-4xl">
+      <div className="flex-1 flex p-4 gap-4">
+        {/* Left column: Player avatars */}
+        <div className="w-32 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-left-column">
+          {leftPlayers.map((player) => (
+            <div key={player.studentId} className={`p-2 rounded-md bg-card border ${player.isDead ? 'opacity-50' : ''}`} data-testid={`avatar-left-${player.studentId}`}>
+              <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+              <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
+              <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
+            </div>
+          ))}
+        </div>
+
+        {/* Center column: Main content */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-4xl">
           {combatState.currentPhase === "question" && currentQuestion && (
             <Card className="p-8 border-primary/30">
               <div className="mb-6 flex items-center justify-between">
@@ -181,10 +206,10 @@ export default function Combat() {
               {playerState?.characterClass === "herbalist" && (
                 <div className="mt-6 p-4 border border-health/30 rounded-md bg-health/10">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-health">Potions: {playerState.potionCount}</span>
+                    <span className="text-sm font-medium text-health">Potions: {playerState.potionCount} / 5</span>
                   </div>
                   
-                  {playerState.potionCount > 0 ? (
+                  {playerState.potionCount > 0 && (
                     <>
                       <label className="flex items-center gap-2 mb-3">
                         <input
@@ -214,21 +239,38 @@ export default function Combat() {
                         </div>
                       )}
                     </>
-                  ) : (
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-3">
-                        <p>No potions remaining!</p>
-                      </div>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={isCreatingPotion}
-                          onChange={(e) => setIsCreatingPotion(e.target.checked)}
-                          className="w-4 h-4"
-                          data-testid="checkbox-create-potion"
-                        />
-                        <span className="text-sm font-medium text-health">Create potion instead of dealing damage</span>
-                      </label>
+                  )}
+                  
+                  {playerState.potionCount < 5 && (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isCreatingPotion}
+                        onChange={(e) => setIsCreatingPotion(e.target.checked)}
+                        className="w-4 h-4"
+                        data-testid="checkbox-create-potion"
+                      />
+                      <span className="text-sm font-medium text-health">Craft potion instead of dealing damage</span>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {playerState?.characterClass === "wizard" && playerState.fireballCooldown === 0 && (
+                <div className="mt-6 p-4 border border-wizard/30 rounded-md bg-wizard/10">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isChargingFireball}
+                      onChange={(e) => setIsChargingFireball(e.target.checked)}
+                      className="w-4 h-4"
+                      data-testid="checkbox-charge-fireball"
+                    />
+                    <span className="text-sm font-medium text-wizard">Charge fireball (takes 3 turns, deals 2x damage)</span>
+                  </label>
+                  {playerState.fireballChargeRounds > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Charging: {playerState.fireballChargeRounds} / 3 turns
                     </div>
                   )}
                 </div>
@@ -275,12 +317,24 @@ export default function Combat() {
               </div>
             </Card>
           )}
+          </div>
+        </div>
+
+        {/* Right column: Player avatars */}
+        <div className="w-32 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-right-column">
+          {rightPlayers.map((player) => (
+            <div key={player.studentId} className={`p-2 rounded-md bg-card border ${player.isDead ? 'opacity-50' : ''}`} data-testid={`avatar-right-${player.studentId}`}>
+              <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+              <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
+              <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
+            </div>
+          ))}
         </div>
       </div>
 
       {playerState && (
         <div className="bg-card border-t border-border p-4">
-          <div className="container mx-auto max-w-4xl flex items-center gap-6">
+          <div className="container mx-auto max-w-7xl flex items-center gap-6">
             <PlayerAvatar characterClass={playerState.characterClass} gender={playerState.gender} size="md" />
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
