@@ -39,6 +39,13 @@ export default function HostFight() {
       const message = JSON.parse(event.data);
       if (message.type === "combat_state") {
         setCombatState(message.state);
+      } else if (message.type === "game_over") {
+        toast({ 
+          title: message.victory ? "Victory!" : "Fight Ended", 
+          description: message.message 
+        });
+        // Navigate back to teacher dashboard after fight ends
+        setTimeout(() => navigate("/teacher"), 2000);
       }
     };
 
