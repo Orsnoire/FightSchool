@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
-import { Play, ArrowLeft, Skull } from "lucide-react";
+import { Play, ArrowLeft, Skull, XCircle } from "lucide-react";
 import type { Fight, CombatState } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,6 +54,16 @@ export default function HostFight() {
     }
   };
 
+  const endFight = () => {
+    if (ws && hasStarted) {
+      if (confirm("Are you sure you want to end this fight? All progress will be lost.")) {
+        ws.send(JSON.stringify({ type: "end_fight" }));
+        toast({ title: "Fight ended", description: "Students have been disconnected" });
+        setHasStarted(false);
+      }
+    }
+  };
+
   if (!fight) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
@@ -69,14 +79,25 @@ export default function HostFight() {
             Back
           </Button>
           <h1 className="text-2xl font-serif font-bold" data-testid="text-fight-title">{fight.title}</h1>
-          <Button
-            onClick={startFight}
-            disabled={hasStarted || playerCount === 0}
-            data-testid="button-start"
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Start Fight
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={startFight}
+              disabled={hasStarted || playerCount === 0}
+              data-testid="button-start"
+            >
+              <Play className="mr-2 h-4 w-4" />
+              Start Fight
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={endFight}
+              disabled={!hasStarted}
+              data-testid="button-end-fight"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              End Fight
+            </Button>
+          </div>
         </div>
       </header>
 

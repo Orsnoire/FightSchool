@@ -211,6 +211,8 @@ export default function Lobby() {
                   });
                   
                   const currentClassLevel = jobLevelMap[student.characterClass] || 0;
+                  const currentJobLevel = jobLevels.find(jl => jl.jobClass === student.characterClass);
+                  const currentExp = currentJobLevel?.experience || 0;
                   const passiveBonuses = getTotalPassiveBonuses(jobLevelMap);
                   
                   return (
@@ -219,6 +221,9 @@ export default function Lobby() {
                         <div className="text-sm text-muted-foreground">Current Class Level</div>
                         <div className="text-3xl font-bold text-primary capitalize">
                           {student.characterClass} Lv{currentClassLevel}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1" data-testid="text-experience">
+                          {currentExp} XP
                         </div>
                       </div>
                       

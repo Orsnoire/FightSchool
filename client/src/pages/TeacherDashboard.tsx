@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PlusCircle, Swords, Users, BarChart3, Copy, UserCheck, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Fight, Student } from "@shared/schema";
 
 export default function TeacherDashboard() {
@@ -25,9 +26,32 @@ export default function TeacherDashboard() {
     enabled: studentsDialogOpen,
   });
 
+  const deleteFightMutation = useMutation({
+    mutationFn: async (fightId: string) => {
+      return await apiRequest("DELETE", `/api/fights/${fightId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/teacher/${teacherId}/fights`] });
+      toast({ title: "Fight deleted", description: "The fight has been removed" });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to delete fight", 
+        variant: "destructive" 
+      });
+    },
+  });
+
   const copyClassCode = (classCode: string) => {
     navigator.clipboard.writeText(classCode);
     toast({ title: "Class code copied!", description: "Share this code with your students" });
+  };
+
+  const handleDeleteFight = (fightId: string) => {
+    if (confirm("Are you sure you want to delete this fight? This cannot be undone.")) {
+      deleteFightMutation.mutate(fightId);
+    }
   };
 
   return (
@@ -183,7 +207,13 @@ export default function TeacherDashboard() {
                       Launch Host
                     </Button>
                   </Link>
-                  <Button variant="destructive" size="icon" data-testid={`button-delete-${fight.id}`}>
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    onClick={() => handleDeleteFight(fight.id)}
+                    disabled={deleteFightMutation.isPending}
+                    data-testid={`button-delete-${fight.id}`}
+                  >
                     <span className="sr-only">Delete</span>
                     ×
                   </Button>

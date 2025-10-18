@@ -437,8 +437,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       questionStartTime: Date.now(),
     });
 
-    // Reset player states for new question
-    for (const playerId of Object.keys(session.players)) {
+    // Reset player states for new question (only for alive players)
+    for (const [playerId, player] of Object.entries(session.players)) {
+      // Skip dead players - they don't participate in questions
+      if (player.isDead) continue;
+      
       await storage.updatePlayerState(fightId, playerId, {
         hasAnswered: false,
         currentAnswer: undefined,
@@ -535,19 +538,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isCreatingPotion: false,
           });
         } else if (player.isHealing && player.healTarget && player.characterClass === "herbalist") {
-          // Heal target (this happens in tank_blocking phase, not here)
-          // This code path is for healing without using a potion (shouldn't happen)
-          const target = session.players[player.healTarget];
-          if (target && !target.isDead) {
-            const healAmount = 1;
-            await storage.updatePlayerState(fightId, player.healTarget, {
-              health: Math.min(target.health + healAmount, target.maxHealth),
-            });
-            // Track healing done
-            await storage.updatePlayerState(fightId, playerId, {
-              healingDone: player.healingDone + healAmount,
-            });
-          }
+          // Herbalist chose to heal - healing happens in tank_blocking phase (phase 2)
+          // Don't deal damage if healing
         } else {
           // Deal damage to enemy
           let damage = 1;
@@ -634,10 +626,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         await storage.updatePlayerState(fightId, playerId, abilityUpdates);
         
-        // Wrong answer - take damage (unless blocked)
+        // Wrong answer - take damage (unless blocked by alive warrior)
         let blocked = false;
         for (const [, blocker] of Object.entries(session.players)) {
-          if (blocker.blockTarget === playerId && blocker.characterClass === "warrior") {
+          if (blocker.blockTarget === playerId && blocker.characterClass === "warrior" && !blocker.isDead) {
             blocked = true;
             break;
           }
@@ -834,24 +826,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
           log(`[WebSocket] Student ${student.nickname} successfully joined fight`, "websocket");
         } else if (message.type === "start_fight" && ws.isHost && ws.fightId) {
           await startQuestion(ws.fightId);
+        } else if (message.type === "end_fight" && ws.isHost && ws.fightId) {
+          // Clear any active timers
+          const timer = combatTimers.get(ws.fightId);
+          if (timer) {
+            clearTimeout(timer);
+            combatTimers.delete(ws.fightId);
+          }
+          
+          // Save combat stats before ending
+          await saveCombatStats(ws.fightId);
+          
+          // End the fight - broadcast game_over to all players
+          broadcastToCombat(ws.fightId, {
+            type: "game_over",
+            victory: false,
+            message: "Fight ended by teacher",
+          });
+          
+          // Update combat session to game_over phase
+          await storage.updateCombatSession(ws.fightId, { currentPhase: "game_over" });
+          
+          log(`[WebSocket] Fight ${ws.fightId} ended by teacher`, "websocket");
         } else if (message.type === "answer" && ws.studentId && ws.fightId) {
+          const session = await storage.getCombatSession(ws.fightId);
+          if (!session) return;
+          
+          // Only allow alive players to answer
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead) {
+            log(`[WebSocket] Ignoring answer from dead/missing player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             currentAnswer: message.answer,
             hasAnswered: true,
             isHealing: message.isHealing || false,
             healTarget: message.healTarget,
           });
-          const session = await storage.getCombatSession(ws.fightId);
-          if (!session) return;
           
-          broadcastToCombat(ws.fightId, { type: "combat_state", state: session });
+          const updatedSession = await storage.getCombatSession(ws.fightId);
+          if (!updatedSession) return;
+          
+          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
 
-          // Check if all players have answered - if so, end question phase early
-          const allPlayers = Object.values(session.players);
-          const allAnswered = allPlayers.every(player => player.hasAnswered);
+          // Check if all alive players have answered - if so, end question phase early
+          const alivePlayers = Object.values(updatedSession.players).filter(p => !p.isDead);
+          const allAnswered = alivePlayers.every(player => player.hasAnswered);
           
-          if (allAnswered && allPlayers.length > 0) {
-            log(`[WebSocket] All ${allPlayers.length} students answered - ending question phase early`, "websocket");
+          if (allAnswered && alivePlayers.length > 0) {
+            log(`[WebSocket] All ${alivePlayers.length} alive students answered - ending question phase early`, "websocket");
             
             // Clear the question timer
             const timer = combatTimers.get(ws.fightId);
@@ -864,19 +889,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await tankBlockingPhase(ws.fightId);
           }
         } else if (message.type === "block" && ws.studentId && ws.fightId) {
+          const session = await storage.getCombatSession(ws.fightId);
+          if (!session) return;
+          
+          // Only allow alive warriors to block
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead) {
+            log(`[WebSocket] Ignoring block from dead/missing player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             blockTarget: message.targetId,
           });
+          
+          const updatedSession = await storage.getCombatSession(ws.fightId);
+          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
         } else if (message.type === "heal" && ws.studentId && ws.fightId) {
+          const session = await storage.getCombatSession(ws.fightId);
+          if (!session) return;
+          
+          // Only allow alive herbalists to heal
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead) {
+            log(`[WebSocket] Ignoring heal from dead/missing player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             isHealing: true,
             healTarget: message.targetId,
           });
+          
+          const updatedSession = await storage.getCombatSession(ws.fightId);
+          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
         } else if (message.type === "create_potion" && ws.studentId && ws.fightId) {
+          const session = await storage.getCombatSession(ws.fightId);
+          if (!session) return;
+          
+          // Only allow alive herbalists to create potions
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead) {
+            log(`[WebSocket] Ignoring create_potion from dead/missing player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
           // Herbalist choosing to create a potion instead of dealing damage
           await storage.updatePlayerState(ws.fightId, ws.studentId, {
             isCreatingPotion: true,
           });
+          
+          const updatedSession = await storage.getCombatSession(ws.fightId);
+          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
         }
       } catch (error) {
         log(`[WebSocket] Error: ${error}`, "websocket");
