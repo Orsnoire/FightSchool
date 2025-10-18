@@ -305,6 +305,7 @@ export class DatabaseStorage implements IStorage {
       potionCount: student.characterClass === 'herbalist' ? 5 : 0,
       isCreatingPotion: false,
       jobLevels: jobLevelMap,
+      isChargingFireball: false,
       fireballChargeRounds: 0,
       fireballCooldown: 0,
       questionsAnswered: 0,

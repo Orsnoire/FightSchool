@@ -628,6 +628,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Reset wizard fireball charge and decrement cooldown
         if (player.characterClass === "wizard") {
           abilityUpdates.fireballChargeRounds = 0;
+          abilityUpdates.isChargingFireball = false;
           if (player.fireballCooldown > 0) {
             abilityUpdates.fireballCooldown = player.fireballCooldown - 1;
           }
