@@ -721,9 +721,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           if (session.enemies.length > 0) {
+            // Update enemy health in memory (will save once at end of phase)
             const enemy = session.enemies[0];
             enemy.health = Math.max(0, enemy.health - damage);
-            await storage.updateCombatSession(fightId, { enemies: session.enemies });
             
             // Track damage dealt
             await storage.updatePlayerState(fightId, playerId, {
@@ -777,6 +777,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
     }
+
+    // Save enemy health changes once (batched instead of per-player)
+    await storage.updateCombatSession(fightId, { enemies: session.enemies });
 
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
