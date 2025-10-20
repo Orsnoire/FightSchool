@@ -1,0 +1,159 @@
+# Fight Test 1 – Bug Tracker & Fix Plan
+
+**Session:** 20‑minute class fight test with 28 connected players
+**Environment:** Published app (autoscale x5)
+
+---
+
+## 📋 Bugs Reported
+
+### B1 — Combat mechanics lag / stall until page refresh
+
+* **Severity:** P0 (blocks play)
+* **Repro:** After several minutes with ~28 players, timed actions stop resolving; UI responds but state doesn't advance until client hard-refresh.
+* **Expected:** Mechanics tick continues; clients never need a refresh.
+* **Actual:** Game loop appears frozen client‑side; refresh reattaches and resumes.
+* **Hypotheses:**
+  0) **Connection capacity/eviction:** proxy/app/orchestrator limits or heuristics are dropping participant sockets (no slot reservation), forcing clients to refresh to reattach.
+
+  1. Lost or saturated realtime channel (WebSocket) causing clients to miss state diffs; local queue backs up.
+  2. Server tick blocked by expensive AoE/consumable resolution (see B2).
+  3. Event storm / duplicate listeners multiplying broadcasts (n×28).
+  4. Long GC pauses or unbounded arrays (combat log) on server.
+* **Instrumentation to add:**
+
+  * Server: per‑tick duration histogram; queue depth; event fan‑out count; GC pause; heap usage.
+  * Client: heartbeat pings; WS dropped/late message counters; render time.
+  * **Sockets:** active connections, pinned participant count, evictions by reason, reconnect/resume success rate.
+* **Acceptance criteria:** No stalls across a 30‑minute fight at 30 players; 99p tick < 50 ms; **0 participant evictions**; zero forced refreshes.
+
+### B2 — Fireball streaks & potions cause lag with 28 players
+
+* **Severity:** P0
+* **Repro:** When multiple players use Fireball Streaks and potions in quick succession, mechanics delay grows sharply.
+* **Hypotheses:**
+
+  * AoE resolution is O(n×m) across targets and streak stacks.
+  * Over‑broadcasting per‑hit messages instead of a compact batch event.
+  * Particle/animation floods main thread; DOM updates per hit.
+* **Mitigations / Fixes:**
+
+  * Batch-compute AoE effects server‑side; send a single "resolve" packet with arrays.
+  * Cap streak chaining per tick; add cooldown coalescing.
+  * Use requestAnimationFrame batching; replace per‑hit DOM mutations with a single virtual diff.
+  * Precompute targets set; avoid repeated filter/sort over whole roster each cast.
+* **Acceptance criteria:** With 30 players spamming streaks/potions, 99p server tick < 50 ms; client FPS > 50; no backlog growth.
+
+### B3 — Loot window: icons/names missing; “internal server error”; “failure to claim loot”
+
+* **Severity:** P1 (progression blocked; morale impact)
+* **Repro:** After victory, loot modal opens; assets/names sometimes blank; claim button returns 500 and/or "failure to claim".
+* **Hypotheses:**
+
+  * Race condition: victory post clears battle context before loot fetch/claim.
+  * Mismatch between item ids & asset map; CDN paths not resolved in production.
+  * Idempotency missing: repeated claim attempts create conflicts.
+* **Diagnostics:**
+
+  * Check server logs around `/loot/claim` for 500 stack traces; verify transaction boundaries.
+  * Verify sprite atlas/URL map in production build.
+  * Ensure user/session battleId present when claiming.
+* **Fixes:**
+
+  * Make claim endpoint idempotent (claim token + upsert).
+  * Delay battle teardown until loot payload delivered; or include loot fully in the victory response.
+  * Add fallback icon + name if asset map miss.
+* **Acceptance criteria:** 100 claims in load test → 0 errors; icons & names always render.
+
+### B4 — Player side icons too large; start position should be at top (boss image area)
+
+* **Severity:** P3 (UX)
+* **Spec:** Reduce side avatars to **50%** current size; initial layout starts **within the top boss image area**.
+* **Dev notes:** Use container‑query or CSS clamp to scale with viewport height. Provide safe area overlay.
+* **Acceptance criteria:** On 1280×720 through 1920×1080, both columns fit without overlap; above‑the‑fold shows boss + both teams.
+
+### B5 — Phase‑change modular windows (modals) don’t match question window positions/sizes
+
+* **Severity:** P2 (UX consistency)
+* **Spec:** Phase‑change windows must use the **exact same anchor, width, and max‑height** as the question modals.
+* **Acceptance criteria:** Bounding boxes differ by < 4px in both dimensions at common breakpoints; transitions align.
+
+### B6 — Unanswered players not marked wrong
+
+* **Severity:** P1 (scoring inconsistency)
+* **Repro:** If a player leaves a question blank or fails to respond before timeout, no result is recorded and the player is left unmarked.
+* **Expected:** Missing or null response should automatically register as an incorrect answer (score = 0) once the timer expires.
+* **Fix:** Add timeout handler that emits `markWrong(playerId)` on unanswered questions; ensure scoring UI reflects this.
+* **Acceptance criteria:** In 100 test runs with unanswered inputs, 100% are auto-marked wrong at timeout.
+
+### B7 — Cross-class abilities not displaying at level 8
+
+* **Severity:** P2 (progression / feedback issue)
+* **Repro:** When players level to 8, cross-class abilities fail to appear in the ability list or UI overlay.
+* **Expected:** New cross-class abilities unlock and display automatically upon level-up.
+* **Hypotheses:**
+
+  * Client not updating ability map after level-up event.
+  * Server not returning full merged ability list for new level tier.
+  * Missing asset mapping for cross-class ability IDs.
+* **Fix:** Verify level-up handler triggers full ability refresh; audit ability ID merge logic; confirm UI binding and asset resolution.
+* **Acceptance criteria:** All level 8 unlocks show in ability bar immediately upon level-up.
+
+### B8 — Class change interactive not appearing
+
+* **Severity:** P2 (UX blocking)
+* **Repro:** After meeting class change conditions, the class change UI/interactive prompt fails to appear.
+* **Expected:** Class change modal/interactive shows once eligibility criteria met and fight ends.
+* **Fix:** Ensure trigger for `showClassChange()` fires on eligible event; verify modal mount conditions and routing; confirm data model exposes new class availability.
+* **Acceptance criteria:** Eligible players consistently see and can interact with class change prompt immediately after conditions met.
+
+### B9 — Fight instances not closing / stale sockets persisting
+
+* **Severity:** P0 (critical – resource leak & data contamination)
+* **Repro:** After a fight ends, player WebSockets remain open; launching a new host reuses old data, with stale sockets persisting.
+* **Expected:** On victory, all sockets for that fightId close cleanly, stats are recorded, and all in-memory fight data cleared.
+* **Fix:** Add explicit teardown to close sockets, delete fight state, and clear memory. Force-clear old sockets on new host launch; introduce Fight Instance TTL for idle cleanup.
+* **Acceptance criteria:** 100% sockets closed within 2s post-victory; launching new host clears old state; teacher dashboard only shows active players; memory returns to baseline.
+
+### B10 — Teacher dashboard not updating with player logins and statistics
+
+* **Severity:** P1 (visibility / reporting failure)
+* **Repro:** Teacher dashboard stays empty even as players connect; stats not updating after fights.
+* **Expected:** Dashboard shows connected players and updates stats live during fights and after victory.
+* **Fix:** Ensure teacher socket subscribes to the correct fightId channel; emit `playerJoined`, `playerStatsUpdated`, and `fightConcluded` to teacher; push final stats bundle to dashboard.
+* **Acceptance criteria:** Dashboard lists players within 1s of join; stats populate automatically after victory; no missing or duplicate entries.
+
+---
+
+## 🔒 Fight Lock (33‑slot reservation & eviction policy)
+
+* **Reservation:** When a fight starts, reserve **33 participant slots** (`fightId`‑scoped). Participants are **non‑evictable** until fight end. Others join as spectators or wait‑listed.
+* **Graceful resume:** On disconnect, hold the slot **60s**; client auto‑reconnects with a **resume token**; no page refresh needed.
+* **Eviction order:** Under backpressure, shed **non‑essential payload** and **spectators** first. Never evict a reserved participant. Cap per‑client send queues; batch broadcasts per tick.
+* **Keepalive:** Ping every **10–15s**; close only after **2 missed pongs**.
+* **Routing & rollout:** Sticky route by `fightId`; pin replicas during active fights; disable rolling restarts for rooms in progress.
+* **Proxy/OS caps:** Increase `ulimit -n`, proxy `worker_connections`, and idle timeouts (≥45m) for `/fight/*` routes.
+
+---
+
+## 🔧 Immediate Fix Plan
+
+1. Protect the mechanics loop — watchdog + circuit breaker.
+2. Batch and cap heavy actions (fireballs, potions).
+3. Stabilize loot flow (idempotent claims).
+4. UI polish (avatar scale, modal reuse).
+
+---
+
+## 🧪 Test Plan for the Next Class Fight
+
+* 30 simulated clients × 30 min.
+* Focus: zero stalls, zero loot claim errors, all modals consistent.
+
+---
+
+## 📈 Telemetry TODOs
+
+* Add structured logs: `tick_ms`, `events_emitted`, `clients_broadcast`, `queue_depth`, `gc_pause_ms`.
+* **Socket metrics:** `connections_active`, `participants_pinned`, `spectators`, `evictions_by_reason`, `reconnects`, `resume_success_rate`.
+* Client perf marks around action dispatch → animation → commit.
