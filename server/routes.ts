@@ -438,6 +438,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const combatTimers: Map<string, NodeJS.Timeout> = new Map();
   const inactivityTimers: Map<string, NodeJS.Timeout> = new Map();
   const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+  
+  // Performance instrumentation
+  function logPhaseTiming(fightId: string, phase: string, startTime: number) {
+    const duration = Date.now() - startTime;
+    const activeConnections = getActiveConnectionCount(fightId);
+    log(`[Perf] Fight ${fightId} - ${phase} took ${duration}ms (${activeConnections} connections, ${pendingBroadcasts.size} pending broadcasts)`, "performance");
+  }
+  
+  function getActiveConnectionCount(fightId?: string): number {
+    let count = 0;
+    wss.clients.forEach((client) => {
+      const ws = client as ExtendedWebSocket;
+      if (ws.readyState === WebSocket.OPEN) {
+        if (fightId && ws.fightId === fightId) {
+          count++;
+        } else if (!fightId) {
+          count++;
+        }
+      }
+    });
+    return count;
+  }
 
   function resetInactivityTimer(fightId: string) {
     // Clear existing inactivity timer
@@ -624,6 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   async function tankBlockingPhase(fightId: string) {
+    const phaseStart = Date.now();
     const session = await storage.getCombatSession(fightId);
     if (!session) return;
 
@@ -652,6 +675,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+    
+    logPhaseTiming(fightId, "tank_blocking", phaseStart);
 
     // Auto-advance after 5 seconds
     const timer = setTimeout(async () => {
@@ -661,6 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   async function combatPhase(fightId: string) {
+    const phaseStart = Date.now();
     const session = await storage.getCombatSession(fightId);
     const fight = await storage.getFight(fightId);
     if (!session || !fight) return;
@@ -824,6 +850,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+    
+    logPhaseTiming(fightId, "combat", phaseStart);
 
     // Auto-advance to enemy AI phase
     setTimeout(async () => {
@@ -832,6 +860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   async function enemyAIPhase(fightId: string) {
+    const phaseStart = Date.now();
     const session = await storage.getCombatSession(fightId);
     const fight = await storage.getFight(fightId);
     if (!session || !fight) return;
@@ -874,6 +903,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+    
+    logPhaseTiming(fightId, "enemy_ai", phaseStart);
 
     // Auto-advance to state check
     setTimeout(async () => {
