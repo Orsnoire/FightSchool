@@ -2,7 +2,7 @@ import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight
 import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and, or, inArray, sql } from "drizzle-orm";
 import { calculateNewLevel, getTotalXPForLevel, XP_REQUIREMENTS, getTotalPassiveBonuses } from "@shared/jobSystem";
 
 function hashPassword(password: string): string {
@@ -43,6 +43,7 @@ export interface IStorage {
   getCombatSession(fightId: string): Promise<CombatState | undefined>;
   createCombatSession(fightId: string, fight: Fight): Promise<CombatState>;
   updateCombatSession(fightId: string, updates: Partial<CombatState>): Promise<CombatState | undefined>;
+  deleteCombatSession(fightId: string): Promise<boolean>;
   addPlayerToCombat(fightId: string, student: Student): Promise<void>;
   updatePlayerState(fightId: string, studentId: string, updates: Partial<PlayerState>): Promise<void>;
 
@@ -256,6 +257,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(combatSessions.fightId, fightId))
       .returning();
     return session as CombatState | undefined;
+  }
+
+  async deleteCombatSession(fightId: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(combatSessions)
+        .where(eq(combatSessions.fightId, fightId))
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error(`Failed to delete combat session ${fightId}:`, error);
+      return false;
+    }
   }
 
   async addPlayerToCombat(fightId: string, student: Student): Promise<void> {

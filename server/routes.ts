@@ -470,13 +470,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update combat session
       await storage.updateCombatSession(fightId, { currentPhase: "game_over" });
       
-      // Disconnect all players after a short delay to ensure they receive the message
-      setTimeout(() => {
-        disconnectAllPlayers(fightId);
+      // Clean up after timeout
+      setTimeout(async () => {
+        try {
+          await cleanupFight(fightId);
+        } catch (error) {
+          log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
+        }
       }, 2000);
-      
-      // Clean up
-      inactivityTimers.delete(fightId);
     }, INACTIVITY_TIMEOUT);
     
     inactivityTimers.set(fightId, timer);
@@ -527,6 +528,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ws.close(1000, "Fight ended");
       }
     });
+  }
+
+  async function cleanupFight(fightId: string) {
+    log(`[Cleanup] Starting cleanup for fight ${fightId}`, "cleanup");
+    
+    // Clear all timers
+    const combatTimer = combatTimers.get(fightId);
+    if (combatTimer) {
+      clearTimeout(combatTimer);
+      combatTimers.delete(fightId);
+      log(`[Cleanup] Cleared combat timer for fight ${fightId}`, "cleanup");
+    }
+    
+    const broadcastTimer = pendingBroadcasts.get(fightId);
+    if (broadcastTimer) {
+      clearTimeout(broadcastTimer);
+      pendingBroadcasts.delete(fightId);
+      log(`[Cleanup] Cleared broadcast timer for fight ${fightId}`, "cleanup");
+    }
+    
+    const inactivityTimer = inactivityTimers.get(fightId);
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      inactivityTimers.delete(fightId);
+      log(`[Cleanup] Cleared inactivity timer for fight ${fightId}`, "cleanup");
+    }
+    
+    // Disconnect all players
+    disconnectAllPlayers(fightId);
+    log(`[Cleanup] Disconnected all players for fight ${fightId}`, "cleanup");
+    
+    // Delete combat session from database to free memory
+    try {
+      await storage.deleteCombatSession(fightId);
+      log(`[Cleanup] Deleted combat session for fight ${fightId}`, "cleanup");
+    } catch (error) {
+      log(`[Cleanup] Failed to delete combat session for fight ${fightId}: ${error}`, "cleanup");
+    }
+    
+    log(`[Cleanup] Completed cleanup for fight ${fightId}`, "cleanup");
   }
 
   async function startQuestion(fightId: string) {
@@ -876,6 +917,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         victory: false,
         message: "All heroes have fallen...",
       });
+      
+      // Clean up after defeat
+      setTimeout(async () => {
+        try {
+          await cleanupFight(fightId);
+        } catch (error) {
+          log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
+        }
+      }, 2000);
+      
       return;
     }
 
@@ -937,6 +988,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }));
         }
       });
+      
+      // Clean up after victory (delayed to ensure messages are received)
+      setTimeout(async () => {
+        try {
+          await cleanupFight(fightId);
+        } catch (error) {
+          log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
+        }
+      }, 5000); // 5 second delay for loot claiming
       
       return;
     }
@@ -1033,10 +1093,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Update combat session to game_over phase
           await storage.updateCombatSession(ws.fightId, { currentPhase: "game_over" });
           
-          // Disconnect all players after a short delay to ensure they receive the message
+          // Clean up after teacher ends fight
           const fightIdToClose = ws.fightId;
-          setTimeout(() => {
-            disconnectAllPlayers(fightIdToClose);
+          setTimeout(async () => {
+            try {
+              await cleanupFight(fightIdToClose);
+            } catch (error) {
+              log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
+            }
           }, 2000);
           
           log(`[WebSocket] Fight ${ws.fightId} ended by teacher`, "websocket");
