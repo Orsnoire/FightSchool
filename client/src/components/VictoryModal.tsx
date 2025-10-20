@@ -167,15 +167,26 @@ export function VictoryModal({
               ))}
             </div>
             
-            <Button
-              onClick={handleClaimLoot}
-              disabled={!selectedLoot}
-              className="w-full"
-              size="lg"
-              data-testid="button-claim-loot"
-            >
-              Claim Reward
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="flex-1"
+                size="lg"
+                data-testid="button-skip-loot"
+              >
+                Skip & Return to Lobby
+              </Button>
+              <Button
+                onClick={handleClaimLoot}
+                disabled={!selectedLoot}
+                className="flex-1"
+                size="lg"
+                data-testid="button-claim-loot"
+              >
+                Claim Reward
+              </Button>
+            </div>
           </div>
         )}
         
