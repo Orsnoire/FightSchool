@@ -491,6 +491,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // Broadcast batching to reduce message flood with many players
+  const pendingBroadcasts: Map<string, NodeJS.Timeout> = new Map();
+  const BROADCAST_DEBOUNCE_MS = 50; // Batch updates within 50ms window
+
+  async function scheduleBroadcastUpdate(fightId: string) {
+    // Cancel any pending broadcast for this fight
+    const existingTimer = pendingBroadcasts.get(fightId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    // Schedule new broadcast after debounce delay
+    const timer = setTimeout(async () => {
+      try {
+        const session = await storage.getCombatSession(fightId);
+        if (session) {
+          broadcastToCombat(fightId, { type: "combat_state", state: session });
+        }
+      } catch (error) {
+        log(`[WebSocket] Error broadcasting batched update for fight ${fightId}: ${error}`, "websocket");
+      } finally {
+        pendingBroadcasts.delete(fightId);
+      }
+    }, BROADCAST_DEBOUNCE_MS);
+
+    pendingBroadcasts.set(fightId, timer);
+  }
+
   function disconnectAllPlayers(fightId: string) {
     // Close all WebSocket connections for this fight
     wss.clients.forEach((client) => {
@@ -1091,8 +1119,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             healTarget: message.targetId,
           });
           
-          const updatedSession = await storage.getCombatSession(ws.fightId);
-          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
+          // Batch broadcast to reduce message flood
+          scheduleBroadcastUpdate(ws.fightId);
         } else if (message.type === "create_potion" && ws.studentId && ws.fightId) {
           const session = await storage.getCombatSession(ws.fightId);
           if (!session) return;
@@ -1109,8 +1137,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isCreatingPotion: true,
           });
           
-          const updatedSession = await storage.getCombatSession(ws.fightId);
-          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
+          // Batch broadcast to reduce message flood
+          scheduleBroadcastUpdate(ws.fightId);
         } else if (message.type === "charge_fireball" && ws.studentId && ws.fightId) {
           const session = await storage.getCombatSession(ws.fightId);
           if (!session) return;
@@ -1127,8 +1155,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isChargingFireball: true,
           });
           
-          const updatedSession = await storage.getCombatSession(ws.fightId);
-          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
+          // Batch broadcast to reduce message flood
+          scheduleBroadcastUpdate(ws.fightId);
         }
       } catch (error) {
         log(`[WebSocket] Error: ${error}`, "websocket");
