@@ -5,7 +5,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Trophy, Sparkles } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { CharacterClass, Gender, LootItem } from "@shared/schema";
 import { getTotalXPForLevel } from "@shared/jobSystem";
 
@@ -39,6 +39,14 @@ export function VictoryModal({
   const [lootClaimed, setLootClaimed] = useState(false);
   
   const studentId = localStorage.getItem("studentId");
+  
+  // B7 FIX: Invalidate job-levels query when modal shows to ensure cross-class abilities update
+  useEffect(() => {
+    if (studentId && (leveledUp || xpGained > 0)) {
+      queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}/job-levels`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}`] });
+    }
+  }, [studentId, leveledUp, xpGained]);
   
   // Calculate starting level from starting XP
   const startTotalXP = Math.max(0, currentXP - xpGained);
