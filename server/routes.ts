@@ -8,7 +8,8 @@ import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, ge
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
-  fightId?: string;
+  sessionId?: string; // Primary identifier for the combat session
+  fightId?: string;   // Cached for quick access to fight data
   isHost?: boolean;
 }
 
@@ -106,23 +107,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
-  // Find active fight by class code
-  app.get("/api/fights/active/:classCode", async (req, res) => {
-    const { classCode } = req.params;
+  // Validate sessionId endpoint - used by students before joining
+  app.get("/api/sessions/:sessionId", async (req, res) => {
+    const { sessionId } = req.params;
+    const session = await storage.getCombatSession(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: "Session not found or has ended" });
+    }
+    
+    // Get the fight data for this session
+    const fight = await storage.getFight(session.fightId);
+    if (!fight) {
+      return res.status(404).json({ error: "Fight configuration not found" });
+    }
+    
+    res.json({ 
+      sessionId: session.sessionId,
+      fightId: session.fightId,
+      title: fight.title,
+      isActive: true
+    });
+  });
+
+  // Find active fight by guild code (kept for backward compatibility if needed)
+  app.get("/api/fights/active/:guildCode", async (req, res) => {
+    const { guildCode } = req.params;
     const allFights = await storage.getAllFights();
     
-    // Find fights with matching class code
-    const matchingFights = allFights.filter(f => f.classCode === classCode);
+    // Find fights with matching guild code
+    const matchingFights = allFights.filter(f => f.guildCode === guildCode);
     
     if (matchingFights.length === 0) {
-      return res.status(404).json({ error: "No fight found with this class code" });
+      return res.status(404).json({ error: "No fight found with this guild code" });
     }
     
     // Check which ones have active combat sessions (are being hosted)
     const activeFights = [];
     for (const fight of matchingFights) {
-      const session = await storage.getCombatSession(fight.id);
-      if (session) {
+      const sessions = await storage.getCombatSessionsByFightId(fight.id);
+      if (sessions.length > 0) {
         activeFights.push(fight);
       }
     }
@@ -201,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const student = await storage.createStudent({
         nickname,
         password,
-        classCode,
+        guildCode: classCode, // Map classCode from request to guildCode in schema
         characterClass,
         gender,
         weapon: null,
@@ -312,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const student = await storage.getStudent(req.params.id);
     if (!student) return res.status(404).json({ error: "Student not found" });
     const fights = await storage.getAllFights();
-    const availableFights = fights.filter(f => f.classCode === student.classCode);
+    const availableFights = fights.filter(f => f.guildCode === student.guildCode);
     res.json(availableFights);
   });
 
@@ -477,25 +501,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     log(`[WebSocket Server] Error: ${error}`, "websocket");
   });
 
+  // Maps use sessionId as key (not fightId) for unique session tracking
   const combatTimers: Map<string, NodeJS.Timeout> = new Map();
   const inactivityTimers: Map<string, NodeJS.Timeout> = new Map();
   const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
   
   // Performance instrumentation
-  function logPhaseTiming(fightId: string, phase: string, startTime: number) {
+  function logPhaseTiming(sessionId: string, phase: string, startTime: number) {
     const duration = Date.now() - startTime;
-    const activeConnections = getActiveConnectionCount(fightId);
-    log(`[Perf] Fight ${fightId} - ${phase} took ${duration}ms (${activeConnections} connections, ${pendingBroadcasts.size} pending broadcasts)`, "performance");
+    const activeConnections = getActiveConnectionCount(sessionId);
+    log(`[Perf] Session ${sessionId} - ${phase} took ${duration}ms (${activeConnections} connections, ${pendingBroadcasts.size} pending broadcasts)`, "performance");
   }
   
-  function getActiveConnectionCount(fightId?: string): number {
+  function getActiveConnectionCount(sessionId?: string): number {
     let count = 0;
     wss.clients.forEach((client) => {
       const ws = client as ExtendedWebSocket;
       if (ws.readyState === WebSocket.OPEN) {
-        if (fightId && ws.fightId === fightId) {
+        if (sessionId && ws.sessionId === sessionId) {
           count++;
-        } else if (!fightId) {
+        } else if (!sessionId) {
           count++;
         }
       }
@@ -503,56 +528,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return count;
   }
 
-  function resetInactivityTimer(fightId: string) {
+  function resetInactivityTimer(sessionId: string) {
     // Clear existing inactivity timer
-    const existingTimer = inactivityTimers.get(fightId);
+    const existingTimer = inactivityTimers.get(sessionId);
     if (existingTimer) {
       clearTimeout(existingTimer);
     }
     
     // Set new inactivity timer
     const timer = setTimeout(async () => {
-      log(`[WebSocket] Fight ${fightId} ending due to 10 minutes of inactivity`, "websocket");
+      log(`[WebSocket] Session ${sessionId} ending due to 10 minutes of inactivity`, "websocket");
       
       // Clear combat timer if any
-      const combatTimer = combatTimers.get(fightId);
+      const combatTimer = combatTimers.get(sessionId);
       if (combatTimer) {
         clearTimeout(combatTimer);
-        combatTimers.delete(fightId);
+        combatTimers.delete(sessionId);
       }
       
       // Save combat stats
-      await saveCombatStats(fightId);
+      await saveCombatStats(sessionId);
       
       // End the fight
-      broadcastToCombat(fightId, {
+      broadcastToCombat(sessionId, {
         type: "game_over",
         victory: false,
         message: "Fight ended due to inactivity (10 minutes)",
       });
       
       // Update combat session
-      await storage.updateCombatSession(fightId, { currentPhase: "game_over" });
+      await storage.updateCombatSession(sessionId, { currentPhase: "game_over" });
       
       // Clean up after timeout
       setTimeout(async () => {
         try {
-          await cleanupFight(fightId);
+          await cleanupSession(sessionId);
         } catch (error) {
           log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
         }
       }, 2000);
     }, INACTIVITY_TIMEOUT);
     
-    inactivityTimers.set(fightId, timer);
+    inactivityTimers.set(sessionId, timer);
   }
 
-  function broadcastToCombat(fightId: string, message: any) {
+  function broadcastToCombat(sessionId: string, message: any) {
     wss.clients.forEach((client) => {
       const ws = client as ExtendedWebSocket;
-      // B1/B12 FIX: Only send to clients actually in THIS fight (not all hosts)
-      // This prevents old host connections from receiving messages from new fights
-      if (ws.readyState === WebSocket.OPEN && ws.fightId === fightId) {
+      // Only send to clients in THIS specific session
+      // Multiple sessions for the same fight can exist simultaneously
+      if (ws.readyState === WebSocket.OPEN && ws.sessionId === sessionId) {
         ws.send(JSON.stringify(message));
       }
     });
@@ -562,9 +587,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const pendingBroadcasts: Map<string, NodeJS.Timeout> = new Map();
   const BROADCAST_DEBOUNCE_MS = 50; // Batch updates within 50ms window
 
-  async function scheduleBroadcastUpdate(fightId: string) {
-    // Cancel any pending broadcast for this fight
-    const existingTimer = pendingBroadcasts.get(fightId);
+  async function scheduleBroadcastUpdate(sessionId: string) {
+    // Cancel any pending broadcast for this session
+    const existingTimer = pendingBroadcasts.get(sessionId);
     if (existingTimer) {
       clearTimeout(existingTimer);
     }
@@ -572,91 +597,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Schedule new broadcast after debounce delay
     const timer = setTimeout(async () => {
       try {
-        const session = await storage.getCombatSession(fightId);
+        const session = await storage.getCombatSession(sessionId);
         if (session) {
-          broadcastToCombat(fightId, { type: "combat_state", state: session });
+          broadcastToCombat(sessionId, { type: "combat_state", state: session });
         }
       } catch (error) {
-        log(`[WebSocket] Error broadcasting batched update for fight ${fightId}: ${error}`, "websocket");
+        log(`[WebSocket] Error broadcasting batched update for session ${sessionId}: ${error}`, "websocket");
       } finally {
-        pendingBroadcasts.delete(fightId);
+        pendingBroadcasts.delete(sessionId);
       }
     }, BROADCAST_DEBOUNCE_MS);
 
-    pendingBroadcasts.set(fightId, timer);
+    pendingBroadcasts.set(sessionId, timer);
   }
 
-  function disconnectAllPlayers(fightId: string) {
-    // Close all WebSocket connections for this fight (B13 fix)
+  function disconnectAllPlayers(sessionId: string) {
+    // Close all WebSocket connections for this session
     let closedCount = 0;
     wss.clients.forEach((client) => {
       const ws = client as ExtendedWebSocket;
-      if (ws.fightId === fightId) {
+      if (ws.sessionId === sessionId) {
         if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close(1000, "Fight ended");
+          ws.close(1000, "Session ended");
           closedCount++;
         }
-        // Clear fight association even if already closing/closed
+        // Clear session association even if already closing/closed
+        ws.sessionId = undefined;
         ws.fightId = undefined;
         ws.studentId = undefined;
         ws.isHost = false;
       }
     });
-    log(`[Cleanup] Closed ${closedCount} WebSocket connections for fight ${fightId}`, "cleanup");
+    log(`[Cleanup] Closed ${closedCount} WebSocket connections for session ${sessionId}`, "cleanup");
   }
 
-  async function cleanupFight(fightId: string) {
-    log(`[Cleanup] Starting cleanup for fight ${fightId}`, "cleanup");
+  async function cleanupSession(sessionId: string) {
+    log(`[Cleanup] Starting cleanup for session ${sessionId}`, "cleanup");
     
     // Clear all timers
-    const combatTimer = combatTimers.get(fightId);
+    const combatTimer = combatTimers.get(sessionId);
     if (combatTimer) {
       clearTimeout(combatTimer);
-      combatTimers.delete(fightId);
-      log(`[Cleanup] Cleared combat timer for fight ${fightId}`, "cleanup");
+      combatTimers.delete(sessionId);
+      log(`[Cleanup] Cleared combat timer for session ${sessionId}`, "cleanup");
     }
     
-    const broadcastTimer = pendingBroadcasts.get(fightId);
+    const broadcastTimer = pendingBroadcasts.get(sessionId);
     if (broadcastTimer) {
       clearTimeout(broadcastTimer);
-      pendingBroadcasts.delete(fightId);
-      log(`[Cleanup] Cleared broadcast timer for fight ${fightId}`, "cleanup");
+      pendingBroadcasts.delete(sessionId);
+      log(`[Cleanup] Cleared broadcast timer for session ${sessionId}`, "cleanup");
     }
     
-    const inactivityTimer = inactivityTimers.get(fightId);
+    const inactivityTimer = inactivityTimers.get(sessionId);
     if (inactivityTimer) {
       clearTimeout(inactivityTimer);
-      inactivityTimers.delete(fightId);
-      log(`[Cleanup] Cleared inactivity timer for fight ${fightId}`, "cleanup");
+      inactivityTimers.delete(sessionId);
+      log(`[Cleanup] Cleared inactivity timer for session ${sessionId}`, "cleanup");
     }
     
     // Disconnect all players
-    disconnectAllPlayers(fightId);
-    log(`[Cleanup] Disconnected all players for fight ${fightId}`, "cleanup");
+    disconnectAllPlayers(sessionId);
+    log(`[Cleanup] Disconnected all players for session ${sessionId}`, "cleanup");
     
     // Delete combat session from database to free memory
     try {
-      await storage.deleteCombatSession(fightId);
-      log(`[Cleanup] Deleted combat session for fight ${fightId}`, "cleanup");
+      await storage.deleteCombatSession(sessionId);
+      log(`[Cleanup] Deleted combat session ${sessionId}`, "cleanup");
     } catch (error) {
-      log(`[Cleanup] Failed to delete combat session for fight ${fightId}: ${error}`, "cleanup");
+      log(`[Cleanup] Failed to delete combat session ${sessionId}: ${error}`, "cleanup");
     }
     
-    log(`[Cleanup] Completed cleanup for fight ${fightId}`, "cleanup");
+    log(`[Cleanup] Completed cleanup for session ${sessionId}`, "cleanup");
   }
 
-  async function startQuestion(fightId: string) {
-    const session = await storage.getCombatSession(fightId);
-    const fight = await storage.getFight(fightId);
-    if (!session || !fight) return;
+  async function startQuestion(sessionId: string) {
+    const session = await storage.getCombatSession(sessionId);
+    if (!session) return;
+    
+    const fight = await storage.getFight(session.fightId);
+    if (!fight) return;
     
     // Reset inactivity timer on new question
-    resetInactivityTimer(fightId);
+    resetInactivityTimer(sessionId);
 
     // Loop questions: if we've reached the end, go back to the start
     if (session.currentQuestionIndex >= fight.questions.length) {
-      await storage.updateCombatSession(fightId, { currentQuestionIndex: 0 });
-      const updatedSession = await storage.getCombatSession(fightId);
+      await storage.updateCombatSession(sessionId, { currentQuestionIndex: 0 });
+      const updatedSession = await storage.getCombatSession(sessionId);
       if (!updatedSession) return;
       session.currentQuestionIndex = 0;
     }
@@ -666,7 +694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ? session.questionOrder[session.currentQuestionIndex] 
       : session.currentQuestionIndex;
     const question = fight.questions[actualQuestionIndex];
-    await storage.updateCombatSession(fightId, {
+    await storage.updateCombatSession(sessionId, {
       currentPhase: "question",
       questionStartTime: Date.now(),
     });
@@ -685,27 +713,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Save ALL player resets at once - HUGE performance improvement
-    await storage.updateCombatSession(fightId, { players: session.players });
+    await storage.updateCombatSession(sessionId, { players: session.players });
 
-    broadcastToCombat(fightId, { type: "phase_change", phase: "Question Phase" });
-    broadcastToCombat(fightId, { type: "question", question, shuffleOptions: fight.shuffleOptions });
-    const updatedSession = await storage.getCombatSession(fightId);
-    broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+    broadcastToCombat(sessionId, { type: "phase_change", phase: "Question Phase" });
+    broadcastToCombat(sessionId, { type: "question", question, shuffleOptions: fight.shuffleOptions });
+    const updatedSession = await storage.getCombatSession(sessionId);
+    broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
 
     // Auto-advance after time limit
     const timer = setTimeout(async () => {
-      await tankBlockingPhase(fightId);
+      await tankBlockingPhase(sessionId);
     }, question.timeLimit * 1000);
-    combatTimers.set(fightId, timer);
+    combatTimers.set(sessionId, timer);
   }
 
-  async function tankBlockingPhase(fightId: string) {
+  async function tankBlockingPhase(sessionId: string) {
     const phaseStart = Date.now();
-    const session = await storage.getCombatSession(fightId);
+    const session = await storage.getCombatSession(sessionId);
     if (!session) return;
 
-    await storage.updateCombatSession(fightId, { currentPhase: "tank_blocking" });
-    broadcastToCombat(fightId, { type: "phase_change", phase: "Tank Blocking & Healing" });
+    await storage.updateCombatSession(sessionId, { currentPhase: "tank_blocking" });
+    broadcastToCombat(sessionId, { type: "phase_change", phase: "Tank Blocking & Healing" });
     
     // PERFORMANCE FIX (B1, B2): Process potion healing in memory
     for (const [playerId, player] of Object.entries(session.players)) {
@@ -725,28 +753,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Save ALL player changes at once - HUGE performance improvement
-    await storage.updateCombatSession(fightId, { players: session.players });
+    await storage.updateCombatSession(sessionId, { players: session.players });
     
-    const updatedSession = await storage.getCombatSession(fightId);
-    broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+    const updatedSession = await storage.getCombatSession(sessionId);
+    broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
     
-    logPhaseTiming(fightId, "tank_blocking", phaseStart);
+    logPhaseTiming(sessionId, "tank_blocking", phaseStart);
 
     // Auto-advance after 5 seconds
     const timer = setTimeout(async () => {
-      await combatPhase(fightId);
+      await combatPhase(sessionId);
     }, 5000);
-    combatTimers.set(fightId, timer);
+    combatTimers.set(sessionId, timer);
   }
 
-  async function combatPhase(fightId: string) {
+  async function combatPhase(sessionId: string) {
     const phaseStart = Date.now();
-    const session = await storage.getCombatSession(fightId);
-    const fight = await storage.getFight(fightId);
-    if (!session || !fight) return;
+    const session = await storage.getCombatSession(sessionId);
+    if (!session) return;
+    
+    const fight = await storage.getFight(session.fightId);
+    if (!fight) return;
 
-    await storage.updateCombatSession(fightId, { currentPhase: "combat" });
-    broadcastToCombat(fightId, { type: "phase_change", phase: "Combat!" });
+    await storage.updateCombatSession(sessionId, { currentPhase: "combat" });
+    broadcastToCombat(sessionId, { type: "phase_change", phase: "Combat!" });
 
     // Use questionOrder array to get the actual question index (supports randomization)
     const actualQuestionIndex = session.questionOrder 
@@ -884,29 +914,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Save ALL changes at once (enemies + all player states) - HUGE performance improvement
-    await storage.updateCombatSession(fightId, { 
+    await storage.updateCombatSession(sessionId, { 
       enemies: session.enemies,
       players: session.players 
     });
 
-    const updatedSession = await storage.getCombatSession(fightId);
-    broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+    const updatedSession = await storage.getCombatSession(sessionId);
+    broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
     
-    logPhaseTiming(fightId, "combat", phaseStart);
+    logPhaseTiming(sessionId, "combat", phaseStart);
 
     // Auto-advance to enemy AI phase
     setTimeout(async () => {
-      await enemyAIPhase(fightId);
+      await enemyAIPhase(sessionId);
     }, 2000);
   }
 
-  async function enemyAIPhase(fightId: string) {
+  async function enemyAIPhase(sessionId: string) {
     const phaseStart = Date.now();
-    const session = await storage.getCombatSession(fightId);
-    const fight = await storage.getFight(fightId);
-    if (!session || !fight) return;
+    const session = await storage.getCombatSession(sessionId);
+    if (!session) return;
+    
+    const fight = await storage.getFight(session.fightId);
+    if (!fight) return;
 
-    broadcastToCombat(fightId, { type: "phase_change", phase: "Enemy Turn" });
+    broadcastToCombat(sessionId, { type: "phase_change", phase: "Enemy Turn" });
 
     // Default enemy AI: Attack player with highest threat
     // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
@@ -944,26 +976,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Save ALL player changes at once - HUGE performance improvement
-    await storage.updateCombatSession(fightId, { players: session.players });
+    await storage.updateCombatSession(sessionId, { players: session.players });
 
-    const updatedSession = await storage.getCombatSession(fightId);
-    broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
+    const updatedSession = await storage.getCombatSession(sessionId);
+    broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
     
-    logPhaseTiming(fightId, "enemy_ai", phaseStart);
+    logPhaseTiming(sessionId, "enemy_ai", phaseStart);
 
     // Auto-advance to state check
     setTimeout(async () => {
-      await checkGameState(fightId);
+      await checkGameState(sessionId);
     }, 2000);
   }
 
-  async function saveCombatStats(fightId: string) {
-    const session = await storage.getCombatSession(fightId);
+  async function saveCombatStats(sessionId: string) {
+    const session = await storage.getCombatSession(sessionId);
     if (!session) return;
 
     for (const player of Object.values(session.players)) {
       await storage.createCombatStat({
-        fightId,
+        fightId: session.fightId,
         studentId: player.studentId,
         nickname: player.nickname,
         characterClass: player.characterClass,
@@ -978,17 +1010,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  async function checkGameState(fightId: string) {
-    const session = await storage.getCombatSession(fightId);
-    const fight = await storage.getFight(fightId);
-    if (!session || !fight) return;
+  async function checkGameState(sessionId: string) {
+    const session = await storage.getCombatSession(sessionId);
+    if (!session) return;
+    
+    const fight = await storage.getFight(session.fightId);
+    if (!fight) return;
 
     // Check if all players dead
     const allPlayersDead = Object.values(session.players).every((p) => p.isDead);
     if (allPlayersDead) {
-      await saveCombatStats(fightId);
-      await storage.updateCombatSession(fightId, { currentPhase: "game_over" });
-      broadcastToCombat(fightId, {
+      await saveCombatStats(sessionId);
+      await storage.updateCombatSession(sessionId, { currentPhase: "game_over" });
+      broadcastToCombat(sessionId, {
         type: "game_over",
         victory: false,
         message: "All heroes have fallen...",
@@ -997,7 +1031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean up after defeat
       setTimeout(async () => {
         try {
-          await cleanupFight(fightId);
+          await cleanupSession(sessionId);
         } catch (error) {
           log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
         }
@@ -1009,8 +1043,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if all enemies dead
     const allEnemiesDead = session.enemies.every((e) => e.health <= 0);
     if (allEnemiesDead) {
-      await saveCombatStats(fightId);
-      await storage.updateCombatSession(fightId, { currentPhase: "game_over" });
+      await saveCombatStats(sessionId);
+      await storage.updateCombatSession(sessionId, { currentPhase: "game_over" });
       
       // Calculate and award XP for each player
       const victoryData: Record<string, any> = {};
@@ -1043,7 +1077,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send individual victory messages to each player with their XP data
       wss.clients.forEach((client) => {
         const playerWs = client as ExtendedWebSocket;
-        if (playerWs.readyState === WebSocket.OPEN && playerWs.fightId === fightId && playerWs.studentId) {
+        if (playerWs.readyState === WebSocket.OPEN && playerWs.sessionId === sessionId && playerWs.studentId) {
           const playerData = victoryData[playerWs.studentId];
           playerWs.send(JSON.stringify({
             type: "game_over",
@@ -1055,7 +1089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currentXP: playerData?.currentXP || 0,
             lootTable: fight.lootTable || [],
           }));
-        } else if (playerWs.readyState === WebSocket.OPEN && (playerWs.fightId === fightId || playerWs.isHost)) {
+        } else if (playerWs.readyState === WebSocket.OPEN && (playerWs.sessionId === sessionId || playerWs.isHost)) {
           // Send basic victory message to host
           playerWs.send(JSON.stringify({
             type: "game_over",
@@ -1068,7 +1102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean up after victory (delayed to ensure messages are received)
       setTimeout(async () => {
         try {
-          await cleanupFight(fightId);
+          await cleanupSession(sessionId);
         } catch (error) {
           log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
         }
@@ -1078,10 +1112,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Continue to next question
-    await storage.updateCombatSession(fightId, {
+    await storage.updateCombatSession(sessionId, {
       currentQuestionIndex: session.currentQuestionIndex + 1,
     });
-    await startQuestion(fightId);
+    await startQuestion(sessionId);
   }
 
   wss.on("connection", (ws: ExtendedWebSocket) => {
@@ -1123,107 +1157,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log(`[WebSocket] No existing session for fight ${message.fightId}, but cleaning up any stale timers/connections`, "websocket");
           }
           
-          // Always cleanup to clear timers, connections, and DB state
-          await cleanupFight(message.fightId);
+          // Always cleanup to clear timers, connections, and DB state if there's an existing session
+          if (existingSession) {
+            await cleanupSession(existingSession.sessionId);
+          }
           
           // Brief delay to ensure cleanup completes
           await new Promise(resolve => setTimeout(resolve, 100));
           
-          // Create fresh combat session
+          // Create fresh combat session (generates unique sessionId)
           const session = await storage.createCombatSession(message.fightId, fight);
-          ws.send(JSON.stringify({ type: "combat_state", state: session }));
-          log(`[WebSocket] Host connected to fight ${message.fightId} with clean state`, "websocket");
+          
+          // Set both sessionId (primary) and fightId (cached) on the WebSocket
+          ws.sessionId = session.sessionId;
+          ws.fightId = session.fightId;
+          
+          // Send sessionId and combat state to host so they can display the code
+          ws.send(JSON.stringify({ 
+            type: "session_created", 
+            sessionId: session.sessionId,
+            state: session 
+          }));
+          log(`[WebSocket] Host created session ${session.sessionId} for fight ${message.fightId}`, "websocket");
         } else if (message.type === "join") {
           const student = await storage.getStudent(message.studentId);
-          const fightId = message.fightId;
+          const sessionId = message.sessionId;
           
           if (!student) {
             log(`[WebSocket] Join failed: Student not found (${message.studentId})`, "websocket");
             return;
           }
-          if (!fightId) {
-            log(`[WebSocket] Join failed: No fightId provided`, "websocket");
+          if (!sessionId) {
+            log(`[WebSocket] Join failed: No sessionId provided`, "websocket");
             return;
           }
 
-          const fight = await storage.getFight(fightId);
+          const session = await storage.getCombatSession(sessionId);
+          if (!session) {
+            log(`[WebSocket] Join failed: Session not found (${sessionId})`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "Session not found or has ended" }));
+            return;
+          }
+
+          const fight = await storage.getFight(session.fightId);
           if (!fight) {
-            log(`[WebSocket] Join failed: Fight not found (${fightId})`, "websocket");
+            log(`[WebSocket] Join failed: Fight not found (${session.fightId})`, "websocket");
             return;
           }
 
-          log(`[WebSocket] Student ${student.nickname} joining fight ${fight.title}`, "websocket");
+          log(`[WebSocket] Student ${student.nickname} joining session ${sessionId} for fight ${fight.title}`, "websocket");
 
+          // Set both sessionId (primary) and fightId (cached) on the WebSocket
           ws.studentId = student.id;
-          ws.fightId = fightId;
+          ws.sessionId = sessionId;
+          ws.fightId = session.fightId;
 
-          let session = await storage.getCombatSession(fightId);
-          if (!session) {
-            session = await storage.createCombatSession(fightId, fight);
-          }
-
+          // Add player to combat if not already in
           if (!session.players[student.id]) {
-            await storage.addPlayerToCombat(fightId, student);
+            await storage.addPlayerToCombat(sessionId, student);
           }
 
-          const updatedSession = await storage.getCombatSession(fightId);
-          broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
-          log(`[WebSocket] Student ${student.nickname} successfully joined fight`, "websocket");
-        } else if (message.type === "start_fight" && ws.isHost && ws.fightId) {
-          log(`[WebSocket] Host initiating fight start for ${ws.fightId}`, "websocket");
-          const session = await storage.getCombatSession(ws.fightId);
+          const updatedSession = await storage.getCombatSession(sessionId);
+          broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
+          log(`[WebSocket] Student ${student.nickname} successfully joined session ${sessionId}`, "websocket");
+        } else if (message.type === "start_fight" && ws.isHost && ws.sessionId) {
+          log(`[WebSocket] Host initiating fight start for session ${ws.sessionId}`, "websocket");
+          const session = await storage.getCombatSession(ws.sessionId);
           if (!session) {
-            log(`[WebSocket] Cannot start fight - no session found for ${ws.fightId}`, "websocket");
+            log(`[WebSocket] Cannot start fight - no session found for ${ws.sessionId}`, "websocket");
             ws.send(JSON.stringify({ type: "error", message: "No active session found" }));
             return;
           }
           if (session.currentPhase !== "waiting") {
-            log(`[WebSocket] Fight ${ws.fightId} already started (phase: ${session.currentPhase})`, "websocket");
+            log(`[WebSocket] Session ${ws.sessionId} already started (phase: ${session.currentPhase})`, "websocket");
             return;
           }
-          await startQuestion(ws.fightId);
-          log(`[WebSocket] Fight ${ws.fightId} started successfully`, "websocket");
-        } else if (message.type === "end_fight" && ws.isHost && ws.fightId) {
+          await startQuestion(ws.sessionId);
+          log(`[WebSocket] Session ${ws.sessionId} started successfully`, "websocket");
+        } else if (message.type === "end_fight" && ws.isHost && ws.sessionId) {
           // Clear any active timers
-          const timer = combatTimers.get(ws.fightId);
+          const timer = combatTimers.get(ws.sessionId);
           if (timer) {
             clearTimeout(timer);
-            combatTimers.delete(ws.fightId);
+            combatTimers.delete(ws.sessionId);
           }
           
           // Clear inactivity timer
-          const inactivityTimer = inactivityTimers.get(ws.fightId);
+          const inactivityTimer = inactivityTimers.get(ws.sessionId);
           if (inactivityTimer) {
             clearTimeout(inactivityTimer);
-            inactivityTimers.delete(ws.fightId);
+            inactivityTimers.delete(ws.sessionId);
           }
           
           // Save combat stats before ending
-          await saveCombatStats(ws.fightId);
+          await saveCombatStats(ws.sessionId);
           
           // End the fight - broadcast game_over to all players
-          broadcastToCombat(ws.fightId, {
+          broadcastToCombat(ws.sessionId, {
             type: "game_over",
             victory: false,
             message: "Fight ended by teacher",
           });
           
           // Update combat session to game_over phase
-          await storage.updateCombatSession(ws.fightId, { currentPhase: "game_over" });
+          await storage.updateCombatSession(ws.sessionId, { currentPhase: "game_over" });
           
           // Clean up after teacher ends fight
-          const fightIdToClose = ws.fightId;
+          const sessionIdToClose = ws.sessionId;
           setTimeout(async () => {
             try {
-              await cleanupFight(fightIdToClose);
+              await cleanupSession(sessionIdToClose);
             } catch (error) {
               log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
             }
           }, 2000);
           
-          log(`[WebSocket] Fight ${ws.fightId} ended by teacher`, "websocket");
-        } else if (message.type === "answer" && ws.studentId && ws.fightId) {
-          const session = await storage.getCombatSession(ws.fightId);
+          log(`[WebSocket] Session ${ws.sessionId} ended by teacher`, "websocket");
+        } else if (message.type === "answer" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
           if (!session) return;
           
           // Only allow alive players to answer
@@ -1234,19 +1285,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Reset inactivity timer on player action
-          resetInactivityTimer(ws.fightId);
+          resetInactivityTimer(ws.sessionId);
           
-          await storage.updatePlayerState(ws.fightId, ws.studentId, {
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             currentAnswer: message.answer,
             hasAnswered: true,
             isHealing: message.isHealing || false,
             healTarget: message.healTarget,
           });
           
-          const updatedSession = await storage.getCombatSession(ws.fightId);
+          const updatedSession = await storage.getCombatSession(ws.sessionId);
           if (!updatedSession) return;
           
-          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
+          broadcastToCombat(ws.sessionId, { type: "combat_state", state: updatedSession });
 
           // Check if all alive players have answered - if so, end question phase early
           const alivePlayers = Object.values(updatedSession.players).filter(p => !p.isDead);
@@ -1256,17 +1307,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log(`[WebSocket] All ${alivePlayers.length} alive students answered - ending question phase early`, "websocket");
             
             // Clear the question timer
-            const timer = combatTimers.get(ws.fightId);
+            const timer = combatTimers.get(ws.sessionId);
             if (timer) {
               clearTimeout(timer);
-              combatTimers.delete(ws.fightId);
+              combatTimers.delete(ws.sessionId);
             }
             
             // Immediately proceed to tank blocking phase
-            await tankBlockingPhase(ws.fightId);
+            await tankBlockingPhase(ws.sessionId);
           }
-        } else if (message.type === "block" && ws.studentId && ws.fightId) {
-          const session = await storage.getCombatSession(ws.fightId);
+        } else if (message.type === "block" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
           if (!session) return;
           
           // Only allow alive warriors to block
@@ -1277,16 +1328,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Reset inactivity timer on player action
-          resetInactivityTimer(ws.fightId);
+          resetInactivityTimer(ws.sessionId);
           
-          await storage.updatePlayerState(ws.fightId, ws.studentId, {
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             blockTarget: message.targetId,
           });
           
-          const updatedSession = await storage.getCombatSession(ws.fightId);
-          broadcastToCombat(ws.fightId, { type: "combat_state", state: updatedSession });
-        } else if (message.type === "heal" && ws.studentId && ws.fightId) {
-          const session = await storage.getCombatSession(ws.fightId);
+          const updatedSession = await storage.getCombatSession(ws.sessionId);
+          broadcastToCombat(ws.sessionId, { type: "combat_state", state: updatedSession });
+        } else if (message.type === "heal" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
           if (!session) return;
           
           // Only allow alive herbalists to heal
@@ -1297,17 +1348,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Reset inactivity timer on player action
-          resetInactivityTimer(ws.fightId);
+          resetInactivityTimer(ws.sessionId);
           
-          await storage.updatePlayerState(ws.fightId, ws.studentId, {
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             isHealing: true,
             healTarget: message.targetId,
           });
           
           // Batch broadcast to reduce message flood
-          scheduleBroadcastUpdate(ws.fightId);
-        } else if (message.type === "create_potion" && ws.studentId && ws.fightId) {
-          const session = await storage.getCombatSession(ws.fightId);
+          scheduleBroadcastUpdate(ws.sessionId);
+        } else if (message.type === "create_potion" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
           if (!session) return;
           
           // Only allow alive herbalists to create potions
@@ -1318,14 +1369,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Herbalist choosing to create a potion instead of dealing damage
-          await storage.updatePlayerState(ws.fightId, ws.studentId, {
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             isCreatingPotion: true,
           });
           
           // Batch broadcast to reduce message flood
-          scheduleBroadcastUpdate(ws.fightId);
-        } else if (message.type === "charge_fireball" && ws.studentId && ws.fightId) {
-          const session = await storage.getCombatSession(ws.fightId);
+          scheduleBroadcastUpdate(ws.sessionId);
+        } else if (message.type === "charge_fireball" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
           if (!session) return;
           
           // Only allow alive wizards to charge fireballs
@@ -1336,12 +1387,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Wizard starting to charge a fireball
-          await storage.updatePlayerState(ws.fightId, ws.studentId, {
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             isChargingFireball: true,
           });
           
           // Batch broadcast to reduce message flood
-          scheduleBroadcastUpdate(ws.fightId);
+          scheduleBroadcastUpdate(ws.sessionId);
         }
       } catch (error) {
         log(`[WebSocket] Error: ${error}`, "websocket");
