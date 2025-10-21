@@ -1,0 +1,75 @@
+Fight Test 1 – Bug Tracker & Fix Plan (updated as of v 0.03). To test:
+Session: 20 minute class fight test with 28 connected players
+Environment: Published app (autoscale x5)
+________________________________________
+📋 Bugs Reported
+B1 — Combat mechanics lag / stall until page refresh (not fixed)
+•	Severity: P0 (blocks play)
+•	Repro: After several minutes with ~28 players, timed actions stop resolving; UI responds but state doesn't advance until client hard-refresh.
+•	Expected: Mechanics tick continues; clients never need a refresh.
+•	Actual: Game loop appears frozen client side; refresh reattaches and resumes.
+•	Acceptance criteria: No stalls across a 30 minute fight at 30 players; 99p tick < 50 ms; 0 participant evictions; zero forced refreshes.
+B2 — Fireball streaks & potions cause lag with 28 players (partially tested – unclear)
+•	Severity: P0
+•	Repro: When multiple players use Fireball Streaks and potions in quick succession, mechanics delay grows sharply.
+•	Acceptance criteria: With 30 players spamming streaks/potions, 99p server tick < 50 ms; client FPS > 50; no backlog growth.
+B3 — Loot window: icons/names missing; “internal server error”; “failure to claim loot” (Not tested)
+•	Severity: P1 (progression blocked; morale impact)
+•	Repro: After victory, loot modal opens; assets/names sometimes blank; claim button returns 500 and/or "failure to claim".
+•	Hypotheses:
+o	Race condition: victory post clears battle context before loot fetch/claim.
+o	Mismatch between item ids & asset map; CDN paths not resolved in production.
+o	Idempotency missing: repeated claim attempts create conflicts.
+•	Acceptance criteria: 100 claims in load test → 0 errors; icons & names always render.
+B4 — Player side icons too large; start position should be at top (boss image area) (not changed)
+•	Severity: P3 (UX)
+•	Spec: Reduce side avatars to 50% current size; initial layout starts within the top boss image area.
+•	Dev notes: Use container query or CSS clamp to scale with viewport height. Provide safe area overlay.
+•	Acceptance criteria: On 1280×720 through 1920×1080, both columns fit without overlap; above the fold shows boss + both teams.
+B5 — Phase change modular windows (modals) don’t match question window positions/sizes (not changed)
+•	Severity: P2 (UX consistency)
+•	Spec: Phase change windows must use the exact same anchor, width, and max height as the question modals.
+•	Acceptance criteria: Bounding boxes differ by < 4px in both dimensions at common breakpoints; transitions align.
+B6 — Unanswered players not marked wrong (fixed)
+B7 — Cross-class abilities not displaying at level 8 (not changed)
+•	Severity: P2 (progression / feedback issue)
+•	Repro: When players level to 8, cross-class abilities fail to appear in the ability list or UI overlay.
+•	Expected: New cross-class abilities unlock and display automatically upon level-up.
+•	Hypotheses:
+o	Client not updating ability map after level-up event.
+o	Server not returning full merged ability list for new level tier.
+o	Missing asset mapping for cross-class ability IDs.
+•	Acceptance criteria: All level 8 unlocks show in ability bar immediately upon level-up.
+B8 — Class change interactive not appearing (not changed)
+•	Severity: P2 (UX blocking)
+•	Repro: The class change UI/interactive prompt fails to appear. Default should show the four starting classes (Warrior, Wizard, Scout and Herbalist)
+•	Expected: Class change modal/interactive shows in the lobby.
+•	Acceptance criteria: Eligible players consistently see and can interact with class change prompt immediately after conditions met.
+B9 — Fight instances not closing / stale sockets persisting (not changed)
+•	Severity: P0 (critical – resource leak & data contamination)
+•	Repro: After a fight ends, player WebSockets remain open; launching a new host reuses old data, with stale sockets persisting.
+•	Expected: On victory OR “End Fight” PRESSED, all sockets for that fightId close cleanly, stats are recorded, and all in-memory fight data cleared.
+•	Fix: Add explicit teardown to close sockets, delete fight state, and clear memory. Force-clear old sockets on new host launch; introduce Fight Instance TTL for idle cleanup.
+•	Acceptance criteria: 100% sockets closed within 2s post-victory; launching new host clears old state; teacher dashboard only shows active players; memory returns to baseline.
+B10 — Teacher dashboard not updating with player logins and statistics (not tested)
+•	Severity: P1 (visibility / reporting failure)
+•	Repro: Teacher stats and players screens stay empty as players have connected; stats not updating after fights.
+•	Expected: Dashboard shows connected players and updates stats after victory.
+•	Fix: Ensure teacher socket subscribes to the correct fightId channel; emit playerJoined, playerStatsUpdated, and fightConcluded to teacher; push final stats bundle to dashboard.
+•	Acceptance criteria: Dashboard lists players after victory; stats populate automatically after victory; no missing or duplicate entries.
+________________________________________
+🚨 B11 — Enemies not taking damage after recent fixSeverity: P0 (hard stop – combat broken)
+Repro: After latest mechanics/WS changes, enemy HP decreases only once (e.g., a single 10‑HP hit) and then stalls even when multiple players answer correctly in the round. Client may animate hits, but server applies only one player's damage.
+Likely regression surface: new batching/round logic short‑circuits to first correct answer only instead of aggregating all qualifying answers; debounce/"first event wins" or find()‑style early return; dedup key equals questionId without playerId.
+Acceptance criteria: In test fights with N correct answers in a round, boss HP drops by the sum of all eligible damage; HP never stays constant when answers_correct > 0; logs show multiple contributors when applicable.
+🚨 B12 — Host “Start fight” stuck on Waiting; teacher HUD not reflecting waiting extension
+Severity: P0 (session control broken)
+Repro: Teacher clicks Start fight; UI remains on "Waiting". After a refresh, the fight may start.
+Acceptance criteria: Start transitions within 1s of click or shows explicit reason + auto‑retry; no refresh needed.
+
+🚨 B13 — “End fight” pressed but fight doesn’t end; students remain connected
+Severity: P0 (lifecycle teardown broken)
+Repro: Teacher clicks End fight; students remain in the room; sockets persist; state doesn’t reset.
+Relationship: Related to B9 (stale sockets) but focused on control action failure.
+Acceptance criteria: Within 2s of End, all participants disconnected; teacher dashboard shows concluded fight; starting a new host has a clean slate.
+________________________________________
