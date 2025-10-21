@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP } from "@shared/jobSystem";
 
@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const [student, fight, equipmentItem] = await Promise.all([
       storage.getStudent(req.params.id),
       storage.getFight(fightId),
-      storage.getEquipmentItemById(itemId)
+      storage.getEquipmentItem(itemId)
     ]);
     
     // B3 FIX: Validate student exists
@@ -353,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // B3 FIX: Validate item is in the fight's loot table
     const lootTable = fight.lootTable || [];
-    const validLoot = lootTable.find(item => item.itemId === itemId);
+    const validLoot = lootTable.find((item: LootItem) => item.itemId === itemId);
     if (!validLoot) {
       return res.status(400).json({ error: "This item is not available as loot for this fight" });
     }
@@ -545,7 +545,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function broadcastToCombat(fightId: string, message: any) {
     wss.clients.forEach((client) => {
       const ws = client as ExtendedWebSocket;
-      if (ws.readyState === WebSocket.OPEN && (ws.fightId === fightId || ws.isHost)) {
+      // B1/B12 FIX: Only send to clients actually in THIS fight (not all hosts)
+      // This prevents old host connections from receiving messages from new fights
+      if (ws.readyState === WebSocket.OPEN && ws.fightId === fightId) {
         ws.send(JSON.stringify(message));
       }
     });
@@ -1086,24 +1088,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         log(`[WebSocket] Received message: ${message.type}`, "websocket");
 
         if (message.type === "host") {
+          const fight = await storage.getFight(message.fightId);
+          if (!fight) {
+            log(`[WebSocket] Host connection failed: Fight ${message.fightId} not found`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "Fight not found" }));
+            return;
+          }
+          
+          // B1/B12 FIX: Clean up any existing host connections for this fight first
+          // This prevents multiple host connections for the same fight
+          wss.clients.forEach((client) => {
+            const existingWs = client as ExtendedWebSocket;
+            if (existingWs !== ws && existingWs.fightId === message.fightId && existingWs.isHost) {
+              log(`[WebSocket] Closing old host connection for fight ${message.fightId}`, "websocket");
+              existingWs.close(1000, "New host connection established");
+            }
+          });
+          
+          // Set connection properties
           ws.fightId = message.fightId;
           ws.isHost = true;
-          const fight = await storage.getFight(message.fightId);
-          if (fight) {
-            // Force cleanup of any existing fight instance (B9 fix)
-            let session = await storage.getCombatSession(message.fightId);
-            if (session) {
-              log(`[WebSocket] Existing session found for fight ${message.fightId}, cleaning up stale state`, "websocket");
-              await cleanupFight(message.fightId);
-              // Brief delay to ensure cleanup completes
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            // Create fresh combat session
-            session = await storage.createCombatSession(message.fightId, fight);
-            ws.send(JSON.stringify({ type: "combat_state", state: session }));
-            log(`[WebSocket] Host connected to fight ${message.fightId} with clean state`, "websocket");
+          
+          // B1/B12/B9 FIX: ALWAYS cleanup existing fight state (timers, connections, DB session)
+          // This ensures a clean slate even if session doesn't exist in DB but timers/connections do
+          const existingSession = await storage.getCombatSession(message.fightId);
+          if (existingSession) {
+            log(`[WebSocket] Existing session found for fight ${message.fightId}, cleaning up stale state`, "websocket");
+          } else {
+            log(`[WebSocket] No existing session for fight ${message.fightId}, but cleaning up any stale timers/connections`, "websocket");
           }
+          
+          // Always cleanup to clear timers, connections, and DB state
+          await cleanupFight(message.fightId);
+          
+          // Brief delay to ensure cleanup completes
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Create fresh combat session
+          const session = await storage.createCombatSession(message.fightId, fight);
+          ws.send(JSON.stringify({ type: "combat_state", state: session }));
+          log(`[WebSocket] Host connected to fight ${message.fightId} with clean state`, "websocket");
         } else if (message.type === "join") {
           const student = await storage.getStudent(message.studentId);
           const fightId = message.fightId;

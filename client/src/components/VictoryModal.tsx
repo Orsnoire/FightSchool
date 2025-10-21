@@ -4,8 +4,9 @@ import { Card } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Trophy, Sparkles } from "lucide-react";
+import { Trophy, Sparkles, Sword, Shield, Crown } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import type { CharacterClass, Gender, LootItem } from "@shared/schema";
 import { getTotalXPForLevel } from "@shared/jobSystem";
 
@@ -39,6 +40,13 @@ export function VictoryModal({
   const [lootClaimed, setLootClaimed] = useState(false);
   
   const studentId = localStorage.getItem("studentId");
+  
+  // B3 FIX: Fetch equipment item details for loot items to display names and icons
+  const lootItemIds = lootTable.map((loot) => loot.itemId);
+  const { data: equipmentItems = [], isLoading: itemsLoading } = useQuery<any[]>({
+    queryKey: [`/api/equipment-items?ids=${lootItemIds.join(',')}`],
+    enabled: lootItemIds.length > 0,
+  });
   
   // B7 FIX: Invalidate job-levels query when modal shows to ensure cross-class abilities update
   useEffect(() => {
@@ -112,10 +120,15 @@ export function VictoryModal({
         title: "Loot Claimed!",
         description: "Item added to your inventory",
       });
-    } catch (error) {
+      
+      // Invalidate student query to refresh inventory
+      queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}`] });
+    } catch (error: any) {
+      // B3 FIX: Show more specific error messages based on the error response
+      const errorMessage = error?.message || "Failed to claim loot";
       toast({
         title: "Error",
-        description: "Failed to claim loot",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -161,19 +174,51 @@ export function VictoryModal({
         {lootTable.length > 0 && !lootClaimed && (
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-center">Select Your Reward</h3>
-            <div className="grid grid-cols-3 gap-4">
-              {lootTable.map((loot) => (
-                <Button
-                  key={loot.itemId}
-                  variant={selectedLoot === loot.itemId ? "default" : "outline"}
-                  className="h-auto p-4"
-                  onClick={() => setSelectedLoot(loot.itemId)}
-                  data-testid={`button-loot-${loot.itemId}`}
-                >
-                  <div className="text-sm">Item {loot.itemId.slice(0, 8)}</div>
-                </Button>
-              ))}
-            </div>
+            {itemsLoading ? (
+              <p className="text-center text-muted-foreground">Loading items...</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {lootTable.map((loot) => {
+                  // B3 FIX: Find the actual equipment item data
+                  const equipmentItem = equipmentItems.find((item: any) => item.id === loot.itemId);
+                  
+                  return (
+                    <Button
+                      key={loot.itemId}
+                      variant={selectedLoot === loot.itemId ? "default" : "outline"}
+                      className="h-auto p-4 flex flex-col gap-2"
+                      onClick={() => setSelectedLoot(loot.itemId)}
+                      data-testid={`button-loot-${loot.itemId}`}
+                    >
+                      {equipmentItem ? (
+                        <>
+                          <div className="h-12 w-12 flex items-center justify-center">
+                            {equipmentItem.iconUrl ? (
+                              <img src={equipmentItem.iconUrl} alt={equipmentItem.name} className="h-10 w-10" />
+                            ) : (
+                              <div className="text-muted-foreground">
+                                {equipmentItem.slot === "weapon" && <Sword className="h-10 w-10" />}
+                                {equipmentItem.slot === "armor" && <Shield className="h-10 w-10" />}
+                                {equipmentItem.slot === "headgear" && <Crown className="h-10 w-10" />}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-sm font-semibold">{equipmentItem.name}</div>
+                          <div className="text-xs text-muted-foreground capitalize">{equipmentItem.quality}</div>
+                          <div className="text-xs space-y-0.5">
+                            {equipmentItem.hpBonus > 0 && <div>+{equipmentItem.hpBonus} HP</div>}
+                            {equipmentItem.attackBonus > 0 && <div>+{equipmentItem.attackBonus} ATK</div>}
+                            {equipmentItem.defenseBonus > 0 && <div>+{equipmentItem.defenseBonus} DEF</div>}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Loading item...</div>
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
             
             <div className="flex gap-3">
               <Button
