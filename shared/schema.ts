@@ -3,6 +3,16 @@ import { pgTable, text, varchar, integer, boolean, jsonb, bigint } from "drizzle
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Generate 6-character alphanumeric session ID
+export function generateSessionId(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous chars: 0,O,1,I
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 // Character classes and equipment types
 export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "knight" | "paladin" | "dark_knight" | "sage" | "ranger" | "druid" | "monk";
 export type BaseClass = "warrior" | "wizard" | "scout" | "herbalist";
@@ -41,7 +51,7 @@ export const students = pgTable("students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   nickname: text("nickname").notNull(),
   password: text("password").notNull(),
-  classCode: text("class_code"),
+  guildCode: text("guild_code"), // Future: student's assigned guild/class
   characterClass: text("character_class").$type<CharacterClass>(),
   gender: text("gender").$type<Gender>(),
   weapon: text("weapon"),
@@ -92,7 +102,7 @@ export const fights = pgTable("fights", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   teacherId: varchar("teacher_id").notNull(),
   title: text("title").notNull(),
-  classCode: text("class_code").notNull(),
+  guildCode: text("guild_code"), // Future: fight assigned to a specific guild/class
   questions: jsonb("questions").notNull().$type<Question[]>(),
   enemies: jsonb("enemies").notNull().$type<Enemy[]>(),
   baseXP: integer("base_xp").notNull().default(10),
@@ -127,7 +137,8 @@ export type StudentJobLevel = typeof studentJobLevels.$inferSelect;
 
 // Combat sessions table (active game state)
 export const combatSessions = pgTable("combat_sessions", {
-  fightId: varchar("fight_id").primaryKey(),
+  sessionId: varchar("session_id", { length: 6 }).primaryKey(), // 6-character alphanumeric code
+  fightId: varchar("fight_id").notNull(), // References fights table
   currentQuestionIndex: integer("current_question_index").notNull().default(0),
   currentPhase: text("current_phase").notNull().$type<"waiting" | "question" | "tank_blocking" | "combat" | "game_over">(),
   players: jsonb("players").notNull().$type<Record<string, PlayerState>>(),
@@ -209,7 +220,7 @@ export interface Fight {
   id: string;
   teacherId: string;
   title: string;
-  classCode: string;
+  guildCode: string | null; // Future: fight assigned to a specific guild/class
   questions: Question[];
   enemies: Enemy[];
   baseXP: number;
@@ -225,7 +236,7 @@ export interface Fight {
 export const insertFightSchema = z.object({
   teacherId: z.string().min(1),
   title: z.string().min(1),
-  classCode: z.string().min(1),
+  guildCode: z.string().optional().nullable(), // Future: guild assignment
   questions: z.array(questionSchema).min(1),
   enemies: z.array(enemySchema).default([]),
   baseXP: z.number().min(1).max(100).default(10),
@@ -280,7 +291,8 @@ export interface PlayerState {
 }
 
 export interface CombatState {
-  fightId: string;
+  sessionId: string; // 6-character code for this session
+  fightId: string; // Reference to fight template
   currentQuestionIndex: number;
   currentPhase: "waiting" | "question" | "tank_blocking" | "combat" | "game_over";
   players: Record<string, PlayerState>;
