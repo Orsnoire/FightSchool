@@ -1,5 +1,5 @@
 import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot } from "@shared/schema";
-import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS } from "@shared/schema";
+import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS, generateSessionId } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, and, or, inArray, sql } from "drizzle-orm";
@@ -40,12 +40,13 @@ export interface IStorage {
   deleteFight(id: string): Promise<boolean>;
 
   // Combat session operations
-  getCombatSession(fightId: string): Promise<CombatState | undefined>;
+  getCombatSession(sessionId: string): Promise<CombatState | undefined>;
+  getCombatSessionsByFightId(fightId: string): Promise<CombatState[]>; // Get all sessions for a fight
   createCombatSession(fightId: string, fight: Fight): Promise<CombatState>;
-  updateCombatSession(fightId: string, updates: Partial<CombatState>): Promise<CombatState | undefined>;
-  deleteCombatSession(fightId: string): Promise<boolean>;
-  addPlayerToCombat(fightId: string, student: Student): Promise<void>;
-  updatePlayerState(fightId: string, studentId: string, updates: Partial<PlayerState>): Promise<void>;
+  updateCombatSession(sessionId: string, updates: Partial<CombatState>): Promise<CombatState | undefined>;
+  deleteCombatSession(sessionId: string): Promise<boolean>;
+  addPlayerToCombat(sessionId: string, student: Student): Promise<void>;
+  updatePlayerState(sessionId: string, studentId: string, updates: Partial<PlayerState>): Promise<void>;
 
   // Combat stats operations
   createCombatStat(stat: InsertCombatStat): Promise<CombatStat>;
@@ -122,7 +123,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentsByClassCode(classCode: string): Promise<Student[]> {
-    return await db.select().from(students).where(eq(students.classCode, classCode));
+    return await db.select().from(students).where(eq(students.guildCode, classCode));
   }
 
   async createStudent(insertStudent: InsertStudent): Promise<Student> {
@@ -172,7 +173,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         teacherId: insertFight.teacherId,
         title: insertFight.title,
-        classCode: insertFight.classCode,
+        guildCode: insertFight.guildCode,
         questions: insertFight.questions,
         enemies: insertFight.enemies,
         baseXP: insertFight.baseXP,
@@ -180,6 +181,7 @@ export class DatabaseStorage implements IStorage {
         enemyDisplayMode: insertFight.enemyDisplayMode,
         lootTable: insertFight.lootTable,
         randomizeQuestions: insertFight.randomizeQuestions,
+        shuffleOptions: insertFight.shuffleOptions,
       })
       .returning();
     return { ...fight, lootTable: fight.lootTable || [] } as Fight;
@@ -190,7 +192,7 @@ export class DatabaseStorage implements IStorage {
       .update(fights)
       .set({
         title: insertFight.title,
-        classCode: insertFight.classCode,
+        guildCode: insertFight.guildCode,
         questions: insertFight.questions,
         enemies: insertFight.enemies,
         baseXP: insertFight.baseXP,
@@ -198,6 +200,7 @@ export class DatabaseStorage implements IStorage {
         enemyDisplayMode: insertFight.enemyDisplayMode,
         lootTable: insertFight.lootTable,
         randomizeQuestions: insertFight.randomizeQuestions,
+        shuffleOptions: insertFight.shuffleOptions,
       })
       .where(eq(fights.id, id))
       .returning();
@@ -210,12 +213,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Combat session operations
-  async getCombatSession(fightId: string): Promise<CombatState | undefined> {
-    const [session] = await db.select().from(combatSessions).where(eq(combatSessions.fightId, fightId));
+  async getCombatSession(sessionId: string): Promise<CombatState | undefined> {
+    const [session] = await db.select().from(combatSessions).where(eq(combatSessions.sessionId, sessionId));
     return session as CombatState | undefined;
   }
 
+  async getCombatSessionsByFightId(fightId: string): Promise<CombatState[]> {
+    const sessions = await db.select().from(combatSessions).where(eq(combatSessions.fightId, fightId));
+    return sessions as CombatState[];
+  }
+
   async createCombatSession(fightId: string, fight: Fight): Promise<CombatState> {
+    // Generate unique 6-character session ID
+    let sessionId = generateSessionId();
+    
+    // Ensure uniqueness (very unlikely to collide with 32^6 = 1 billion+ combinations)
+    let attempts = 0;
+    while (attempts < 5) {
+      const existing = await this.getCombatSession(sessionId);
+      if (!existing) break;
+      sessionId = generateSessionId();
+      attempts++;
+    }
+    
     // Generate question order (shuffle if randomizeQuestions is true)
     const questionOrder = Array.from({ length: fight.questions.length }, (_, i) => i);
     if (fight.randomizeQuestions) {
@@ -227,6 +247,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     const session: CombatState = {
+      sessionId,
       fightId,
       currentQuestionIndex: 0,
       currentPhase: "waiting",
@@ -235,10 +256,8 @@ export class DatabaseStorage implements IStorage {
       questionOrder,
     };
     
-    // Delete existing session if it exists, then insert new one
-    await db.delete(combatSessions).where(eq(combatSessions.fightId, fightId));
-    
     await db.insert(combatSessions).values({
+      sessionId: session.sessionId,
       fightId: session.fightId,
       currentQuestionIndex: session.currentQuestionIndex,
       currentPhase: session.currentPhase,
@@ -250,30 +269,30 @@ export class DatabaseStorage implements IStorage {
     return session;
   }
 
-  async updateCombatSession(fightId: string, updates: Partial<CombatState>): Promise<CombatState | undefined> {
+  async updateCombatSession(sessionId: string, updates: Partial<CombatState>): Promise<CombatState | undefined> {
     const [session] = await db
       .update(combatSessions)
       .set(updates)
-      .where(eq(combatSessions.fightId, fightId))
+      .where(eq(combatSessions.sessionId, sessionId))
       .returning();
     return session as CombatState | undefined;
   }
 
-  async deleteCombatSession(fightId: string): Promise<boolean> {
+  async deleteCombatSession(sessionId: string): Promise<boolean> {
     try {
       const result = await db
         .delete(combatSessions)
-        .where(eq(combatSessions.fightId, fightId))
+        .where(eq(combatSessions.sessionId, sessionId))
         .returning();
       return result.length > 0;
     } catch (error) {
-      console.error(`Failed to delete combat session ${fightId}:`, error);
+      console.error(`Failed to delete combat session ${sessionId}:`, error);
       return false;
     }
   }
 
-  async addPlayerToCombat(fightId: string, student: Student): Promise<void> {
-    const session = await this.getCombatSession(fightId);
+  async addPlayerToCombat(sessionId: string, student: Student): Promise<void> {
+    const session = await this.getCombatSession(sessionId);
     if (!session) return;
     
     // Student must have completed character selection
@@ -341,18 +360,18 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(combatSessions)
       .set({ players: session.players })
-      .where(eq(combatSessions.fightId, fightId));
+      .where(eq(combatSessions.sessionId, sessionId));
   }
 
-  async updatePlayerState(fightId: string, studentId: string, updates: Partial<PlayerState>): Promise<void> {
-    const session = await this.getCombatSession(fightId);
+  async updatePlayerState(sessionId: string, studentId: string, updates: Partial<PlayerState>): Promise<void> {
+    const session = await this.getCombatSession(sessionId);
     if (!session || !session.players[studentId]) return;
 
     session.players[studentId] = { ...session.players[studentId], ...updates };
     await db
       .update(combatSessions)
       .set({ players: session.players })
-      .where(eq(combatSessions.fightId, fightId));
+      .where(eq(combatSessions.sessionId, sessionId));
   }
 
   // Combat stats operations
@@ -423,9 +442,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getStudentsWhoUsedFightCodes(classCode: string): Promise<Student[]> {
-    // Get all fights for this class code
+    // Get all fights for this guild code
     const allFights = await this.getAllFights();
-    const classFights = allFights.filter(f => f.classCode === classCode);
+    const classFights = allFights.filter(f => f.guildCode === classCode);
     const fightIds = classFights.map(f => f.id);
     
     if (fightIds.length === 0) return [];
@@ -434,9 +453,11 @@ export class DatabaseStorage implements IStorage {
     
     // Check combat sessions (active/ongoing fights) for student IDs
     for (const fightId of fightIds) {
-      const session = await this.getCombatSession(fightId);
-      if (session && session.players) {
-        Object.keys(session.players).forEach(studentId => uniqueStudentIds.add(studentId));
+      const sessions = await this.getCombatSessionsByFightId(fightId);
+      for (const session of sessions) {
+        if (session && session.players) {
+          Object.keys(session.players).forEach(studentId => uniqueStudentIds.add(studentId));
+        }
       }
     }
     
