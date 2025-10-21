@@ -164,8 +164,8 @@ export default function Combat() {
       )}
 
       <div className="flex-1 flex p-4 gap-4">
-        {/* Left column: Player avatars */}
-        <div className="w-32 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-left-column">
+        {/* Left column: Player avatars (50% smaller) */}
+        <div className="w-20 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-left-column">
           {leftPlayers.map((player) => {
             const isBeingBlocked = Object.values(combatState.players).some(
               p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
@@ -182,7 +182,7 @@ export default function Combat() {
                 } ${isBeingBlocked ? 'border-warrior border-2' : isBeingHealed ? 'border-health border-2' : ''}`} 
                 data-testid={`avatar-left-${player.studentId}`}
               >
-                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="xs" />
                 <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
                 <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
                 {(isBeingBlocked || isBeingHealed) && (
@@ -421,8 +421,8 @@ export default function Combat() {
           </div>
         </div>
 
-        {/* Right column: Player avatars */}
-        <div className="w-32 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-right-column">
+        {/* Right column: Player avatars (50% smaller) */}
+        <div className="w-20 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-right-column">
           {rightPlayers.map((player) => {
             const isBeingBlocked = Object.values(combatState.players).some(
               p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
@@ -439,7 +439,7 @@ export default function Combat() {
                 } ${isBeingBlocked ? 'border-warrior border-2' : isBeingHealed ? 'border-health border-2' : ''}`} 
                 data-testid={`avatar-right-${player.studentId}`}
               >
-                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="sm" />
+                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="xs" />
                 <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
                 <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
                 {(isBeingBlocked || isBeingHealed) && (

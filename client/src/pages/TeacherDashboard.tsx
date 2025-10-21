@@ -1,20 +1,28 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusCircle, Swords, Users, BarChart3, Copy, UserCheck, Edit } from "lucide-react";
+import { PlusCircle, Swords, Users, BarChart3, Copy, UserCheck, Edit, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Fight, Student } from "@shared/schema";
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [studentsDialogOpen, setStudentsDialogOpen] = useState(false);
   const teacherId = localStorage.getItem("teacherId");
   const teacherClassCode = localStorage.getItem("teacherClassCode") || "";
+
+  const handleLogout = () => {
+    localStorage.removeItem("teacherId");
+    localStorage.removeItem("teacherClassCode");
+    navigate("/");
+    toast({ title: "Logged out", description: "You have been logged out successfully" });
+  };
   
   const { data: fights, isLoading } = useQuery<Fight[]>({
     queryKey: [`/api/teacher/${teacherId}/fights`],
@@ -132,6 +140,10 @@ export default function TeacherDashboard() {
                 </div>
               </DialogContent>
             </Dialog>
+            <Button variant="outline" size="default" onClick={handleLogout} data-testid="button-logout">
+              <LogOut className="mr-2 h-5 w-5" />
+              Logout
+            </Button>
             <Link href="/teacher/create">
               <Button size="default" data-testid="button-create-fight">
                 <PlusCircle className="mr-2 h-5 w-5" />

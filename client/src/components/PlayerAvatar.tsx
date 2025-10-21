@@ -11,7 +11,7 @@ import herbalistFemale from "@assets/generated_images/Herbalist_female_character
 interface PlayerAvatarProps {
   characterClass: CharacterClass;
   gender: Gender;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   showBorder?: boolean;
   className?: string;
 }
@@ -21,10 +21,17 @@ const CHARACTER_IMAGES: Record<CharacterClass, Record<Gender, string>> = {
   wizard: { A: wizardMale, B: wizardFemale },
   scout: { A: scoutMale, B: scoutFemale },
   herbalist: { A: herbalistMale, B: herbalistFemale },
-  knight: { A: warriorMale, B: warriorFemale }, // Knight as unlockable class uses same sprites
+  knight: { A: warriorMale, B: warriorFemale },
+  paladin: { A: warriorMale, B: warriorFemale },
+  dark_knight: { A: warriorMale, B: warriorFemale },
+  sage: { A: wizardMale, B: wizardFemale },
+  ranger: { A: scoutMale, B: scoutFemale },
+  druid: { A: herbalistMale, B: herbalistFemale },
+  monk: { A: warriorMale, B: warriorFemale },
 };
 
 const SIZE_CLASSES = {
+  xs: "w-8 h-8",
   sm: "w-16 h-16",
   md: "w-24 h-24",
   lg: "w-32 h-32",
