@@ -30,6 +30,9 @@ export default function Combat() {
     currentXP: number;
     lootTable: LootItem[];
   } | null>(null);
+  // B5 FIX: Add phase change modal state
+  const [showPhaseChangeModal, setShowPhaseChangeModal] = useState(false);
+  const [phaseChangeName, setPhaseChangeName] = useState<string>("");
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -56,7 +59,9 @@ export default function Combat() {
         setIsCreatingPotion(false);
         // Don't reset isChargingFireball - let it persist from server state
       } else if (message.type === "phase_change") {
-        toast({ title: message.phase });
+        // B5 FIX: Show phase change modal instead of toast
+        setPhaseChangeName(message.phase);
+        setShowPhaseChangeModal(true);
       } else if (message.type === "game_over") {
         if (message.victory && message.xpGained !== undefined) {
           // Victory with XP data - show victory modal
@@ -97,6 +102,16 @@ export default function Combat() {
       }
     }
   }, [combatState]);
+
+  // B5 FIX: Auto-dismiss phase change modal after 3 seconds
+  useEffect(() => {
+    if (showPhaseChangeModal) {
+      const timer = setTimeout(() => {
+        setShowPhaseChangeModal(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showPhaseChangeModal]);
 
   const submitAnswer = () => {
     if (ws && selectedAnswer) {
@@ -199,7 +214,17 @@ export default function Combat() {
         {/* Center column: Main content */}
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-4xl">
-          {combatState.currentPhase === "question" && currentQuestion && (
+          {/* B5 FIX: Phase change modal matching question modal styling */}
+          {showPhaseChangeModal && (
+            <Card className="p-8 border-primary/30">
+              <div className="flex items-center justify-center">
+                <h2 className="text-4xl font-bold text-center" data-testid="text-phase-change">{phaseChangeName}</h2>
+              </div>
+            </Card>
+          )}
+          
+          {/* B5 FIX: Only show question modal when phase change modal is not visible */}
+          {!showPhaseChangeModal && combatState.currentPhase === "question" && currentQuestion && (
             <Card className="p-8 border-primary/30">
               <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-2xl font-bold" data-testid="text-question">{currentQuestion.question}</h3>
