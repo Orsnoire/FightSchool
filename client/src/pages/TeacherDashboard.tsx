@@ -24,14 +24,22 @@ export default function TeacherDashboard() {
     toast({ title: "Logged out", description: "You have been logged out successfully" });
   };
   
+  // B10 FIX: Auto-refresh fights to show updated data
   const { data: fights, isLoading } = useQuery<Fight[]>({
     queryKey: [`/api/teacher/${teacherId}/fights`],
     enabled: !!teacherId,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 5000, // Poll every 5s to catch fight updates
   });
 
+  // B10 FIX: Auto-refresh students list when dialog opens and poll for updates
   const { data: students, isLoading: studentsLoading } = useQuery<Omit<Student, 'password'>[]>({
     queryKey: [`/api/students/used-fight-codes/${teacherClassCode}`],
     enabled: studentsDialogOpen,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: studentsDialogOpen ? 1000 : false, // Poll every 1s when dialog is open (meets "within 1s" requirement)
   });
 
   const deleteFightMutation = useMutation({

@@ -6,8 +6,12 @@ import type { CombatStat } from "@shared/schema";
 export default function TeacherStats() {
   const classCode = localStorage.getItem("teacherClassCode") || "DEMO123";
 
+  // B10 FIX: Auto-refresh stats to show updated data after fights
   const { data: stats, isLoading } = useQuery<CombatStat[]>({
     queryKey: [`/api/combat-stats/class/${classCode}`],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: 3000, // Poll every 3s for near-real-time stats after fights
   });
 
   const studentStats = stats?.reduce((acc, stat) => {
