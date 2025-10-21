@@ -456,13 +456,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const wss = new WebSocketServer({ noServer: true });
   log("[WebSocket] Server created for combat connections", "websocket");
 
-  // Handle ALL WebSocket upgrades (Replit deployment proxy strips /ws path)
-  // This means request.url comes through as "/" instead of "/ws" in production
-  // Trade-off: Vite HMR won't work in development, but combat WebSocket works in production
+  // Handle WebSocket upgrades, but exclude Vite HMR paths in development
   httpServer.on('upgrade', (request, socket, head) => {
     const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
     log(`[WebSocket] Handling upgrade request to ${pathname}`, "websocket");
     
+    // In development, skip Vite HMR WebSocket paths
+    if (process.env.NODE_ENV === 'development' && pathname.includes('vite')) {
+      log(`[WebSocket] Skipping Vite HMR WebSocket upgrade`, "websocket");
+      return; // Let Vite handle it
+    }
+    
+    // Handle our combat WebSocket
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
