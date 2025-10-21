@@ -10,6 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -34,6 +36,7 @@ export default function CreateFight() {
     timeLimit: 30,
     options: ["", "", "", ""],
   });
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [currentEnemy, setCurrentEnemy] = useState<Partial<Enemy>>({
     image: dragonImg,
     maxHealth: 50,
@@ -122,16 +125,27 @@ export default function CreateFight() {
   });
 
   const addQuestion = () => {
-    if (!currentQuestion.question || !currentQuestion.correctAnswer) {
+    let correctAnswer = currentQuestion.correctAnswer;
+    
+    if (currentQuestion.type === "multiple_choice") {
+      if (selectedOptionIndex === null || !currentQuestion.options?.[selectedOptionIndex]) {
+        toast({ title: "Please select a correct answer option", variant: "destructive" });
+        return;
+      }
+      correctAnswer = currentQuestion.options[selectedOptionIndex];
+    }
+    
+    if (!currentQuestion.question || !correctAnswer) {
       toast({ title: "Please fill in question and correct answer", variant: "destructive" });
       return;
     }
+    
     const newQuestion: Question = {
       id: Date.now().toString(),
       type: currentQuestion.type as any,
       question: currentQuestion.question,
       options: currentQuestion.options,
-      correctAnswer: currentQuestion.correctAnswer,
+      correctAnswer: correctAnswer,
       timeLimit: currentQuestion.timeLimit || 30,
     };
     const updatedQuestions = [...questions, newQuestion];
@@ -142,6 +156,7 @@ export default function CreateFight() {
       timeLimit: 30,
       options: ["", "", "", ""],
     });
+    setSelectedOptionIndex(null);
   };
 
   const addEnemy = () => {
@@ -333,7 +348,10 @@ export default function CreateFight() {
                       <label className="text-sm font-medium">Question Type</label>
                       <Select
                         value={currentQuestion.type}
-                        onValueChange={(value: any) => setCurrentQuestion({ ...currentQuestion, type: value })}
+                        onValueChange={(value: any) => {
+                          setCurrentQuestion({ ...currentQuestion, type: value, correctAnswer: "" });
+                          setSelectedOptionIndex(null);
+                        }}
                       >
                         <SelectTrigger data-testid="select-question-type">
                           <SelectValue />
@@ -358,32 +376,79 @@ export default function CreateFight() {
 
                     {currentQuestion.type === "multiple_choice" && (
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Options</label>
-                        {currentQuestion.options?.map((opt, i) => (
-                          <Input
-                            key={i}
-                            value={opt}
-                            onChange={(e) => {
-                              const newOpts = [...(currentQuestion.options || [])];
-                              newOpts[i] = e.target.value;
-                              setCurrentQuestion({ ...currentQuestion, options: newOpts });
-                            }}
-                            placeholder={`Option ${i + 1}`}
-                            data-testid={`input-option-${i}`}
-                          />
-                        ))}
+                        <label className="text-sm font-medium">Options (select the correct answer)</label>
+                        <RadioGroup
+                          value={selectedOptionIndex !== null ? String(selectedOptionIndex) : ""}
+                          onValueChange={(value) => {
+                            const index = parseInt(value);
+                            setSelectedOptionIndex(index);
+                          }}
+                        >
+                          {currentQuestion.options?.map((opt, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                              <RadioGroupItem
+                                value={String(i)}
+                                id={`option-${i}`}
+                                data-testid={`radio-option-${i}`}
+                                disabled={!opt}
+                              />
+                              <Input
+                                value={opt}
+                                onChange={(e) => {
+                                  setCurrentQuestion((prev) => {
+                                    const newOpts = [...(prev.options || [])];
+                                    newOpts[i] = e.target.value;
+                                    return { ...prev, options: newOpts };
+                                  });
+                                  if (selectedOptionIndex === i && !e.target.value) {
+                                    setSelectedOptionIndex(null);
+                                    toast({ 
+                                      title: "Selection cleared", 
+                                      description: "Please select a valid answer option",
+                                      variant: "default"
+                                    });
+                                  }
+                                }}
+                                placeholder={`Option ${i + 1}`}
+                                data-testid={`input-option-${i}`}
+                                className="flex-1"
+                              />
+                            </div>
+                          ))}
+                        </RadioGroup>
                       </div>
                     )}
 
-                    <div>
-                      <label className="text-sm font-medium">Correct Answer</label>
-                      <Input
-                        value={currentQuestion.correctAnswer || ""}
-                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value })}
-                        placeholder="Enter the correct answer"
-                        data-testid="input-correct-answer"
-                      />
-                    </div>
+                    {currentQuestion.type === "true_false" && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Correct Answer</label>
+                        <RadioGroup
+                          value={currentQuestion.correctAnswer || ""}
+                          onValueChange={(value) => setCurrentQuestion({ ...currentQuestion, correctAnswer: value })}
+                        >
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="true" id="true" data-testid="radio-true" />
+                            <Label htmlFor="true">True</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="false" id="false" data-testid="radio-false" />
+                            <Label htmlFor="false">False</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                    )}
+
+                    {currentQuestion.type === "short_answer" && (
+                      <div>
+                        <label className="text-sm font-medium">Correct Answer</label>
+                        <Input
+                          value={currentQuestion.correctAnswer || ""}
+                          onChange={(e) => setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value })}
+                          placeholder="Enter the correct answer"
+                          data-testid="input-correct-answer"
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="text-sm font-medium">Time Limit: {currentQuestion.timeLimit}s</label>
