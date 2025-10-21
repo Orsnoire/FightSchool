@@ -318,31 +318,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/student/:id/claim-loot", async (req, res) => {
     const { itemId, fightId } = req.body;
-    if (!itemId || !fightId) return res.status(400).json({ error: "Item ID and Fight ID required" });
     
-    const student = await storage.getStudent(req.params.id);
-    if (!student) return res.status(404).json({ error: "Student not found" });
-    
-    const fight = await storage.getFight(fightId);
-    if (!fight) return res.status(404).json({ error: "Fight not found" });
-    
-    // Validate item is in the fight's loot table
-    const lootTable = fight.lootTable || [];
-    const validLoot = lootTable.find(item => item.itemId === itemId);
-    if (!validLoot) return res.status(400).json({ error: "Invalid loot item for this fight" });
-    
-    // Atomically claim loot using conditional update
-    const claimed = await storage.claimLootAtomically(fightId, req.params.id, itemId);
-    if (!claimed) {
-      return res.status(400).json({ error: "Loot already claimed from this fight or no combat record found" });
+    // B3 FIX: Validate required fields
+    if (!itemId || !fightId) {
+      return res.status(400).json({ error: "Item ID and Fight ID are required" });
     }
     
-    // Add item to inventory
+    // B3 FIX: Validate student ID from params
+    if (!req.params.id) {
+      return res.status(400).json({ error: "Student ID is required" });
+    }
+    
+    // B3 FIX: Fetch all data concurrently for better performance
+    const [student, fight, equipmentItem] = await Promise.all([
+      storage.getStudent(req.params.id),
+      storage.getFight(fightId),
+      storage.getEquipmentItemById(itemId)
+    ]);
+    
+    // B3 FIX: Validate student exists
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+    
+    // B3 FIX: Validate fight exists
+    if (!fight) {
+      return res.status(404).json({ error: "Fight not found or has ended" });
+    }
+    
+    // B3 FIX: Validate equipment item exists in database (asset validation)
+    if (!equipmentItem) {
+      return res.status(404).json({ error: "Equipment item does not exist" });
+    }
+    
+    // B3 FIX: Validate item is in the fight's loot table
+    const lootTable = fight.lootTable || [];
+    const validLoot = lootTable.find(item => item.itemId === itemId);
+    if (!validLoot) {
+      return res.status(400).json({ error: "This item is not available as loot for this fight" });
+    }
+    
+    // B3 FIX: Atomically claim loot using conditional update (idempotency check)
+    const claimed = await storage.claimLootAtomically(fightId, req.params.id, itemId);
+    if (!claimed) {
+      return res.status(409).json({ 
+        error: "Loot has already been claimed for this fight or you did not participate in this fight" 
+      });
+    }
+    
+    // B3 FIX: Add item to inventory with duplicate check
     const currentInventory = student.inventory || [];
+    if (currentInventory.includes(itemId)) {
+      // Item already in inventory (should not happen but safeguard)
+      const { password: _, ...studentWithoutPassword } = student;
+      return res.status(200).json(studentWithoutPassword); // Return success but don't add duplicate
+    }
+    
     const updatedInventory = [...currentInventory, itemId];
     
     const updatedStudent = await storage.updateStudent(req.params.id, { inventory: updatedInventory });
-    if (!updatedStudent) return res.status(404).json({ error: "Student not found" });
+    if (!updatedStudent) {
+      return res.status(500).json({ error: "Failed to update student inventory" });
+    }
     
     const { password: _, ...studentWithoutPassword } = updatedStudent;
     res.json(studentWithoutPassword);

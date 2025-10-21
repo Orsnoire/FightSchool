@@ -5,8 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb } from "@shared/schema";
-import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown } from "lucide-react";
+import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, BASE_CLASSES } from "@shared/schema";
+import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { getTotalPassiveBonuses } from "@shared/jobSystem";
@@ -26,6 +26,7 @@ export default function Lobby() {
   const [jobLevels, setJobLevels] = useState<StudentJobLevel[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot>("weapon");
   const [fightCode, setFightCode] = useState("");
+  const [showClassChange, setShowClassChange] = useState(false);
   const studentId = localStorage.getItem("studentId");
 
   useEffect(() => {
@@ -125,6 +126,31 @@ export default function Lobby() {
     navigate("/student/login");
   };
 
+  const handleClassChange = async (newClass: BaseClass) => {
+    if (!student?.gender) return;
+    
+    const response = await fetch(`/api/student/${studentId}/character`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ characterClass: newClass, gender: student.gender }),
+    });
+
+    if (response.ok) {
+      const updatedStudent = await response.json();
+      setStudent(updatedStudent);
+      setShowClassChange(false);
+      toast({ 
+        title: "Class changed!", 
+        description: `You are now a ${newClass}` 
+      });
+    } else {
+      toast({ 
+        title: "Failed to change class", 
+        variant: "destructive" 
+      });
+    }
+  };
+
   if (!student || !student.characterClass || !student.gender) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
@@ -188,6 +214,53 @@ export default function Lobby() {
                     </span>
                   </div>
                 </div>
+                
+                <Button
+                  variant="outline"
+                  className="w-full mt-4"
+                  onClick={() => setShowClassChange(!showClassChange)}
+                  data-testid="button-toggle-class-change"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  {showClassChange ? "Cancel Class Change" : "Change Class"}
+                </Button>
+                
+                {showClassChange && student.gender && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm text-muted-foreground text-center mb-3">
+                      Select a new class to switch to:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {BASE_CLASSES.map((classType) => {
+                        const isCurrentClass = student.characterClass === classType;
+                        return (
+                          <Card
+                            key={classType}
+                            className={`cursor-pointer hover-elevate ${
+                              isCurrentClass ? "opacity-50 cursor-not-allowed" : ""
+                            }`}
+                            onClick={() => !isCurrentClass && handleClassChange(classType)}
+                            data-testid={`button-change-class-${classType}`}
+                          >
+                            <CardContent className="p-3 flex flex-col items-center gap-2">
+                              <PlayerAvatar
+                                characterClass={classType}
+                                gender={student.gender!}
+                                size="sm"
+                              />
+                              <p className="text-xs font-semibold capitalize">
+                                {classType}
+                              </p>
+                              {isCurrentClass && (
+                                <p className="text-xs text-muted-foreground">(Current)</p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
