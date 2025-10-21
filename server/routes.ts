@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP } from "@shared/jobSystem";
 
@@ -543,13 +543,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   function disconnectAllPlayers(fightId: string) {
-    // Close all WebSocket connections for this fight
+    // Close all WebSocket connections for this fight (B13 fix)
+    let closedCount = 0;
     wss.clients.forEach((client) => {
       const ws = client as ExtendedWebSocket;
-      if (ws.fightId === fightId && ws.readyState === WebSocket.OPEN) {
-        ws.close(1000, "Fight ended");
+      if (ws.fightId === fightId) {
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close(1000, "Fight ended");
+          closedCount++;
+        }
+        // Clear fight association even if already closing/closed
+        ws.fightId = undefined;
+        ws.studentId = undefined;
+        ws.isHost = false;
       }
     });
+    log(`[Cleanup] Closed ${closedCount} WebSocket connections for fight ${fightId}`, "cleanup");
   }
 
   async function cleanupFight(fightId: string) {
@@ -618,20 +627,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       questionStartTime: Date.now(),
     });
 
-    // Reset player states for new question (only for alive players)
+    // PERFORMANCE FIX (B1, B2): Reset player states in memory for new question
     for (const [playerId, player] of Object.entries(session.players)) {
       // Skip dead players - they don't participate in questions
       if (player.isDead) continue;
       
-      await storage.updatePlayerState(fightId, playerId, {
-        hasAnswered: false,
-        currentAnswer: undefined,
-        isHealing: false,
-        healTarget: undefined,
-        blockTarget: undefined,
-        isCreatingPotion: false,
-      });
+      player.hasAnswered = false;
+      player.currentAnswer = undefined;
+      player.isHealing = false;
+      player.healTarget = undefined;
+      player.blockTarget = undefined;
+      player.isCreatingPotion = false;
     }
+
+    // Save ALL player resets at once - HUGE performance improvement
+    await storage.updateCombatSession(fightId, { players: session.players });
 
     broadcastToCombat(fightId, { type: "phase_change", phase: "Question Phase" });
     broadcastToCombat(fightId, { type: "question", question });
@@ -653,7 +663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.updateCombatSession(fightId, { currentPhase: "tank_blocking" });
     broadcastToCombat(fightId, { type: "phase_change", phase: "Tank Blocking & Healing" });
     
-    // Process potion healing for herbalists
+    // PERFORMANCE FIX (B1, B2): Process potion healing in memory
     for (const [playerId, player] of Object.entries(session.players)) {
       if (player.isDead) continue;
       
@@ -661,17 +671,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const target = session.players[player.healTarget];
         if (target && !target.isDead) {
           const healAmount = 1;
-          await storage.updatePlayerState(fightId, player.healTarget, {
-            health: Math.min(target.health + healAmount, target.maxHealth),
-          });
-          // Use up a potion
-          await storage.updatePlayerState(fightId, playerId, {
-            potionCount: player.potionCount - 1,
-            healingDone: player.healingDone + healAmount,
-          });
+          // Update target health in memory
+          target.health = Math.min(target.health + healAmount, target.maxHealth);
+          // Use up a potion (in memory)
+          player.potionCount -= 1;
+          player.healingDone += healAmount;
         }
       }
     }
+    
+    // Save ALL player changes at once - HUGE performance improvement
+    await storage.updateCombatSession(fightId, { players: session.players });
     
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
@@ -694,8 +704,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.updateCombatSession(fightId, { currentPhase: "combat" });
     broadcastToCombat(fightId, { type: "phase_change", phase: "Combat!" });
 
-    const question = fight.questions[session.currentQuestionIndex];
+    // Use questionOrder array to get the actual question index (supports randomization)
+    const actualQuestionIndex = session.questionOrder 
+      ? session.questionOrder[session.currentQuestionIndex] 
+      : session.currentQuestionIndex;
+    const question = fight.questions[actualQuestionIndex];
 
+    // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
     // Process answers and deal damage
     for (const [playerId, player] of Object.entries(session.players)) {
       if (player.isDead) continue;
@@ -703,25 +718,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only process if player actually answered
       if (!player.hasAnswered || !player.currentAnswer) continue;
 
-      // Track question answered
-      await storage.updatePlayerState(fightId, playerId, {
-        questionsAnswered: player.questionsAnswered + 1,
-      });
+      // Track question answered (in memory)
+      player.questionsAnswered += 1;
 
       const isCorrect = player.currentAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
 
       if (isCorrect) {
-        // Track correct answer
-        await storage.updatePlayerState(fightId, playerId, {
-          questionsCorrect: player.questionsCorrect + 1,
-        });
+        // Track correct answer (in memory)
+        player.questionsCorrect += 1;
 
         if (player.isCreatingPotion && player.characterClass === "herbalist") {
-          // Herbalist chose to create a potion instead of dealing damage
-          await storage.updatePlayerState(fightId, playerId, {
-            potionCount: player.potionCount + 1,
-            isCreatingPotion: false,
-          });
+          // Herbalist chose to create a potion instead of dealing damage (in memory)
+          player.potionCount += 1;
+          player.isCreatingPotion = false;
         } else if (player.isHealing && player.healTarget && player.characterClass === "herbalist") {
           // Herbalist chose to heal - healing happens in tank_blocking phase (phase 2)
           // Don't deal damage if healing
@@ -737,33 +746,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const cooldownDuration = getFireballCooldown(wizardLevel);
             
             if (player.fireballCooldown > 0) {
-              // On cooldown - do base damage only and decrement cooldown
+              // On cooldown - do base damage only and decrement cooldown (in memory)
               damage = 1 + damageBonus;
-              await storage.updatePlayerState(fightId, playerId, {
-                fireballCooldown: player.fireballCooldown - 1,
-                isChargingFireball: false,
-              });
+              player.fireballCooldown -= 1;
+              player.isChargingFireball = false;
             } else if (player.isChargingFireball) {
               // Wizard is charging fireball - automatically continue charging
               const newChargeRounds = player.fireballChargeRounds + 1;
               
               if (newChargeRounds < maxChargeRounds) {
-                // Still charging: no damage while charging
-                // Keep isChargingFireball true to auto-continue next round
+                // Still charging: no damage while charging (in memory)
                 damage = 0;
-                await storage.updatePlayerState(fightId, playerId, {
-                  fireballChargeRounds: newChargeRounds,
-                  isChargingFireball: true, // Keep charging
-                });
+                player.fireballChargeRounds = newChargeRounds;
+                player.isChargingFireball = true;
               } else {
-                // Fully charged: RELEASE! Deal 2x normal damage
+                // Fully charged: RELEASE! Deal 2x normal damage (in memory)
                 const baseDamage = 1 + damageBonus;
                 damage = baseDamage * 2;
-                await storage.updatePlayerState(fightId, playerId, {
-                  fireballChargeRounds: 0,
-                  fireballCooldown: cooldownDuration, // Level-based cooldown
-                  isChargingFireball: false, // Stop charging after release
-                });
+                player.fireballChargeRounds = 0;
+                player.fireballCooldown = cooldownDuration;
+                player.isChargingFireball = false;
               }
             } else {
               // Not charging - do base damage only
@@ -771,7 +773,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } else if (player.characterClass === "scout") {
             // Scout builds combo points with correct answers
-            // Get scout level to determine max combo points
             const scoutLevel = player.jobLevels?.scout || 0;
             const maxComboPoints = getHeadshotMaxComboPoints(scoutLevel);
             
@@ -779,46 +780,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const newComboPoints = player.streakCounter + 1;
             
             if (newComboPoints >= maxComboPoints) {
-              // Headshot: consume all combo points for heavy damage
-              damage = 6 + (newComboPoints - 3); // 6 base Headshot damage + bonus for extra points beyond 3
-              await storage.updatePlayerState(fightId, playerId, { streakCounter: 0 });
+              // Headshot: consume all combo points for heavy damage (in memory)
+              damage = 6 + (newComboPoints - 3);
+              player.streakCounter = 0;
             } else {
-              await storage.updatePlayerState(fightId, playerId, { streakCounter: newComboPoints });
+              player.streakCounter = newComboPoints;
             }
           }
 
           if (session.enemies.length > 0) {
-            // Update enemy health in memory (will save once at end of phase)
+            // Update enemy health in memory
             const enemy = session.enemies[0];
             enemy.health = Math.max(0, enemy.health - damage);
             
-            // Track damage dealt
-            await storage.updatePlayerState(fightId, playerId, {
-              damageDealt: player.damageDealt + damage,
-            });
+            // Track damage dealt (in memory)
+            player.damageDealt += damage;
           }
         }
       } else {
-        // Wrong answer - track incorrect answer
-        await storage.updatePlayerState(fightId, playerId, {
-          questionsIncorrect: player.questionsIncorrect + 1,
-        });
+        // Wrong answer - track incorrect answer (in memory)
+        player.questionsIncorrect += 1;
         
-        // Reset ability states on wrong answer (before checking block)
-        const abilityUpdates: any = {
-          streakCounter: 0, // Reset scout streak
-        };
+        // Reset ability states on wrong answer (in memory)
+        player.streakCounter = 0; // Reset scout streak
         
-        // Reset wizard fireball charge and decrement cooldown
+        // Reset wizard fireball charge and decrement cooldown (in memory)
         if (player.characterClass === "wizard") {
-          abilityUpdates.fireballChargeRounds = 0;
-          abilityUpdates.isChargingFireball = false;
+          player.fireballChargeRounds = 0;
+          player.isChargingFireball = false;
           if (player.fireballCooldown > 0) {
-            abilityUpdates.fireballCooldown = player.fireballCooldown - 1;
+            player.fireballCooldown -= 1;
           }
         }
-        
-        await storage.updatePlayerState(fightId, playerId, abilityUpdates);
         
         // Wrong answer - take damage (unless blocked by alive warrior)
         let blocked = false;
@@ -835,18 +828,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const wasAlive = !player.isDead;
           const nowDead = newHealth === 0;
           
-          await storage.updatePlayerState(fightId, playerId, {
-            health: newHealth,
-            isDead: nowDead,
-            damageTaken: player.damageTaken + damageAmount,
-            deaths: wasAlive && nowDead ? player.deaths + 1 : player.deaths,
-          });
+          // Update player health and death state (in memory)
+          player.health = newHealth;
+          player.isDead = nowDead;
+          player.damageTaken += damageAmount;
+          if (wasAlive && nowDead) {
+            player.deaths += 1;
+          }
         }
       }
     }
 
-    // Save enemy health changes once (batched instead of per-player)
-    await storage.updateCombatSession(fightId, { enemies: session.enemies });
+    // Save ALL changes at once (enemies + all player states) - HUGE performance improvement
+    await storage.updateCombatSession(fightId, { 
+      enemies: session.enemies,
+      players: session.players 
+    });
 
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
@@ -868,7 +865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     broadcastToCombat(fightId, { type: "phase_change", phase: "Enemy Turn" });
 
     // Default enemy AI: Attack player with highest threat
-    // In the future, this will use fight.enemyScript for custom behavior
+    // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
     
     for (const enemy of session.enemies) {
       if (enemy.health <= 0) continue; // Dead enemies don't attack
@@ -887,19 +884,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (targetId) {
         const target = session.players[targetId];
-        const damageAmount = (fight.baseEnemyDamage || 1) + 1; // baseEnemyDamage + 1
+        const damageAmount = (fight.baseEnemyDamage || 1) + 1;
         const newHealth = Math.max(0, target.health - damageAmount);
         const wasAlive = !target.isDead;
         const nowDead = newHealth === 0;
         
-        await storage.updatePlayerState(fightId, targetId, {
-          health: newHealth,
-          isDead: nowDead,
-          damageTaken: target.damageTaken + damageAmount,
-          deaths: wasAlive && nowDead ? target.deaths + 1 : target.deaths,
-        });
+        // Update player state in memory
+        target.health = newHealth;
+        target.isDead = nowDead;
+        target.damageTaken += damageAmount;
+        if (wasAlive && nowDead) {
+          target.deaths += 1;
+        }
       }
     }
+
+    // Save ALL player changes at once - HUGE performance improvement
+    await storage.updateCombatSession(fightId, { players: session.players });
 
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
@@ -1052,11 +1053,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ws.isHost = true;
           const fight = await storage.getFight(message.fightId);
           if (fight) {
+            // Force cleanup of any existing fight instance (B9 fix)
             let session = await storage.getCombatSession(message.fightId);
-            if (!session) {
-              session = await storage.createCombatSession(message.fightId, fight);
+            if (session) {
+              log(`[WebSocket] Existing session found for fight ${message.fightId}, cleaning up stale state`, "websocket");
+              await cleanupFight(message.fightId);
+              // Brief delay to ensure cleanup completes
+              await new Promise(resolve => setTimeout(resolve, 100));
             }
+            
+            // Create fresh combat session
+            session = await storage.createCombatSession(message.fightId, fight);
             ws.send(JSON.stringify({ type: "combat_state", state: session }));
+            log(`[WebSocket] Host connected to fight ${message.fightId} with clean state`, "websocket");
           }
         } else if (message.type === "join") {
           const student = await storage.getStudent(message.studentId);
@@ -1095,7 +1104,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
           log(`[WebSocket] Student ${student.nickname} successfully joined fight`, "websocket");
         } else if (message.type === "start_fight" && ws.isHost && ws.fightId) {
+          log(`[WebSocket] Host initiating fight start for ${ws.fightId}`, "websocket");
+          const session = await storage.getCombatSession(ws.fightId);
+          if (!session) {
+            log(`[WebSocket] Cannot start fight - no session found for ${ws.fightId}`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "No active session found" }));
+            return;
+          }
+          if (session.currentPhase !== "waiting") {
+            log(`[WebSocket] Fight ${ws.fightId} already started (phase: ${session.currentPhase})`, "websocket");
+            return;
+          }
           await startQuestion(ws.fightId);
+          log(`[WebSocket] Fight ${ws.fightId} started successfully`, "websocket");
         } else if (message.type === "end_fight" && ws.isHost && ws.fightId) {
           // Clear any active timers
           const timer = combatTimers.get(ws.fightId);
