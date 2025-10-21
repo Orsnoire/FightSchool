@@ -1,0 +1,60 @@
+Fight Test 1 – Bug Tracker & Fix Plan (updated as of v 0.03). To test:
+Session: 20 minute class fight test with 28 connected players
+Environment: Published app (autoscale x5)
+________________________________________
+📋 Bugs Reported
+B1 — Combat mechanics lag / stall until page refresh (not fixed)
+•	Severity: P0 (blocks play)
+•	Repro: After 1 round with 8 students, the teacher portal lagged and stopped updating
+•	Expected: teacher portal shows right/wrong and updates with the phases.
+•	Actual: Game loop is fixed client-side for students, still gets bogged down and lagged on the teacher host portal.
+•	Acceptance criteria: No stalls across a 30 minute fight at 30 players; 99p tick < 50 ms; 0 participant evictions; zero forced refreshes.
+B2 — Fireball streaks & potions cause lag with 28 players (FIXED)
+B3 — Loot window: icons/names missing; “internal server error”; “failure to claim loot” (ONGOING)
+•	Severity: P1 (progression blocked; morale impact)
+•	Repro: After victory, player attempts to claim loot, gets an error “Failure to Claim Loot” in a modular window (that is a correct error, but shouldn’t be showing up for normal looting).
+•	Hypothesis: Players’ inventories not linked in correctly; the equipment database may not be created correctly.
+•	Proposed solution: create an item database array that includes the item identification number, the display name, the item icon, and the adjustments to all of the game stats. The only data that is read from this array into the player database array is the item number, which are listed as columns in the player database array. The player database only registers a y/n whether that player has acquired a given item. When clicking the button to acquire a given item, the player’s database array changes for that item only from n to y.
+•	Acceptance criteria: A given player, when clicking on a loot item, and clicking on the get loot button, then is returned to the lobby and that equipment shows up in their inventory area on the lobby screen.
+B4 — Player side icons too large; start position should be at top (boss image area) (ONGOING)
+•	Severity: P3 (UX)
+•	Repro: On low-resolution chromebooks, the enemy image takes up most of the screen, and doesn’t leave room for the modal window or the display of the two-columns on each side of the screen.
+•	Expected: at least 5/8ths of the screen, in a rectangle in the center of the screen, is reserved for modal windows.
+•	Proposed fix: make all of the graphics vector so that they resize on different (especially small) resolutions. Allow the graphics to scale down.
+•	Acceptance criteria: On low-resolution chromebooks, the player healthbar, enemy healthbar, and modular windows all show up in the center rectangle of the screen, and the two columns of small-sized avatars w/ heath bars show up on either side of that center rectangle.
+B5 — Phase change modular windows (modals) don’t match question window positions/sizes (FIXED)
+B6 — Unanswered players not marked wrong (FIXED)
+B7 — Cross-class abilities not displaying at level 8 (not tested in 0.04)
+•	Severity: P2 (progression / feedback issue)
+•	Repro: When players level to 8, cross-class abilities fail to appear in the ability list or UI overlay.
+•	Expected: New cross-class abilities unlock and display automatically upon level-up.
+•	Hypotheses:
+o	Client not updating ability map after level-up event.
+o	Server not returning full merged ability list for new level tier.
+o	Missing asset mapping for cross-class ability IDs.
+•	Acceptance criteria: All level 8 unlocks show in ability bar immediately upon level-up.
+B8 — Class change interactive not appearing (FIXED)
+•	Severity: P2 (UX blocking)
+B9 — Fight instances not closing / stale sockets persisting (ONGOING)
+•	Severity: P0 (critical – resource leak & data contamination)
+•	Repro: Fixed the issue of fights persisting, but at a moment before I started a fight this morning, the teacher UI showed an old fight.
+•	Hypothesis: Rather than returning only the statistics of previous fights into a database entry, previous fight participation websockets are being preserved.
+•	Expected: On victory OR “End Fight” PRESSED, all sockets for that fightId close cleanly, stats are recorded, and all in-memory fight data cleared.
+•	Fix: Add explicit teardown to close sockets, delete fight state, and clear memory. Force-clear old sockets on new host launch; introduce Fight Instance TTL for idle cleanup.
+•	Acceptance criteria: 100% sockets closed within 2s post-victory; launching new host clears old state; teacher dashboard only shows active players; memory returns to baseline.
+B10 — Teacher dashboard not updating with player logins and statistics (not tested)
+•	Severity: P1 (visibility / reporting failure) ONGOING
+•	Repro: Teacher stats and players screens stay empty as players have connected; stats not updating after fights.
+•	Expected: Dashboard shows connected players and updates stats after victory.
+•	Fix: Ensure teacher socket subscribes to the correct fightId channel; emit playerJoined, playerStatsUpdated, and fightConcluded to teacher; push final stats bundle to dashboard.
+•	Acceptance criteria: Dashboard lists players after victory; stats populate automatically after victory; no missing or duplicate entries.
+________________________________________
+🚨 B11 — Enemies not taking damage after recent fixSeverity: P0 (hard stop – combat broken) FIXED
+🚨 B12 — Host “Start fight” stuck on Waiting; teacher HUD not reflecting waiting extension
+Severity: P0 (session control broken) ONGOING
+Related: after fix, the teacher host UI got frozen after about 2 rounds of combat in phase 2. It also stopped recognizing streaks and correct questions.
+
+🚨 B13 — “End fight” pressed but fight doesn’t end; students remain connected
+Severity: P0 (lifecycle teardown broken) FIXED
+
+
