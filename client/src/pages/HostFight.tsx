@@ -22,6 +22,7 @@ export default function HostFight() {
 
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [combatState, setCombatState] = useState<CombatState | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
@@ -37,7 +38,11 @@ export default function HostFight() {
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      if (message.type === "combat_state") {
+      if (message.type === "session_created") {
+        // Server created a new session and sent us the sessionId
+        setSessionId(message.sessionId);
+        setCombatState(message.state);
+      } else if (message.type === "combat_state") {
         setCombatState(message.state);
       } else if (message.type === "game_over") {
         toast({ 
@@ -150,11 +155,16 @@ export default function HostFight() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    Waiting for students to join...
-                    <div className="mt-4">
-                      <p className="text-sm">Class Code: <span className="font-bold text-foreground">{fight.classCode}</span></p>
-                    </div>
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-6">Waiting for students to join...</p>
+                    {sessionId && (
+                      <div className="bg-primary/10 border-2 border-primary rounded-lg p-6 inline-block">
+                        <p className="text-sm text-muted-foreground mb-2">Share this Session Code with students:</p>
+                        <p className="text-4xl font-bold font-mono text-primary tracking-widest" data-testid="text-session-code">
+                          {sessionId}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
