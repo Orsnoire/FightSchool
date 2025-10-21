@@ -688,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.updateCombatSession(fightId, { players: session.players });
 
     broadcastToCombat(fightId, { type: "phase_change", phase: "Question Phase" });
-    broadcastToCombat(fightId, { type: "question", question });
+    broadcastToCombat(fightId, { type: "question", question, shuffleOptions: fight.shuffleOptions });
     const updatedSession = await storage.getCombatSession(fightId);
     broadcastToCombat(fightId, { type: "combat_state", state: updatedSession });
 

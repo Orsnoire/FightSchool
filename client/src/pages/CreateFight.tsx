@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,11 +15,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, PlusCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, PlusCircle, Trash2, Upload } from "lucide-react";
 import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, type EquipmentItemDb, type Fight } from "@shared/schema";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
 import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
 import wizardImg from "@assets/generated_images/Dark_wizard_enemy_illustration_a897a309.png";
+import Papa from "papaparse";
 
 export default function CreateFight() {
   const [, navigate] = useLocation();
@@ -41,6 +42,7 @@ export default function CreateFight() {
     image: dragonImg,
     maxHealth: 50,
   });
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   const teacherId = localStorage.getItem("teacherId") || "";
 
@@ -76,6 +78,7 @@ export default function CreateFight() {
       enemyDisplayMode: "consecutive",
       lootTable: [],
       randomizeQuestions: false,
+      shuffleOptions: true,
     },
   });
 
@@ -93,6 +96,7 @@ export default function CreateFight() {
         enemyDisplayMode: existingFight.enemyDisplayMode,
         lootTable: existingFight.lootTable,
         randomizeQuestions: existingFight.randomizeQuestions,
+        shuffleOptions: existingFight.shuffleOptions,
       });
       setQuestions(existingFight.questions);
       setEnemies(existingFight.enemies);
@@ -194,6 +198,89 @@ export default function CreateFight() {
     const newLootTable = lootTable.filter((_, i) => i !== index);
     setLootTable(newLootTable);
     form.setValue("lootTable", newLootTable);
+  };
+
+  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        try {
+          const parsedQuestions: Question[] = [];
+          
+          for (const row of results.data as any[]) {
+            const questionText = row["question text"]?.trim();
+            const questionType = row["question type"]?.trim().toLowerCase();
+            const answer1 = row["answer1"]?.trim();
+            const answer2 = row["answer2"]?.trim();
+            const answer3 = row["answer3"]?.trim();
+            const answer4 = row["answer4"]?.trim();
+            
+            if (!questionText || !questionType || !answer1) {
+              continue;
+            }
+            
+            const newQuestion: Question = {
+              id: Date.now().toString() + Math.random(),
+              question: questionText,
+              type: questionType === "true/false" || questionType === "true_false" ? "true_false" : 
+                    questionType === "short answer" || questionType === "short_answer" ? "short_answer" : 
+                    "multiple_choice",
+              correctAnswer: answer1,
+              timeLimit: 30,
+            };
+            
+            if (newQuestion.type === "multiple_choice") {
+              const options = [answer1, answer2, answer3, answer4].filter(a => a);
+              if (options.length < 2) {
+                continue;
+              }
+              newQuestion.options = options;
+            }
+            
+            parsedQuestions.push(newQuestion);
+          }
+          
+          if (parsedQuestions.length === 0) {
+            toast({ 
+              title: "No valid questions found", 
+              description: "Please check your CSV format",
+              variant: "destructive" 
+            });
+            return;
+          }
+          
+          const updatedQuestions = [...questions, ...parsedQuestions];
+          setQuestions(updatedQuestions);
+          form.setValue("questions", updatedQuestions);
+          
+          toast({ 
+            title: `Successfully imported ${parsedQuestions.length} questions`,
+            variant: "default"
+          });
+          
+          if (csvInputRef.current) {
+            csvInputRef.current.value = "";
+          }
+        } catch (error) {
+          toast({ 
+            title: "Failed to parse CSV", 
+            description: error instanceof Error ? error.message : "Unknown error",
+            variant: "destructive" 
+          });
+        }
+      },
+      error: (error) => {
+        toast({ 
+          title: "Failed to read CSV file", 
+          description: error.message,
+          variant: "destructive" 
+        });
+      }
+    });
   };
 
   return (
@@ -328,6 +415,29 @@ export default function CreateFight() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="shuffleOptions"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-shuffle-options"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Shuffle Answer Options
+                        </FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Randomize the order of multiple choice and true/false options when displayed to students
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
@@ -341,7 +451,32 @@ export default function CreateFight() {
               <TabsContent value="questions" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Add Question</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Add Question</CardTitle>
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          ref={csvInputRef}
+                          accept=".csv"
+                          onChange={handleCSVUpload}
+                          className="hidden"
+                          data-testid="input-csv-upload"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => csvInputRef.current?.click()}
+                          data-testid="button-upload-csv"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Import CSV
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      CSV format: "question text", "question type", "answer1", "answer2", "answer3", "answer4" (answer1 is the correct answer)
+                    </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>

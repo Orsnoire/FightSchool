@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,6 +33,7 @@ export default function Combat() {
   // B5 FIX: Add phase change modal state
   const [showPhaseChangeModal, setShowPhaseChangeModal] = useState(false);
   const [phaseChangeName, setPhaseChangeName] = useState<string>("");
+  const [shuffleOptions, setShuffleOptions] = useState<boolean>(true);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -57,6 +58,9 @@ export default function Combat() {
         setIsHealing(false);
         setHealTarget("");
         setIsCreatingPotion(false);
+        if (message.shuffleOptions !== undefined) {
+          setShuffleOptions(message.shuffleOptions);
+        }
         // Don't reset isChargingFireball - let it persist from server state
       } else if (message.type === "phase_change") {
         // B5 FIX: Show phase change modal instead of toast
@@ -154,6 +158,37 @@ export default function Combat() {
   const playerState = studentId ? combatState.players[studentId] : null;
   const enemy = combatState.enemies[0];
 
+  // Shuffle options if enabled - use question ID as seed for consistency
+  const displayOptions = useMemo(() => {
+    if (!currentQuestion || currentQuestion.type === "short_answer") return null;
+    
+    if (currentQuestion.type === "true_false") {
+      if (!shuffleOptions) return ["true", "false"];
+      // Simple shuffle for true/false based on question ID
+      const seed = parseInt(currentQuestion.id) || 0;
+      return seed % 2 === 0 ? ["true", "false"] : ["false", "true"];
+    }
+    
+    if (currentQuestion.type === "multiple_choice" && currentQuestion.options) {
+      if (!shuffleOptions) return currentQuestion.options;
+      
+      // Fisher-Yates shuffle with seed
+      const options = [...currentQuestion.options];
+      const seed = parseInt(currentQuestion.id) || 0;
+      let random = seed;
+      
+      for (let i = options.length - 1; i > 0; i--) {
+        random = (random * 9301 + 49297) % 233280;
+        const j = Math.floor((random / 233280) * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
+      
+      return options;
+    }
+    
+    return null;
+  }, [currentQuestion, shuffleOptions]);
+
   // Split players into left and right columns (max 32 total, 16 per side)
   const allPlayers = Object.values(combatState.players).slice(0, 32);
   const leftPlayers = allPlayers.slice(0, 16);
@@ -234,9 +269,9 @@ export default function Combat() {
                 </div>
               </div>
 
-              {currentQuestion.type === "multiple_choice" && currentQuestion.options && (
+              {currentQuestion.type === "multiple_choice" && displayOptions && (
                 <div className="space-y-3">
-                  {currentQuestion.options.map((option, i) => (
+                  {displayOptions.map((option, i) => (
                     <Button
                       key={i}
                       variant={selectedAnswer === option ? "default" : "outline"}
@@ -251,24 +286,19 @@ export default function Combat() {
                 </div>
               )}
 
-              {currentQuestion.type === "true_false" && (
+              {currentQuestion.type === "true_false" && displayOptions && (
                 <div className="grid grid-cols-2 gap-4">
-                  <Button
-                    variant={selectedAnswer === "true" ? "default" : "outline"}
-                    className="h-20"
-                    onClick={() => setSelectedAnswer("true")}
-                    data-testid="button-true"
-                  >
-                    True
-                  </Button>
-                  <Button
-                    variant={selectedAnswer === "false" ? "default" : "outline"}
-                    className="h-20"
-                    onClick={() => setSelectedAnswer("false")}
-                    data-testid="button-false"
-                  >
-                    False
-                  </Button>
+                  {displayOptions.map((option, i) => (
+                    <Button
+                      key={i}
+                      variant={selectedAnswer === option ? "default" : "outline"}
+                      className="h-20"
+                      onClick={() => setSelectedAnswer(option)}
+                      data-testid={i === 0 ? "button-true" : "button-false"}
+                    >
+                      {option.charAt(0).toUpperCase() + option.slice(1)}
+                    </Button>
+                  ))}
                 </div>
               )}
 
