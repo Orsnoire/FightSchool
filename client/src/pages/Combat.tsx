@@ -583,9 +583,9 @@ export default function Combat() {
         </div>
       )}
       
-      {showVictoryModal && victoryData && playerState && (
+      {showVictoryModal && victoryData && playerState && combatState && (
         <VictoryModal
-          fightId={localStorage.getItem("fightId") || ""}
+          fightId={combatState.fightId}
           characterClass={playerState.characterClass}
           gender={playerState.gender}
           xpGained={victoryData.xpGained}
