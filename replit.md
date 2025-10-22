@@ -1,7 +1,7 @@
 # RPG Combat Quiz Platform
 
 ## Overview
-An educational platform that gamifies quiz-based learning through an immersive RPG combat experience. Teachers create quiz "fights" with questions and enemies. Students join these battles as fantasy characters (Warrior, Wizard, Scout, Herbalist), answering questions to deal damage and defeat enemies. The system features real-time multiplayer combat, character customization with equipment, and class-based gameplay mechanics. The platform aims to transform traditional quizzes into engaging, interactive adventures.
+An educational platform that gamifies quiz-based learning through an immersive RPG combat experience. Teachers create fight templates with questions and enemies, then host unique battle sessions identified by 6-character alphanumeric codes (sessionId) that students use to join. Students battle as fantasy characters (Warrior, Wizard, Scout, Herbalist), answering questions to deal damage and defeat enemies. The system features real-time multiplayer combat with session-based architecture, character customization with equipment, and class-based gameplay mechanics. The platform uses guildCode (nullable, renamed from classCode) to prepare for future guild system integration. Platform aims to transform traditional quizzes into engaging, interactive adventures.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -16,18 +16,19 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend Architecture
 **Server Framework**: Express.js with TypeScript on Node.js, managing both REST API endpoints and WebSocket connections for real-time combat.
-**Real-Time Communication**: Utilizes the 'ws' library for live combat sessions, facilitating separate connections for teachers (hosts) and students, real-time combat state broadcasting, question delivery, answer validation, and phase transitions.
-**Data Storage Strategy**: PostgreSQL database via Neon with Drizzle ORM. Stores data for students (including character class, gender, equipment, and inventory), fights (quiz configurations, enemies, loot tables), equipment items (teacher-created custom items with stats), combat sessions, and post-fight statistics.
+**Session Architecture**: Teachers host fight sessions that generate unique 6-character alphanumeric sessionIds. Students join sessions using these codes. Each session is isolated with its own WebSocket connections, timers, and state. Multiple sessions can exist for the same fight template simultaneously.
+**Real-Time Communication**: Utilizes the 'ws' library for live combat sessions, facilitating separate connections for teachers (hosts) and students, real-time combat state broadcasting, question delivery, answer validation, and phase transitions. WebSocket handler exclusively accepts /ws path to prevent Vite HMR conflicts.
+**Data Storage Strategy**: PostgreSQL database via Neon with Drizzle ORM. Stores data for students (including character class, gender, equipment, and inventory), fights (quiz templates with guildCode for future guild system), equipment items (teacher-created custom items with stats), combat sessions (sessionId as primary key), and post-fight statistics.
 **Authentication**: Password-based authentication using Node.js crypto for secure hashing. Student accounts are auto-created on first login, prompting character selection.
 
 ### API Structure
 **REST Endpoints**:
-- **Teacher**: `/api/fights` (CRUD for quiz battles), `/api/combat-stats` (class statistics), `/api/teacher/:teacherId/equipment-items` (manage custom equipment).
+- **Teacher**: `/api/fights` (CRUD for fight templates with guildCode field), `/api/combat-stats` (guild statistics), `/api/teacher/:teacherId/equipment-items` (manage custom equipment).
 - **Equipment Items**: `/api/equipment-items` (create), `/api/equipment-items/:id` (retrieve/update/delete).
 - **Student**: `/api/student/login` (account creation/login), `/api/student/:id/equipment` (equip/unequip items), `/api/student/:id/job-levels` (job progression).
-- **Fight Access**: `/api/fights/active/:classCode` (students join active fights).
-- **Stats**: `/api/combat-stats/student/:id` (personal stats), `/api/combat-stats/class/:code` (class stats).
-**WebSocket Protocol**: A custom message-based protocol handles `join`, `host`, `combat_state`, `question`, `answer`, `phase_change`, and `game_over` events.
+- **Session Validation**: `/api/sessions/:sessionId` (validates sessionId and returns session info for students to join).
+- **Stats**: `/api/combat-stats/student/:id` (personal stats), `/api/combat-stats/guild/:code` (guild stats).
+**WebSocket Protocol**: A custom message-based protocol handles `host` (teacher creates session, receives sessionId), `session_created` (server confirms session creation), `join` (student joins with sessionId), `combat_state`, `question`, `answer`, `phase_change`, and `game_over` events. All operations use sessionId as the primary identifier.
 
 ### Game Mechanics Architecture
 **Character Classes**: Four base classes (Warrior, Wizard, Scout, Herbalist) with unique stats and abilities. Advanced classes (e.g., Knight, Paladin) are unlockable through a job system.
