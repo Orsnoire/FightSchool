@@ -480,21 +480,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const wss = new WebSocketServer({ noServer: true });
   log("[WebSocket] Server created for combat connections", "websocket");
 
-  // Handle WebSocket upgrades, but exclude Vite HMR paths in development
+  // Handle WebSocket upgrades ONLY for /ws path
   httpServer.on('upgrade', (request, socket, head) => {
     const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
-    log(`[WebSocket] Handling upgrade request to ${pathname}`, "websocket");
     
-    // In development, skip Vite HMR WebSocket paths
-    if (process.env.NODE_ENV === 'development' && pathname.includes('vite')) {
-      log(`[WebSocket] Skipping Vite HMR WebSocket upgrade`, "websocket");
-      return; // Let Vite handle it
+    // ONLY handle our combat WebSocket path
+    if (pathname === '/ws') {
+      log(`[WebSocket] Handling upgrade request to ${pathname}`, "websocket");
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
     }
-    
-    // Handle our combat WebSocket
-    wss.handleUpgrade(request, socket, head, (ws) => {
-      wss.emit('connection', ws, request);
-    });
+    // All other paths (including Vite HMR) will be handled elsewhere or rejected
   });
 
   wss.on("error", (error) => {

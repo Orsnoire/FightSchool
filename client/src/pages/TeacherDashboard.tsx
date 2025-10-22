@@ -59,9 +59,9 @@ export default function TeacherDashboard() {
     },
   });
 
-  const copyClassCode = (classCode: string) => {
-    navigator.clipboard.writeText(classCode);
-    toast({ title: "Class code copied!", description: "Share this code with your students" });
+  const copyGuildCode = (guildCode: string) => {
+    navigator.clipboard.writeText(guildCode);
+    toast({ title: "Guild code copied!", description: "Share this code with your students" });
   };
 
   const handleDeleteFight = (fightId: string) => {
@@ -99,7 +99,7 @@ export default function TeacherDashboard() {
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Students Who Used Your Class Codes</DialogTitle>
+                  <DialogTitle>Students Who Used Your Guild Codes</DialogTitle>
                 </DialogHeader>
                 <div className="mt-4">
                   {studentsLoading ? (
@@ -125,9 +125,9 @@ export default function TeacherDashboard() {
                                   <Badge variant="secondary" data-testid={`student-gender-${student.id}`}>
                                     {student.gender === 'A' ? 'Male' : 'Female'}
                                   </Badge>
-                                  {student.classCode && (
-                                    <Badge variant="secondary" data-testid={`student-classcode-${student.id}`}>
-                                      {student.classCode}
+                                  {student.guildCode && (
+                                    <Badge variant="secondary" data-testid={`student-guildcode-${student.id}`}>
+                                      {student.guildCode}
                                     </Badge>
                                   )}
                                 </div>
@@ -193,19 +193,25 @@ export default function TeacherDashboard() {
                     {fight.title}
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Class Code:</span>
-                    <Badge variant="secondary" className="font-mono" data-testid={`badge-class-code-${fight.id}`}>
-                      {fight.classCode}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => copyClassCode(fight.classCode)}
-                      data-testid={`button-copy-code-${fight.id}`}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
+                    {fight.guildCode ? (
+                      <>
+                        <span className="text-xs text-muted-foreground">Guild Code:</span>
+                        <Badge variant="secondary" className="font-mono" data-testid={`badge-guild-code-${fight.id}`}>
+                          {fight.guildCode}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => copyGuildCode(fight.guildCode!)}
+                          data-testid={`button-copy-code-${fight.id}`}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No guild assigned</span>
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

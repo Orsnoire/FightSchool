@@ -70,7 +70,7 @@ export default function CreateFight() {
     defaultValues: {
       teacherId,
       title: "",
-      classCode: "",
+      guildCode: "",
       questions: [],
       enemies: [],
       baseXP: 10,
@@ -88,7 +88,7 @@ export default function CreateFight() {
       form.reset({
         teacherId: existingFight.teacherId,
         title: existingFight.title,
-        classCode: existingFight.classCode,
+        guildCode: existingFight.guildCode,
         questions: existingFight.questions,
         enemies: existingFight.enemies,
         baseXP: existingFight.baseXP,
@@ -321,12 +321,12 @@ export default function CreateFight() {
                 />
                 <FormField
                   control={form.control}
-                  name="classCode"
+                  name="guildCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Class Code</FormLabel>
+                      <FormLabel>Guild Code (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="MATH101" {...field} data-testid="input-classcode" />
+                        <Input placeholder="GUILD101" {...field} value={field.value || ""} data-testid="input-guildcode" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
