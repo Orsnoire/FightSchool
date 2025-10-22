@@ -625,7 +625,7 @@ export default function Combat() {
           )}
 
           {combatState.currentPhase === "tank_blocking" && playerState?.characterClass === "warrior" && !playerState.isDead && (
-            <Card className="p-8">
+            <Card className="p-8 max-h-[80vh] overflow-y-auto">
               <h3 className="text-2xl font-bold mb-6">Select Ally to Protect</h3>
               <div className="grid grid-cols-3 gap-4">
                 {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => {

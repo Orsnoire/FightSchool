@@ -143,7 +143,7 @@ export function VictoryModal({
   
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl p-8 space-y-6">
+      <Card className="w-full max-w-2xl p-8 space-y-6 max-h-[90vh] overflow-y-auto">
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
             <Trophy className="h-8 w-8 text-yellow-500" />

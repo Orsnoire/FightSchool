@@ -340,8 +340,10 @@ export default function Lobby() {
                 })()}
               </CardContent>
             </Card>
+          </div>
 
-            <Card className="mt-4">
+          <div className="lg:col-span-3">
+            <Card className="mb-4">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Swords className="h-5 w-5 text-primary" />
@@ -375,9 +377,7 @@ export default function Lobby() {
                 </Button>
               </CardContent>
             </Card>
-          </div>
 
-          <div className="lg:col-span-3">
             <Card>
               <CardHeader>
                 <CardTitle>Equipment</CardTitle>
