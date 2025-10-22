@@ -37,6 +37,8 @@ export default function Combat() {
   // B10 FIX: Track answer feedback for damage toast
   const [lastAnsweredCorrectly, setLastAnsweredCorrectly] = useState<boolean | null>(null);
   const [previousPhase, setPreviousPhase] = useState<string>("");
+  // Track previous combat state for detecting healing, blocking, and enemy attacks
+  const [previousCombatState, setPreviousCombatState] = useState<CombatState | null>(null);
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -195,6 +197,100 @@ export default function Combat() {
     // Update previous phase
     setPreviousPhase(currentPhase);
   }, [combatState?.currentPhase, previousPhase, lastAnsweredCorrectly, toast]);
+
+  // Show toasts for healing, blocking, and enemy attacks
+  useEffect(() => {
+    const studentId = localStorage.getItem("studentId");
+    if (!combatState || !studentId || !previousCombatState) {
+      if (combatState) setPreviousCombatState(combatState);
+      return;
+    }
+
+    const currentPlayer = combatState.players[studentId];
+    const previousPlayer = previousCombatState.players[studentId];
+
+    // Detect healing events - use PREVIOUS state to find who was healing
+    if (currentPlayer && previousPlayer && currentPlayer.health > previousPlayer.health) {
+      // Find who was healing this player in the PREVIOUS state (before flags were cleared)
+      const healer = Object.values(previousCombatState.players).find(
+        p => p.isHealing && p.healTarget === studentId && p.characterClass === "herbalist" && !p.isDead
+      );
+      if (healer) {
+        const healAmount = currentPlayer.health - previousPlayer.health;
+        toast({
+          title: "Healed",
+          description: `You were healed by ${healer.nickname} for +${healAmount} health`,
+          duration: 2500,
+        });
+      }
+    }
+
+    // Detect when you healed someone - use PREVIOUS state to find heal target
+    if (currentPlayer && previousPlayer && currentPlayer.healingDone > previousPlayer.healingDone) {
+      const healAmount = currentPlayer.healingDone - previousPlayer.healingDone;
+      // Get heal target from PREVIOUS state (before it was cleared)
+      const healTargetId = previousPlayer.healTarget;
+      const healedPlayer = healTargetId ? combatState.players[healTargetId] : null;
+      if (healedPlayer) {
+        toast({
+          title: "Healing Success",
+          description: `You healed ${healedPlayer.nickname} for +${healAmount} health`,
+          duration: 2500,
+        });
+      }
+    }
+
+    // Detect blocking events - show when you start blocking someone
+    if (currentPlayer && previousPlayer) {
+      // Check if you just started blocking someone (or switched targets)
+      if (currentPlayer.blockTarget && currentPlayer.blockTarget !== previousPlayer.blockTarget) {
+        const blockedPlayer = combatState.players[currentPlayer.blockTarget];
+        if (blockedPlayer) {
+          toast({
+            title: "Protecting Ally",
+            description: `You blocked damage for ${blockedPlayer.nickname}`,
+            duration: 2500,
+          });
+        }
+      }
+    }
+
+    // Detect when you're being blocked by someone - check PREVIOUS state
+    const previousBlocker = Object.values(previousCombatState.players).find(
+      p => p.blockTarget === studentId && p.characterClass === "warrior" && !p.isDead
+    );
+    const currentBlocker = Object.values(combatState.players).find(
+      p => p.blockTarget === studentId && p.characterClass === "warrior" && !p.isDead
+    );
+    // Show toast when blocker starts blocking (wasn't blocking before, is blocking now)
+    if (currentBlocker && !previousBlocker) {
+      toast({
+        title: "Protected",
+        description: `You are protected by ${currentBlocker.nickname}`,
+        duration: 2500,
+      });
+    }
+
+    // Detect enemy attacks (health decreases during combat phase for ANY player - broadcast to all)
+    if (combatState.currentPhase === "combat") {
+      Object.entries(combatState.players).forEach(([playerId, currentPlayerState]) => {
+        const previousPlayerState = previousCombatState.players[playerId];
+        if (previousPlayerState && currentPlayerState.health < previousPlayerState.health) {
+          const damageAmount = previousPlayerState.health - currentPlayerState.health;
+          const enemy = combatState.enemies[0];
+          toast({
+            title: "Enemy Attack",
+            description: `${enemy?.name || "Enemy"} attacked ${currentPlayerState.nickname} for ${damageAmount} damage!`,
+            variant: "destructive",
+            duration: 2500,
+          });
+        }
+      });
+    }
+
+    // Update previous combat state
+    setPreviousCombatState(combatState);
+  }, [combatState, previousCombatState, toast]);
 
   const submitAnswer = () => {
     if (ws && selectedAnswer && currentQuestion) {
