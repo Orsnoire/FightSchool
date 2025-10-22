@@ -39,18 +39,53 @@ export default function Combat() {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     const socket = new WebSocket(wsUrl);
+    
+    let hasReceivedState = false;
+    
+    // Defensive timeout: if no combat_state within 5 seconds, show error and redirect
+    const connectionTimeout = setTimeout(() => {
+      if (!hasReceivedState) {
+        toast({
+          title: "Connection Failed",
+          description: "Could not connect to the session. It may have ended.",
+          variant: "destructive",
+        });
+        navigate("/student/lobby");
+      }
+    }, 5000);
 
     socket.onopen = () => {
       const studentId = localStorage.getItem("studentId");
-      const fightId = localStorage.getItem("fightId");
-      socket.send(JSON.stringify({ type: "join", studentId, fightId }));
+      const sessionId = localStorage.getItem("sessionId");
+      
+      if (!sessionId) {
+        toast({
+          title: "No Session Code",
+          description: "Please enter a session code to join",
+          variant: "destructive",
+        });
+        navigate("/student/lobby");
+        return;
+      }
+      
+      socket.send(JSON.stringify({ type: "join", studentId, sessionId }));
     };
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
       
       if (message.type === "combat_state") {
+        hasReceivedState = true;
+        clearTimeout(connectionTimeout);
         setCombatState(message.state);
+      } else if (message.type === "error") {
+        clearTimeout(connectionTimeout);
+        toast({
+          title: "Error",
+          description: message.message || "Failed to join session",
+          variant: "destructive",
+        });
+        navigate("/student/lobby");
       } else if (message.type === "question") {
         setCurrentQuestion(message.question);
         setSelectedAnswer("");
@@ -86,7 +121,10 @@ export default function Combat() {
     };
 
     setWs(socket);
-    return () => socket.close();
+    return () => {
+      clearTimeout(connectionTimeout);
+      socket.close();
+    };
   }, [navigate, toast]);
 
   useEffect(() => {

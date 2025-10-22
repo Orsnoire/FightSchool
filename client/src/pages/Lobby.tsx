@@ -25,7 +25,7 @@ export default function Lobby() {
   const [student, setStudent] = useState<Student | null>(null);
   const [jobLevels, setJobLevels] = useState<StudentJobLevel[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot>("weapon");
-  const [fightCode, setFightCode] = useState("");
+  const [sessionCode, setSessionCode] = useState("");
   const [showClassChange, setShowClassChange] = useState(false);
   const studentId = localStorage.getItem("studentId");
 
@@ -85,25 +85,25 @@ export default function Lobby() {
   }, {} as Record<string, EquipmentItemDb>);
 
   const joinFight = async () => {
-    if (!fightCode.trim()) {
-      toast({ title: "Please enter a fight code", variant: "destructive" });
+    if (!sessionCode.trim()) {
+      toast({ title: "Please enter a session code", variant: "destructive" });
       return;
     }
 
-    // Check if an active fight exists with this class code
-    const response = await fetch(`/api/fights/active/${fightCode}`);
+    // Validate session exists and is active
+    const response = await fetch(`/api/sessions/${sessionCode.trim().toUpperCase()}`);
     if (!response.ok) {
       const errorData = await response.json();
       toast({ 
-        title: "Cannot join fight", 
-        description: errorData.error || "Invalid class code or fight not active", 
+        title: "Cannot join session", 
+        description: errorData.error || "Invalid session code or session has ended", 
         variant: "destructive" 
       });
       return;
     }
 
-    const fight = await response.json();
-    localStorage.setItem("fightId", fight.id);
+    const sessionInfo = await response.json();
+    localStorage.setItem("sessionId", sessionInfo.sessionId);
     navigate("/student/combat");
   };
 
@@ -350,13 +350,15 @@ export default function Lobby() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="fight-code">Class Code</Label>
+                  <Label htmlFor="session-code">Session Code</Label>
                   <Input
-                    id="fight-code"
-                    value={fightCode}
-                    onChange={(e) => setFightCode(e.target.value)}
-                    placeholder="Enter class code from your teacher"
-                    data-testid="input-fight-code"
+                    id="session-code"
+                    value={sessionCode}
+                    onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+                    placeholder="Enter 6-character session code"
+                    maxLength={6}
+                    className="font-mono text-lg tracking-widest"
+                    data-testid="input-session-code"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         joinFight();
