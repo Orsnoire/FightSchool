@@ -34,6 +34,9 @@ export default function Combat() {
   const [showPhaseChangeModal, setShowPhaseChangeModal] = useState(false);
   const [phaseChangeName, setPhaseChangeName] = useState<string>("");
   const [shuffleOptions, setShuffleOptions] = useState<boolean>(true);
+  // B10 FIX: Track answer feedback for damage toast
+  const [lastAnsweredCorrectly, setLastAnsweredCorrectly] = useState<boolean | null>(null);
+  const [previousPhase, setPreviousPhase] = useState<string>("");
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -155,8 +158,50 @@ export default function Combat() {
     }
   }, [showPhaseChangeModal]);
 
+  // B10 FIX: Show damage feedback toast when transitioning from question phase
+  useEffect(() => {
+    const studentId = localStorage.getItem("studentId");
+    if (!combatState || !studentId) return;
+    
+    const currentPhase = combatState.currentPhase;
+    const playerState = combatState.players[studentId];
+    
+    // Check if we just transitioned FROM question phase TO another phase
+    if (previousPhase === "question" && currentPhase !== "question" && lastAnsweredCorrectly !== null) {
+      // Show damage feedback toast
+      if (lastAnsweredCorrectly) {
+        // Player was correct - show damage dealt
+        const baseDamage = playerState?.characterClass === "wizard" ? 3 : 
+                          playerState?.characterClass === "scout" ? 2 : 
+                          playerState?.characterClass === "herbalist" ? 1 : 2; // warrior
+        toast({
+          title: "Correct Answer!",
+          description: `You dealt ${baseDamage}+ damage to the enemy`,
+          duration: 2500,
+        });
+      } else {
+        // Player was wrong - show damage taken (need to estimate from fight data)
+        toast({
+          title: "Incorrect Answer",
+          description: "You took damage from the enemy",
+          variant: "destructive",
+          duration: 2500,
+        });
+      }
+      // Reset feedback tracker
+      setLastAnsweredCorrectly(null);
+    }
+    
+    // Update previous phase
+    setPreviousPhase(currentPhase);
+  }, [combatState?.currentPhase, previousPhase, lastAnsweredCorrectly, toast]);
+
   const submitAnswer = () => {
-    if (ws && selectedAnswer) {
+    if (ws && selectedAnswer && currentQuestion) {
+      // B10 FIX: Track if answer was correct for damage feedback toast
+      const isCorrect = selectedAnswer.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
+      setLastAnsweredCorrectly(isCorrect);
+      
       // If creating potion, send create_potion message first
       if (isCreatingPotion) {
         ws.send(JSON.stringify({ type: "create_potion" }));
@@ -235,55 +280,64 @@ export default function Combat() {
   const rightPlayers = allPlayers.slice(16, 32);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* B4 FIX: Enemy section constrained to max 12.5vh (1/8 of viewport) */}
       {enemy && (
-        <div className="bg-card border-b border-border p-6">
-          <div className="container mx-auto max-w-7xl">
-            <div className="flex flex-col items-center gap-4">
-              <img
-                src={enemy.image}
-                alt={enemy.name}
-                className="w-48 h-48 object-cover rounded-lg"
-                data-testid="img-enemy"
-              />
-              <h2 className="text-3xl font-serif font-bold" data-testid="text-enemy-name">{enemy.name}</h2>
-              <HealthBar current={enemy.health} max={enemy.maxHealth} className="w-full max-w-md" />
+        <div className="bg-card border-b border-border p-2 flex items-center justify-center" style={{ maxHeight: '12.5vh' }}>
+          <div className="flex items-center gap-4 h-full">
+            <img
+              src={enemy.image}
+              alt={enemy.name}
+              className="object-contain rounded-lg"
+              style={{ maxHeight: '10vh', maxWidth: '15vw' }}
+              data-testid="img-enemy"
+            />
+            <div className="flex flex-col justify-center">
+              <h2 className="text-xl font-serif font-bold truncate" data-testid="text-enemy-name">{enemy.name}</h2>
+              <HealthBar current={enemy.health} max={enemy.maxHealth} className="w-48" />
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex-1 flex p-4 gap-4">
-        {/* Left column: Player avatars (50% smaller) */}
-        <div className="w-20 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-left-column">
-          {leftPlayers.map((player) => {
-            const isBeingBlocked = Object.values(combatState.players).some(
-              p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
-            );
-            const isBeingHealed = Object.values(combatState.players).some(
-              p => p.isHealing && p.healTarget === player.studentId && p.characterClass === "herbalist" && !p.isDead
-            );
-            
-            return (
-              <div 
-                key={player.studentId} 
-                className={`p-2 rounded-md bg-card border ${
-                  player.isDead ? 'opacity-50' : ''
-                } ${isBeingBlocked ? 'border-warrior border-2' : isBeingHealed ? 'border-health border-2' : ''}`} 
-                data-testid={`avatar-left-${player.studentId}`}
-              >
-                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="xs" />
-                <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
-                <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
-                {(isBeingBlocked || isBeingHealed) && (
-                  <div className="flex items-center justify-center mt-1">
-                    {isBeingBlocked && <Shield className="h-3 w-3 text-warrior" />}
-                    {isBeingHealed && <span className="text-health text-xs">+</span>}
+      {/* B4 FIX: Main combat area with fixed viewport sizing */}
+      <div className="flex-1 flex gap-2 px-2 overflow-hidden" style={{ height: 'calc(100vh - 12.5vh - 10vh)' }}>
+        {/* B4 FIX: Left column - 2-column grid, tiny avatars, no names */}
+        <div className="flex-shrink-0 hidden lg:block overflow-y-auto" style={{ width: '10vw' }} data-testid="players-left-column">
+          <div className="grid grid-cols-2 gap-1">
+            {leftPlayers.map((player) => {
+              const isBeingBlocked = Object.values(combatState.players).some(
+                p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
+              );
+              const isBeingHealed = Object.values(combatState.players).some(
+                p => p.isHealing && p.healTarget === player.studentId && p.characterClass === "herbalist" && !p.isDead
+              );
+              
+              return (
+                <div 
+                  key={player.studentId} 
+                  className={`p-1 rounded bg-card border flex flex-col items-center ${
+                    player.isDead ? 'opacity-40' : ''
+                  } ${isBeingBlocked ? 'border-warrior' : isBeingHealed ? 'border-health' : 'border-border'}`} 
+                  data-testid={`avatar-left-${player.studentId}`}
+                  title={player.nickname}
+                >
+                  <div style={{ width: '24px', height: '24px' }}>
+                    <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="xs" />
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  <div className="mt-0.5 w-full bg-destructive/30 rounded-sm overflow-hidden" style={{ height: '1px' }}>
+                    <div 
+                      className={`h-full transition-all ${
+                        (player.health / player.maxHealth) > 0.6 ? 'bg-health' : 
+                        (player.health / player.maxHealth) > 0.3 ? 'bg-warning' : 'bg-damage'
+                      }`}
+                      style={{ width: `${Math.max(0, (player.health / player.maxHealth) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Center column: Main content */}
@@ -516,63 +570,72 @@ export default function Combat() {
           </div>
         </div>
 
-        {/* Right column: Player avatars (50% smaller) */}
-        <div className="w-20 flex-shrink-0 space-y-2 hidden lg:block" data-testid="players-right-column">
-          {rightPlayers.map((player) => {
-            const isBeingBlocked = Object.values(combatState.players).some(
-              p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
-            );
-            const isBeingHealed = Object.values(combatState.players).some(
-              p => p.isHealing && p.healTarget === player.studentId && p.characterClass === "herbalist" && !p.isDead
-            );
-            
-            return (
-              <div 
-                key={player.studentId} 
-                className={`p-2 rounded-md bg-card border ${
-                  player.isDead ? 'opacity-50' : ''
-                } ${isBeingBlocked ? 'border-warrior border-2' : isBeingHealed ? 'border-health border-2' : ''}`} 
-                data-testid={`avatar-right-${player.studentId}`}
-              >
-                <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="xs" />
-                <div className="text-xs text-center mt-1 truncate" title={player.nickname}>{player.nickname}</div>
-                <HealthBar current={player.health} max={player.maxHealth} showText={false} className="mt-1" />
-                {(isBeingBlocked || isBeingHealed) && (
-                  <div className="flex items-center justify-center mt-1">
-                    {isBeingBlocked && <Shield className="h-3 w-3 text-warrior" />}
-                    {isBeingHealed && <span className="text-health text-xs">+</span>}
+        {/* B4 FIX: Right column - 2-column grid, tiny avatars, no names */}
+        <div className="flex-shrink-0 hidden lg:block overflow-y-auto" style={{ width: '10vw' }} data-testid="players-right-column">
+          <div className="grid grid-cols-2 gap-1">
+            {rightPlayers.map((player) => {
+              const isBeingBlocked = Object.values(combatState.players).some(
+                p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
+              );
+              const isBeingHealed = Object.values(combatState.players).some(
+                p => p.isHealing && p.healTarget === player.studentId && p.characterClass === "herbalist" && !p.isDead
+              );
+              
+              return (
+                <div 
+                  key={player.studentId} 
+                  className={`p-1 rounded bg-card border flex flex-col items-center ${
+                    player.isDead ? 'opacity-40' : ''
+                  } ${isBeingBlocked ? 'border-warrior' : isBeingHealed ? 'border-health' : 'border-border'}`} 
+                  data-testid={`avatar-right-${player.studentId}`}
+                  title={player.nickname}
+                >
+                  <div style={{ width: '24px', height: '24px' }}>
+                    <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="xs" />
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  <div className="mt-0.5 w-full bg-destructive/30 rounded-sm overflow-hidden" style={{ height: '1px' }}>
+                    <div 
+                      className={`h-full transition-all ${
+                        (player.health / player.maxHealth) > 0.6 ? 'bg-health' : 
+                        (player.health / player.maxHealth) > 0.3 ? 'bg-warning' : 'bg-damage'
+                      }`}
+                      style={{ width: `${Math.max(0, (player.health / player.maxHealth) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
+      {/* B4 FIX: Player footer constrained to fixed height */}
       {playerState && (
-        <div className="bg-card border-t border-border p-4">
-          <div className="container mx-auto max-w-7xl flex items-center gap-6">
-            <PlayerAvatar characterClass={playerState.characterClass} gender={playerState.gender} size="md" />
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold" data-testid="text-player-nickname">{playerState.nickname}</span>
-                <div className="flex gap-3 text-sm">
+        <div className="bg-card border-t border-border p-2" style={{ height: '10vh' }}>
+          <div className="flex items-center gap-3 h-full max-w-7xl mx-auto">
+            <div style={{ width: '48px', height: '48px' }}>
+              <PlayerAvatar characterClass={playerState.characterClass} gender={playerState.gender} size="md" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold truncate" data-testid="text-player-nickname">{playerState.nickname}</span>
+                <div className="flex gap-2 text-xs">
                   {playerState.characterClass === "wizard" && (
                     <>
                       {playerState.fireballCooldown > 0 ? (
-                        <span className="text-muted-foreground" data-testid="text-fireball-cooldown">
-                          🔥 Cooldown: {playerState.fireballCooldown}
+                        <span className="text-muted-foreground whitespace-nowrap" data-testid="text-fireball-cooldown">
+                          🔥 CD: {playerState.fireballCooldown}
                         </span>
                       ) : (
-                        <span className="text-wizard font-semibold" data-testid="text-fireball-charge">
-                          🔥 Charge: {playerState.fireballChargeRounds}
+                        <span className="text-wizard font-semibold whitespace-nowrap" data-testid="text-fireball-charge">
+                          🔥 {playerState.fireballChargeRounds}
                         </span>
                       )}
                     </>
                   )}
                   {playerState.characterClass === "scout" && (
-                    <span className="text-scout font-semibold" data-testid="text-streak">
-                      ⚡ Streak: {playerState.streakCounter}/3
+                    <span className="text-scout font-semibold whitespace-nowrap" data-testid="text-streak">
+                      ⚡ {playerState.streakCounter}/3
                     </span>
                   )}
                 </div>
