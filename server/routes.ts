@@ -1147,20 +1147,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // B1/B12/B9 FIX: ALWAYS cleanup existing fight state (timers, connections, DB session)
           // This ensures a clean slate even if session doesn't exist in DB but timers/connections do
-          const existingSession = await storage.getCombatSession(message.fightId);
-          if (existingSession) {
-            log(`[WebSocket] Existing session found for fight ${message.fightId}, cleaning up stale state`, "websocket");
+          
+          // Get existing sessions for this fight (use plural method - returns array)
+          const existingSessions = await storage.getCombatSessionsByFightId(message.fightId);
+          if (existingSessions.length > 0) {
+            log(`[WebSocket] Found ${existingSessions.length} existing session(s) for fight ${message.fightId}, cleaning up`, "websocket");
           } else {
-            log(`[WebSocket] No existing session for fight ${message.fightId}, but cleaning up any stale timers/connections`, "websocket");
+            log(`[WebSocket] No existing sessions for fight ${message.fightId}, creating fresh`, "websocket");
           }
           
-          // Always cleanup to clear timers, connections, and DB state if there's an existing session
-          if (existingSession) {
-            await cleanupSession(existingSession.sessionId);
+          // Always cleanup to clear timers, connections, and DB state for all existing sessions
+          for (const existingSession of existingSessions) {
+            try {
+              await cleanupSession(existingSession.sessionId);
+            } catch (error) {
+              log(`[WebSocket] Error cleaning up session ${existingSession.sessionId}: ${error}`, "websocket");
+            }
           }
           
           // Brief delay to ensure cleanup completes
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 200));
           
           // Create fresh combat session (generates unique sessionId)
           const session = await storage.createCombatSession(message.fightId, fight);

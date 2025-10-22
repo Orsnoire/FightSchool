@@ -188,15 +188,8 @@ export default function Combat() {
     }
   };
 
-  if (!combatState) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">Connecting...</div>;
-  }
-
-  const studentId = localStorage.getItem("studentId");
-  const playerState = studentId ? combatState.players[studentId] : null;
-  const enemy = combatState.enemies[0];
-
   // Shuffle options if enabled - use question ID as seed for consistency
+  // MUST be called before any early returns to comply with Rules of Hooks
   const displayOptions = useMemo(() => {
     if (!currentQuestion || currentQuestion.type === "short_answer") return null;
     
@@ -226,6 +219,15 @@ export default function Combat() {
     
     return null;
   }, [currentQuestion, shuffleOptions]);
+
+  // Early return AFTER all hooks have been called
+  if (!combatState) {
+    return <div className="min-h-screen bg-background flex items-center justify-center">Connecting...</div>;
+  }
+
+  const studentId = localStorage.getItem("studentId");
+  const playerState = studentId ? combatState.players[studentId] : null;
+  const enemy = combatState.enemies[0];
 
   // Split players into left and right columns (max 32 total, 16 per side)
   const allPlayers = Object.values(combatState.players).slice(0, 32);
