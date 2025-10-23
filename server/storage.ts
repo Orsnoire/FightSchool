@@ -1,9 +1,9 @@
 import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot } from "@shared/schema";
-import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS, generateSessionId, generateGuildCode } from "@shared/schema";
+import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS, generateSessionId, generateGuildCode, calculateEquipmentStats, calculateCharacterStats } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, and, or, inArray, sql } from "drizzle-orm";
-import { calculateNewLevel, getTotalXPForLevel, XP_REQUIREMENTS, getTotalPassiveBonuses } from "@shared/jobSystem";
+import { calculateNewLevel, getTotalXPForLevel, XP_REQUIREMENTS, getTotalPassiveBonuses, getTotalMechanicUpgrades } from "@shared/jobSystem";
 
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -318,26 +318,38 @@ export class DatabaseStorage implements IStorage {
       ranger: 0,
       druid: 0,
       monk: 0,
+      warlock: 0,
     };
     
     for (const record of jobLevelRecords) {
       jobLevelMap[record.jobClass] = record.level;
     }
     
-    // Get base stats and calculate passive bonuses from all job levels
-    const baseStats = CLASS_STATS[student.characterClass];
+    // Calculate passive bonuses and mechanic upgrades from all job levels
     const passiveBonuses = getTotalPassiveBonuses(jobLevelMap);
+    const mechanicUpgrades = getTotalMechanicUpgrades(jobLevelMap);
     
-    // Apply bonuses to base stats
-    const maxHealth = baseStats.maxHealth + (passiveBonuses.hp || 0);
+    // Calculate equipment stats from equipped items
+    const equipmentStats = calculateEquipmentStats(
+      student.weapon || '', 
+      student.headgear || '', 
+      student.armor || ''
+    );
+    
+    // Calculate complete character stats using the new stat system
+    const stats = calculateCharacterStats(student.characterClass, equipmentStats, passiveBonuses, mechanicUpgrades);
 
     const playerState: PlayerState = {
       studentId: student.id,
       nickname: student.nickname,
       characterClass: student.characterClass,
       gender: student.gender,
-      health: maxHealth,
-      maxHealth: maxHealth,
+      health: stats.hp,
+      maxHealth: stats.maxHp,
+      mp: stats.mp,
+      maxMp: stats.maxMp,
+      comboPoints: 0,  // Start with 0 combo points
+      maxComboPoints: stats.maxComboPoints,
       streakCounter: 0,
       isDead: false,
       hasAnswered: false,

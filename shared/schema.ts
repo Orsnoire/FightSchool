@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { pgTable, text, varchar, integer, boolean, jsonb, bigint } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { getTotalPassiveBonuses, getTotalMechanicUpgrades } from "./jobSystem";
 
 // Generate 6-character alphanumeric ID (used for session IDs and guild codes)
 export function generateSessionId(): string {
@@ -618,6 +619,20 @@ export function calculateCharacterStats(
     comboPoints: 0,  // Start with 0 combo points
     maxComboPoints,
   };
+}
+
+// Calculate player's current combat stats from PlayerState
+export function getPlayerCombatStats(playerState: PlayerState, weapon: string, headgear: string, armor: string): CharacterStats {
+  const passiveBonuses = getTotalPassiveBonuses(playerState.jobLevels);
+  const mechanicUpgrades = getTotalMechanicUpgrades(playerState.jobLevels);
+  const equipmentStats = calculateEquipmentStats(weapon, headgear, armor);
+  
+  return calculateCharacterStats(
+    playerState.characterClass,
+    equipmentStats,
+    passiveBonuses,
+    mechanicUpgrades
+  );
 }
 
 // Calculate damage for different attack types
