@@ -269,7 +269,19 @@ export interface PlayerState {
   maxMp: number; // Maximum MP
   comboPoints: number; // For Scout and cross-class Headshot users
   maxComboPoints: number; // AGI × 2
-  streakCounter: number; // For damage dealers (Scout uses this)
+  streakCounter: number; // DEPRECATED: Use comboPoints instead (kept for backward compat)
+  
+  // Calculated combat stats (cached from job + equipment + passives)
+  str: number;  // Strength
+  int: number;  // Intelligence
+  agi: number;  // Agility
+  mnd: number;  // Mind
+  vit: number;  // Vitality
+  def: number;  // Defense (from armor + VIT/2)
+  atk: number;  // Attack (from weapon + STR)
+  mat: number;  // Magic Attack (from weapon + INT)
+  rtk: number;  // Ranged Attack (from weapon + AGI)
+  
   isDead: boolean;
   currentAnswer?: string;
   hasAnswered: boolean;

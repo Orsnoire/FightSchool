@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP } from "@shared/jobSystem";
 
@@ -810,19 +810,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Herbalist chose to heal - healing happens in tank_blocking phase (phase 2)
           // Don't deal damage if healing
         } else {
-          // Deal damage to enemy
-          let damage = 1;
+          // Deal damage to enemy using new stat-based calculations
+          let damage = 0;
+          let mpCost = 0;
           
           if (player.characterClass === "wizard") {
-            // Wizard Fireball ability: Dynamic stats based on wizard level
+            // Wizard: Magical damage using MAT + INT
             const wizardLevel = player.jobLevels.wizard || 0;
             const maxChargeRounds = getFireballMaxChargeRounds(wizardLevel);
-            const damageBonus = getFireballDamageBonus(wizardLevel);
             const cooldownDuration = getFireballCooldown(wizardLevel);
             
             if (player.fireballCooldown > 0) {
-              // On cooldown - do base damage only and decrement cooldown (in memory)
-              damage = 1 + damageBonus;
+              // On cooldown - do base magical damage and decrement cooldown
+              damage = calculateMagicalDamage(player.mat, player.int);
+              mpCost = 2; // Base spell MP cost
               player.fireballCooldown -= 1;
               player.isChargingFireball = false;
             } else if (player.isChargingFireball) {
@@ -830,37 +831,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const newChargeRounds = player.fireballChargeRounds + 1;
               
               if (newChargeRounds < maxChargeRounds) {
-                // Still charging: no damage while charging (in memory)
+                // Still charging: no damage while charging
                 damage = 0;
+                mpCost = 0;
                 player.fireballChargeRounds = newChargeRounds;
                 player.isChargingFireball = true;
               } else {
-                // Fully charged: RELEASE! Deal 2x normal damage (in memory)
-                const baseDamage = 1 + damageBonus;
+                // Fully charged: RELEASE! Deal 2x magical damage, costs 4 MP
+                const baseDamage = calculateMagicalDamage(player.mat, player.int);
                 damage = baseDamage * 2;
+                mpCost = 4;
                 player.fireballChargeRounds = 0;
                 player.fireballCooldown = cooldownDuration;
                 player.isChargingFireball = false;
               }
             } else {
-              // Not charging - do base damage only
-              damage = 1 + damageBonus;
+              // Not charging - do base magical damage
+              damage = calculateMagicalDamage(player.mat, player.int);
+              mpCost = 2;
+            }
+            
+            // Consume MP (if player has enough)
+            if (player.mp >= mpCost) {
+              player.mp = Math.max(0, player.mp - mpCost);
+            } else {
+              // Not enough MP - no damage
+              damage = 0;
             }
           } else if (player.characterClass === "scout") {
-            // Scout builds combo points with correct answers
-            const scoutLevel = player.jobLevels?.scout || 0;
-            const maxComboPoints = getHeadshotMaxComboPoints(scoutLevel);
+            // Scout: Ranged damage using RTK + AGI, with combo point system
+            damage = calculateRangedDamage(player.rtk, player.agi);
             
-            damage = 2; // Base damage
-            const newComboPoints = player.streakCounter + 1;
+            // Fill combo points on correct answer (up to max)
+            const newComboPoints = Math.min(player.maxComboPoints, player.comboPoints + 1);
+            player.comboPoints = newComboPoints;
             
-            if (newComboPoints >= maxComboPoints) {
-              // Headshot: consume all combo points for heavy damage (in memory)
-              damage = 6 + (newComboPoints - 3);
-              player.streakCounter = 0;
-            } else {
-              player.streakCounter = newComboPoints;
-            }
+            // Keep streakCounter in sync for backward compat
+            player.streakCounter = newComboPoints;
+          } else if (player.characterClass === "warrior") {
+            // Warrior: Physical damage using ATK + STR
+            damage = calculatePhysicalDamage(player.atk, player.str);
+          } else if (player.characterClass === "herbalist") {
+            // Herbalist: Hybrid damage using MAT + AGI + MND
+            damage = calculateHybridDamage(player.mat, player.agi, player.mnd);
+          } else {
+            // Other classes: use physical damage as default
+            damage = calculatePhysicalDamage(player.atk, player.str);
           }
 
           if (session.enemies.length > 0 && damage > 0) {
@@ -888,7 +904,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         player.threat = Math.max(0, player.threat - 3);
         
         // Reset ability states on wrong answer (in memory)
-        player.streakCounter = 0; // Reset scout streak
+        player.comboPoints = 0; // Reset scout combo points to 0
+        player.streakCounter = 0; // Reset for backward compat
         
         // Reset wizard fireball charge and decrement cooldown (in memory)
         if (player.characterClass === "wizard") {

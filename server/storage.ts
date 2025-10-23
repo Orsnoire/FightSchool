@@ -350,7 +350,19 @@ export class DatabaseStorage implements IStorage {
       maxMp: stats.maxMp,
       comboPoints: 0,  // Start with 0 combo points
       maxComboPoints: stats.maxComboPoints,
-      streakCounter: 0,
+      streakCounter: 0,  // DEPRECATED: kept for backward compat
+      
+      // Cached combat stats
+      str: stats.str,
+      int: stats.int,
+      agi: stats.agi,
+      mnd: stats.mnd,
+      vit: stats.vit,
+      def: stats.def,
+      atk: stats.atk,
+      mat: stats.mat,
+      rtk: stats.rtk,
+      
       isDead: false,
       hasAnswered: false,
       isHealing: false,
