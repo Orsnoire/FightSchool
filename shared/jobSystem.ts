@@ -13,17 +13,28 @@ export interface Ability {
   isCrossClass?: boolean; // Can be used by other jobs if unlocked
 }
 
-// Passive stat bonuses
+// Passive stat bonuses (from job levels)
 export interface PassiveBonus {
-  hp?: number;
-  attack?: number;
-  defense?: number;
+  str?: number;   // Strength
+  int?: number;   // Intelligence
+  agi?: number;   // Agility
+  mnd?: number;   // Mind
+  vit?: number;   // Vitality
+}
+
+// Mechanic upgrades (non-stat improvements)
+export interface MechanicUpgrade {
+  maxComboPoints?: number;      // Scout: increase max combo points
+  potionCraftBonus?: number;    // Herbalist: extra potions when crafting
+  hexDuration?: number;          // Warlock: increase hex duration
+  siphonHealBonus?: number;      // Warlock: extra healing from siphon
 }
 
 // Level rewards for a job
 export interface JobLevelReward {
   abilities?: Ability[];
   passives?: PassiveBonus;
+  mechanicUpgrades?: MechanicUpgrade;
 }
 
 // Complete job configuration
@@ -111,60 +122,59 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     unlockRequirements: null,
     levelRewards: {
       1: { 
-        passives: { hp: 2, defense: 1 },
         abilities: [{
           id: "warrior_block",
           name: "Block",
-          description: "In Phase 2, reduce minor damage. Draws threat when answering correctly.",
+          description: "Prevents VIT/2 damage to targeted player this turn.",
           isCrossClass: false,
         }]
       },
-      2: { passives: { hp: 1, defense: 1 } },
-      3: { passives: { hp: 1 } },
+      2: { passives: { vit: 1 } },
+      3: { passives: { str: 1 } },
       4: { 
         abilities: [{
           id: "shield_bash",
           name: "Shield Bash",
-          description: "Active, CD 2. Block this round's first incoming hit (-1 DMG) and deal +1 phys DMG to target enemy.",
+          description: "Deals VIT/2 melee damage to enemy upon a successful block. CD 2.",
           isCrossClass: false,
         }]
       },
-      5: { passives: { hp: 1, attack: 1 } },
-      6: { passives: { hp: 1 } },
-      7: { passives: { hp: 1, defense: 1 } },
+      5: { passives: { vit: 1 } },
+      6: { passives: { str: 1 } },
+      7: { passives: { vit: 1 } },
       8: { 
         abilities: [{
           id: "block_crossclass",
           name: "Block",
-          description: "Passive. When used on any class, reduces first incoming hit by 1 DMG.",
+          description: "Cross-class unlock. Prevents VIT/2 damage to targeted player this turn.",
           isCrossClass: true,
         }]
       },
-      9: { passives: { hp: 1 } },
+      9: { passives: { str: 1 } },
       10: { 
         abilities: [{
           id: "provoke",
           name: "Provoke",
-          description: "Active, CD 3. For one round, all incorrect-answer damage from enemies is redirected to you. Warrior takes it at normal mitigation.",
+          description: "CD 2. Gain current top agro + 1. Direct all damage from missed answers this round to the provoking warrior.",
           isCrossClass: false,
         }]
       },
-      11: { passives: { hp: 1, attack: 1 } },
+      11: { passives: { vit: 1 } },
       12: { 
         abilities: [{
           id: "crushing_blow",
           name: "Crushing Blow",
-          description: "Active, CD 3. Heavy strike for 4 phys DMG and +1 threat to all enemies.",
+          description: "Deals (ATK+STR) melee damage to target. +1 threat from all current enemies.",
           isCrossClass: false,
         }]
       },
-      13: { passives: { hp: 1 } },
-      14: { passives: { hp: 1, defense: 1 } },
+      13: { passives: { str: 1 } },
+      14: { passives: { vit: 1 } },
       15: { 
         abilities: [{
           id: "unbreakable",
           name: "Unbreakable",
-          description: "Ultimate, once/encounter. Become invincible for one round; all enemy damage is blocked and absorbed by you (0 DMG to party).",
+          description: "Cross-class unlock. Warrior blocks all damage for the remainder of the round. 1 use per fight. Shield bash can activate on damage blocked in this way.",
           isCrossClass: true,
         }]
       },
@@ -174,7 +184,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
   wizard: {
     id: "wizard",
     name: "Wizard",
-    description: "DPS - Fireball master with channeled damage",
+    description: "DPS - Master of magical damage",
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
@@ -182,56 +192,56 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "fireball",
           name: "Fireball",
-          description: "Active (cast): Begin a 2-round channel. Each correct answer adds +1 dmg/round. If both rounds are correct → total +2 dmg added when it lands. Base 2 dmg + accumulated fire bonus. CD 5 rds.",
+          description: "Deals INT*3 damage to current target. Active. Costs 1 MP.",
           isCrossClass: false,
         }]
       },
-      2: { }, // Fireball cooldown -1 (→ 4 rds) - mechanic upgrade only
-      3: { passives: { attack: 1 } },
+      2: { passives: { int: 1 } },
+      3: { passives: { vit: 1 } },
       4: { 
         abilities: [{
           id: "frostbolt",
-          name: "Frostbolt",
-          description: "Phase 2 instant cast: 3 magic DMG to one enemy, always hits; resets streak. CD 3 rds.",
+          name: "Frost Bolt",
+          description: "Can be cast during phase 2 for additional damage that round. Only usable when fireball hasn't been cast yet this round. Deals an additional INT*1 ice damage this round. Costs 1 MP.",
           isCrossClass: false,
         }]
       },
-      5: { }, // Fireball +1 DMG per round (→ +2 → +3 total if full cast) - mechanic upgrade only
-      6: { passives: { hp: 1 } },
-      7: { }, // Fireball cooldown -1 (→ 3 rds) - mechanic upgrade only
+      5: { passives: { int: 1 } },
+      6: { passives: { vit: 1 } },
+      7: { passives: { int: 1 } },
       8: { 
         abilities: [{
           id: "fireball_crossclass",
           name: "Fireball",
-          description: "Grants Fireball as a usable spell for any class equipped with the cross-class slot. Uses current Wizard's cooldown/charge rules.",
+          description: "Cross-class unlock. Deals INT*3 damage to current target. Costs 1 MP.",
           isCrossClass: true,
         }]
       },
-      9: { passives: { attack: 1 } },
+      9: { passives: { int: 1 } },
       10: { 
         abilities: [{
           id: "manashield",
           name: "Manashield",
-          description: "Reactive, CD 3 rds: absorb the next 2 DMG you take OR preserve an in-progress Fireball if you miss a question.",
+          description: "Active. CD 3. Reduce the next INT damage you would otherwise take.",
           isCrossClass: false,
         }]
       },
-      11: { }, // Fireball +1 DMG per round (→ +4 total if full 2-round cast) - mechanic upgrade only
+      11: { passives: { int: 1 } },
       12: { 
         abilities: [{
-          id: "manaward",
-          name: "Manaward",
-          description: "Party buff, CD 4 rds: all allies gain Barrier 1 vs. next 1 DMG this round.",
+          id: "fireblast",
+          name: "Fireblast",
+          description: "Deals INT*(MP spent)*3 fire damage. Active. Costs all remaining MP.",
           isCrossClass: false,
         }]
       },
-      13: { }, // Fireball can now charge 3 rounds (max bonus +6 DMG if perfect cast) - mechanic upgrade only
-      14: { }, // Fireball +1 DMG per round (→ +5 per round × 3 = 15 potential bonus) - mechanic upgrade only
+      13: { passives: { int: 1 } },
+      14: { passives: { int: 1 } },
       15: { 
         abilities: [{
           id: "manabomb",
           name: "Manabomb",
-          description: "Ultimate, once/encounter Phase 2 cast: deal 10 instant MAG DMG to all enemies on screen. Usable by any class that has unlocked cross-class slots.",
+          description: "Cross-class unlock. Once per encounter. Phase 2 cast. Deal INT*2 Arcane damage to all current enemies.",
           isCrossClass: true,
         }]
       },
@@ -241,7 +251,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
   scout: {
     id: "scout",
     name: "Scout",
-    description: "DPS - High attack, streak bonus damage",
+    description: "DPS - Ranged damage with combo points",
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
@@ -249,56 +259,56 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "headshot",
           name: "Headshot",
-          description: "Costs 3 Combo Points; CD 5 rounds. Consumes all points to deal heavy single-target damage. Starts with 3-point cap. Combo points gained from correct-answer streaks. If blocked damage preserves streak.",
+          description: "Check box lights up when combo points reach 3. Deals RTK*(Combo Points)*AGI ranged damage. Costs 3 combo points.",
           isCrossClass: false,
         }]
       },
-      2: { passives: { attack: 1 } }, // +1 Base DMG (early precision buff)
-      3: { passives: { hp: 1 } }, // +1 HP
+      2: { passives: { agi: 1 } },
+      3: { passives: { vit: 1 } },
       4: { 
         abilities: [{
           id: "aim",
           name: "Aim",
-          description: "Costs 1 Combo Point; CD 2. Doubles the Scout's damage that round. Used in Phase 1 immediately after answering, before Phase 2 begins.",
+          description: "Check box lights up if scout has at least 1 combo point available. Deals (RTK+AGI)*2 DMG to current target. Costs 1 combo point.",
           isCrossClass: false,
         }]
       },
-      5: { passives: { attack: 1 } }, // +1 Base DMG
-      6: { passives: { hp: 1 } }, // +1 HP
-      7: { }, // Headshot Cooldown -1 round (→ 4 rds) - mechanic upgrade only
+      5: { passives: { agi: 1 } },
+      6: { passives: { vit: 1 } },
+      7: { mechanicUpgrades: { maxComboPoints: 1 } }, // +1 Combo Point max
       8: { 
         abilities: [{
           id: "headshot_crossclass",
-          name: "Headshot / Combo System",
-          description: "Grants access to Headshot (and combo-point mechanics) for any class equipped with a cross-class slot.",
+          name: "Headshot",
+          description: "Cross-class unlock (also unlocks combo points if equipped). Deals RTK*(Combo Points)*AGI ranged damage. Costs 3 combo points.",
           isCrossClass: true,
         }]
       },
-      9: { passives: { attack: 1 } }, // +1 Base DMG
+      9: { passives: { agi: 1 } },
       10: { 
         abilities: [{
           id: "mark",
           name: "Mark",
-          description: "No Cost; CD 3. Marks the current enemy; all players deal double damage to that target this round. (Applied in Phase 1.)",
+          description: "Check box lights up if scout has at least 2 combo points available. Causes marked enemy to take 200% damage from all sources for the current turn. Costs 2 combo points. Used in phase 1 after answering but before the end of the phase.",
           isCrossClass: false,
         }]
       },
-      11: { passives: { hp: 1 } }, // +1 HP
+      11: { mechanicUpgrades: { maxComboPoints: 1 } }, // +1 Combo Point max
       12: { 
         abilities: [{
           id: "dodge",
           name: "Dodge",
-          description: "Phase 2 reaction; CD 3. Avoids the next attack entirely and preserves streak if hit that round.",
+          description: "Useable in phase 2 if the scout got an answer wrong. CD 3. Avoids the damage Scout would have taken this round from answering incorrectly.",
           isCrossClass: false,
         }]
       },
-      13: { passives: { attack: 1 } }, // +1 Base DMG
-      14: { }, // +3 Maximum Combo Points (cap = 6) - mechanic upgrade only
+      13: { passives: { agi: 1 } },
+      14: { passives: { agi: 1 } },
       15: { 
         abilities: [{
           id: "killshot",
           name: "Killshot",
-          description: "Costs 5 Combo Points; once/encounter. Deals 20 damage. For each 5% of enemy HP below 45%, adds +10% chance to instantly kill the target (e.g., 30% HP → +40% kill chance).",
+          description: "Cross-class unlock (also unlocks combo points if equipped). Once per encounter. Deals RTK*AGI*2 ranged damage. For each 5% of enemy HP below 45%, adds +10% chance to instantly kill the target.",
           isCrossClass: true,
         }]
       },
@@ -316,47 +326,48 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "healing_potion",
           name: "Healing Potion",
-          description: "Phase 2 use. Restore up to 1 HP to one ally (no overheal). Starts with 5 charges each combat.",
+          description: "Phase 1 action; player must choose to heal rather than damage. Heals MND+1 HP. Target selected in phase 2.",
           isCrossClass: false,
         }]
       },
-      2: { passives: { hp: 1 } },
-      3: { }, // +1 Healing Power (potions now heal 2) - mechanic upgrade only
+      2: { passives: { vit: 1 } },
+      3: { passives: { mnd: 1 } },
       4: { 
         abilities: [{
           id: "craft_healing_potion",
           name: "Craft Healing Potion",
-          description: "Phase 1 action (instead of dealing damage): Add +1 Healing Potion (modified by craft bonuses).",
+          description: "Phase 1 action. You can craft Healing Potions (carry 5 by default 5 max). You cannot craft a potion on the turn you choose to heal rather than damage.",
           isCrossClass: false,
         }]
       },
-      5: { }, // +1 Max Healing Potion capacity (5 → 6) - mechanic upgrade only
-      6: { }, // Craft Efficiency +1: when crafting Healing or Shield potions, create +1 extra charge - mechanic upgrade only
-      7: { passives: { hp: 1 } },
+      5: { passives: { mnd: 1 } },
+      6: { mechanicUpgrades: { potionCraftBonus: 1 } }, // Potions when crafting +1
+      7: { passives: { vit: 1 } },
       8: { 
-        abilities: [
-          {
-            id: "healing_potion_crossclass",
-            name: "Healing Potion",
-            description: "Grants Healing Potion (5 charges) to cross-class slot users.",
-            isCrossClass: true,
-          },
-          {
-            id: "craft_shield_potion",
-            name: "Craft Shield Potion",
-            description: "Phase 1 action. You can craft Shield Potions (carry up to 3 by default).",
-            isCrossClass: false,
-          },
-          {
-            id: "shield_potion",
-            name: "Shield Potion",
-            description: "Use in Phase 2: The target blocks the next 2 damage they would take.",
-            isCrossClass: false,
-          }
-        ]
+        abilities: [{
+          id: "healing_potion_crossclass",
+          name: "Healing Potion",
+          description: "Cross-class unlock. Phase 1 action; player must choose to heal rather than damage. Heals MND+1 HP. Target selected in phase 2.",
+          isCrossClass: true,
+        }]
       },
-      9: { }, // +1 Max Shield Potion capacity (3 → 4) - mechanic upgrade only
+      9: { passives: { mnd: 1 } },
       10: { 
+        abilities: [{
+          id: "craft_shield_potion",
+          name: "Craft Shield Potion",
+          description: "Phase 1 action. You can craft Shield Potions (carry 0 default up to 3 max).",
+          isCrossClass: false,
+        },
+        {
+          id: "shield_potion",
+          name: "Shield Potion",
+          description: "Phase 1 action. Blocks the next MND damage that the target would have taken. Costs 1 Shield Potion.",
+          isCrossClass: false,
+        }]
+      },
+      11: { mechanicUpgrades: { potionCraftBonus: 1 } }, // Potions when crafting +1 (stacks with Lv 6)
+      12: { 
         abilities: [{
           id: "potion_diffuser",
           name: "Potion Diffuser",
@@ -364,22 +375,13 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
           isCrossClass: false,
         }]
       },
-      11: { }, // Craft Efficiency +1 (stacks with Lv 6) - mechanic upgrade only
-      12: { 
-        abilities: [{
-          id: "poison_potion",
-          name: "Poison Potion",
-          description: "Use after answering, before Phase 2: Chosen enemy takes +1 damage from each source for the rest of this round. (Max 3 uses per fight.)",
-          isCrossClass: false,
-        }]
-      },
-      13: { }, // +1 Healing Power (healing potions now heal 3 each) - mechanic upgrade only
-      14: { passives: { hp: 1 } },
+      13: { passives: { mnd: 1 } },
+      14: { passives: { vit: 1 } },
       15: { 
         abilities: [{
           id: "life_potion",
           name: "Life Potion",
-          description: "Phase 2 instant. Revive all KO'd allies (return each to at least 1 HP). Cross-class unlock.",
+          description: "Cross-class unlock. Phase 2 instant. Revive all KO'd allies (return each KOed player to MND HP).",
           isCrossClass: true,
         }]
       },
@@ -394,7 +396,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: { warrior: 10 },
     levelRewards: {
-      1: { passives: { hp: 2, defense: 1 } },
+      1: { passives: { vit: 2, str: 1 } },
     }
   },
 
@@ -405,9 +407,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: { warrior: 5, herbalist: 3 },
     levelRewards: {
-      // USER: Fill in levels 1-15 with abilities and passives
-      1: { passives: { hp: 2, defense: 1 } },
-      // Add levels 2-15 here
+      1: { passives: { vit: 1, str: 1, mnd: 1 } },
     }
   },
 
@@ -418,9 +418,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: { warrior: 7, wizard: 5 },
     levelRewards: {
-      // USER: Fill in levels 1-15 with abilities and passives
-      1: { passives: { hp: 2, attack: 1 } },
-      // Add levels 2-15 here
+      1: { passives: { vit: 1, str: 1, int: 1 } },
     }
   },
 
@@ -431,9 +429,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: { wizard: 10 },
     levelRewards: {
-      // USER: Fill in levels 1-15
-      1: { passives: { attack: 2 } },
-      // Add levels 2-15 here
+      1: { passives: { int: 3 } },
     }
   },
 
@@ -444,9 +440,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: { scout: 10 },
     levelRewards: {
-      // USER: Fill in levels 1-15
-      1: { passives: { attack: 2 } },
-      // Add levels 2-15 here
+      1: { passives: { agi: 3 } },
     }
   },
 
@@ -457,9 +451,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: { herbalist: 10 },
     levelRewards: {
-      // USER: Fill in levels 1-15
-      1: { passives: { hp: 2 } },
-      // Add levels 2-15 here
+      1: { passives: { mnd: 2 } },
     }
   },
 
@@ -470,9 +462,74 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     maxLevel: 15,
     unlockRequirements: { warrior: 5, scout: 5 },
     levelRewards: {
-      // USER: Fill in levels 1-15
-      1: { passives: { hp: 1, attack: 1, defense: 1 } },
-      // Add levels 2-15 here
+      1: { passives: { str: 1, agi: 1, vit: 1 } },
+    }
+  },
+
+  warlock: {
+    id: "warlock",
+    name: "Warlock",
+    description: "Curse specialist - Deals damage over time",
+    maxLevel: 15,
+    unlockRequirements: { wizard: 2 },
+    levelRewards: {
+      1: { 
+        abilities: [{
+          id: "hex",
+          name: "Hex",
+          description: "Deals the targeted enemy (HEXDMG) curse damage per round for the next (HEXDUR) rounds. (HEXDMG)= INT – 1. (HEXDUR)=2 + passives/equipment. Casting hex on a hexed target sets timer to y.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { int: 1 } },
+      3: { mechanicUpgrades: { hexDuration: 1 } }, // +1 to (HEXDUR)
+      4: { 
+        abilities: [{
+          id: "siphon",
+          name: "Siphon",
+          description: "Deals INT curse damage and heals INT/2 rounded up.",
+          isCrossClass: false,
+        }]
+      },
+      5: { mechanicUpgrades: { siphonHealBonus: 1 } }, // +1 to siphon healing
+      6: { passives: { vit: 1 } },
+      7: { passives: { int: 1 } },
+      8: { 
+        abilities: [{
+          id: "hex_crossclass",
+          name: "Hex",
+          description: "Cross-class unlock. Deals the targeted enemy (HEXDMG) curse damage per round for the next (HEXDUR) rounds.",
+          isCrossClass: true,
+        }]
+      },
+      9: { mechanicUpgrades: { hexDuration: 1 } }, // +1 to (HEXDUR)
+      10: { 
+        abilities: [{
+          id: "pact_surge",
+          name: "Pact Surge",
+          description: "Spend HP/4 to gain ATK in the amount of the HP spent.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { vit: 1 } },
+      12: { 
+        abilities: [{
+          id: "abyssal_drain",
+          name: "Abyssal Drain",
+          description: "Buff. Lasts 2 turns. Deal base dmg to all current enemies. Heal for HP = damage dealt. Costs 2 MP.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { int: 1 } },
+      14: { mechanicUpgrades: { hexDuration: 1 } }, // +1 to (HEXDUR)
+      15: { 
+        abilities: [{
+          id: "soul_echo",
+          name: "Soul Echo",
+          description: "Cross-class unlock. (passive) Hex now deals (HEXDMG)(HEXDUR)/2 curse damage in the first combat round after it is cast.",
+          isCrossClass: true,
+        }]
+      },
     }
   },
 };
@@ -523,7 +580,7 @@ export function getCrossClassAbilities(
 
 // Calculate total passive bonuses from all jobs
 export function getTotalPassiveBonuses(jobLevels: Record<CharacterClass, number>): PassiveBonus {
-  const total: PassiveBonus = { hp: 0, attack: 0, defense: 0 };
+  const total: PassiveBonus = { str: 0, int: 0, agi: 0, mnd: 0, vit: 0 };
   
   for (const [jobClass, level] of Object.entries(jobLevels)) {
     const jobConfig = JOB_TREE[jobClass as CharacterClass];
@@ -532,9 +589,38 @@ export function getTotalPassiveBonuses(jobLevels: Record<CharacterClass, number>
     for (let lvl = 1; lvl <= level; lvl++) {
       const reward = jobConfig.levelRewards[lvl];
       if (reward?.passives) {
-        total.hp = (total.hp || 0) + (reward.passives.hp || 0);
-        total.attack = (total.attack || 0) + (reward.passives.attack || 0);
-        total.defense = (total.defense || 0) + (reward.passives.defense || 0);
+        total.str = (total.str || 0) + (reward.passives.str || 0);
+        total.int = (total.int || 0) + (reward.passives.int || 0);
+        total.agi = (total.agi || 0) + (reward.passives.agi || 0);
+        total.mnd = (total.mnd || 0) + (reward.passives.mnd || 0);
+        total.vit = (total.vit || 0) + (reward.passives.vit || 0);
+      }
+    }
+  }
+
+  return total;
+}
+
+// Calculate total mechanic upgrades from all jobs
+export function getTotalMechanicUpgrades(jobLevels: Record<CharacterClass, number>): MechanicUpgrade {
+  const total: MechanicUpgrade = { 
+    maxComboPoints: 0, 
+    potionCraftBonus: 0, 
+    hexDuration: 0, 
+    siphonHealBonus: 0 
+  };
+  
+  for (const [jobClass, level] of Object.entries(jobLevels)) {
+    const jobConfig = JOB_TREE[jobClass as CharacterClass];
+    if (!jobConfig) continue;
+
+    for (let lvl = 1; lvl <= level; lvl++) {
+      const reward = jobConfig.levelRewards[lvl];
+      if (reward?.mechanicUpgrades) {
+        total.maxComboPoints = (total.maxComboPoints || 0) + (reward.mechanicUpgrades.maxComboPoints || 0);
+        total.potionCraftBonus = (total.potionCraftBonus || 0) + (reward.mechanicUpgrades.potionCraftBonus || 0);
+        total.hexDuration = (total.hexDuration || 0) + (reward.mechanicUpgrades.hexDuration || 0);
+        total.siphonHealBonus = (total.siphonHealBonus || 0) + (reward.mechanicUpgrades.siphonHealBonus || 0);
       }
     }
   }

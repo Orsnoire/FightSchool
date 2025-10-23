@@ -19,7 +19,7 @@ export function generateGuildCode(): string {
 }
 
 // Character classes and equipment types
-export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "knight" | "paladin" | "dark_knight" | "sage" | "ranger" | "druid" | "monk";
+export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "knight" | "paladin" | "dark_knight" | "sage" | "ranger" | "druid" | "monk" | "warlock";
 export type BaseClass = "warrior" | "wizard" | "scout" | "herbalist";
 export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbalist"];
 export type Gender = "A" | "B";
@@ -264,6 +264,10 @@ export interface PlayerState {
   gender: Gender;
   health: number;
   maxHealth: number;
+  mp: number; // Magic Points - (INT + MND) × 3
+  maxMp: number; // Maximum MP
+  comboPoints: number; // For Scout and cross-class Headshot users
+  maxComboPoints: number; // AGI × 2
   streakCounter: number; // For damage dealers (Scout uses this)
   isDead: boolean;
   currentAnswer?: string;
@@ -316,9 +320,15 @@ export interface EquipmentItem {
   slot: EquipmentSlot;
   rarity: "common" | "rare" | "epic" | "legendary";
   stats: {
-    hp?: number;
-    attack?: number;
-    defense?: number;
+    str?: number;
+    int?: number;
+    agi?: number;
+    mnd?: number;
+    vit?: number;
+    def?: number;    // Direct defense bonus
+    atk?: number;    // Direct attack bonus (melee)
+    mat?: number;    // Direct magic attack bonus
+    rtk?: number;    // Direct ranged attack bonus
   };
   classRestriction?: CharacterClass[]; // undefined = available to all
 }
@@ -331,7 +341,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     name: "Basic Sword",
     slot: "weapon",
     rarity: "common",
-    stats: { attack: 1 },
+    stats: { atk: 1 },
     classRestriction: ["warrior", "knight", "paladin", "dark_knight", "monk"],
   },
   basic_staff: {
@@ -339,15 +349,15 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     name: "Basic Staff",
     slot: "weapon",
     rarity: "common",
-    stats: { attack: 1 },
-    classRestriction: ["wizard", "sage", "druid"],
+    stats: { mat: 1 },
+    classRestriction: ["wizard", "sage", "druid", "warlock"],
   },
   basic_bow: {
     id: "basic_bow",
     name: "Basic Bow",
     slot: "weapon",
     rarity: "common",
-    stats: { attack: 1 },
+    stats: { rtk: 1 },
     classRestriction: ["scout", "ranger"],
   },
   basic_herbs: {
@@ -355,7 +365,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     name: "Basic Herbs",
     slot: "weapon",
     rarity: "common",
-    stats: { hp: 1 },
+    stats: { mnd: 1 },
     classRestriction: ["herbalist", "druid"],
   },
   basic_helm: {
@@ -363,14 +373,14 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     name: "Basic Helm",
     slot: "headgear",
     rarity: "common",
-    stats: { defense: 1 },
+    stats: { def: 1 },
   },
   basic_armor: {
     id: "basic_armor",
     name: "Basic Armor",
     slot: "armor",
     rarity: "common",
-    stats: { defense: 1 },
+    stats: { def: 1 },
   },
   
   // Common drops
@@ -379,7 +389,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     name: "Iron Sword",
     slot: "weapon",
     rarity: "common",
-    stats: { attack: 2 },
+    stats: { atk: 2, str: 1 },
     classRestriction: ["warrior", "knight", "paladin", "dark_knight", "monk"],
   },
   steel_bow: {
@@ -387,7 +397,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     name: "Steel Bow",
     slot: "weapon",
     rarity: "rare",
-    stats: { attack: 3 },
+    stats: { rtk: 3, agi: 1 },
     classRestriction: ["scout", "ranger"],
   },
   magic_staff: {
@@ -395,64 +405,64 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     name: "Magic Staff",
     slot: "weapon",
     rarity: "rare",
-    stats: { attack: 3 },
-    classRestriction: ["wizard", "sage"],
+    stats: { mat: 3, int: 1 },
+    classRestriction: ["wizard", "sage", "warlock"],
   },
   leather_helm: {
     id: "leather_helm",
     name: "Leather Helm",
     slot: "headgear",
     rarity: "common",
-    stats: { defense: 2 },
+    stats: { def: 2 },
   },
   steel_helmet: {
     id: "steel_helmet",
     name: "Steel Helmet",
     slot: "headgear",
     rarity: "rare",
-    stats: { defense: 3, hp: 2 },
+    stats: { def: 3, vit: 1 },
   },
   arcane_crown: {
     id: "arcane_crown",
     name: "Arcane Crown",
     slot: "headgear",
     rarity: "epic",
-    stats: { attack: 2, hp: 3 },
+    stats: { mat: 2, int: 2 },
   },
   leather_armor: {
     id: "leather_armor",
     name: "Leather Armor",
     slot: "armor",
     rarity: "common",
-    stats: { defense: 2 },
+    stats: { def: 2 },
   },
   chainmail: {
     id: "chainmail",
     name: "Chainmail",
     slot: "armor",
     rarity: "rare",
-    stats: { defense: 4 },
+    stats: { def: 4 },
   },
   plate_armor: {
     id: "plate_armor",
     name: "Plate Armor",
     slot: "armor",
     rarity: "epic",
-    stats: { defense: 5, hp: 5 },
+    stats: { def: 5, vit: 2 },
   },
   dragon_scale: {
     id: "dragon_scale",
     name: "Dragon Scale Armor",
     slot: "armor",
     rarity: "legendary",
-    stats: { defense: 7, hp: 10, attack: 2 },
+    stats: { def: 7, vit: 3, str: 1 },
   },
   legendary_blade: {
     id: "legendary_blade",
     name: "Legendary Blade",
     slot: "weapon",
     rarity: "legendary",
-    stats: { attack: 5, hp: 5 },
+    stats: { atk: 5, str: 2 },
     classRestriction: ["warrior", "knight", "paladin", "dark_knight"],
   },
 };
@@ -471,6 +481,7 @@ export function getStartingEquipment(characterClass: CharacterClass): { weapon: 
     ranger: "basic_bow",
     druid: "basic_herbs",
     monk: "basic_sword",
+    warlock: "basic_staff",
   };
 
   return {
@@ -481,33 +492,158 @@ export function getStartingEquipment(characterClass: CharacterClass): { weapon: 
 }
 
 // Calculate total equipment bonuses
-export function calculateEquipmentStats(weapon: string, headgear: string, armor: string): { hp: number; attack: number; defense: number } {
-  const stats = { hp: 0, attack: 0, defense: 0 };
+export interface EquipmentStats {
+  str: number;
+  int: number;
+  agi: number;
+  mnd: number;
+  vit: number;
+  def: number;
+  atk: number;
+  mat: number;
+  rtk: number;
+}
+
+export function calculateEquipmentStats(weapon: string, headgear: string, armor: string): EquipmentStats {
+  const stats: EquipmentStats = { str: 0, int: 0, agi: 0, mnd: 0, vit: 0, def: 0, atk: 0, mat: 0, rtk: 0 };
   
   const items = [weapon, headgear, armor];
   for (const itemId of items) {
     const item = EQUIPMENT_ITEMS[itemId];
     if (item) {
-      stats.hp += item.stats.hp || 0;
-      stats.attack += item.stats.attack || 0;
-      stats.defense += item.stats.defense || 0;
+      stats.str += item.stats.str || 0;
+      stats.int += item.stats.int || 0;
+      stats.agi += item.stats.agi || 0;
+      stats.mnd += item.stats.mnd || 0;
+      stats.vit += item.stats.vit || 0;
+      stats.def += item.stats.def || 0;
+      stats.atk += item.stats.atk || 0;
+      stats.mat += item.stats.mat || 0;
+      stats.rtk += item.stats.rtk || 0;
     }
   }
   
   return stats;
 }
 
-// Character class stats
-export const CLASS_STATS: Record<CharacterClass, { maxHealth: number; damage: number; defense: number; role: string }> = {
-  warrior: { maxHealth: 15, damage: 1, defense: 2, role: "Tank - Can block for allies" },
-  wizard: { maxHealth: 10, damage: 2, defense: 0, role: "DPS - Streak bonus damage" },
-  scout: { maxHealth: 10, damage: 2, defense: 0, role: "DPS - Streak bonus damage" },
-  herbalist: { maxHealth: 12, damage: 1, defense: 0, role: "Healer - Can heal allies" },
-  knight: { maxHealth: 16, damage: 1, defense: 3, role: "Unlockable Tank - Advanced combat techniques" },
-  paladin: { maxHealth: 16, damage: 1, defense: 2, role: "Holy Tank - Warrior + Herbalist fusion" },
-  dark_knight: { maxHealth: 14, damage: 2, defense: 1, role: "Aggressive Tank - High damage, self-sustaining" },
-  sage: { maxHealth: 11, damage: 3, defense: 0, role: "Advanced Mage - Wizard evolution" },
-  ranger: { maxHealth: 11, damage: 3, defense: 0, role: "Master Scout - Scout evolution" },
-  druid: { maxHealth: 13, damage: 1, defense: 1, role: "Nature Healer - Herbalist evolution" },
-  monk: { maxHealth: 13, damage: 2, defense: 1, role: "Balanced Fighter - All-rounder" },
+// Base job starting stats (these are NOT awarded as passive bonuses)
+export interface BaseJobStats {
+  baseHP: number;
+  str?: number;
+  int?: number;
+  agi?: number;
+  mnd?: number;
+  vit?: number;
+  role: string;
+}
+
+// Character class stats using new stat system
+export const CLASS_STATS: Record<CharacterClass, BaseJobStats> = {
+  warrior: { baseHP: 15, vit: 1, str: 1, role: "Tank - Can block for allies" },
+  wizard: { baseHP: 7, int: 2, role: "DPS - Magical damage" },
+  scout: { baseHP: 7, agi: 2, role: "DPS - Ranged damage" },
+  herbalist: { baseHP: 10, mnd: 1, role: "Healer - Can heal allies" },
+  // Advanced jobs - to be filled in later
+  knight: { baseHP: 16, vit: 2, str: 1, role: "Unlockable Tank - Advanced combat techniques" },
+  paladin: { baseHP: 16, vit: 1, str: 1, mnd: 1, role: "Holy Tank - Warrior + Herbalist fusion" },
+  dark_knight: { baseHP: 14, vit: 1, str: 1, int: 1, role: "Aggressive Tank - High damage, self-sustaining" },
+  sage: { baseHP: 11, int: 3, role: "Advanced Mage - Wizard evolution" },
+  ranger: { baseHP: 11, agi: 3, role: "Master Scout - Scout evolution" },
+  druid: { baseHP: 13, mnd: 2, role: "Nature Healer - Herbalist evolution" },
+  monk: { baseHP: 13, str: 1, agi: 1, vit: 1, role: "Balanced Fighter - All-rounder" },
+  warlock: { baseHP: 7, int: 2, role: "Curse specialist - Wizard variant" },
 };
+
+// Complete character stats (all stats combined)
+export interface CharacterStats {
+  // Base stats (from job + equipment + passives)
+  str: number;  // Strength - Adds damage to physical attacks
+  int: number;  // Intelligence - Adds MP and damage to magical attacks
+  agi: number;  // Agility - Adds damage to ranged attacks, reduces damage agro
+  mnd: number;  // Mind - Adds MP and healing to spells
+  vit: number;  // Vitality - Reduces damage by VIT/2 and adds VIT HP
+  
+  // Derived stats
+  hp: number;       // Hit Points: Job baseHP + VIT
+  maxHp: number;    // Maximum HP
+  mp: number;       // Magic Points: (INT + MND) × 3
+  maxMp: number;    // Maximum MP
+  def: number;      // Defense: Reduces damage by DEF points
+  atk: number;      // Attack: Raises melee damage by ATK points
+  mat: number;      // Magic Attack: Raises magic damage by MAT points
+  rtk: number;      // Ranged Attack: Raises ranged attack damage by RTK points
+  comboPoints: number;     // Current combo points (for Scout and cross-class users)
+  maxComboPoints: number;  // Starting Max Combo Points = AGI × 2
+}
+
+// Calculate complete character stats
+export function calculateCharacterStats(
+  characterClass: CharacterClass,
+  equipmentStats: EquipmentStats,
+  passiveBonuses: { str?: number; int?: number; agi?: number; mnd?: number; vit?: number },
+  mechanicUpgrades: { maxComboPoints?: number; potionCraftBonus?: number; hexDuration?: number; siphonHealBonus?: number } = {}
+): CharacterStats {
+  const baseJob = CLASS_STATS[characterClass];
+  
+  // Calculate base stats (job + equipment + passives)
+  const str = (baseJob.str || 0) + equipmentStats.str + (passiveBonuses.str || 0);
+  const int = (baseJob.int || 0) + equipmentStats.int + (passiveBonuses.int || 0);
+  const agi = (baseJob.agi || 0) + equipmentStats.agi + (passiveBonuses.agi || 0);
+  const mnd = (baseJob.mnd || 0) + equipmentStats.mnd + (passiveBonuses.mnd || 0);
+  const vit = (baseJob.vit || 0) + equipmentStats.vit + (passiveBonuses.vit || 0);
+  
+  // Calculate derived stats
+  const maxHp = baseJob.baseHP + vit;
+  const maxMp = (int + mnd) * 3;
+  const def = equipmentStats.def + Math.floor(vit / 2);
+  const atk = equipmentStats.atk + str;
+  const mat = equipmentStats.mat + int;
+  const rtk = equipmentStats.rtk + agi;
+  const maxComboPoints = (agi * 2) + (mechanicUpgrades.maxComboPoints || 0);
+  
+  return {
+    str,
+    int,
+    agi,
+    mnd,
+    vit,
+    hp: maxHp,  // Start at max HP
+    maxHp,
+    mp: maxMp,  // Start at max MP
+    maxMp,
+    def,
+    atk,
+    mat,
+    rtk,
+    comboPoints: 0,  // Start with 0 combo points
+    maxComboPoints,
+  };
+}
+
+// Calculate damage for different attack types
+export function calculatePhysicalDamage(atk: number, str: number): number {
+  return atk + str;
+}
+
+export function calculateMagicalDamage(mat: number, int: number): number {
+  return mat + int;
+}
+
+export function calculateRangedDamage(rtk: number, agi: number): number {
+  return rtk + agi;
+}
+
+export function calculateHybridDamage(mat: number, agi: number, mnd: number): number {
+  // For Herbalist base damage
+  return mat + agi + mnd;
+}
+
+// Calculate damage reduction
+export function calculateDamageReduction(def: number, vit: number): number {
+  return def + Math.floor(vit / 2);
+}
+
+// Calculate agro reduction from AGI
+export function calculateAgroReduction(agi: number): number {
+  return agi;
+}
