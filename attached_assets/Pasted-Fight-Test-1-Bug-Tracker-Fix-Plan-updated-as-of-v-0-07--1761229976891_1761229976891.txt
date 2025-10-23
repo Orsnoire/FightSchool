@@ -1,0 +1,41 @@
+Fight Test 1 – Bug Tracker & Fix Plan (updated as of v 0.07).
+________________________________________
+Updated from 0.06:
+-	Added new enemy types and images
+-	Fix to the player UI
+To add in 0.07:
+-	Aggro system
+📋 Bugs Reported
+B1 — Cross-class abilities not displaying at level 8 (unclear, not tested in 0.07)
+•	Severity: P2 (progression / feedback issue)
+•	Repro: When players level to 8, cross-class abilities fail to appear in the ability list or UI overlay.
+•	Expected: New cross-class abilities unlock and display automatically upon level-up.
+•	Hypotheses:
+o	Client not updating ability map after level-up event.
+o	Server not returning full merged ability list for new level tier.
+o	Missing asset mapping for cross-class ability IDs.
+•	Acceptance criteria: All level 8 unlocks show in ability bar immediately upon level-up.
+B2 — Teacher dashboard not updating with player logins and statistics (ONGOING)
+•	Severity: P1 (visibility / reporting failure) 
+•	Repro: Teacher stats and players screens stay empty as players have connected; stats not updating after fights.
+•	Expected: “Class Statistics” page and “Students” modular shows historical players and updates stats after victory.
+•	Fix: Test whether statistics are getting recorded in the database after fights, and whether the teacher ID field is getting called correctly for the statistics page and students page. When I clicked on the statistics page (and the students page) it indicated a missing class ID. Check that these pages are calling the correct user ID from their database.
+•	Acceptance criteria: Dashboard lists players after victory; stats populate automatically after victory; no missing or duplicate entries.
+B3 – Enemies not changing on consecutive mode (NEW)
+•	Severity: P0 (playability failure)
+•	Repro: Students finish off enemy 1 when there are multiple enemies in consecutive mode, but the enemy image/health bar doesn’t change, and no damage is possible on the second enemy.
+•	Expected: Once the first enemy is at <=0 health, the next enemy in the consecutive list becomes the target of player abilities and shows at the top of player screens. Also: it would be good to show a current frame in the teacher UI to indicate the current enemy.
+•	Fix: Unclear; I’m guessing there’s no handler in combat for current enemy. This is probably also a problem for the mode with multiple enemies presented at once – players will need a way to target a specific enemy and an indicator for their target. My suggestion is a rectangle outline with rounded corners.
+B4 – Players are not disconnecting correctly upon clicking “End Fight” on the teacher console. (ONGOING)
+•	Severity: P0 (core functionality failure)
+•	Repro: Host clicks “End Fight” and the users in the player side stay connected to the fight.
+•	Expected: Upon host clicking “End Fight” the users are rapidly returned to the lobby (within 5 seconds).
+•	Fix: Add a controller to the “End Fight” button that returns users to the lobby.
+B5 – Players do not have a scroll bar for the select target for blocking/healing. (ONGOING)
+•	Severity: P0 (playability failure)
+•	Repro: Student is a tank or healer, enter block/healing phase with more than 12 players connected. The window is too large for a small screen, so all players after count 12 do not show up.
+•	Expected: Tank players are able to block for any player
+•	Fix: Add a scroll bar/scroll functionality to the modular window for tanking/healing. Alternatively, add a pagination function and a flip pages button as well as a current page indicator.
+
+
+
