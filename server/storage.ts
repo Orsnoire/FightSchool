@@ -599,18 +599,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async seedDefaultEquipment(): Promise<void> {
-    // Check if system items already exist
-    const existingSystemItems = await db
-      .select()
-      .from(equipmentItems)
-      .where(eq(equipmentItems.teacherId, 'SYSTEM'));
-    
-    if (existingSystemItems.length > 0) {
-      return; // Already seeded
-    }
+    try {
+      // Check if system items already exist
+      const existingSystemItems = await db
+        .select()
+        .from(equipmentItems)
+        .where(eq(equipmentItems.teacherId, 'SYSTEM'));
+      
+      if (existingSystemItems.length > 0) {
+        return; // Already seeded
+      }
 
-    // Define default equipment items from EQUIPMENT_ITEMS constant
-    const defaultItems = [
+      // Define default equipment items from EQUIPMENT_ITEMS constant
+      const defaultItems = [
       // Basic starting gear
       { id: 'basic_sword', name: 'Basic Sword', slot: 'weapon' as const, quality: 'common' as const, itemType: 'sword' as const, attackBonus: 1, hpBonus: 0, defenseBonus: 0 },
       { id: 'basic_staff', name: 'Basic Staff', slot: 'weapon' as const, quality: 'common' as const, itemType: 'staff' as const, attackBonus: 1, hpBonus: 0, defenseBonus: 0 },
@@ -647,30 +648,43 @@ export class DatabaseStorage implements IStorage {
       defenseBonus: item.defenseBonus,
     }));
 
-    // Use a transaction to insert all items
-    await db.insert(equipmentItems).values(itemsToInsert);
+      // Use a transaction to insert all items
+      await db.insert(equipmentItems).values(itemsToInsert);
+      console.log('Default equipment items created successfully');
+    } catch (error) {
+      console.error('Failed to seed default equipment:', error);
+      // Don't throw - allow app to start even if seeding fails
+      // This prevents crash loops during deployment
+    }
   }
 
   async seedDefaultTeacher(): Promise<void> {
-    // Check if default teacher already exists
-    const existingTeacher = await this.getTeacherByEmail('teacher@test.com');
-    
-    if (existingTeacher) {
-      return; // Already seeded
-    }
+    try {
+      // Check if default teacher already exists
+      const existingTeacher = await this.getTeacherByEmail('teacher@test.com');
+      
+      if (existingTeacher) {
+        return; // Already seeded
+      }
 
-    // Create default teacher account for testing with minimal required fields
-    await this.createTeacher({
-      email: 'teacher@test.com',
-      password: 'password123',
-      firstName: 'Test',
-      lastName: 'Teacher',
-      billingAddress: '123 Test St',
-      schoolDistrict: 'Test District',
-      school: 'Test School',
-      subject: 'General',
-      gradeLevel: 'All',
-    });
+      // Create default teacher account for testing with all required fields
+      await this.createTeacher({
+        email: 'teacher@test.com',
+        password: 'password123',
+        firstName: 'Test',
+        lastName: 'Teacher',
+        billingAddress: '123 Test St',
+        schoolDistrict: 'Test District',
+        school: 'Test School',
+        subject: 'General',
+        gradeLevel: 'All',
+      });
+      console.log('Default teacher account created successfully');
+    } catch (error) {
+      console.error('Failed to seed default teacher:', error);
+      // Don't throw - allow app to start even if seeding fails
+      // This prevents crash loops during deployment
+    }
   }
 }
 

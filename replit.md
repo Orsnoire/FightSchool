@@ -72,3 +72,40 @@ Preferred communication style: Simple, everyday language.
 
 ### Asset Management
 - Pre-generated character sprites are located in `/attached_assets/generated_images/` for different classes and genders.
+
+## Deployment & Database Management
+
+### Database Schema Synchronization
+**CRITICAL**: Before deploying or publishing the application, ensure the database schema is synchronized with the code:
+
+1. **Push Schema to Database**: Run `npm run db:push` to synchronize the Drizzle schema with the production database
+   - If data-loss warnings occur, use `npm run db:push --force` to force the push
+   - This command updates the database structure to match `shared/schema.ts`
+
+2. **Required Teacher Fields**: The teachers table requires all of the following fields:
+   - `firstName`, `lastName`: Basic teacher information
+   - `email`, `password`: Authentication credentials
+   - `guildCode`: Auto-generated unique code for organizing students
+   - `billingAddress`, `schoolDistrict`, `school`, `subject`, `gradeLevel`: School information
+   
+3. **Seed Data**: The application automatically seeds default data on startup:
+   - Default equipment items (teacherId: 'SYSTEM')
+   - Default teacher account (email: teacher@test.com, password: password123)
+   - Both seed functions include error handling to prevent crash loops if seeding fails
+
+### Deployment Checklist
+Before publishing the application:
+1. ✅ Run `npm run db:push` to sync database schema
+2. ✅ Verify all environment variables are set (DATABASE_URL, etc.)
+3. ✅ Test the application locally with production database
+4. ✅ Ensure seed functions complete successfully (check logs for "Default equipment items and teacher account seeded")
+5. ✅ Verify the default teacher account can log in
+
+### Common Deployment Issues
+**Issue**: "Application trying to insert null values for required fields"
+- **Cause**: Database schema not synchronized with code
+- **Fix**: Run `npm run db:push --force` to update the production database schema
+
+**Issue**: Application crash loop during startup
+- **Cause**: Seed functions failing due to schema mismatch
+- **Fix**: The seed functions now have error handling and won't crash the app. Check logs for specific error messages and sync the database schema.
