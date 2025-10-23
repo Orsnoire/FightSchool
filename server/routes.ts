@@ -797,6 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       player.questionsAnswered += 1;
 
       const isCorrect = player.currentAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
+      log(`[Combat] Player ${player.characterName} answered "${player.currentAnswer}" vs correct "${question.correctAnswer}" - ${isCorrect ? "CORRECT" : "INCORRECT"}`, "combat");
 
       if (isCorrect) {
         // Track correct answer (in memory)
@@ -1337,20 +1338,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const updatedSession = await storage.getCombatSession(sessionId);
           broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
           log(`[WebSocket] Student ${student.nickname} successfully joined session ${sessionId}`, "websocket");
-        } else if (message.type === "start_fight" && ws.isHost && ws.sessionId) {
-          log(`[WebSocket] Host initiating fight start for session ${ws.sessionId}`, "websocket");
-          const session = await storage.getCombatSession(ws.sessionId);
+        } else if (message.type === "start_fight" && ws.isHost) {
+          // Accept sessionId from either WebSocket object or message payload
+          const sessionId = ws.sessionId || message.sessionId;
+          if (!sessionId) {
+            log(`[WebSocket] Cannot start fight - no sessionId provided`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "No sessionId provided" }));
+            return;
+          }
+          
+          log(`[WebSocket] Host initiating fight start for session ${sessionId}`, "websocket");
+          const session = await storage.getCombatSession(sessionId);
           if (!session) {
-            log(`[WebSocket] Cannot start fight - no session found for ${ws.sessionId}`, "websocket");
+            log(`[WebSocket] Cannot start fight - no session found for ${sessionId}`, "websocket");
             ws.send(JSON.stringify({ type: "error", message: "No active session found" }));
             return;
           }
           if (session.currentPhase !== "waiting") {
-            log(`[WebSocket] Session ${ws.sessionId} already started (phase: ${session.currentPhase})`, "websocket");
+            log(`[WebSocket] Session ${sessionId} already started (phase: ${session.currentPhase})`, "websocket");
             return;
           }
-          await startQuestion(ws.sessionId);
-          log(`[WebSocket] Session ${ws.sessionId} started successfully`, "websocket");
+          await startQuestion(sessionId);
+          log(`[WebSocket] Session ${sessionId} started successfully`, "websocket");
         } else if (message.type === "end_fight" && ws.isHost && ws.sessionId) {
           // Clear any active timers
           const timer = combatTimers.get(ws.sessionId);
@@ -1409,6 +1418,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Reset inactivity timer on player action
           resetInactivityTimer(ws.sessionId);
+          
+          log(`[WebSocket] Student ${ws.studentId} submitted answer: "${message.answer}"`, "websocket");
           
           await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             currentAnswer: message.answer,
