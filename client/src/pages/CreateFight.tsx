@@ -20,6 +20,26 @@ import { insertFightSchema, type InsertFight, type Question, type Enemy, type Lo
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
 import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
 import wizardImg from "@assets/generated_images/Dark_wizard_enemy_illustration_a897a309.png";
+import spiderImg from "@assets/generated_images/Giant_spider_RPG_enemy_b9948cc9.png";
+import batImg from "@assets/generated_images/Vampire_bat_RPG_enemy_434d2140.png";
+import ratImg from "@assets/generated_images/Plague_rat_RPG_enemy_1f15cd5e.png";
+import ghostImg from "@assets/generated_images/Ghost_RPG_enemy_6ed440bf.png";
+import zombieImg from "@assets/generated_images/Zombie_RPG_enemy_fd15b6dd.png";
+import skeletonWarriorImg from "@assets/generated_images/Skeleton_warrior_RPG_enemy_ab3d69f2.png";
+import skeletonMageImg from "@assets/generated_images/Skeleton_mage_RPG_enemy_b8e4e1b3.png";
+import ghostWizardImg from "@assets/generated_images/Ghost_wizard_RPG_enemy_8ba6ece7.png";
+import jackOLanternImg from "@assets/generated_images/Jack-o-lantern_RPG_enemy_b82c40f0.png";
+import scarecrowImg from "@assets/generated_images/Scarecrow_pumpkin_head_RPG_4daac721.png";
+import samhainImg from "@assets/generated_images/Samhain_lord_RPG_boss_1875c391.png";
+import vampireImg from "@assets/generated_images/Vampire_RPG_enemy_b9b1629c.png";
+import wraithImg from "@assets/generated_images/Wraith_RPG_enemy_d768c073.png";
+import bansheeImg from "@assets/generated_images/Banshee_RPG_enemy_f5abf8e7.png";
+import necromancerImg from "@assets/generated_images/Necromancer_RPG_enemy_0104df7f.png";
+import lichImg from "@assets/generated_images/Lich_RPG_boss_enemy_e9dfa246.png";
+import mummyImg from "@assets/generated_images/Mummy_RPG_enemy_789d75d9.png";
+import headlessHorsemanImg from "@assets/generated_images/Headless_horseman_RPG_boss_398e4f17.png";
+import werewolfImg from "@assets/generated_images/Werewolf_RPG_enemy_576e9732.png";
+import goblinSwarmImg from "@assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png";
 import Papa from "papaparse";
 
 export default function CreateFight() {
@@ -654,11 +674,31 @@ export default function CreateFight() {
 
                     <div>
                       <label className="text-sm font-medium">Enemy Image</label>
-                      <div className="grid grid-cols-3 gap-4 mt-2">
+                      <div className="grid grid-cols-5 gap-3 mt-2 max-h-96 overflow-y-auto pr-2">
                         {[
-                          { id: "dragon", img: dragonImg, name: "Dragon" },
+                          { id: "spider", img: spiderImg, name: "Giant Spider" },
+                          { id: "bat", img: batImg, name: "Vampire Bat" },
+                          { id: "rat", img: ratImg, name: "Plague Rat" },
                           { id: "goblin", img: goblinImg, name: "Goblin Horde" },
+                          { id: "goblin-swarm", img: goblinSwarmImg, name: "Goblin Swarm" },
+                          { id: "dragon", img: dragonImg, name: "Dragon" },
                           { id: "wizard", img: wizardImg, name: "Dark Wizard" },
+                          { id: "ghost", img: ghostImg, name: "Ghost" },
+                          { id: "zombie", img: zombieImg, name: "Zombie" },
+                          { id: "skeleton-warrior", img: skeletonWarriorImg, name: "Skeleton Warrior" },
+                          { id: "skeleton-mage", img: skeletonMageImg, name: "Skeleton Mage" },
+                          { id: "ghost-wizard", img: ghostWizardImg, name: "Ghost Wizard" },
+                          { id: "necromancer", img: necromancerImg, name: "Necromancer" },
+                          { id: "lich", img: lichImg, name: "Lich" },
+                          { id: "werewolf", img: werewolfImg, name: "Werewolf" },
+                          { id: "vampire", img: vampireImg, name: "Vampire" },
+                          { id: "mummy", img: mummyImg, name: "Mummy" },
+                          { id: "wraith", img: wraithImg, name: "Wraith" },
+                          { id: "banshee", img: bansheeImg, name: "Banshee" },
+                          { id: "jack-o-lantern", img: jackOLanternImg, name: "Jack-o-Lantern" },
+                          { id: "scarecrow", img: scarecrowImg, name: "Scarecrow" },
+                          { id: "headless-horseman", img: headlessHorsemanImg, name: "Headless Horseman" },
+                          { id: "samhain", img: samhainImg, name: "Samhain" },
                         ].map((enemy) => (
                           <button
                             key={enemy.id}
@@ -669,8 +709,8 @@ export default function CreateFight() {
                             }`}
                             data-testid={`button-select-${enemy.id}`}
                           >
-                            <img src={enemy.img} alt={enemy.name} className="w-full h-24 object-cover rounded" />
-                            <p className="text-xs mt-1">{enemy.name}</p>
+                            <img src={enemy.img} alt={enemy.name} className="w-full h-20 object-cover rounded" />
+                            <p className="text-xs mt-1 truncate">{enemy.name}</p>
                           </button>
                         ))}
                       </div>
