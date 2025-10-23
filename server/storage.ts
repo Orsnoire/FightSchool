@@ -381,6 +381,7 @@ export class DatabaseStorage implements IStorage {
       healingDone: 0,
       damageTaken: 0,
       deaths: 0,
+      lastActionDamage: 0, // Track last damage dealt for UI display
       threat: 1, // Default threat level for enemy AI targeting
     };
 

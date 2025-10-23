@@ -309,6 +309,7 @@ export interface PlayerState {
   healingDone: number;
   damageTaken: number;
   deaths: number;
+  lastActionDamage: number; // Damage dealt in the most recent action (for UI display)
   
   // Enemy AI targeting
   threat: number; // Enemy targeting priority (default 1)

@@ -886,6 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Track damage dealt (in memory)
             player.damageDealt += damage;
+            player.lastActionDamage = damage; // Track for UI display
             
             // AGGRO SYSTEM: Add threat based on damage dealt
             // Tank classes (warrior, knight, paladin, dark_knight) gain +3 aggro per damage
@@ -906,6 +907,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Reset ability states on wrong answer (in memory)
         player.comboPoints = 0; // Reset scout combo points to 0
         player.streakCounter = 0; // Reset for backward compat
+        player.lastActionDamage = 0; // No damage dealt on wrong answer
         
         // Reset wizard fireball charge and decrement cooldown (in memory)
         if (player.characterClass === "wizard") {

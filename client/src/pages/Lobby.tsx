@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, BASE_CLASSES } from "@shared/schema";
-import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw } from "lucide-react";
+import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { getTotalPassiveBonuses } from "@shared/jobSystem";
+import { getTotalPassiveBonuses, getTotalMechanicUpgrades } from "@shared/jobSystem";
+import { calculateCharacterStats } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 
 const RARITY_COLORS = {
@@ -276,7 +277,7 @@ export default function Lobby() {
                   // Convert job levels array to map
                   const jobLevelMap: Record<CharacterClass, number> = {
                     warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                    knight: 0, paladin: 0, dark_knight: 0, sage: 0, ranger: 0, druid: 0, monk: 0,
+                    knight: 0, paladin: 0, dark_knight: 0, sage: 0, ranger: 0, druid: 0, monk: 0, warlock: 0,
                   };
                   
                   jobLevels.forEach(jl => {
@@ -300,22 +301,110 @@ export default function Lobby() {
                         </div>
                       </div>
                       
-                      <div className="space-y-2">
-                        <div className="text-sm font-semibold text-muted-foreground">Passive Bonuses</div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="p-2 bg-muted rounded">
-                            <div className="text-xs text-muted-foreground">HP</div>
-                            <div className="font-bold text-health">+{passiveBonuses.hp || 0}</div>
-                          </div>
-                          <div className="p-2 bg-muted rounded">
-                            <div className="text-xs text-muted-foreground">ATK</div>
-                            <div className="font-bold text-damage">+{passiveBonuses.attack || 0}</div>
-                          </div>
-                          <div className="p-2 bg-muted rounded">
-                            <div className="text-xs text-muted-foreground">DEF</div>
-                            <div className="font-bold text-primary">+{passiveBonuses.defense || 0}</div>
-                          </div>
-                        </div>
+                      <div className="space-y-3">
+                        <div className="text-sm font-semibold text-muted-foreground">Character Stats</div>
+                        {(() => {
+                          // Calculate complete stats
+                          const equipmentStats = {
+                            str: 0, int: 0, agi: 0, mnd: 0, vit: 0,
+                            def: 0, atk: 0, mat: 0, rtk: 0
+                          };
+                          
+                          // Add equipped item bonuses (using old database fields for now)
+                          // TODO: Migrate equipment database to use new stat system
+                          equippedItems.forEach(item => {
+                            // Convert old bonuses to new stats temporarily
+                            // hpBonus → vit, attackBonus → atk, defenseBonus → def
+                            equipmentStats.vit += Math.floor((item.hpBonus || 0) / 5); // HP = VIT × 5
+                            equipmentStats.atk += item.attackBonus || 0;
+                            equipmentStats.def += item.defenseBonus || 0;
+                          });
+                          
+                          const mechanicUpgrades = getTotalMechanicUpgrades(jobLevelMap);
+                          const stats = calculateCharacterStats(student.characterClass, equipmentStats, passiveBonuses, mechanicUpgrades);
+                          
+                          return (
+                            <>
+                              {/* Primary Stats */}
+                              <div className="grid grid-cols-5 gap-2 text-center">
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground">STR</div>
+                                  <div className="font-bold text-damage">{stats.str}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground">INT</div>
+                                  <div className="font-bold text-primary">{stats.int}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground">AGI</div>
+                                  <div className="font-bold text-mana">{stats.agi}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground">MND</div>
+                                  <div className="font-bold text-healing">{stats.mnd}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground">VIT</div>
+                                  <div className="font-bold text-health">{stats.vit}</div>
+                                </div>
+                              </div>
+                              
+                              {/* Derived Combat Stats */}
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                                    <Heart className="h-3 w-3" />
+                                    HP
+                                  </div>
+                                  <div className="font-bold text-health">{stats.hp}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                                    <Zap className="h-3 w-3" />
+                                    MP
+                                  </div>
+                                  <div className="font-bold text-mana">{stats.mp}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                                    <Shield className="h-3 w-3" />
+                                    DEF
+                                  </div>
+                                  <div className="font-bold text-primary">{stats.def}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                                    <Sword className="h-3 w-3" />
+                                    ATK
+                                  </div>
+                                  <div className="font-bold text-damage">{stats.atk}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                                    <Sparkles className="h-3 w-3" />
+                                    MAT
+                                  </div>
+                                  <div className="font-bold text-primary">{stats.mat}</div>
+                                </div>
+                                <div className="p-2 bg-muted rounded">
+                                  <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                                    <Crosshair className="h-3 w-3" />
+                                    RTK
+                                  </div>
+                                  <div className="font-bold text-mana">{stats.rtk}</div>
+                                </div>
+                              </div>
+                              
+                              {/* Max Combo Points if applicable */}
+                              {stats.maxComboPoints > 0 && (
+                                <div className="p-2 bg-muted rounded text-center">
+                                  <div className="text-xs text-muted-foreground">Max Combo Points</div>
+                                  <div className="font-bold text-primary">{stats.maxComboPoints}</div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       
                       {jobLevels.length > 1 && (

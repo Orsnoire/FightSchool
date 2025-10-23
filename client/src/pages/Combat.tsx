@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
+import { MPBar } from "@/components/MPBar";
+import { ComboPoints } from "@/components/ComboPoints";
 import { VictoryModal } from "@/components/VictoryModal";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw } from "lucide-react";
@@ -223,15 +225,13 @@ export default function Combat() {
     
     // Check if we just transitioned FROM question phase TO another phase
     if (previousPhase === "question" && currentPhase !== "question" && lastAnsweredCorrectly !== null) {
-      // Show damage feedback toast
+      // Show feedback toast
       if (lastAnsweredCorrectly) {
-        // Player was correct - show damage dealt
-        const baseDamage = playerState?.characterClass === "wizard" ? 3 : 
-                          playerState?.characterClass === "scout" ? 2 : 
-                          playerState?.characterClass === "herbalist" ? 1 : 2; // warrior
+        // Player was correct - show actual damage dealt from stat calculations
+        const damageDealt = playerState?.lastActionDamage || 0;
         toast({
           title: "Correct Answer!",
-          description: `You dealt ${baseDamage}+ damage to the enemy`,
+          description: damageDealt > 0 ? `You dealt ${damageDealt} damage!` : "You damaged the enemy!",
           duration: 2500,
         });
       } else {
@@ -808,7 +808,7 @@ export default function Combat() {
             <div style={{ width: '48px', height: '48px' }}>
               <PlayerAvatar characterClass={playerState.characterClass} gender={playerState.gender} size="md" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-semibold truncate" data-testid="text-player-nickname">{playerState.nickname}</span>
                 <div className="flex gap-2 text-xs">
@@ -825,14 +825,21 @@ export default function Combat() {
                       )}
                     </>
                   )}
-                  {playerState.characterClass === "scout" && (
-                    <span className="text-scout font-semibold whitespace-nowrap" data-testid="text-streak">
-                      ⚡ {playerState.streakCounter}/3
-                    </span>
-                  )}
                 </div>
               </div>
+              
+              {/* Combo Points (displayed above bars for scouts and anyone with combo points) */}
+              {playerState.maxComboPoints > 0 && (
+                <ComboPoints current={playerState.comboPoints} max={playerState.maxComboPoints} />
+              )}
+              
+              {/* Health Bar */}
               <HealthBar current={playerState.health} max={playerState.maxHealth} />
+              
+              {/* MP Bar (displayed for wizards and anyone with max MP > 0) */}
+              {playerState.maxMp > 0 && (
+                <MPBar current={playerState.mp} max={playerState.maxMp} />
+              )}
             </div>
           </div>
         </div>
