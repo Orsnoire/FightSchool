@@ -1,0 +1,43 @@
+Fight Test 1 – Bug Tracker & Fix Plan (updated as of v 0.08).
+________________________________________
+Updated from 0.07:
+-	Aggro system
+📋 Bugs Reported
+B1 — Cross-class abilities not displaying at level 8 (unclear, not tested in 0.07)
+•	Severity: P2 (progression / feedback issue)
+•	Repro: When players level to 8, cross-class abilities fail to appear in the ability list or UI overlay.
+•	Expected: New cross-class abilities unlock and display automatically upon level-up.
+•	Hypotheses:
+o	Client not updating ability map after level-up event.
+o	Server not returning full merged ability list for new level tier.
+o	Missing asset mapping for cross-class ability IDs.
+•	Acceptance criteria: All level 8 unlocks show in ability bar immediately upon level-up.
+B2 — Teacher dashboard not updating with player logins and statistics (ONGOING) *updated for 0.08* Statistics are showing, but players are not.
+•	Severity: P1 (visibility / reporting failure) 
+•	Repro: Players screen stays empty as players have connected
+•	Expected: “Students” modular shows historical players and updates stats after victory.
+•	Fix: Propose to eliminate the “Students” screen, as I’m not sure it will serve a purpose.
+•	Acceptance criteria: Dashboard lists players after victory; stats populate automatically after victory; no missing or duplicate entries.
+B3 – Enemies not changing on consecutive mode (FIXED)
+B4 – Players are not disconnecting correctly upon clicking “End Fight” on the teacher console. (FIXED)
+B5 – Players do not have a scroll bar for the select target for blocking/healing. (FIXED)
+B6 – Host is freezing/stopping after a few rounds of combat (NEW)
+•	Severity: P0
+•	Repro: After starting a fight, the host screen stops updating after 3-4 rounds of combat. Could be an internet instability issue on my end. Will test on other connections.
+•	Expected: Host screen continues to stay connected and updating even with 10+ minutes of sustained combat.
+•	Fix: Propose to give a refresh button at the top of the players widget, that will not refresh the page, and keep websockets as they are, and not ask for a new websocket/sessionID, but will merely reconnect to the session in progress.
+•	Acceptance criteria: Fights are able to be refreshed and to see the current status of the fight.
+B7 – Students are losing the ability to answer questions or have their client respond (lag out) (NEW)
+•	Severity: P1 (normally would be P0, but can be resolved by a client webpage refresh)
+•	Repro: After a few rounds of combat (3-4), student screens begin to lag.
+•	Expected: Client screens are able to refresh and keep up with the current phase of combat.
+•	Fix: Propose to have a background refresh of variables after each round of combat for each client. The program should be tracked server-side anyway, I’m not sure whether either the students or hosts should need to keep track of variables.
+•	Acceptance criteria: Students can stay at the current phase of combat throughout the full fight.
+B8 – Students are occasionally finding questions that make the question window cut off their ability checkmarks. (NEW)
+•	Severity: P1
+•	Repro: A question that exceeds the screen real estate doesn’t show the full question window
+•	Expected: Window is fully viewable (either by resizing or a scroll bar) to see the question and any ability checks.
+•	Fix: Add a scroll bar to question windows that exceed screen real estate.
+
+
+
