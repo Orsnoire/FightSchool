@@ -38,9 +38,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Seed default equipment items on server startup
+  // Seed default data on server startup
   await storage.seedDefaultEquipment();
-  log("Default equipment items seeded");
+  await storage.seedDefaultTeacher();
+  log("Default equipment items and teacher account seeded");
 
   const server = await registerRoutes(app);
 

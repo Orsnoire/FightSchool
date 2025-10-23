@@ -75,6 +75,7 @@ export interface IStorage {
   updateEquipmentItem(id: string, updates: Partial<EquipmentItemDb>): Promise<EquipmentItemDb | undefined>;
   deleteEquipmentItem(id: string): Promise<boolean>;
   seedDefaultEquipment(): Promise<void>;
+  seedDefaultTeacher(): Promise<void>;
 }
 
 // Integration: blueprint:javascript_database
@@ -645,6 +646,21 @@ export class DatabaseStorage implements IStorage {
 
     // Use a transaction to insert all items
     await db.insert(equipmentItems).values(itemsToInsert);
+  }
+
+  async seedDefaultTeacher(): Promise<void> {
+    // Check if default teacher already exists
+    const existingTeacher = await this.getTeacherByEmail('teacher@test.com');
+    
+    if (existingTeacher) {
+      return; // Already seeded
+    }
+
+    // Create default teacher account for testing
+    await this.createTeacher({
+      email: 'teacher@test.com',
+      password: 'password123',
+    });
   }
 }
 
