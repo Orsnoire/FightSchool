@@ -745,6 +745,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Use up a potion (in memory)
           player.potionCount -= 1;
           player.healingDone += healAmount;
+          
+          // AGGRO SYSTEM: Healing gains +2 aggro per healing point
+          player.threat += healAmount * 2;
         }
       }
     }
@@ -859,18 +862,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          if (session.enemies.length > 0) {
+          if (session.enemies.length > 0 && damage > 0) {
             // Update enemy health in memory
             const enemy = session.enemies[0];
             enemy.health = Math.max(0, enemy.health - damage);
             
             // Track damage dealt (in memory)
             player.damageDealt += damage;
+            
+            // AGGRO SYSTEM: Add threat based on damage dealt
+            // Tank classes (warrior, knight, paladin, dark_knight) gain +3 aggro per damage
+            // All other classes gain +1 aggro per damage
+            const tankClasses = ["warrior", "knight", "paladin", "dark_knight"];
+            const isTank = tankClasses.includes(player.characterClass);
+            const aggroPerDamage = isTank ? 3 : 1;
+            player.threat += damage * aggroPerDamage;
           }
         }
       } else {
         // Wrong answer - track incorrect answer (in memory)
         player.questionsIncorrect += 1;
+        
+        // AGGRO SYSTEM: Wrong answer reduces threat by 3
+        player.threat = Math.max(0, player.threat - 3);
         
         // Reset ability states on wrong answer (in memory)
         player.streakCounter = 0; // Reset scout streak
@@ -884,11 +898,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Wrong answer - take damage (unless blocked by alive warrior)
+        // Wrong answer - take damage (unless blocked by alive tank)
         let blocked = false;
-        for (const [, blocker] of Object.entries(session.players)) {
-          if (blocker.blockTarget === playerId && blocker.characterClass === "warrior" && !blocker.isDead) {
+        let blockerPlayer = null;
+        for (const [blockerId, blocker] of Object.entries(session.players)) {
+          const tankClasses = ["warrior", "knight", "paladin", "dark_knight"];
+          if (blocker.blockTarget === playerId && tankClasses.includes(blocker.characterClass) && !blocker.isDead) {
             blocked = true;
+            blockerPlayer = blocker;
             break;
           }
         }
@@ -906,10 +923,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (wasAlive && nowDead) {
             player.deaths += 1;
           }
+        } else if (blockerPlayer) {
+          // AGGRO SYSTEM: Tank who successfully blocks gains +1 aggro per damage point blocked
+          const damageAmount = fight.baseEnemyDamage || 1;
+          blockerPlayer.damageBlocked += damageAmount;
+          blockerPlayer.threat += damageAmount; // +1 aggro per damage blocked
         }
       }
     }
 
+    // Handle consecutive enemy mode: remove defeated enemies
+    if (fight.enemyDisplayMode === "consecutive" && session.enemies.length > 0) {
+      if (session.enemies[0].health <= 0) {
+        // Current enemy is dead, remove it
+        session.enemies.shift();
+        
+        // Broadcast enemy defeat if there are more enemies
+        if (session.enemies.length > 0) {
+          broadcastToCombat(sessionId, { 
+            type: "phase_change", 
+            phase: `Enemy defeated! Next enemy: ${session.enemies[0].name}` 
+          });
+        }
+      }
+    }
+    
     // Save ALL changes at once (enemies + all player states) - HUGE performance improvement
     await storage.updateCombatSession(sessionId, { 
       enemies: session.enemies,
@@ -958,16 +996,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (targetId) {
         const target = session.players[targetId];
         const damageAmount = (fight.baseEnemyDamage || 1) + 1;
-        const newHealth = Math.max(0, target.health - damageAmount);
-        const wasAlive = !target.isDead;
-        const nowDead = newHealth === 0;
         
-        // Update player state in memory
-        target.health = newHealth;
-        target.isDead = nowDead;
-        target.damageTaken += damageAmount;
-        if (wasAlive && nowDead) {
-          target.deaths += 1;
+        // Check if target is being blocked by an alive tank
+        let blocked = false;
+        let blockerPlayer = null;
+        for (const [blockerId, blocker] of Object.entries(session.players)) {
+          const tankClasses = ["warrior", "knight", "paladin", "dark_knight"];
+          if (blocker.blockTarget === targetId && tankClasses.includes(blocker.characterClass) && !blocker.isDead) {
+            blocked = true;
+            blockerPlayer = blocker;
+            break;
+          }
+        }
+        
+        if (!blocked) {
+          // No block - damage the target normally
+          const newHealth = Math.max(0, target.health - damageAmount);
+          const wasAlive = !target.isDead;
+          const nowDead = newHealth === 0;
+          
+          // Update player state in memory
+          target.health = newHealth;
+          target.isDead = nowDead;
+          target.damageTaken += damageAmount;
+          if (wasAlive && nowDead) {
+            target.deaths += 1;
+          }
+        } else if (blockerPlayer) {
+          // Blocked! Tank absorbs damage and gains aggro
+          blockerPlayer.damageBlocked += damageAmount;
+          // AGGRO SYSTEM: Tank who successfully blocks gains +1 aggro per damage point blocked
+          blockerPlayer.threat += damageAmount;
         }
       }
     }
@@ -1262,10 +1321,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: "Fight ended by teacher",
           });
           
+          // Also send explicit disconnect message to ensure players return to lobby
+          broadcastToCombat(ws.sessionId, {
+            type: "force_disconnect",
+            message: "Returning to lobby...",
+          });
+          
           // Update combat session to game_over phase
           await storage.updateCombatSession(ws.sessionId, { currentPhase: "game_over" });
           
-          // Clean up after teacher ends fight
+          // Clean up after teacher ends fight (giving time for messages to be received)
           const sessionIdToClose = ws.sessionId;
           setTimeout(async () => {
             try {
@@ -1273,7 +1338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } catch (error) {
               log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
             }
-          }, 2000);
+          }, 3000);
           
           log(`[WebSocket] Session ${ws.sessionId} ended by teacher`, "websocket");
         } else if (message.type === "answer" && ws.studentId && ws.sessionId) {
