@@ -1,0 +1,116 @@
+Statistics Redesign:
+-	These are the current statistics: ATK, HP and DEF
+-	From now on, those statistics are defunct.
+-	As part of the statistics refactoring, I would want the current character display to display all current stat values (including adjustments from gear), and all of the current build’s active and passive abilities.
+-	As part of the refactoring, I think the cleanest way is to have the current class pull from the database based on the passives unlocked by their current progress, rather than save up bonuses from levels and save them onto the character database.
+-	(in my opinion) the character database for a given player should have only the levels achieved for each available job, and whether that player has looted each loot item.
+New statistics:
+-	STR: Strength. Adds damage to physical attacks
+-	INT: Intelligence. Adds MP and damage to magical attacks
+-	AGI: Agility. Adds damage to ranged attacks. Reduces damage agro by AGI.
+-	MND: Mind. Adds MP and healing to spells, and healing damage to attacks
+-	VIT: Vitality. Reduces damage by VIT/2 points and adds VIT HP to starting HP.
+-	HP: Hit Points. Job starting HP + VIT.
+-	MP: Magic Points. (INT + MND)x3
+-	DEF: Defense. Reduces damage by DEF points.
+-	ATK: Attack. Raises melee damage by ATK points.
+-	MAT: Magic Attack. Raises magic damage by MAT points.
+-	RTK: Ranged Attack. Raises ranged attack damage by RTK points.
+-	Combo Points: Only visible on a class that uses combo points. Starting Max Combo Points = AGI*2. It shows up as a different resource under the HP (empty circles when not stored, and add 1 for each round damage is dealt).
+Base job beginning stats (THESE ARE NOT TO BE AWARDED AS PASSIVE STAT BONUSES):
+-	Warrior: HP 15 VIT 1 STR 1
+-	Wizard: HP 7 INT 2
+-	Scout: HP 7 AGI 2
+-	Herbalist: HP 10 MND 1
+
+Original Job Refactoring:
+Warrior (starting) Base dmg: (ATK + STR)
+•	Lvl 1 – Block
+•	Lvl 2 – +1 VIT
+•	Lvl 3 – +1 STR
+•	Lvl 4 – Shield Bash
+•	Lvl 5 – +1 VIT
+•	Lvl 6 – +1 STR
+•	Lvl 7 – +1 VIT
+•	Lvl 8 – Block(Cross-Class)
+•	Lvl 9 – +1 STR
+•	Lvl 10 – Provoke
+•	Lvl 11 – +1 VIT
+•	Lvl 12 – Crushing Blow
+•	Lvl 13 – +1 STR
+•	Lvl 14 – +1 VIT
+•	Lvl 15 – Unbreakable (Cross Class)
+Block: Prevents VIT/2 damage to targeted player this turn.
+Shield Bash: Deals VIT/2 melee damage to enemy upon a successful block. CD 2.
+Provoke: CD 2. Gain current top agro + 1. Direct all damage from missed answers this round to the provoking warrior.
+Crushing Blow: Deals (ATK+STR) melee damage to target. +1 threat from all current enemies.
+Unbreakable: Warrior blocks all damage for the remainder of the round. 1 use per fight. Shield bash can activate on damage blocked in this way.
+Wizard (starting) Base dmg: (MAT + INT)
+•	Lvl 1 – Fireball
+•	Lvl 2 - +1 INT
+•	Lvl 3 - +1 VIT
+•	Lvl 4 – Frost Bolt
+•	Lvl 5 - +1 INT
+•	Lvl 6 - +1 VIT
+•	Lvl 7 - +1 INT
+•	Lvl 8 – Fireball (Cross Class)
+•	Lvl 9 - +1 INT
+•	Lvl 10 – Manashield
+•	Lvl 11 - +1 INT
+•	Lvl 12 – (New) Fireblast
+•	Lvl 13 - +1 INT
+•	Lvl 14 - +1 INT
+•	Lvl 15 – Manabomb(Cross Class)
+Fireball: Deals INT*3 damage to current target. Active. Costs 1 MP.
+Frost Bolt: Can be cast during phase 2 for additional damage that round. Only usable when fireball hasn’t been cast yet this round. Deals an additional  INT*1 ice damage this round. Costs 1 MP.
+Manashield: Active. CD 3. Reduce the next INT damage you would otherwise take. (development note: player should have a buff icon show on ONLY their avatar – buffs shouldn’t show on the avatars displayed for other characters).
+Fireblast: Deals INT*(MP spent)*3 fire damage. Active. Costs all remaining MP. 
+Manabomb: Once per encounter. Phase 2 cast. Deal INT*2 Arcane damage to all current enemies.
+Scout (starting) Base dmg: (RTK + AGI)
+•	Lvl 1 – Headshot
+•	Lvl 2 - +1 AGI
+•	Lvl 3 - +1 VIT
+•	Lvl 4 – Aim
+•	Lvl 5 - +1 AGI
+•	Lvl 6 - +1 VIT
+•	Lvl 7 - +1 Combo Point (only for classes that use them)
+•	Lvl 8 – Headshot (Cross Class) (unlocks combo points for jobs with Headshot equipped)
+•	Lvl 9 - +1 AGI
+•	Lvl 10 - Mark
+•	Lvl 11 - +1 Combo Point (only for classes that use them)
+•	Lvl 12 – Dodge.
+•	Lvl 13 – +1 AGI
+•	Lvl 14 - +1 AGI
+•	Lvl 15 – Killshot (Cross Class) (also unlocks combo points if equipped)
+Headshot: Check box lights up when combo points reach 3. Deals RTK*(Combo Points)*AGI ranged damage. Costs 3 combo points
+Aim: Check box lights up if scout has at least 1 combo point available. Deals (RTK+AGI)*2 DMG to current target. Costs 1 combo point.
+Mark: Check box lights up if scout has at least 2 combo points available. Causes marked enemy to take 200% damage from all sources for the current turn. Costs 2 combo points. Used in phase 1 after answering but before the end of the phase.
+Dodge: Useable in phase 2 if the scout got an answer wrong. CD 3. Avoids the damage Scout would have taken this round from answering incorrectly.
+Killshot: Once per encounter. Deals RTK*AGI*2 ranged damage. For  each 5% of enemy HP below 45%, adds +10% chance to instantly kill the target.
+Herbalist (starting) Basic dmg: (MAT + AGI + MND) dmg.
+•	Lvl 1 – Healing Potion/Craft Healing Potion
+•	Lvl 2 – VIT +1
+•	Lvl 3 – MND +1
+•	Lvl 4 – Craft Healing Potion
+•	Lvl 5 – MND +1
+•	Lvl 6 – Potions when crafting +1
+•	Lvl 7 – VIT +1
+•	Lvl 8 – Healing Potion/Craft Healing Potion (Cross Class unlock)
+•	Lvl 9 – MND +1            
+•	Lvl 10 – Craft Shield Potion
+•	Lvl 11 – Potions when crafting +1
+•	Lvl 12 – Potion Diffuser
+•	Lvl 13 – MND +1
+•	Lvl 14 – VIT +1
+•	Lvl 15 – Life Potion (Cross Class)
+Healing Potion: Phase 1 action; player must choose to heal rather than damage. Heals MND+1 HP. Target selected in phase 2.
+Craft Healing Potion: Phase 1 action. You can craft Healing Potions (carry 5 by default 5 max). You cannot craft a potion on the turn you choose to heal rather than damage.
+Craft Shield Potion: Phase 1 action. You can craft Shield Potions (carry 0 default up to 3 max). 
+Shield Potion: Phase 1 action. Blocks the next MND damage that the target would have taken. Costs 1 Shield Potion.
+Life Potion: Phase 2 instant. Revive all KO'd allies (return each KOed player to MND HP). Cross-class unlock
+
+Expanded Job Leveling Design Overview (Levels 1–15)
+Each job gains abilities at key milestones and stat improvements in between. Every class has 4 total abilities (Level 1, 4, 10, 12, 15) and 6 total stat upgrades spread across the non-ability levels. Levels 8 and the five remaining levels modify or enhance existing abilities.
+Job level requirements are listed next to the job name.
+New mechanic: upon the first time a player enters the lobby after the job requirements are met, that job will show up in a modular window with a toast and shiny graphic animation behind the new job. 
+New lobby load logic: Check all current job levels. Check level requirements for advanced jobs. If advanced job requirements are met, employ the new mechanic.
