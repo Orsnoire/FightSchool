@@ -32,7 +32,7 @@ export default function Login() {
         const teacher = await response.json();
         localStorage.setItem("teacherId", teacher.id);
         localStorage.setItem("teacherEmail", teacher.email);
-        localStorage.setItem("teacherClassCode", teacherClassCode || "");
+        localStorage.setItem("teacherGuildCode", teacher.guildCode);
         navigate("/teacher");
       } else {
         const error = await response.json();

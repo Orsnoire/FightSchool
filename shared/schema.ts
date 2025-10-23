@@ -3,7 +3,7 @@ import { pgTable, text, varchar, integer, boolean, jsonb, bigint } from "drizzle
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Generate 6-character alphanumeric session ID
+// Generate 6-character alphanumeric ID (used for session IDs and guild codes)
 export function generateSessionId(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous chars: 0,O,1,I
   let result = '';
@@ -11,6 +11,11 @@ export function generateSessionId(): string {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+// Generate unique guild code for teachers (same format as session IDs)
+export function generateGuildCode(): string {
+  return generateSessionId();
 }
 
 // Character classes and equipment types
@@ -30,6 +35,7 @@ export const teachers = pgTable("teachers", {
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  guildCode: text("guild_code").notNull(), // Unique code for teacher's guild/class
   billingAddress: text("billing_address").notNull(),
   schoolDistrict: text("school_district").notNull(),
   school: text("school").notNull(),
@@ -41,6 +47,7 @@ export const teachers = pgTable("teachers", {
 export const insertTeacherSchema = createInsertSchema(teachers).omit({
   id: true,
   createdAt: true,
+  guildCode: true, // Auto-generated on creation
 });
 
 export type InsertTeacher = z.infer<typeof insertTeacherSchema>;

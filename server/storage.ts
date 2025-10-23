@@ -1,5 +1,5 @@
 import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot } from "@shared/schema";
-import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS, generateSessionId } from "@shared/schema";
+import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS, generateSessionId, generateGuildCode } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, and, or, inArray, sql } from "drizzle-orm";
@@ -93,11 +93,14 @@ export class DatabaseStorage implements IStorage {
 
   async createTeacher(insertTeacher: InsertTeacher): Promise<Teacher> {
     const hashedPassword = hashPassword(insertTeacher.password);
+    const guildCode = generateGuildCode();
+    
     const [teacher] = await db
       .insert(teachers)
       .values({
         ...insertTeacher,
         password: hashedPassword,
+        guildCode,
       })
       .returning();
     return teacher;
@@ -656,10 +659,17 @@ export class DatabaseStorage implements IStorage {
       return; // Already seeded
     }
 
-    // Create default teacher account for testing
+    // Create default teacher account for testing with minimal required fields
     await this.createTeacher({
       email: 'teacher@test.com',
       password: 'password123',
+      firstName: 'Test',
+      lastName: 'Teacher',
+      billingAddress: '123 Test St',
+      schoolDistrict: 'Test District',
+      school: 'Test School',
+      subject: 'General',
+      gradeLevel: 'All',
     });
   }
 }

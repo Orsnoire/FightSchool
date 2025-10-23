@@ -1269,7 +1269,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           log(`[WebSocket] Student ${student.nickname} joining session ${sessionId} for fight ${fight.title}`, "websocket");
 
-          // Set both sessionId (primary) and fightId (cached) on the WebSocket
+          // AUTO-ENROLL: Assign teacher's guildCode to student if they don't have one
+          if (!student.guildCode) {
+            const teacher = await storage.getTeacher(fight.teacherId);
+            if (teacher && teacher.guildCode) {
+              await storage.updateStudent(student.id, { guildCode: teacher.guildCode });
+              log(`[WebSocket] Auto-enrolled student ${student.nickname} into guild ${teacher.guildCode}`, "websocket");
+            }
+          }
+
+          // Set both sessionId (primary) and fuildId (cached) on the WebSocket
           ws.studentId = student.id;
           ws.sessionId = sessionId;
           ws.fightId = session.fightId;

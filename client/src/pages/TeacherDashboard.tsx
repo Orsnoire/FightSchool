@@ -15,11 +15,11 @@ export default function TeacherDashboard() {
   const [, navigate] = useLocation();
   const [studentsDialogOpen, setStudentsDialogOpen] = useState(false);
   const teacherId = localStorage.getItem("teacherId");
-  const teacherClassCode = localStorage.getItem("teacherClassCode") || "";
+  const teacherGuildCode = localStorage.getItem("teacherGuildCode") || "";
 
   const handleLogout = () => {
     localStorage.removeItem("teacherId");
-    localStorage.removeItem("teacherClassCode");
+    localStorage.removeItem("teacherGuildCode");
     navigate("/");
     toast({ title: "Logged out", description: "You have been logged out successfully" });
   };
@@ -35,8 +35,8 @@ export default function TeacherDashboard() {
 
   // B10 FIX: Auto-refresh students list when dialog opens and poll for updates
   const { data: students, isLoading: studentsLoading } = useQuery<Omit<Student, 'password'>[]>({
-    queryKey: [`/api/students/used-fight-codes/${teacherClassCode}`],
-    enabled: studentsDialogOpen,
+    queryKey: [`/api/students/used-fight-codes/${teacherGuildCode}`],
+    enabled: studentsDialogOpen && !!teacherGuildCode,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: studentsDialogOpen ? 1000 : false, // Poll every 1s when dialog is open (meets "within 1s" requirement)
@@ -163,6 +163,32 @@ export default function TeacherDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {teacherGuildCode && (
+          <Card className="mb-6 bg-primary/5 border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">Your Guild Code</h3>
+                  <p className="text-sm text-muted-foreground">Share this code with students to auto-enroll them in your guild</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="text-xl font-mono px-4 py-2" data-testid="badge-teacher-guild-code">
+                    {teacherGuildCode}
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyGuildCode(teacherGuildCode)}
+                    data-testid="button-copy-teacher-guild-code"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="mb-8">
           <h2 className="text-4xl font-serif font-bold mb-2" data-testid="text-page-title">
             Your Battles

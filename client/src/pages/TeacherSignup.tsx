@@ -59,8 +59,11 @@ export default function TeacherSignup() {
     onSuccess: (teacher) => {
       localStorage.setItem("teacherId", teacher.id);
       localStorage.setItem("teacherEmail", teacher.email);
-      localStorage.setItem("teacherClassCode", "");
-      toast({ title: "Account created successfully!" });
+      localStorage.setItem("teacherGuildCode", teacher.guildCode);
+      toast({ 
+        title: "Account created successfully!",
+        description: `Your guild code: ${teacher.guildCode}`
+      });
       navigate("/teacher");
     },
     onError: (error: any) => {
