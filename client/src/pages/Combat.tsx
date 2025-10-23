@@ -1,12 +1,13 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
 import { VictoryModal } from "@/components/VictoryModal";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Clock, Shield } from "lucide-react";
+import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import type { CombatState, Question, LootItem } from "@shared/schema";
 import { getFireballMaxChargeRounds } from "@shared/jobSystem";
 
@@ -39,26 +40,21 @@ export default function Combat() {
   const [previousPhase, setPreviousPhase] = useState<string>("");
   // Track previous combat state for detecting healing, blocking, and enemy attacks
   const [previousCombatState, setPreviousCombatState] = useState<CombatState | null>(null);
+  // B6/B7 FIX: Connection status and reconnection logic
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const isUnmounting = useRef(false);
+  const gameIsOver = useRef(false);
 
-  useEffect(() => {
+  // B6/B7 FIX: Reconnection logic with exponential backoff
+  const connectWebSocket = useCallback(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
     const socket = new WebSocket(wsUrl);
     
     let hasReceivedState = false;
+    let connectionTimeout: NodeJS.Timeout | null = null;
     
-    // Defensive timeout: if no combat_state within 5 seconds, show error and redirect
-    const connectionTimeout = setTimeout(() => {
-      if (!hasReceivedState) {
-        toast({
-          title: "Connection Failed",
-          description: "Could not connect to the session. It may have ended.",
-          variant: "destructive",
-        });
-        navigate("/student/lobby");
-      }
-    }, 5000);
-
     socket.onopen = () => {
       const studentId = localStorage.getItem("studentId");
       const sessionId = localStorage.getItem("sessionId");
@@ -73,7 +69,20 @@ export default function Combat() {
         return;
       }
       
+      setConnectionStatus("connected");
+      setReconnectAttempts(0);
       socket.send(JSON.stringify({ type: "join", studentId, sessionId }));
+      
+      connectionTimeout = setTimeout(() => {
+        if (!hasReceivedState) {
+          toast({
+            title: "Connection Failed",
+            description: "Could not connect to the session. It may have ended.",
+            variant: "destructive",
+          });
+          navigate("/student/lobby");
+        }
+      }, 5000);
     };
 
     socket.onmessage = (event) => {
@@ -81,10 +90,10 @@ export default function Combat() {
       
       if (message.type === "combat_state") {
         hasReceivedState = true;
-        clearTimeout(connectionTimeout);
+        if (connectionTimeout) clearTimeout(connectionTimeout);
         setCombatState(message.state);
       } else if (message.type === "error") {
-        clearTimeout(connectionTimeout);
+        if (connectionTimeout) clearTimeout(connectionTimeout);
         toast({
           title: "Error",
           description: message.message || "Failed to join session",
@@ -101,14 +110,12 @@ export default function Combat() {
         if (message.shuffleOptions !== undefined) {
           setShuffleOptions(message.shuffleOptions);
         }
-        // Don't reset isChargingFireball - let it persist from server state
       } else if (message.type === "phase_change") {
-        // B5 FIX: Show phase change modal instead of toast
         setPhaseChangeName(message.phase);
         setShowPhaseChangeModal(true);
       } else if (message.type === "game_over") {
+        gameIsOver.current = true;
         if (message.victory && message.xpGained !== undefined) {
-          // Victory with XP data - show victory modal
           setVictoryData({
             xpGained: message.xpGained,
             leveledUp: message.leveledUp,
@@ -118,12 +125,11 @@ export default function Combat() {
           });
           setShowVictoryModal(true);
         } else {
-          // Defeat or basic game over - show toast and navigate
           toast({ title: message.victory ? "Victory!" : "Defeat", description: message.message });
           setTimeout(() => navigate("/student/lobby"), 3000);
         }
       } else if (message.type === "force_disconnect") {
-        // Teacher ended fight - immediately return to lobby
+        gameIsOver.current = true;
         toast({ 
           title: "Fight Ended", 
           description: message.message || "Returning to lobby...",
@@ -133,12 +139,51 @@ export default function Combat() {
       }
     };
 
+    socket.onclose = () => {
+      setConnectionStatus("disconnected");
+      if (connectionTimeout) clearTimeout(connectionTimeout);
+      
+      // Only reconnect if not unmounting and game is not over
+      if (!isUnmounting.current && !gameIsOver.current) {
+        setReconnectAttempts(prev => prev + 1);
+      }
+    };
+
+    socket.onerror = () => {
+      setConnectionStatus("disconnected");
+    };
+
+    return socket;
+  }, [navigate, toast]);
+
+  useEffect(() => {
+    isUnmounting.current = false;
+    const socket = connectWebSocket();
     setWs(socket);
     return () => {
-      clearTimeout(connectionTimeout);
+      isUnmounting.current = true;
       socket.close();
     };
-  }, [navigate, toast]);
+  }, [connectWebSocket]);
+
+  // B6/B7 FIX: Auto-reconnect with exponential backoff
+  useEffect(() => {
+    if (reconnectAttempts === 0 || gameIsOver.current) {
+      return;
+    }
+
+    // Exponential backoff: 1s, 2s, 4s, 8s, max 10s
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 10000);
+    
+    setConnectionStatus("reconnecting");
+    
+    const timer = setTimeout(() => {
+      const socket = connectWebSocket();
+      setWs(socket);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [reconnectAttempts, connectWebSocket]);
 
   useEffect(() => {
     if (timeRemaining > 0 && combatState?.currentPhase === "question") {
@@ -385,6 +430,43 @@ export default function Combat() {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* B6/B7 FIX: Connection status indicator */}
+      <div className="bg-card border-b border-border px-4 py-1 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {connectionStatus === "connected" && (
+            <>
+              <Wifi className="h-4 w-4 text-health" data-testid="icon-connected" />
+              <span className="text-xs text-muted-foreground">Connected</span>
+            </>
+          )}
+          {connectionStatus === "disconnected" && (
+            <>
+              <WifiOff className="h-4 w-4 text-damage" data-testid="icon-disconnected" />
+              <span className="text-xs text-damage">Disconnected</span>
+            </>
+          )}
+          {connectionStatus === "reconnecting" && (
+            <>
+              <RefreshCw className="h-4 w-4 text-warning animate-spin" data-testid="icon-reconnecting" />
+              <span className="text-xs text-warning">Reconnecting...</span>
+            </>
+          )}
+        </div>
+        {connectionStatus === "disconnected" && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setReconnectAttempts(1);
+            }}
+            data-testid="button-reconnect"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Reconnect
+          </Button>
+        )}
+      </div>
+
       {/* B4 FIX: Enemy section constrained to max 12.5vh (1/8 of viewport) */}
       {enemy && (
         <div className="bg-card border-b border-border p-2 flex items-center justify-center" style={{ maxHeight: '12.5vh' }}>
@@ -458,14 +540,15 @@ export default function Combat() {
           
           {/* B5 FIX: Only show question modal when phase change modal is not visible */}
           {!showPhaseChangeModal && combatState.currentPhase === "question" && currentQuestion && (
-            <Card className="p-8 border-primary/30">
-              <div className="mb-6 flex items-center justify-between">
+            <Card className="p-8 border-primary/30 max-h-[80vh] flex flex-col">
+              <div className="mb-6 flex items-center justify-between flex-shrink-0">
                 <h3 className="text-2xl font-bold" data-testid="text-question">{currentQuestion.question}</h3>
                 <div className="flex items-center gap-2 text-warning">
                   <Clock className="h-5 w-5" />
                   <span className="text-xl font-bold" data-testid="text-timer">{timeRemaining}s</span>
                 </div>
               </div>
+              <ScrollArea className="flex-1 pr-4">{/* B8 FIX: Scroll area for question content */}
 
               {currentQuestion.type === "multiple_choice" && displayOptions && (
                 <div className="space-y-3">
@@ -613,9 +696,10 @@ export default function Combat() {
                 );
               })()}
 
+              </ScrollArea>
               <Button
                 size="lg"
-                className="w-full mt-6"
+                className="w-full mt-6 flex-shrink-0"
                 onClick={submitAnswer}
                 disabled={!selectedAnswer || playerState?.hasAnswered || (isHealing && !healTarget)}
                 data-testid="button-submit"

@@ -11,6 +11,7 @@ interface ExtendedWebSocket extends WebSocket {
   sessionId?: string; // Primary identifier for the combat session
   fightId?: string;   // Cached for quick access to fight data
   isHost?: boolean;
+  isAlive?: boolean;  // For heartbeat tracking
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1174,8 +1175,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await startQuestion(sessionId);
   }
 
+  // Heartbeat system to detect dead connections
+  const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+  const heartbeatTimer = setInterval(() => {
+    wss.clients.forEach((client) => {
+      const ws = client as ExtendedWebSocket;
+      
+      if (ws.isAlive === false) {
+        log(`[WebSocket] Terminating dead connection (sessionId: ${ws.sessionId})`, "websocket");
+        return ws.terminate();
+      }
+      
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, HEARTBEAT_INTERVAL);
+
+  wss.on("close", () => {
+    clearInterval(heartbeatTimer);
+  });
+
   wss.on("connection", (ws: ExtendedWebSocket) => {
     log("[WebSocket] New connection established", "websocket");
+    
+    ws.isAlive = true;
+    
+    ws.on("pong", () => {
+      ws.isAlive = true;
+    });
     
     ws.on("message", async (data: Buffer) => {
       try {

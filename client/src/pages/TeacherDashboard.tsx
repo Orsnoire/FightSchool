@@ -4,16 +4,14 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusCircle, Swords, Users, BarChart3, Copy, UserCheck, Edit, LogOut } from "lucide-react";
+import { PlusCircle, Swords, Users, BarChart3, Copy, Edit, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Fight, Student } from "@shared/schema";
+import type { Fight } from "@shared/schema";
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const [studentsDialogOpen, setStudentsDialogOpen] = useState(false);
   const teacherId = localStorage.getItem("teacherId");
   const teacherGuildCode = localStorage.getItem("teacherGuildCode") || "";
 
@@ -31,15 +29,6 @@ export default function TeacherDashboard() {
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     refetchInterval: 5000, // Poll every 5s to catch fight updates
-  });
-
-  // B10 FIX: Auto-refresh students list when dialog opens and poll for updates
-  const { data: students, isLoading: studentsLoading } = useQuery<Omit<Student, 'password'>[]>({
-    queryKey: [`/api/students/used-fight-codes/${teacherGuildCode}`],
-    enabled: studentsDialogOpen && !!teacherGuildCode,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: studentsDialogOpen ? 1000 : false, // Poll every 1s when dialog is open (meets "within 1s" requirement)
   });
 
   const deleteFightMutation = useMutation({
@@ -90,64 +79,6 @@ export default function TeacherDashboard() {
                 Statistics
               </Button>
             </Link>
-            <Dialog open={studentsDialogOpen} onOpenChange={setStudentsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="default" data-testid="button-view-students">
-                  <UserCheck className="mr-2 h-5 w-5" />
-                  View Students
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Students Who Used Your Guild Codes</DialogTitle>
-                </DialogHeader>
-                <div className="mt-4">
-                  {studentsLoading ? (
-                    <div className="space-y-2">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-16 bg-muted animate-pulse rounded" />
-                      ))}
-                    </div>
-                  ) : students && students.length > 0 ? (
-                    <div className="space-y-2">
-                      {students.map((student) => (
-                        <Card key={student.id} data-testid={`student-card-${student.id}`}>
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-semibold" data-testid={`student-nickname-${student.id}`}>
-                                  {student.nickname}
-                                </p>
-                                <div className="flex gap-2 items-center mt-1">
-                                  <Badge variant="outline" data-testid={`student-class-${student.id}`}>
-                                    {student.characterClass}
-                                  </Badge>
-                                  <Badge variant="secondary" data-testid={`student-gender-${student.id}`}>
-                                    {student.gender === 'A' ? 'Male' : 'Female'}
-                                  </Badge>
-                                  {student.guildCode && (
-                                    <Badge variant="secondary" data-testid={`student-guildcode-${student.id}`}>
-                                      {student.guildCode}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-muted-foreground">
-                        No students have used your class codes yet
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
             <Button variant="outline" size="default" onClick={handleLogout} data-testid="button-logout">
               <LogOut className="mr-2 h-5 w-5" />
               Logout

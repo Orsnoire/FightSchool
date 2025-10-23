@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
-import { Play, ArrowLeft, Skull, XCircle } from "lucide-react";
+import { Play, ArrowLeft, Skull, XCircle, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import type { Fight, CombatState } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,8 +24,11 @@ export default function HostFight() {
   const [combatState, setCombatState] = useState<CombatState | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  // B6/B7 FIX: Connection status tracking for host
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
 
-  useEffect(() => {
+  // B6/B7 FIX: Manual reconnect function for host
+  const connectWebSocket = () => {
     if (!fightId) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -33,15 +36,16 @@ export default function HostFight() {
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
+      setConnectionStatus("connected");
       socket.send(JSON.stringify({ type: "host", fightId }));
     };
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === "session_created") {
-        // Server created a new session and sent us the sessionId
         setSessionId(message.sessionId);
         setCombatState(message.state);
+        setHasStarted(false);
       } else if (message.type === "combat_state") {
         setCombatState(message.state);
       } else if (message.type === "game_over") {
@@ -49,13 +53,25 @@ export default function HostFight() {
           title: message.victory ? "Victory!" : "Fight Ended", 
           description: message.message 
         });
-        // Navigate back to teacher dashboard after fight ends
         setTimeout(() => navigate("/teacher"), 2000);
       }
     };
 
+    socket.onclose = () => {
+      setConnectionStatus("disconnected");
+    };
+
+    socket.onerror = () => {
+      setConnectionStatus("disconnected");
+    };
+
     setWs(socket);
-    return () => socket.close();
+    return socket;
+  };
+
+  useEffect(() => {
+    const socket = connectWebSocket();
+    return () => socket?.close();
   }, [fightId]);
 
   const startFight = () => {
@@ -85,16 +101,43 @@ export default function HostFight() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <Button variant="ghost" onClick={() => navigate("/teacher")} data-testid="button-back">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
           <h1 className="text-2xl font-serif font-bold" data-testid="text-fight-title">{fight.title}</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* B6/B7 FIX: Connection status indicator for host */}
+            <div className="flex items-center gap-2 px-3 py-1 rounded border border-border">
+              {connectionStatus === "connected" && (
+                <>
+                  <Wifi className="h-4 w-4 text-health" data-testid="icon-host-connected" />
+                  <span className="text-xs text-muted-foreground">Connected</span>
+                </>
+              )}
+              {connectionStatus === "disconnected" && (
+                <>
+                  <WifiOff className="h-4 w-4 text-damage" data-testid="icon-host-disconnected" />
+                  <span className="text-xs text-damage">Disconnected</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      ws?.close();
+                      connectWebSocket();
+                    }}
+                    data-testid="button-host-refresh"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Refresh
+                  </Button>
+                </>
+              )}
+            </div>
             <Button
               onClick={startFight}
-              disabled={hasStarted || playerCount === 0}
+              disabled={hasStarted || playerCount === 0 || connectionStatus !== "connected"}
               data-testid="button-start"
             >
               <Play className="mr-2 h-4 w-4" />
@@ -103,7 +146,7 @@ export default function HostFight() {
             <Button
               variant="destructive"
               onClick={endFight}
-              disabled={!hasStarted}
+              disabled={!hasStarted || connectionStatus !== "connected"}
               data-testid="button-end-fight"
             >
               <XCircle className="mr-2 h-4 w-4" />
@@ -190,8 +233,8 @@ export default function HostFight() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Class Code</p>
-                  <p className="font-bold text-lg text-primary" data-testid="text-class-code">{fight.classCode}</p>
+                  <p className="text-sm text-muted-foreground">Guild Code</p>
+                  <p className="font-bold text-lg text-primary" data-testid="text-guild-code">{fight.guildCode}</p>
                 </div>
               </CardContent>
             </Card>
