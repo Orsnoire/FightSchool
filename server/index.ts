@@ -43,6 +43,12 @@ app.use((req, res, next) => {
   await storage.seedDefaultTeacher();
   log("Default equipment items and teacher account seeded");
 
+  // Seed test data for quick feature testing
+  await storage.seedTestStudent();
+  await storage.seedTestFight();
+  await storage.seedTestGuild();
+  log("Test student, fight, and guild seeded for feature testing");
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

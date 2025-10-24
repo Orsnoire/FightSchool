@@ -76,6 +76,9 @@ export interface IStorage {
   deleteEquipmentItem(id: string): Promise<boolean>;
   seedDefaultEquipment(): Promise<void>;
   seedDefaultTeacher(): Promise<void>;
+  seedTestStudent(): Promise<void>;
+  seedTestFight(): Promise<void>;
+  seedTestGuild(): Promise<void>;
   
   // Guild operations
   getGuild(id: string): Promise<Guild | undefined>;
@@ -764,6 +767,172 @@ export class DatabaseStorage implements IStorage {
       console.error('Failed to seed default teacher:', error);
       // Don't throw - allow app to start even if seeding fails
       // This prevents crash loops during deployment
+    }
+  }
+
+  async seedTestStudent(): Promise<void> {
+    try {
+      // Check if tester student already exists
+      const existingStudent = await this.getStudentByNickname('tester');
+      
+      if (existingStudent) {
+        return; // Already seeded
+      }
+
+      const hashedPassword = hashPassword('test');
+      
+      // Create tester student with all jobs at level 15
+      const [student] = await db
+        .insert(students)
+        .values({
+          nickname: 'tester',
+          password: hashedPassword,
+          characterClass: 'warrior' as CharacterClass,
+          gender: 'male' as Gender,
+          inventory: [],
+        })
+        .returning();
+
+      // Create job levels for all base classes + warlock at level 15
+      const jobsToLevel: CharacterClass[] = ['warrior', 'wizard', 'scout', 'herbalist', 'warlock'];
+      
+      for (const jobClass of jobsToLevel) {
+        await db.insert(studentJobLevels).values({
+          studentId: student.id,
+          jobClass,
+          level: 15,
+          experience: getTotalXPForLevel(15), // XP for level 15
+        });
+      }
+
+      console.log('Test student "tester" created with level 15 in all jobs');
+    } catch (error) {
+      console.error('Failed to seed test student:', error);
+    }
+  }
+
+  async seedTestFight(): Promise<void> {
+    try {
+      // Get the default teacher
+      const teacher = await this.getTeacherByEmail('teacher@test.com');
+      if (!teacher) {
+        console.error('Cannot create test fight: default teacher not found');
+        return;
+      }
+
+      // Check if test fight already exists
+      const existingFights = await db.select().from(fights).where(eq(fights.title, 'Ultimate Test Fight'));
+      if (existingFights.length > 0) {
+        return; // Already seeded
+      }
+
+      // Create a simple test fight with solo mode enabled
+      await db.insert(fights).values({
+        teacherId: teacher.id,
+        title: 'Ultimate Test Fight',
+        questions: [
+          {
+            id: randomUUID(),
+            text: 'What is 2 + 2?',
+            type: 'multiple_choice' as 'multiple_choice',
+            options: ['3', '4', '5', '6'],
+            correctAnswer: '4',
+            timeLimit: 30,
+          },
+          {
+            id: randomUUID(),
+            text: 'What is the capital of France?',
+            type: 'multiple_choice' as 'multiple_choice',
+            options: ['London', 'Paris', 'Berlin', 'Rome'],
+            correctAnswer: 'Paris',
+            timeLimit: 30,
+          },
+          {
+            id: randomUUID(),
+            text: 'Is the sky blue?',
+            type: 'true_false' as 'true_false',
+            options: ['True', 'False'],
+            correctAnswer: 'True',
+            timeLimit: 20,
+          },
+        ],
+        enemies: [
+          {
+            id: randomUUID(),
+            name: 'Training Dummy',
+            maxHP: 10,
+            currentHP: 10,
+          },
+        ],
+        baseXP: 10,
+        baseEnemyDamage: 2,
+        enemyDisplayMode: 'consecutive' as 'consecutive',
+        lootTable: [],
+        randomizeQuestions: false,
+        shuffleOptions: true,
+        soloModeEnabled: true,
+      });
+
+      console.log('Test fight "Ultimate Test Fight" created successfully');
+    } catch (error) {
+      console.error('Failed to seed test fight:', error);
+    }
+  }
+
+  async seedTestGuild(): Promise<void> {
+    try {
+      // Get the default teacher and tester student
+      const teacher = await this.getTeacherByEmail('teacher@test.com');
+      const tester = await this.getStudentByNickname('tester');
+      
+      if (!teacher || !tester) {
+        console.error('Cannot create test guild: teacher or tester not found');
+        return;
+      }
+
+      // Check if test guild already exists
+      const existingGuild = await db.select().from(guilds).where(eq(guilds.name, 'Test Guild'));
+      if (existingGuild.length > 0) {
+        return; // Already seeded
+      }
+
+      // Create test guild
+      const code = generateGuildCode();
+      const [guild] = await db.insert(guilds).values({
+        teacherId: teacher.id,
+        name: 'Test Guild',
+        code,
+        description: 'A test guild for trying out features',
+        level: 1,
+        experience: 0,
+        isArchived: false,
+      }).returning();
+
+      // Create default settings for the guild
+      await db.insert(guildSettings).values({
+        guildId: guild.id,
+        hiddenLeaderboardMetrics: [],
+        enableGroupQuests: true,
+      });
+
+      // Add tester student to the guild
+      await db.insert(guildMemberships).values({
+        guildId: guild.id,
+        studentId: tester.id,
+      });
+
+      // Get the test fight and assign it to the guild
+      const [testFight] = await db.select().from(fights).where(eq(fights.title, 'Ultimate Test Fight'));
+      if (testFight) {
+        await db.insert(guildFights).values({
+          guildId: guild.id,
+          fightId: testFight.id,
+        });
+      }
+
+      console.log(`Test guild created (code: ${code}) with tester student and test fight assigned`);
+    } catch (error) {
+      console.error('Failed to seed test guild:', error);
     }
   }
 
