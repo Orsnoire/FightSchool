@@ -1040,6 +1040,45 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount !== null && result.rowCount > 0;
   }
 
+  // Guild XP and leveling operations
+  async awardXPToGuild(guildId: string, xpAmount: number): Promise<{ guild: Guild; leveledUp: boolean; newLevel: number }> {
+    const guild = await this.getGuild(guildId);
+    if (!guild) {
+      throw new Error(`Guild ${guildId} not found`);
+    }
+
+    // Add XP to guild
+    const newTotalXP = guild.experience + xpAmount;
+    const oldLevel = guild.level;
+    
+    // Calculate new level using same formula as players (6 XP increment per level)
+    // Formula: XP for level N = (N * (N - 1) * 6) / 2
+    // This gives cumulative XP: Level 1=0, 2=6, 3=18, 4=36, 5=60, etc.
+    let newLevel = oldLevel;
+    while (newLevel < 99) { // Guilds can reach level 99
+      const xpRequiredForNextLevel = (newLevel * (newLevel + 1) * 6) / 2;
+      if (newTotalXP >= xpRequiredForNextLevel) {
+        newLevel++;
+      } else {
+        break;
+      }
+    }
+
+    const leveledUp = newLevel > oldLevel;
+
+    // Update guild
+    const updated = await this.updateGuild(guildId, {
+      experience: newTotalXP,
+      level: newLevel,
+    });
+
+    return {
+      guild: updated!,
+      leveledUp,
+      newLevel,
+    };
+  }
+
   // Guild leaderboard operations
   async getGuildLeaderboard(guildId: string, metric: string): Promise<any[]> {
     // Get guild's assigned fights

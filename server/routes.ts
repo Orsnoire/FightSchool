@@ -1404,19 +1404,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
           baseFightXP: fight.baseXP || 10,
         });
         
-        // Award XP to the player's current class
-        const result = await storage.awardXPToJob(
-          player.studentId,
-          player.characterClass,
-          xpGained
-        );
-        
-        victoryData[player.studentId] = {
-          xpGained,
-          leveledUp: result.leveledUp,
-          newLevel: result.newLevel,
-          currentXP: result.jobLevel.experience,
-        };
+        // Award XP to the player's current class (skip if solo mode - performance XP only)
+        if (!session.soloModeEnabled) {
+          const result = await storage.awardXPToJob(
+            player.studentId,
+            player.characterClass,
+            xpGained
+          );
+          
+          victoryData[player.studentId] = {
+            xpGained,
+            leveledUp: result.leveledUp,
+            newLevel: result.newLevel,
+            currentXP: result.jobLevel.experience,
+          };
+        } else {
+          // Solo mode: performance XP only, no persistent XP awards
+          victoryData[player.studentId] = {
+            xpGained,
+            leveledUp: false,
+            newLevel: 1,
+            currentXP: 0,
+          };
+        }
+      }
+
+      // Guild XP distribution (skip if solo mode)
+      if (!session.soloModeEnabled) {
+        try {
+          // Check which guilds this fight is assigned to
+          const fightGuilds = await storage.getFightGuilds(session.fightId);
+          
+          if (fightGuilds.length > 0) {
+            // For each player, award XP to guilds they belong to that have this fight assigned
+            for (const player of Object.values(session.players)) {
+              const student = await storage.getStudent(player.studentId);
+              if (!student) continue;
+              
+              const studentGuilds = await storage.getStudentGuilds(player.studentId);
+              
+              // Find guilds where this fight is assigned AND the student is a member
+              const eligibleGuilds = fightGuilds.filter(fightGuild => 
+                studentGuilds.some(studentGuild => studentGuild.id === fightGuild.id)
+              );
+              
+              // Award 100% of fight XP to each eligible guild
+              const playerXP = victoryData[player.studentId]?.xpGained || 0;
+              
+              for (const guild of eligibleGuilds) {
+                await storage.awardXPToGuild(guild.id, playerXP);
+                log(`[Guild XP] Awarded ${playerXP} XP to guild ${guild.name} from student ${player.nickname}`, "guild");
+              }
+            }
+          }
+        } catch (error) {
+          log(`[Guild XP] Error distributing guild XP: ${error}`, "guild");
+        }
       }
       
       // Send individual victory messages to each player with their XP data
