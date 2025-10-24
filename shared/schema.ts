@@ -20,10 +20,10 @@ export function generateGuildCode(): string {
 }
 
 // Character classes and equipment types
-export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "knight" | "paladin" | "dark_knight" | "sage" | "ranger" | "druid" | "monk" | "warlock";
+export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock";
 export type BaseClass = "warrior" | "wizard" | "scout" | "herbalist";
 export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbalist"];
-export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "knight", "paladin", "dark_knight", "sage", "ranger", "druid", "monk", "warlock"];
+export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock"];
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
@@ -261,6 +261,7 @@ export const guildSettings = pgTable("guild_settings", {
   guildId: varchar("guild_id").notNull().unique(),
   hiddenLeaderboardMetrics: jsonb("hidden_leaderboard_metrics").$type<string[]>().default([]), // Metrics to hide (e.g., ["damageDealt", "healing"])
   enableGroupQuests: boolean("enable_group_quests").notNull().default(true),
+  enableChat: boolean("enable_chat").notNull().default(false), // Teacher can enable guild chat (default off)
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
@@ -490,7 +491,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "common",
     stats: { atk: 1 },
-    classRestriction: ["warrior", "knight", "paladin", "dark_knight", "monk"],
+    classRestriction: ["warrior"],
   },
   basic_staff: {
     id: "basic_staff",
@@ -498,7 +499,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "common",
     stats: { mat: 1 },
-    classRestriction: ["wizard", "sage", "druid", "warlock"],
+    classRestriction: ["wizard", "warlock"],
   },
   basic_bow: {
     id: "basic_bow",
@@ -506,7 +507,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "common",
     stats: { rtk: 1 },
-    classRestriction: ["scout", "ranger"],
+    classRestriction: ["scout"],
   },
   basic_herbs: {
     id: "basic_herbs",
@@ -514,7 +515,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "common",
     stats: { mnd: 1 },
-    classRestriction: ["herbalist", "druid"],
+    classRestriction: ["herbalist"],
   },
   basic_helm: {
     id: "basic_helm",
@@ -538,7 +539,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "common",
     stats: { atk: 2, str: 1 },
-    classRestriction: ["warrior", "knight", "paladin", "dark_knight", "monk"],
+    classRestriction: ["warrior"],
   },
   steel_bow: {
     id: "steel_bow",
@@ -546,7 +547,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "rare",
     stats: { rtk: 3, agi: 1 },
-    classRestriction: ["scout", "ranger"],
+    classRestriction: ["scout"],
   },
   magic_staff: {
     id: "magic_staff",
@@ -554,7 +555,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "rare",
     stats: { mat: 3, int: 1 },
-    classRestriction: ["wizard", "sage", "warlock"],
+    classRestriction: ["wizard", "warlock"],
   },
   leather_helm: {
     id: "leather_helm",
@@ -611,7 +612,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "weapon",
     rarity: "legendary",
     stats: { atk: 5, str: 2 },
-    classRestriction: ["warrior", "knight", "paladin", "dark_knight"],
+    classRestriction: ["warrior"],
   },
 };
 
@@ -622,13 +623,6 @@ export function getStartingEquipment(characterClass: CharacterClass): { weapon: 
     wizard: "basic_staff",
     scout: "basic_bow",
     herbalist: "basic_herbs",
-    knight: "basic_sword",
-    paladin: "basic_sword",
-    dark_knight: "basic_sword",
-    sage: "basic_staff",
-    ranger: "basic_bow",
-    druid: "basic_herbs",
-    monk: "basic_sword",
     warlock: "basic_staff",
   };
 
@@ -691,14 +685,6 @@ export const CLASS_STATS: Record<CharacterClass, BaseJobStats> = {
   wizard: { baseHP: 7, int: 2, role: "DPS - Magical damage" },
   scout: { baseHP: 7, agi: 2, role: "DPS - Ranged damage" },
   herbalist: { baseHP: 10, mnd: 1, role: "Healer - Can heal allies" },
-  // Advanced jobs - to be filled in later
-  knight: { baseHP: 16, vit: 2, str: 1, role: "Unlockable Tank - Advanced combat techniques" },
-  paladin: { baseHP: 16, vit: 1, str: 1, mnd: 1, role: "Holy Tank - Warrior + Herbalist fusion" },
-  dark_knight: { baseHP: 14, vit: 1, str: 1, int: 1, role: "Aggressive Tank - High damage, self-sustaining" },
-  sage: { baseHP: 11, int: 3, role: "Advanced Mage - Wizard evolution" },
-  ranger: { baseHP: 11, agi: 3, role: "Master Scout - Scout evolution" },
-  druid: { baseHP: 13, mnd: 2, role: "Nature Healer - Herbalist evolution" },
-  monk: { baseHP: 13, str: 1, agi: 1, vit: 1, role: "Balanced Fighter - All-rounder" },
   warlock: { baseHP: 7, int: 2, role: "Curse specialist - Wizard variant" },
 };
 
