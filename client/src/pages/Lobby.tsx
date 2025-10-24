@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, BASE_CLASSES } from "@shared/schema";
+import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, BASE_CLASSES, ALL_CHARACTER_CLASSES } from "@shared/schema";
 import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -27,7 +29,7 @@ export default function Lobby() {
   const [jobLevels, setJobLevels] = useState<StudentJobLevel[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot>("weapon");
   const [sessionCode, setSessionCode] = useState("");
-  const [showClassChange, setShowClassChange] = useState(false);
+  const [showClassModal, setShowClassModal] = useState(false);
   const [soloFightId, setSoloFightId] = useState("");
   const [isHostingSolo, setIsHostingSolo] = useState(false);
   const studentId = localStorage.getItem("studentId");
@@ -184,8 +186,12 @@ export default function Lobby() {
     navigate("/student/login");
   };
 
-  const handleClassChange = async (newClass: BaseClass) => {
+  const handleClassChange = async (newClass: CharacterClass) => {
     if (!student?.gender) return;
+    if (newClass === student.characterClass) {
+      setShowClassModal(false);
+      return;
+    }
     
     const response = await fetch(`/api/student/${studentId}/character`, {
       method: "PATCH",
@@ -196,11 +202,17 @@ export default function Lobby() {
     if (response.ok) {
       const updatedStudent = await response.json();
       setStudent(updatedStudent);
-      setShowClassChange(false);
+      setShowClassModal(false);
       toast({ 
         title: "Class changed!", 
         description: `You are now a ${newClass}` 
       });
+      
+      // Reload job levels to reflect new current class
+      const jobResponse = await fetch(`/api/student/${studentId}/job-levels`);
+      if (jobResponse.ok) {
+        setJobLevels(await jobResponse.json());
+      }
     } else {
       toast({ 
         title: "Failed to change class", 
@@ -282,49 +294,12 @@ export default function Lobby() {
                 <Button
                   variant="outline"
                   className="w-full mt-4"
-                  onClick={() => setShowClassChange(!showClassChange)}
-                  data-testid="button-toggle-class-change"
+                  onClick={() => setShowClassModal(true)}
+                  data-testid="button-open-class-modal"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  {showClassChange ? "Cancel Class Change" : "Change Class"}
+                  Change Class
                 </Button>
-                
-                {showClassChange && student.gender && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm text-muted-foreground text-center mb-3">
-                      Select a new class to switch to:
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {BASE_CLASSES.map((classType) => {
-                        const isCurrentClass = student.characterClass === classType;
-                        return (
-                          <Card
-                            key={classType}
-                            className={`cursor-pointer hover-elevate ${
-                              isCurrentClass ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
-                            onClick={() => !isCurrentClass && handleClassChange(classType)}
-                            data-testid={`button-change-class-${classType}`}
-                          >
-                            <CardContent className="p-3 flex flex-col items-center gap-2">
-                              <PlayerAvatar
-                                characterClass={classType}
-                                gender={student.gender!}
-                                size="sm"
-                              />
-                              <p className="text-xs font-semibold capitalize">
-                                {classType}
-                              </p>
-                              {isCurrentClass && (
-                                <p className="text-xs text-muted-foreground">(Current)</p>
-                              )}
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -470,23 +445,6 @@ export default function Lobby() {
                         })()}
                       </div>
                       
-                      {jobLevels.length > 1 && (
-                        <div className="space-y-1">
-                          <div className="text-xs text-muted-foreground">Other Jobs</div>
-                          <div className="flex flex-wrap gap-1">
-                            {jobLevels
-                              .filter(jl => jl.jobClass !== student.characterClass)
-                              .map(jl => (
-                                <span 
-                                  key={jl.jobClass}
-                                  className="text-xs px-2 py-1 bg-muted rounded capitalize"
-                                >
-                                  {jl.jobClass} Lv{jl.level}
-                                </span>
-                              ))}
-                          </div>
-                        </div>
-                      )}
                     </>
                   );
                 })()}
@@ -639,6 +597,72 @@ export default function Lobby() {
           </div>
         </div>
       </main>
+
+      {/* Class Selection Modal */}
+      <Dialog open={showClassModal} onOpenChange={setShowClassModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-serif">Select Your Class</DialogTitle>
+            <DialogDescription>
+              Choose a class to change to. Your progress in all jobs is saved.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
+            {(() => {
+              // Convert job levels array to map
+              const jobLevelMap: Record<CharacterClass, number> = {
+                warrior: 0, wizard: 0, scout: 0, herbalist: 0,
+                knight: 0, paladin: 0, dark_knight: 0, sage: 0, ranger: 0, druid: 0, monk: 0, warlock: 0,
+              };
+              
+              jobLevels.forEach(jl => {
+                jobLevelMap[jl.jobClass] = jl.level;
+              });
+              
+              return ALL_CHARACTER_CLASSES.map((classType) => {
+                const level = jobLevelMap[classType] || 0;
+                const isCurrentClass = student.characterClass === classType;
+                
+                return (
+                  <Card
+                    key={classType}
+                    className={`cursor-pointer hover-elevate transition-all ${
+                      isCurrentClass ? "ring-2 ring-primary bg-primary/5" : ""
+                    }`}
+                    onClick={() => handleClassChange(classType)}
+                    data-testid={`modal-class-${classType}`}
+                  >
+                    <CardContent className="p-4 flex flex-col items-center gap-3">
+                      <div className="relative">
+                        <PlayerAvatar
+                          characterClass={classType}
+                          gender={student.gender!}
+                          size="md"
+                        />
+                        <Badge 
+                          className="absolute -bottom-2 -right-2 h-6 w-6 flex items-center justify-center p-0 rounded-full text-xs font-bold"
+                          variant={level > 0 ? "default" : "secondary"}
+                        >
+                          {level}
+                        </Badge>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold capitalize text-sm">
+                          {classType.replace('_', ' ')}
+                        </p>
+                        {isCurrentClass && (
+                          <p className="text-xs text-primary mt-1">Current</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              });
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
