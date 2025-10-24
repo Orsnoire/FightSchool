@@ -1,5 +1,5 @@
-import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot } from "@shared/schema";
-import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, CLASS_STATS, generateSessionId, generateGuildCode, calculateEquipmentStats, calculateCharacterStats } from "@shared/schema";
+import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot, Guild, InsertGuild, GuildMembership, InsertGuildMembership, GuildFight, InsertGuildFight, GuildSettings, InsertGuildSettings, GuildQuest, InsertGuildQuest } from "@shared/schema";
+import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, guilds, guildMemberships, guildFights, guildSettings, guildQuests, CLASS_STATS, generateSessionId, generateGuildCode, calculateEquipmentStats, calculateCharacterStats, getGuildLevelFromXP } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, and, or, inArray, sql } from "drizzle-orm";
@@ -76,6 +76,41 @@ export interface IStorage {
   deleteEquipmentItem(id: string): Promise<boolean>;
   seedDefaultEquipment(): Promise<void>;
   seedDefaultTeacher(): Promise<void>;
+  
+  // Guild operations
+  getGuild(id: string): Promise<Guild | undefined>;
+  getGuildByCode(code: string): Promise<Guild | undefined>;
+  getGuildsByTeacher(teacherId: string): Promise<Guild[]>;
+  createGuild(guild: InsertGuild): Promise<Guild>;
+  updateGuild(id: string, updates: Partial<Guild>): Promise<Guild | undefined>;
+  archiveGuild(id: string): Promise<Guild | undefined>;
+  awardGuildXP(guildId: string, xpAmount: number): Promise<Guild>;
+  
+  // Guild membership operations
+  addMemberToGuild(guildId: string, studentId: string): Promise<GuildMembership>;
+  removeMemberFromGuild(guildId: string, studentId: string): Promise<boolean>;
+  getGuildMembers(guildId: string): Promise<Student[]>;
+  getStudentGuilds(studentId: string): Promise<Guild[]>;
+  isStudentInGuild(guildId: string, studentId: string): Promise<boolean>;
+  
+  // Guild fight assignment operations
+  assignFightToGuild(guildId: string, fightId: string): Promise<GuildFight>;
+  unassignFightFromGuild(guildId: string, fightId: string): Promise<boolean>;
+  getGuildFights(guildId: string): Promise<Fight[]>;
+  getFightGuilds(fightId: string): Promise<Guild[]>;
+  
+  // Guild settings operations
+  getGuildSettings(guildId: string): Promise<GuildSettings | undefined>;
+  updateGuildSettings(guildId: string, updates: Partial<GuildSettings>): Promise<GuildSettings>;
+  
+  // Guild quest operations
+  getGuildQuests(guildId: string): Promise<GuildQuest[]>;
+  createGuildQuest(quest: InsertGuildQuest): Promise<GuildQuest>;
+  updateGuildQuest(id: string, updates: Partial<GuildQuest>): Promise<GuildQuest | undefined>;
+  deleteGuildQuest(id: string): Promise<boolean>;
+  
+  // Guild leaderboard operations
+  getGuildLeaderboard(guildId: string, metric: string): Promise<any[]>;
 }
 
 // Integration: blueprint:javascript_database
@@ -710,6 +745,361 @@ export class DatabaseStorage implements IStorage {
       // Don't throw - allow app to start even if seeding fails
       // This prevents crash loops during deployment
     }
+  }
+
+  // Guild operations
+  async getGuild(id: string): Promise<Guild | undefined> {
+    const [guild] = await db.select().from(guilds).where(eq(guilds.id, id));
+    return guild || undefined;
+  }
+
+  async getGuildByCode(code: string): Promise<Guild | undefined> {
+    const [guild] = await db.select().from(guilds).where(eq(guilds.code, code));
+    return guild || undefined;
+  }
+
+  async getGuildsByTeacher(teacherId: string): Promise<Guild[]> {
+    return await db.select().from(guilds).where(eq(guilds.teacherId, teacherId));
+  }
+
+  async createGuild(insertGuild: InsertGuild): Promise<Guild> {
+    const code = generateGuildCode();
+    const [guild] = await db
+      .insert(guilds)
+      .values({
+        ...insertGuild,
+        code,
+      })
+      .returning();
+    
+    // Create default settings for the guild
+    await db.insert(guildSettings).values({
+      guildId: guild.id,
+      hiddenLeaderboardMetrics: [],
+      enableGroupQuests: true,
+    });
+    
+    return guild;
+  }
+
+  async updateGuild(id: string, updates: Partial<Guild>): Promise<Guild | undefined> {
+    const [guild] = await db
+      .update(guilds)
+      .set(updates)
+      .where(eq(guilds.id, id))
+      .returning();
+    return guild || undefined;
+  }
+
+  async archiveGuild(id: string): Promise<Guild | undefined> {
+    return this.updateGuild(id, { isArchived: true });
+  }
+
+  async awardGuildXP(guildId: string, xpAmount: number): Promise<Guild> {
+    const guild = await this.getGuild(guildId);
+    if (!guild) {
+      throw new Error('Guild not found');
+    }
+
+    const newExperience = guild.experience + xpAmount;
+    const newLevel = getGuildLevelFromXP(newExperience);
+
+    const [updated] = await db
+      .update(guilds)
+      .set({
+        experience: newExperience,
+        level: newLevel,
+      })
+      .where(eq(guilds.id, guildId))
+      .returning();
+
+    return updated;
+  }
+
+  // Guild membership operations
+  async addMemberToGuild(guildId: string, studentId: string): Promise<GuildMembership> {
+    // Check if already a member
+    const existing = await db
+      .select()
+      .from(guildMemberships)
+      .where(
+        and(
+          eq(guildMemberships.guildId, guildId),
+          eq(guildMemberships.studentId, studentId)
+        )
+      );
+
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const [membership] = await db
+      .insert(guildMemberships)
+      .values({ guildId, studentId })
+      .returning();
+
+    return membership;
+  }
+
+  async removeMemberFromGuild(guildId: string, studentId: string): Promise<boolean> {
+    const result = await db
+      .delete(guildMemberships)
+      .where(
+        and(
+          eq(guildMemberships.guildId, guildId),
+          eq(guildMemberships.studentId, studentId)
+        )
+      );
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getGuildMembers(guildId: string): Promise<Student[]> {
+    const memberships = await db
+      .select()
+      .from(guildMemberships)
+      .where(eq(guildMemberships.guildId, guildId));
+
+    if (memberships.length === 0) {
+      return [];
+    }
+
+    const studentIds = memberships.map(m => m.studentId);
+    return await db.select().from(students).where(inArray(students.id, studentIds));
+  }
+
+  async getStudentGuilds(studentId: string): Promise<Guild[]> {
+    const memberships = await db
+      .select()
+      .from(guildMemberships)
+      .where(eq(guildMemberships.studentId, studentId));
+
+    if (memberships.length === 0) {
+      return [];
+    }
+
+    const guildIds = memberships.map(m => m.guildId);
+    return await db.select().from(guilds).where(inArray(guilds.id, guildIds));
+  }
+
+  async isStudentInGuild(guildId: string, studentId: string): Promise<boolean> {
+    const [membership] = await db
+      .select()
+      .from(guildMemberships)
+      .where(
+        and(
+          eq(guildMemberships.guildId, guildId),
+          eq(guildMemberships.studentId, studentId)
+        )
+      );
+    return !!membership;
+  }
+
+  // Guild fight assignment operations
+  async assignFightToGuild(guildId: string, fightId: string): Promise<GuildFight> {
+    // Check if already assigned
+    const existing = await db
+      .select()
+      .from(guildFights)
+      .where(
+        and(
+          eq(guildFights.guildId, guildId),
+          eq(guildFights.fightId, fightId)
+        )
+      );
+
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    const [assignment] = await db
+      .insert(guildFights)
+      .values({ guildId, fightId })
+      .returning();
+
+    return assignment;
+  }
+
+  async unassignFightFromGuild(guildId: string, fightId: string): Promise<boolean> {
+    const result = await db
+      .delete(guildFights)
+      .where(
+        and(
+          eq(guildFights.guildId, guildId),
+          eq(guildFights.fightId, fightId)
+        )
+      );
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  async getGuildFights(guildId: string): Promise<Fight[]> {
+    const assignments = await db
+      .select()
+      .from(guildFights)
+      .where(eq(guildFights.guildId, guildId));
+
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    const fightIds = assignments.map(a => a.fightId);
+    const dbFights = await db.select().from(fights).where(inArray(fights.id, fightIds));
+
+    return dbFights.map(f => ({
+      ...f,
+      questions: f.questions as any,
+      enemies: f.enemies as any,
+      lootTable: (f.lootTable as any) || [],
+      createdAt: Number(f.createdAt),
+    }));
+  }
+
+  async getFightGuilds(fightId: string): Promise<Guild[]> {
+    const assignments = await db
+      .select()
+      .from(guildFights)
+      .where(eq(guildFights.fightId, fightId));
+
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    const guildIds = assignments.map(a => a.guildId);
+    return await db.select().from(guilds).where(inArray(guilds.id, guildIds));
+  }
+
+  // Guild settings operations
+  async getGuildSettings(guildId: string): Promise<GuildSettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(guildSettings)
+      .where(eq(guildSettings.guildId, guildId));
+    return settings || undefined;
+  }
+
+  async updateGuildSettings(guildId: string, updates: Partial<GuildSettings>): Promise<GuildSettings> {
+    const existing = await this.getGuildSettings(guildId);
+
+    if (existing) {
+      const [updated] = await db
+        .update(guildSettings)
+        .set({ ...updates, updatedAt: Date.now() })
+        .where(eq(guildSettings.guildId, guildId))
+        .returning();
+      return updated;
+    } else {
+      // Create if doesn't exist
+      const [created] = await db
+        .insert(guildSettings)
+        .values({
+          guildId,
+          ...updates,
+        })
+        .returning();
+      return created;
+    }
+  }
+
+  // Guild quest operations
+  async getGuildQuests(guildId: string): Promise<GuildQuest[]> {
+    return await db.select().from(guildQuests).where(eq(guildQuests.guildId, guildId));
+  }
+
+  async createGuildQuest(quest: InsertGuildQuest): Promise<GuildQuest> {
+    const [created] = await db.insert(guildQuests).values(quest).returning();
+    return created;
+  }
+
+  async updateGuildQuest(id: string, updates: Partial<GuildQuest>): Promise<GuildQuest | undefined> {
+    const [updated] = await db
+      .update(guildQuests)
+      .set(updates)
+      .where(eq(guildQuests.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteGuildQuest(id: string): Promise<boolean> {
+    const result = await db.delete(guildQuests).where(eq(guildQuests.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Guild leaderboard operations
+  async getGuildLeaderboard(guildId: string, metric: string): Promise<any[]> {
+    // Get guild's assigned fights
+    const assignments = await db
+      .select()
+      .from(guildFights)
+      .where(eq(guildFights.guildId, guildId));
+
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    const fightIds = assignments.map(a => a.fightId);
+
+    // Get all stats for those fights
+    const stats = await db
+      .select()
+      .from(combatStats)
+      .where(
+        and(
+          inArray(combatStats.fightId, fightIds),
+          eq(combatStats.guildId, guildId)
+        )
+      );
+
+    // Aggregate by student
+    const studentAggregates = new Map<string, any>();
+
+    for (const stat of stats) {
+      if (!studentAggregates.has(stat.studentId)) {
+        studentAggregates.set(stat.studentId, {
+          studentId: stat.studentId,
+          nickname: stat.nickname,
+          characterClass: stat.characterClass,
+          totalDamageDealt: 0,
+          totalDamageBlocked: 0,
+          totalHealingDone: 0,
+          totalQuestionsCorrect: 0,
+          totalQuestionsAnswered: 0,
+          fightsCompleted: 0,
+        });
+      }
+
+      const agg = studentAggregates.get(stat.studentId);
+      agg.totalDamageDealt += stat.damageDealt;
+      agg.totalDamageBlocked += stat.damageBlocked;
+      agg.totalHealingDone += stat.healingDone;
+      agg.totalQuestionsCorrect += stat.questionsCorrect;
+      agg.totalQuestionsAnswered += stat.questionsAnswered;
+      agg.fightsCompleted += 1;
+    }
+
+    // Convert to array and sort by requested metric
+    let leaderboard = Array.from(studentAggregates.values());
+
+    switch (metric) {
+      case 'damageDealt':
+        leaderboard.sort((a, b) => b.totalDamageDealt - a.totalDamageDealt);
+        break;
+      case 'damageBlocked':
+        leaderboard.sort((a, b) => b.totalDamageBlocked - a.totalDamageBlocked);
+        break;
+      case 'healing':
+        leaderboard.sort((a, b) => b.totalHealingDone - a.totalHealingDone);
+        break;
+      case 'accuracy':
+        leaderboard.sort((a, b) => {
+          const aRate = a.totalQuestionsAnswered > 0 ? a.totalQuestionsCorrect / a.totalQuestionsAnswered : 0;
+          const bRate = b.totalQuestionsAnswered > 0 ? b.totalQuestionsCorrect / b.totalQuestionsAnswered : 0;
+          return bRate - aRate;
+        });
+        break;
+      default:
+        leaderboard.sort((a, b) => b.totalDamageDealt - a.totalDamageDealt);
+    }
+
+    return leaderboard;
   }
 }
 

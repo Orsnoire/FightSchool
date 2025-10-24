@@ -110,7 +110,7 @@ export const fights = pgTable("fights", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   teacherId: varchar("teacher_id").notNull(),
   title: text("title").notNull(),
-  guildCode: text("guild_code"), // Future: fight assigned to a specific guild/class
+  guildCode: text("guild_code"), // Deprecated: use guild_fights table instead
   questions: jsonb("questions").notNull().$type<Question[]>(),
   enemies: jsonb("enemies").notNull().$type<Enemy[]>(),
   baseXP: integer("base_xp").notNull().default(10),
@@ -120,6 +120,7 @@ export const fights = pgTable("fights", {
   randomizeQuestions: boolean("randomize_questions").notNull().default(false),
   shuffleOptions: boolean("shuffle_options").notNull().default(true),
   enemyScript: text("enemy_script"), // Future: custom AI behavior script
+  soloModeEnabled: boolean("solo_mode_enabled").notNull().default(false), // Teacher-enabled solo mode
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
@@ -155,6 +156,12 @@ export const combatSessions = pgTable("combat_sessions", {
   phaseStartTime: bigint("phase_start_time", { mode: "number" }),
   jobLocked: boolean("job_locked").notNull().default(false),
   questionOrder: jsonb("question_order").$type<number[]>(),
+  
+  // Solo mode fields
+  isSoloMode: boolean("is_solo_mode").notNull().default(false),
+  soloHostId: varchar("solo_host_id"), // Student ID of host (null for teacher-hosted)
+  allowJoiners: boolean("allow_joiners").notNull().default(true), // Host can toggle
+  guildId: varchar("guild_id"), // Which guild this session contributes XP to (for solo mode)
 });
 
 export type DbCombatSession = typeof combatSessions.$inferSelect;
@@ -178,6 +185,8 @@ export const combatStats = pgTable("combat_stats", {
   survived: boolean("survived").notNull().default(false),
   xpEarned: integer("xp_earned").notNull().default(0),
   lootItemClaimed: varchar("loot_item_claimed"), // Item ID claimed from this fight's loot table
+  guildId: varchar("guild_id"), // Guild this fight contributed to (for stats/leaderboards)
+  isSoloMode: boolean("is_solo_mode").notNull().default(false), // Whether this was a solo mode fight
   completedAt: bigint("completed_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
@@ -188,6 +197,107 @@ export const insertCombatStatSchema = createInsertSchema(combatStats).omit({
 
 export type InsertCombatStat = z.infer<typeof insertCombatStatSchema>;
 export type CombatStat = typeof combatStats.$inferSelect;
+
+// Guilds table (teacher-created groups for organizing fights and students)
+export const guilds = pgTable("guilds", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teacherId: varchar("teacher_id").notNull(),
+  name: text("name").notNull(),
+  code: text("code").notNull().unique(), // 6-character join code
+  description: text("description"),
+  level: integer("level").notNull().default(1),
+  experience: integer("experience").notNull().default(0),
+  isArchived: boolean("is_archived").notNull().default(false),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertGuildSchema = createInsertSchema(guilds).omit({
+  id: true,
+  code: true, // Auto-generated
+  createdAt: true,
+});
+
+export type InsertGuild = z.infer<typeof insertGuildSchema>;
+export type Guild = typeof guilds.$inferSelect;
+
+// Guild memberships (many-to-many: students can join multiple guilds)
+export const guildMemberships = pgTable("guild_memberships", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  guildId: varchar("guild_id").notNull(),
+  studentId: varchar("student_id").notNull(),
+  joinedAt: bigint("joined_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertGuildMembershipSchema = createInsertSchema(guildMemberships).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export type InsertGuildMembership = z.infer<typeof insertGuildMembershipSchema>;
+export type GuildMembership = typeof guildMemberships.$inferSelect;
+
+// Guild fight assignments (many-to-many: fights can be assigned to multiple guilds)
+export const guildFights = pgTable("guild_fights", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  guildId: varchar("guild_id").notNull(),
+  fightId: varchar("fight_id").notNull(),
+  assignedAt: bigint("assigned_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertGuildFightSchema = createInsertSchema(guildFights).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export type InsertGuildFight = z.infer<typeof insertGuildFightSchema>;
+export type GuildFight = typeof guildFights.$inferSelect;
+
+// Guild settings (teacher-configurable options per guild)
+export const guildSettings = pgTable("guild_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  guildId: varchar("guild_id").notNull().unique(),
+  hiddenLeaderboardMetrics: jsonb("hidden_leaderboard_metrics").$type<string[]>().default([]), // Metrics to hide (e.g., ["damageDealt", "healing"])
+  enableGroupQuests: boolean("enable_group_quests").notNull().default(true),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertGuildSettingsSchema = createInsertSchema(guildSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertGuildSettings = z.infer<typeof insertGuildSettingsSchema>;
+export type GuildSettings = typeof guildSettings.$inferSelect;
+
+// Guild quests (achievements and group goals)
+export interface QuestCriteria {
+  type: "all_members_play_class" | "member_unlocks_job" | "total_damage" | "total_healing" | "complete_fight_count" | "custom";
+  targetClass?: CharacterClass; // For "all_members_play_class"
+  targetJob?: CharacterClass; // For "member_unlocks_job"
+  targetAmount?: number; // For "total_damage", "total_healing", "complete_fight_count"
+  customDescription?: string; // For "custom" quests
+}
+
+export const guildQuests = pgTable("guild_quests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  guildId: varchar("guild_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  criteria: jsonb("criteria").notNull().$type<QuestCriteria>(),
+  isCompleted: boolean("is_completed").notNull().default(false),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertGuildQuestSchema = createInsertSchema(guildQuests).omit({
+  id: true,
+  isCompleted: true,
+  completedAt: true,
+  createdAt: true,
+});
+
+export type InsertGuildQuest = z.infer<typeof insertGuildQuestSchema>;
+export type GuildQuest = typeof guildQuests.$inferSelect;
 
 // Question schema
 export interface Question {
@@ -228,7 +338,7 @@ export interface Fight {
   id: string;
   teacherId: string;
   title: string;
-  guildCode: string | null; // Future: fight assigned to a specific guild/class
+  guildCode: string | null; // Deprecated: use guild_fights table instead
   questions: Question[];
   enemies: Enemy[];
   baseXP: number;
@@ -238,13 +348,14 @@ export interface Fight {
   randomizeQuestions: boolean;
   shuffleOptions: boolean;
   enemyScript?: string; // Future: custom AI behavior script
+  soloModeEnabled: boolean; // Teacher-enabled solo mode
   createdAt: number;
 }
 
 export const insertFightSchema = z.object({
   teacherId: z.string().min(1),
   title: z.string().min(1),
-  guildCode: z.string().optional().nullable(), // Future: guild assignment
+  guildCode: z.string().optional().nullable(), // Deprecated: use guild_fights table
   questions: z.array(questionSchema).min(1),
   enemies: z.array(enemySchema).default([]),
   baseXP: z.number().min(1).max(100).default(10),
@@ -253,6 +364,7 @@ export const insertFightSchema = z.object({
   lootTable: z.array(z.object({ itemId: z.string() })).default([]),
   randomizeQuestions: z.boolean().default(false),
   shuffleOptions: z.boolean().default(true),
+  soloModeEnabled: z.boolean().default(false),
 });
 
 export type InsertFight = z.infer<typeof insertFightSchema>;
@@ -674,4 +786,35 @@ export function calculateDamageReduction(def: number, vit: number): number {
 // Calculate agro reduction from AGI
 export function calculateAgroReduction(agi: number): number {
   return agi;
+}
+
+// Guild level system (uses same curve as player jobs, extends to 99)
+export function getGuildXPForLevel(level: number): number {
+  if (level <= 1) return 0;
+  // Same formula as player jobs: 6 * (level - 1)
+  return 6 * (level - 1);
+}
+
+export function getTotalGuildXPForLevel(level: number): number {
+  let total = 0;
+  for (let i = 2; i <= level; i++) {
+    total += getGuildXPForLevel(i);
+  }
+  return total;
+}
+
+export function getGuildLevelFromXP(xp: number): number {
+  let level = 1;
+  let cumulativeXP = 0;
+  
+  while (level < 99) {
+    const xpNeededForNext = getGuildXPForLevel(level + 1);
+    if (cumulativeXP + xpNeededForNext > xp) {
+      break;
+    }
+    cumulativeXP += xpNeededForNext;
+    level++;
+  }
+  
+  return level;
 }
