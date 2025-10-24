@@ -8,6 +8,7 @@ import { HealthBar } from "@/components/HealthBar";
 import { MPBar } from "@/components/MPBar";
 import { ComboPoints } from "@/components/ComboPoints";
 import { VictoryModal } from "@/components/VictoryModal";
+import { FloatingNumber } from "@/components/FloatingNumber";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import type { CombatState, Question, LootItem } from "@shared/schema";
@@ -47,6 +48,10 @@ export default function Combat() {
   const [isEnemyHit, setIsEnemyHit] = useState(false);
   const [isPlayerHit, setIsPlayerHit] = useState(false);
   const [screenShake, setScreenShake] = useState(false);
+  // Floating damage numbers
+  const [floatingNumbers, setFloatingNumbers] = useState<Array<{ id: string; value: number; type: "damage" | "heal" }>>([]);
+  // Shield block animation
+  const [showShieldPulse, setShowShieldPulse] = useState(false);
   // Animation timer refs for cleanup
   const enemyHitDelayTimer = useRef<NodeJS.Timeout | null>(null);
   const enemyHitResetTimer = useRef<NodeJS.Timeout | null>(null);
@@ -332,6 +337,9 @@ export default function Combat() {
         description: `You are protected by ${currentBlocker.nickname}`,
         duration: 2500,
       });
+      // Trigger shield pulse animation
+      setShowShieldPulse(true);
+      setTimeout(() => setShowShieldPulse(false), 1500);
     }
 
     // Detect enemy attacks (health decreases during combat phase for ANY player - broadcast to all)
@@ -363,6 +371,12 @@ export default function Combat() {
     const currentEnemy = combatState.enemies[0];
     const previousEnemy = previousCombatState.enemies[0];
     if (currentEnemy && previousEnemy && currentEnemy.health < previousEnemy.health) {
+      const damageDealt = previousEnemy.health - currentEnemy.health;
+      
+      // Add floating damage number
+      const numberId = `damage-${Date.now()}`;
+      setFloatingNumbers(prev => [...prev, { id: numberId, value: damageDealt, type: "damage" }]);
+      
       // Clear ALL existing timers for enemy hit animation
       if (enemyHitDelayTimer.current) {
         clearTimeout(enemyHitDelayTimer.current);
@@ -471,6 +485,10 @@ export default function Combat() {
     if (ws) {
       ws.send(JSON.stringify({ type: "heal", targetId }));
     }
+  };
+
+  const removeFloatingNumber = (id: string) => {
+    setFloatingNumbers(prev => prev.filter(num => num.id !== id));
   };
 
   // Shuffle options if enabled - use question ID as seed for consistency
@@ -956,6 +974,16 @@ export default function Combat() {
                     />
                   )}
                 </AnimatePresence>
+                
+                {/* Floating damage numbers */}
+                {floatingNumbers.map((num) => (
+                  <FloatingNumber
+                    key={num.id}
+                    value={num.value}
+                    type={num.type}
+                    onComplete={() => removeFloatingNumber(num.id)}
+                  />
+                ))}
               </motion.div>
               
               <motion.div
@@ -978,8 +1006,22 @@ export default function Combat() {
       {playerState && (
         <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border p-2 z-50" style={{ height: '10vh' }}>
           <div className="flex items-center gap-3 h-full max-w-7xl mx-auto">
-            <div style={{ width: '48px', height: '48px' }}>
+            <div className="relative" style={{ width: '48px', height: '48px' }}>
               <PlayerAvatar characterClass={playerState.characterClass} gender={playerState.gender} size="md" />
+              {/* Shield pulse animation */}
+              <AnimatePresence>
+                {showShieldPulse && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: [0.8, 1.2, 0.8], opacity: [0, 1, 0] }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  >
+                    <Shield className="h-10 w-10 text-warrior drop-shadow-lg" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-center justify-between mb-1">
