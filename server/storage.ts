@@ -262,7 +262,13 @@ export class DatabaseStorage implements IStorage {
     return sessions as CombatState[];
   }
 
-  async createCombatSession(fightId: string, fight: Fight): Promise<CombatState> {
+  async createCombatSession(fightId: string, fight: Fight, soloModeOptions?: {
+    soloModeEnabled?: boolean;
+    soloModeStartHP?: number;
+    soloModeHostId?: string;
+    soloModeAIEnabled?: boolean;
+    soloModeJoinersBlocked?: boolean;
+  }): Promise<CombatState> {
     // Generate unique 6-character session ID
     let sessionId = generateSessionId();
     
@@ -293,6 +299,11 @@ export class DatabaseStorage implements IStorage {
       players: {},
       enemies: fight.enemies.map((e) => ({ ...e, health: e.maxHealth })),
       questionOrder,
+      soloModeEnabled: soloModeOptions?.soloModeEnabled || false,
+      soloModeStartHP: soloModeOptions?.soloModeStartHP || undefined,
+      soloModeHostId: soloModeOptions?.soloModeHostId || undefined,
+      soloModeAIEnabled: soloModeOptions?.soloModeAIEnabled || false,
+      soloModeJoinersBlocked: soloModeOptions?.soloModeJoinersBlocked || false,
     };
     
     await db.insert(combatSessions).values({
@@ -303,6 +314,11 @@ export class DatabaseStorage implements IStorage {
       players: session.players,
       enemies: session.enemies,
       questionOrder: session.questionOrder,
+      soloModeEnabled: session.soloModeEnabled,
+      soloModeStartHP: session.soloModeStartHP,
+      soloModeHostId: session.soloModeHostId,
+      soloModeAIEnabled: session.soloModeAIEnabled,
+      soloModeJoinersBlocked: session.soloModeJoinersBlocked,
     });
     
     return session;

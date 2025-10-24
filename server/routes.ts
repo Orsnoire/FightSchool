@@ -1556,6 +1556,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
             state: session 
           }));
           log(`[WebSocket] Host created session ${session.sessionId} for fight ${message.fightId}`, "websocket");
+        } else if (message.type === "host_solo") {
+          // Student hosting a solo mode session
+          const fight = await storage.getFight(message.fightId);
+          if (!fight) {
+            log(`[WebSocket] Solo host connection failed: Fight ${message.fightId} not found`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "Fight not found" }));
+            return;
+          }
+
+          // Check if solo mode is enabled for this fight
+          if (!fight.soloModeEnabled) {
+            log(`[WebSocket] Solo mode not enabled for fight ${message.fightId}`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "Solo mode not enabled for this fight" }));
+            return;
+          }
+
+          const student = await storage.getStudent(message.studentId);
+          if (!student) {
+            log(`[WebSocket] Solo host failed: Student not found (${message.studentId})`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "Student not found" }));
+            return;
+          }
+
+          // Set connection properties for solo mode host
+          ws.fightId = message.fightId;
+          ws.isHost = true;
+          ws.studentId = message.studentId; // Solo host is also a player
+
+          // Clean up any existing solo sessions for this student
+          const existingSessions = await storage.getCombatSessionsByFightId(message.fightId);
+          const studentSoloSessions = existingSessions.filter(s => s.soloModeHostId === message.studentId);
+          
+          for (const existingSession of studentSoloSessions) {
+            try {
+              await cleanupSession(existingSession.sessionId);
+            } catch (error) {
+              log(`[WebSocket] Error cleaning up solo session ${existingSession.sessionId}: ${error}`, "websocket");
+            }
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 200));
+
+          // Create solo mode combat session with initial HP = 10
+          const session = await storage.createCombatSession(message.fightId, fight, {
+            soloModeEnabled: true,
+            soloModeStartHP: 10,
+            soloModeHostId: message.studentId,
+            soloModeAIEnabled: false,
+            soloModeJoinersBlocked: false,
+          });
+
+          ws.sessionId = session.sessionId;
+
+          // Auto-add the host as first player
+          await storage.addPlayerToCombat(session.sessionId, student);
+
+          // Update session with scaled HP (10 + 2 per player = 12 for 1 player, capped at 32)
+          const playerCount = Object.keys(session.players).length + 1; // +1 for host
+          const scaledHP = Math.min(10 + (playerCount * 2), 32);
+          await storage.updateCombatSession(session.sessionId, {
+            soloModeStartHP: scaledHP,
+          });
+
+          const updatedSession = await storage.getCombatSession(session.sessionId);
+
+          ws.send(JSON.stringify({
+            type: "solo_session_created",
+            sessionId: session.sessionId,
+            state: updatedSession,
+          }));
+          log(`[WebSocket] Student ${student.nickname} created solo session ${session.sessionId} for fight ${message.fightId}`, "websocket");
+        } else if (message.type === "solo_toggle_ai" && ws.isHost && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
+          if (!session || !session.soloModeEnabled) {
+            log(`[WebSocket] Toggle AI failed: Not a solo mode session`, "websocket");
+            return;
+          }
+
+          // AI can only be enabled if 5+ players
+          const playerCount = Object.keys(session.players).length;
+          const newAIState = message.enabled && playerCount >= 5;
+
+          await storage.updateCombatSession(ws.sessionId, {
+            soloModeAIEnabled: newAIState,
+          });
+
+          const updatedSession = await storage.getCombatSession(ws.sessionId);
+          broadcastToCombat(ws.sessionId, { 
+            type: "combat_state", 
+            state: updatedSession 
+          });
+
+          log(`[WebSocket] Solo session ${ws.sessionId} AI ${newAIState ? 'enabled' : 'disabled'}`, "websocket");
+        } else if (message.type === "solo_block_joiners" && ws.isHost && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
+          if (!session || !session.soloModeEnabled) {
+            log(`[WebSocket] Block joiners failed: Not a solo mode session`, "websocket");
+            return;
+          }
+
+          await storage.updateCombatSession(ws.sessionId, {
+            soloModeJoinersBlocked: message.blocked,
+          });
+
+          const updatedSession = await storage.getCombatSession(ws.sessionId);
+          broadcastToCombat(ws.sessionId, {
+            type: "combat_state",
+            state: updatedSession,
+          });
+
+          log(`[WebSocket] Solo session ${ws.sessionId} joiners ${message.blocked ? 'blocked' : 'allowed'}`, "websocket");
         } else if (message.type === "join") {
           const student = await storage.getStudent(message.studentId);
           const sessionId = message.sessionId;
@@ -1576,6 +1687,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
 
+          // Check solo mode joiner restrictions
+          if (session.soloModeEnabled && session.soloModeJoinersBlocked) {
+            log(`[WebSocket] Join blocked: Solo mode host has blocked new joiners`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "Host has blocked new players from joining" }));
+            return;
+          }
+
           const fight = await storage.getFight(session.fightId);
           if (!fight) {
             log(`[WebSocket] Join failed: Fight not found (${session.fightId})`, "websocket");
@@ -1584,8 +1702,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           log(`[WebSocket] Student ${student.nickname} joining session ${sessionId} for fight ${fight.title}`, "websocket");
 
-          // AUTO-ENROLL: Assign teacher's guildCode to student if they don't have one
-          if (!student.guildCode) {
+          // AUTO-ENROLL: Assign teacher's guildCode to student if they don't have one (skip for solo mode)
+          if (!student.guildCode && !session.soloModeEnabled) {
             const teacher = await storage.getTeacher(fight.teacherId);
             if (teacher && teacher.guildCode) {
               await storage.updateStudent(student.id, { guildCode: teacher.guildCode });
@@ -1593,7 +1711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          // Set both sessionId (primary) and fuildId (cached) on the WebSocket
+          // Set both sessionId (primary) and fightId (cached) on the WebSocket
           ws.studentId = student.id;
           ws.sessionId = sessionId;
           ws.fightId = session.fightId;
@@ -1601,6 +1719,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add player to combat if not already in
           if (!session.players[student.id]) {
             await storage.addPlayerToCombat(sessionId, student);
+          }
+
+          // Scale HP for solo mode when new player joins
+          if (session.soloModeEnabled) {
+            const updatedSessionForCount = await storage.getCombatSession(sessionId);
+            if (updatedSessionForCount) {
+              const playerCount = Object.keys(updatedSessionForCount.players).length;
+              const scaledHP = Math.min(10 + (playerCount * 2), 32);
+              
+              await storage.updateCombatSession(sessionId, {
+                soloModeStartHP: scaledHP,
+              });
+              
+              log(`[WebSocket] Solo mode HP scaled to ${scaledHP} for ${playerCount} players`, "websocket");
+            }
           }
 
           const updatedSession = await storage.getCombatSession(sessionId);
