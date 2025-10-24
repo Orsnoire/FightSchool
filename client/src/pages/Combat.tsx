@@ -645,19 +645,41 @@ export default function Combat() {
             </>
           )}
         </div>
-        {connectionStatus === "disconnected" && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setReconnectAttempts(1);
-            }}
-            data-testid="button-reconnect"
-          >
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Reconnect
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Solo Mode Host - End Fight Button (during active combat) */}
+          {combatState?.soloModeEnabled && combatState?.soloModeHostId === studentId && combatState?.currentPhase !== "waiting" && combatState?.currentPhase !== "game_over" && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => {
+                if (ws) {
+                  ws.send(JSON.stringify({ type: "end_fight" }));
+                  toast({
+                    title: "Ending Fight",
+                    description: "Returning to lobby...",
+                  });
+                  navigate("/student/lobby");
+                }
+              }}
+              data-testid="button-end-fight"
+            >
+              End Fight
+            </Button>
+          )}
+          {connectionStatus === "disconnected" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setReconnectAttempts(1);
+              }}
+              data-testid="button-reconnect"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Reconnect
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* B4 FIX: Enemy section constrained to max 12.5vh (1/8 of viewport) */}
