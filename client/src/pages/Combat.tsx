@@ -43,6 +43,15 @@ export default function Combat() {
   const [previousPhase, setPreviousPhase] = useState<string>("");
   // Track previous combat state for detecting healing, blocking, and enemy attacks
   const [previousCombatState, setPreviousCombatState] = useState<CombatState | null>(null);
+  // Animation state for attacks
+  const [isEnemyHit, setIsEnemyHit] = useState(false);
+  const [isPlayerHit, setIsPlayerHit] = useState(false);
+  const [screenShake, setScreenShake] = useState(false);
+  // Animation timer refs for cleanup
+  const enemyHitDelayTimer = useRef<NodeJS.Timeout | null>(null);
+  const enemyHitResetTimer = useRef<NodeJS.Timeout | null>(null);
+  const playerHitDelayTimer = useRef<NodeJS.Timeout | null>(null);
+  const playerHitResetTimer = useRef<NodeJS.Timeout | null>(null);
   // B6/B7 FIX: Connection status and reconnection logic
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
@@ -346,6 +355,87 @@ export default function Combat() {
     setPreviousCombatState(combatState);
   }, [combatState, previousCombatState, toast]);
 
+  // Detect attacks and trigger animations
+  useEffect(() => {
+    if (!combatState || !previousCombatState) return;
+
+    // Detect player attacks (enemy health decreased)
+    const currentEnemy = combatState.enemies[0];
+    const previousEnemy = previousCombatState.enemies[0];
+    if (currentEnemy && previousEnemy && currentEnemy.health < previousEnemy.health) {
+      // Clear ALL existing timers for enemy hit animation
+      if (enemyHitDelayTimer.current) {
+        clearTimeout(enemyHitDelayTimer.current);
+        enemyHitDelayTimer.current = null;
+      }
+      if (enemyHitResetTimer.current) {
+        clearTimeout(enemyHitResetTimer.current);
+        enemyHitResetTimer.current = null;
+      }
+      
+      // Reset state to ensure animation retriggering
+      setIsEnemyHit(false);
+      
+      // Use setTimeout to ensure state change is detected
+      enemyHitDelayTimer.current = setTimeout(() => {
+        setIsEnemyHit(true);
+        enemyHitDelayTimer.current = null;
+        
+        // Schedule reset after animation completes
+        enemyHitResetTimer.current = setTimeout(() => {
+          setIsEnemyHit(false);
+          enemyHitResetTimer.current = null;
+        }, 600);
+      }, 10);
+    }
+
+    // Detect enemy attacks (any player health decreased)
+    const studentId = localStorage.getItem("studentId");
+    if (studentId) {
+      const currentPlayer = combatState.players[studentId];
+      const previousPlayer = previousCombatState.players[studentId];
+      if (currentPlayer && previousPlayer && currentPlayer.health < previousPlayer.health) {
+        // Clear ALL existing timers for player hit animation
+        if (playerHitDelayTimer.current) {
+          clearTimeout(playerHitDelayTimer.current);
+          playerHitDelayTimer.current = null;
+        }
+        if (playerHitResetTimer.current) {
+          clearTimeout(playerHitResetTimer.current);
+          playerHitResetTimer.current = null;
+        }
+        
+        // Reset state to ensure animation retriggering
+        setIsPlayerHit(false);
+        setScreenShake(false);
+        
+        // Use setTimeout to ensure state change is detected
+        playerHitDelayTimer.current = setTimeout(() => {
+          setIsPlayerHit(true);
+          setScreenShake(true);
+          playerHitDelayTimer.current = null;
+          
+          // Schedule reset after animation completes
+          playerHitResetTimer.current = setTimeout(() => {
+            setIsPlayerHit(false);
+            setScreenShake(false);
+            playerHitResetTimer.current = null;
+          }, 600);
+        }, 10);
+      }
+    }
+  }, [combatState, previousCombatState]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (enemyHitDelayTimer.current) clearTimeout(enemyHitDelayTimer.current);
+      if (enemyHitResetTimer.current) clearTimeout(enemyHitResetTimer.current);
+      if (playerHitDelayTimer.current) clearTimeout(playerHitDelayTimer.current);
+      if (playerHitResetTimer.current) clearTimeout(playerHitResetTimer.current);
+    };
+  }, []);
+
   const submitAnswer = () => {
     if (ws && selectedAnswer && currentQuestion) {
       // B10 FIX: Track if answer was correct for damage feedback toast
@@ -430,7 +520,14 @@ export default function Combat() {
   const rightPlayers = allPlayers.slice(16, 32);
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <motion.div 
+      className="h-screen bg-background flex flex-col overflow-hidden"
+      animate={{ 
+        x: screenShake ? [0, -8, 8, -6, 6, -4, 4, 0] : 0,
+        y: screenShake ? [0, -4, 4, -3, 3, -2, 2, 0] : 0
+      }}
+      transition={{ duration: 0.5 }}
+    >
       {/* B6/B7 FIX: Connection status indicator */}
       <div className="bg-card border-b border-border px-4 py-1 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -827,8 +924,16 @@ export default function Combat() {
               
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
+                animate={{ 
+                  scale: isEnemyHit ? [1, 1.1, 0.95, 1] : 1, 
+                  opacity: 1,
+                  x: isEnemyHit ? [0, -10, 10, -5, 5, 0] : 0
+                }}
+                transition={{ 
+                  scale: { duration: 0.6 },
+                  x: { duration: 0.4 },
+                  opacity: { delay: 0.3, duration: 0.5 }
+                }}
                 className="relative"
                 style={{ maxHeight: '70vh', maxWidth: '80vw' }}
               >
@@ -839,6 +944,18 @@ export default function Combat() {
                   style={{ maxHeight: '70vh', maxWidth: '80vw', height: 'auto', width: 'auto' }}
                   data-testid="img-enemy-large"
                 />
+                {/* Attack flash overlay */}
+                <AnimatePresence>
+                  {isEnemyHit && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: [0, 0.7, 0] }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="absolute inset-0 bg-damage rounded-lg pointer-events-none"
+                    />
+                  )}
+                </AnimatePresence>
               </motion.div>
               
               <motion.div
@@ -914,6 +1031,6 @@ export default function Combat() {
           onClose={() => navigate("/student/lobby")}
         />
       )}
-    </div>
+    </motion.div>
   );
 }
