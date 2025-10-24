@@ -411,6 +411,14 @@ export interface PlayerState {
   fireballChargeRounds: number; // 0-2 rounds charged
   fireballCooldown: number; // Rounds remaining before can use again (0-5)
   
+  // Warlock abilities
+  hexedEnemyId?: string; // ID of enemy currently hexed by this warlock
+  hexRoundsRemaining: number; // Rounds remaining for hex effect
+  hexDamage: number; // Damage dealt per round by hex (INT - 1)
+  pactSurgeBoost: number; // Temporary ATK boost from Pact Surge
+  abyssalDrainActive: boolean; // Whether Abyssal Drain buff is active
+  abyssalDrainRounds: number; // Rounds remaining for Abyssal Drain buff
+  
   // Combat statistics tracking (for XP calculation)
   questionsAnswered: number;
   questionsCorrect: number;
