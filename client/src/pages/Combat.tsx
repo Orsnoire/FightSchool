@@ -13,8 +13,10 @@ import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles, Calculator } from "lucide-react";
-import type { CombatState, Question, LootItem } from "@shared/schema";
+import type { CombatState, Question, LootItem, CharacterClass, Gender } from "@shared/schema";
 import { getFireballMaxChargeRounds } from "@shared/jobSystem";
+import { ULTIMATE_ABILITIES, type AnimationType } from "@shared/ultimateAbilities";
+import { UltimateAnimation } from "@/components/UltimateAnimation";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Combat() {
@@ -73,6 +75,15 @@ export default function Combat() {
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const isUnmounting = useRef(false);
   const gameIsOver = useRef(false);
+  // Ultimate ability animation state
+  const [showUltimateAnimation, setShowUltimateAnimation] = useState(false);
+  const [ultimateAnimationData, setUltimateAnimationData] = useState<{
+    playerName: string;
+    ultimateName: string;
+    animationType: AnimationType;
+    currentClass: CharacterClass;
+    currentGender: Gender;
+  } | null>(null);
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
@@ -164,6 +175,21 @@ export default function Combat() {
           variant: "default"
         });
         setTimeout(() => navigate("/student/lobby"), 1000);
+      } else if (message.type === "ultimate_animation") {
+        // Ultimate ability animation triggered
+        setUltimateAnimationData({
+          playerName: message.playerName,
+          ultimateName: message.ultimateName,
+          animationType: message.animationType,
+          currentClass: message.currentClass,
+          currentGender: message.currentGender,
+        });
+        setShowUltimateAnimation(true);
+        
+        // Auto-hide after 4 seconds
+        setTimeout(() => {
+          setShowUltimateAnimation(false);
+        }, 4000);
       }
     };
 
@@ -524,6 +550,17 @@ export default function Combat() {
   const selectHealTarget = (targetId: string) => {
     if (ws) {
       ws.send(JSON.stringify({ type: "heal", targetId }));
+    }
+  };
+
+  const useUltimate = (ultimateId: string) => {
+    if (ws) {
+      ws.send(JSON.stringify({ type: "use_ultimate", ultimateId }));
+      toast({
+        title: "Ultimate Activated!",
+        description: "Your ultimate ability is being unleashed...",
+        duration: 2000,
+      });
     }
   };
 
@@ -1158,6 +1195,34 @@ export default function Combat() {
                       )}
                     </>
                   )}
+                  
+                  {/* Ultimate Ability Buttons */}
+                  {playerState && playerState.jobLevels && Object.values(ULTIMATE_ABILITIES).map((ultimate) => {
+                    const jobLevel = playerState.jobLevels[ultimate.jobClass] || 0;
+                    const isUnlocked = jobLevel >= 15;
+                    if (!isUnlocked) return null;
+                    
+                    const lastUsed = playerState.lastUltimatesUsed?.[ultimate.id] || -999;
+                    const fightsAgo = (playerState.fightCount || 0) - lastUsed;
+                    const isOnCooldown = fightsAgo < ultimate.cooldown && lastUsed !== -999;
+                    const remainingCooldown = isOnCooldown ? ultimate.cooldown - fightsAgo : 0;
+                    
+                    return (
+                      <Button
+                        key={ultimate.id}
+                        size="sm"
+                        variant={isOnCooldown ? "outline" : "default"}
+                        disabled={isOnCooldown || playerState.isDead || combatState.currentPhase === "waiting"}
+                        onClick={() => useUltimate(ultimate.id)}
+                        className="whitespace-nowrap"
+                        data-testid={`button-ultimate-${ultimate.id}`}
+                        title={`${ultimate.name} (${ultimate.jobClass})\n${ultimate.description}\n${isOnCooldown ? `Cooldown: ${remainingCooldown} fights` : 'Ready!'}`}
+                      >
+                        <Sparkles className="h-3 w-3 mr-1" />
+                        {isOnCooldown ? `${ultimate.name.slice(0, 8)}... (${remainingCooldown})` : ultimate.name.slice(0, 8)}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
               
@@ -1189,6 +1254,18 @@ export default function Combat() {
           currentXP={victoryData.currentXP}
           lootTable={victoryData.lootTable}
           onClose={() => navigate("/student/lobby")}
+        />
+      )}
+
+      {/* Ultimate Ability Animation */}
+      {showUltimateAnimation && ultimateAnimationData && (
+        <UltimateAnimation
+          playerName={ultimateAnimationData.playerName}
+          ultimateName={ultimateAnimationData.ultimateName}
+          animationType={ultimateAnimationData.animationType}
+          currentClass={ultimateAnimationData.currentClass}
+          currentGender={ultimateAnimationData.currentGender}
+          onComplete={() => setShowUltimateAnimation(false)}
         />
       )}
     </motion.div>

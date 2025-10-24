@@ -1,6 +1,6 @@
 import type { CharacterClass } from "./schema";
 
-export type AnimationType = "warrior" | "wizard" | "scout" | "herbalist";
+export type AnimationType = "fire" | "ice" | "holy" | "dark" | "nature" | "lightning" | "spirit";
 
 export interface UltimateAbility {
   id: string;
@@ -22,7 +22,7 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     name: "Divine Slash",
     description: "Unleash a holy strike that deals massive damage to all enemies",
     jobClass: "knight",
-    animationType: "warrior",
+    animationType: "lightning",
     cooldown: 3,
     effect: {
       type: "damage",
@@ -35,8 +35,8 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     name: "Holy Restoration",
     description: "Channel divine energy to fully heal all allies",
     jobClass: "paladin",
-    animationType: "warrior",
-    cooldown: 4,
+    animationType: "holy",
+    cooldown: 3,
     effect: {
       type: "heal",
       value: "100% HP to all allies",
@@ -48,7 +48,7 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     name: "Shadow Rend",
     description: "Sacrifice your own HP to deal devastating dark damage",
     jobClass: "dark_knight",
-    animationType: "warrior",
+    animationType: "dark",
     cooldown: 3,
     effect: {
       type: "damage",
@@ -62,8 +62,8 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     name: "Meteor Storm",
     description: "Rain destruction from the heavens upon all foes",
     jobClass: "sage",
-    animationType: "wizard",
-    cooldown: 4,
+    animationType: "fire",
+    cooldown: 3,
     effect: {
       type: "damage",
       value: "INT × 6 + MAT × 4",
@@ -75,7 +75,7 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     name: "Soul Drain",
     description: "Drain the life force from all enemies to restore your own",
     jobClass: "warlock",
-    animationType: "wizard",
+    animationType: "dark",
     cooldown: 3,
     effect: {
       type: "damage",
@@ -89,7 +89,7 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     name: "Rapid Barrage",
     description: "Fire a devastating volley of arrows at lightning speed",
     jobClass: "ranger",
-    animationType: "scout",
+    animationType: "lightning",
     cooldown: 3,
     effect: {
       type: "damage",
@@ -102,7 +102,7 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     name: "Thousand Fists",
     description: "Unleash an unstoppable flurry of strikes",
     jobClass: "monk",
-    animationType: "scout",
+    animationType: "spirit",
     cooldown: 3,
     effect: {
       type: "damage",
@@ -116,8 +116,8 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     name: "Nature's Wrath",
     description: "Call upon the fury of nature to devastate enemies and heal allies",
     jobClass: "druid",
-    animationType: "herbalist",
-    cooldown: 4,
+    animationType: "nature",
+    cooldown: 3,
     effect: {
       type: "damage",
       value: "MND × 4 + MAT × 2 (heals all allies for 25% damage)",

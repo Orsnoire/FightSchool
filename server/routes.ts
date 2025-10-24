@@ -1370,7 +1370,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const allPlayersDead = Object.values(session.players).every((p) => p.isDead);
     if (allPlayersDead) {
       await saveCombatStats(sessionId);
-      await storage.updateCombatSession(sessionId, { currentPhase: "game_over" });
+      
+      // Increment fightCount for ultimate ability cooldown tracking (defeat case)
+      for (const player of Object.values(session.players)) {
+        player.fightCount = (player.fightCount || 0) + 1;
+      }
+      
+      await storage.updateCombatSession(sessionId, { 
+        currentPhase: "game_over",
+        players: session.players 
+      });
+      
       broadcastToCombat(sessionId, {
         type: "game_over",
         victory: false,
@@ -1431,7 +1441,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currentXP: 0,
           };
         }
+        
+        // Increment fightCount for ultimate ability cooldown tracking
+        player.fightCount = (player.fightCount || 0) + 1;
       }
+      
+      // Update session with incremented fightCounts
+      await storage.updateCombatSession(sessionId, { players: session.players });
 
       // Guild XP distribution (skip if solo mode)
       if (!session.soloModeEnabled) {
