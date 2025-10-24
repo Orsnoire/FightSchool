@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, Trophy, Swords, LogOut } from "lucide-react";
+import { ArrowLeft, Users, Trophy, Swords, LogOut, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { type Guild, type GuildMembership } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useState } from "react";
 
 export default function StudentGuildDetail() {
   const [, params] = useRoute("/student/guild/:id");
@@ -15,6 +16,7 @@ export default function StudentGuildDetail() {
   const guildId = params?.id;
   const { toast } = useToast();
   const studentId = localStorage.getItem("studentId");
+  const [isHostingSolo, setIsHostingSolo] = useState<string | null>(null);
 
   const { data: guild, isLoading: guildLoading } = useQuery<Guild>({
     queryKey: [`/api/guilds/${guildId}`],
@@ -28,6 +30,11 @@ export default function StudentGuildDetail() {
 
   const { data: leaderboard } = useQuery<any[]>({
     queryKey: [`/api/guilds/${guildId}/leaderboard`, "damageDealt"],
+    enabled: !!guildId,
+  });
+
+  const { data: guildFights } = useQuery<any[]>({
+    queryKey: [`/api/guilds/${guildId}/fights`],
     enabled: !!guildId,
   });
 
@@ -53,6 +60,56 @@ export default function StudentGuildDetail() {
     if (confirm("Are you sure you want to leave this guild?")) {
       leaveGuildMutation.mutate();
     }
+  };
+
+  const hostSoloMode = async (fightId: string) => {
+    setIsHostingSolo(fightId);
+
+    // Create WebSocket connection to host solo mode
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      // Send host_solo message
+      socket.send(JSON.stringify({
+        type: "host_solo",
+        studentId: studentId,
+        fightId: fightId,
+      }));
+    };
+
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === "session_created") {
+        // Solo session created successfully
+        localStorage.setItem("sessionId", message.sessionId);
+        socket.close();
+        toast({
+          title: "Solo session created!",
+          description: `Session code: ${message.sessionId}`,
+        });
+        navigate("/student/combat");
+      } else if (message.type === "error") {
+        socket.close();
+        setIsHostingSolo(null);
+        toast({
+          title: "Failed to host solo mode",
+          description: message.message || "The fight may not have solo mode enabled",
+          variant: "destructive",
+        });
+      }
+    };
+
+    socket.onerror = () => {
+      socket.close();
+      setIsHostingSolo(null);
+      toast({
+        title: "Connection error",
+        description: "Failed to connect to server",
+        variant: "destructive",
+      });
+    };
   };
 
   if (guildLoading) {
@@ -113,12 +170,64 @@ export default function StudentGuildDetail() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="leaderboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3" data-testid="tabs-guild">
+        <Tabs defaultValue="fights" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4" data-testid="tabs-guild">
+            <TabsTrigger value="fights" data-testid="tab-fights">Fights</TabsTrigger>
             <TabsTrigger value="leaderboard" data-testid="tab-leaderboard">Leaderboard</TabsTrigger>
             <TabsTrigger value="roster" data-testid="tab-roster">Roster</TabsTrigger>
             <TabsTrigger value="info" data-testid="tab-info">Info</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="fights" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Guild Fights</CardTitle>
+                <CardDescription>Practice these fights in solo mode</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {guildFights && guildFights.length > 0 ? (
+                  <div className="space-y-3">
+                    {guildFights.map((fight: any) => (
+                      <Card
+                        key={fight.id}
+                        className="hover-elevate"
+                        data-testid={`fight-${fight.id}`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg mb-1">{fight.title}</h3>
+                              <div className="flex gap-4 text-sm text-muted-foreground">
+                                <span>{fight.questions?.length || 0} Questions</span>
+                                <span>{fight.enemies?.length || 0} Enemies</span>
+                              </div>
+                            </div>
+                            {fight.soloModeEnabled ? (
+                              <Button
+                                onClick={() => hostSoloMode(fight.id)}
+                                disabled={isHostingSolo === fight.id}
+                                data-testid={`button-solo-${fight.id}`}
+                              >
+                                <Play className="mr-2 h-4 w-4" />
+                                {isHostingSolo === fight.id ? "Starting..." : "Solo Mode"}
+                              </Button>
+                            ) : (
+                              <Badge variant="secondary">Solo disabled</Badge>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Swords className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No fights assigned to this guild yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="leaderboard" className="space-y-4">
             <Card>
