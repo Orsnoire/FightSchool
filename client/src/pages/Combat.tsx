@@ -12,7 +12,7 @@ import { FloatingNumber } from "@/components/FloatingNumber";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles, Calculator } from "lucide-react";
+import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles, Calculator, Swords } from "lucide-react";
 import type { CombatState, Question, LootItem, CharacterClass, Gender } from "@shared/schema";
 import { getFireballMaxChargeRounds } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, type AnimationType } from "@shared/ultimateAbilities";
@@ -722,6 +722,50 @@ export default function Combat() {
         {/* Center column: Main content */}
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-4xl">
+          {/* Solo Mode Host Controls - Waiting Phase */}
+          {combatState.soloModeEnabled && combatState.soloModeHostId === studentId && combatState.currentPhase === "waiting" && (
+            <Card className="p-8 border-primary/30">
+              <div className="flex flex-col items-center gap-6">
+                <h2 className="text-3xl font-bold text-center" data-testid="text-waiting-for-host">
+                  Waiting for host to start the fight...
+                </h2>
+                <p className="text-muted-foreground text-center">
+                  Session Code: <span className="font-bold text-foreground">{combatState.sessionId}</span>
+                </p>
+                <p className="text-sm text-muted-foreground text-center">
+                  {Object.keys(combatState.players).length} player{Object.keys(combatState.players).length !== 1 ? 's' : ''} ready
+                </p>
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    if (ws) {
+                      ws.send(JSON.stringify({ type: "start_fight" }));
+                    }
+                  }}
+                  data-testid="button-start-fight"
+                  className="w-full max-w-md"
+                >
+                  <Swords className="h-5 w-5 mr-2" />
+                  Start Fight
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* Regular waiting phase (non-host or teacher-hosted) */}
+          {combatState.currentPhase === "waiting" && !(combatState.soloModeEnabled && combatState.soloModeHostId === studentId) && (
+            <Card className="p-8 border-primary/30">
+              <div className="flex flex-col items-center gap-4">
+                <h2 className="text-3xl font-bold text-center" data-testid="text-waiting">
+                  Waiting for teacher to start the fight...
+                </h2>
+                <p className="text-sm text-muted-foreground text-center">
+                  {Object.keys(combatState.players).length} player{Object.keys(combatState.players).length !== 1 ? 's' : ''} ready
+                </p>
+              </div>
+            </Card>
+          )}
+
           {/* B5 FIX: Phase change modal matching question modal styling */}
           {showPhaseChangeModal && (
             <Card className="p-8 border-primary/30">
