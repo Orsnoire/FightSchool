@@ -949,6 +949,7 @@ export class DatabaseStorage implements IStorage {
       questions: f.questions as any,
       enemies: f.enemies as any,
       lootTable: (f.lootTable as any) || [],
+      enemyScript: f.enemyScript || undefined,
       createdAt: Number(f.createdAt),
     }));
   }
@@ -1005,7 +1006,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createGuildQuest(quest: InsertGuildQuest): Promise<GuildQuest> {
-    const [created] = await db.insert(guildQuests).values(quest).returning();
+    const [created] = await db.insert(guildQuests).values([quest]).returning();
     return created;
   }
 

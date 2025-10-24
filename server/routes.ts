@@ -214,6 +214,246 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(items);
   });
 
+  // Guild endpoints
+  // Get all guilds for a teacher
+  app.get("/api/teacher/:teacherId/guilds", async (req, res) => {
+    try {
+      const guilds = await storage.getGuildsByTeacher(req.params.teacherId);
+      res.json(guilds);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get a specific guild
+  app.get("/api/guilds/:id", async (req, res) => {
+    try {
+      const guild = await storage.getGuild(req.params.id);
+      if (!guild) return res.status(404).json({ error: "Guild not found" });
+      res.json(guild);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get guild by code (for students joining)
+  app.get("/api/guilds/code/:code", async (req, res) => {
+    try {
+      const guild = await storage.getGuildByCode(req.params.code);
+      if (!guild) return res.status(404).json({ error: "Guild not found" });
+      res.json(guild);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create a new guild
+  app.post("/api/guilds", async (req, res) => {
+    try {
+      const { teacherId, name, description } = req.body;
+      if (!teacherId || !name) {
+        return res.status(400).json({ error: "teacherId and name are required" });
+      }
+
+      const guild = await storage.createGuild({ teacherId, name, description });
+      res.json(guild);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Update guild
+  app.patch("/api/guilds/:id", async (req, res) => {
+    try {
+      const guild = await storage.updateGuild(req.params.id, req.body);
+      if (!guild) return res.status(404).json({ error: "Guild not found" });
+      res.json(guild);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Archive guild
+  app.post("/api/guilds/:id/archive", async (req, res) => {
+    try {
+      const guild = await storage.archiveGuild(req.params.id);
+      if (!guild) return res.status(404).json({ error: "Guild not found" });
+      res.json(guild);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Guild membership endpoints
+  // Add member to guild
+  app.post("/api/guilds/:guildId/members", async (req, res) => {
+    try {
+      const { studentId } = req.body;
+      if (!studentId) {
+        return res.status(400).json({ error: "studentId is required" });
+      }
+
+      const membership = await storage.addMemberToGuild(req.params.guildId, studentId);
+      res.json(membership);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Remove member from guild
+  app.delete("/api/guilds/:guildId/members/:studentId", async (req, res) => {
+    try {
+      const removed = await storage.removeMemberFromGuild(req.params.guildId, req.params.studentId);
+      if (!removed) return res.status(404).json({ error: "Membership not found" });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get guild members
+  app.get("/api/guilds/:guildId/members", async (req, res) => {
+    try {
+      const members = await storage.getGuildMembers(req.params.guildId);
+      res.json(members);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get student's guilds
+  app.get("/api/students/:studentId/guilds", async (req, res) => {
+    try {
+      const guilds = await storage.getStudentGuilds(req.params.studentId);
+      res.json(guilds);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Guild fight assignment endpoints
+  // Assign fight to guild
+  app.post("/api/guilds/:guildId/fights", async (req, res) => {
+    try {
+      const { fightId } = req.body;
+      if (!fightId) {
+        return res.status(400).json({ error: "fightId is required" });
+      }
+
+      const assignment = await storage.assignFightToGuild(req.params.guildId, fightId);
+      res.json(assignment);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Unassign fight from guild
+  app.delete("/api/guilds/:guildId/fights/:fightId", async (req, res) => {
+    try {
+      const removed = await storage.unassignFightFromGuild(req.params.guildId, req.params.fightId);
+      if (!removed) return res.status(404).json({ error: "Fight assignment not found" });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get guild fights
+  app.get("/api/guilds/:guildId/fights", async (req, res) => {
+    try {
+      const fights = await storage.getGuildFights(req.params.guildId);
+      res.json(fights);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Guild settings endpoints
+  // Get guild settings
+  app.get("/api/guilds/:guildId/settings", async (req, res) => {
+    try {
+      const settings = await storage.getGuildSettings(req.params.guildId);
+      if (!settings) return res.status(404).json({ error: "Guild settings not found" });
+      res.json(settings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update guild settings
+  app.patch("/api/guilds/:guildId/settings", async (req, res) => {
+    try {
+      const settings = await storage.updateGuildSettings(req.params.guildId, req.body);
+      res.json(settings);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Guild quest endpoints
+  // Get guild quests
+  app.get("/api/guilds/:guildId/quests", async (req, res) => {
+    try {
+      const quests = await storage.getGuildQuests(req.params.guildId);
+      res.json(quests);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Create guild quest
+  app.post("/api/guilds/:guildId/quests", async (req, res) => {
+    try {
+      const { title, description, criteria } = req.body;
+      if (!title || !description || !criteria) {
+        return res.status(400).json({ error: "title, description, and criteria are required" });
+      }
+
+      const quest = await storage.createGuildQuest({
+        guildId: req.params.guildId,
+        title,
+        description,
+        criteria,
+      });
+      res.json(quest);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Update guild quest
+  app.patch("/api/guilds/:guildId/quests/:questId", async (req, res) => {
+    try {
+      const quest = await storage.updateGuildQuest(req.params.questId, req.body);
+      if (!quest) return res.status(404).json({ error: "Quest not found" });
+      res.json(quest);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Delete guild quest
+  app.delete("/api/guilds/:guildId/quests/:questId", async (req, res) => {
+    try {
+      const deleted = await storage.deleteGuildQuest(req.params.questId);
+      if (!deleted) return res.status(404).json({ error: "Quest not found" });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Guild leaderboard endpoint
+  app.get("/api/guilds/:guildId/leaderboard", async (req, res) => {
+    try {
+      const metric = req.query.metric as string || 'damageDealt';
+      const leaderboard = await storage.getGuildLeaderboard(req.params.guildId, metric);
+      res.json(leaderboard);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Student endpoints
   app.post("/api/student/register", async (req, res) => {
     try {
@@ -825,7 +1065,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       player.questionsAnswered += 1;
 
       const isCorrect = player.currentAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
-      log(`[Combat] Player ${player.characterName} answered "${player.currentAnswer}" vs correct "${question.correctAnswer}" - ${isCorrect ? "CORRECT" : "INCORRECT"}`, "combat");
+      log(`[Combat] Player ${player.nickname} answered "${player.currentAnswer}" vs correct "${question.correctAnswer}" - ${isCorrect ? "CORRECT" : "INCORRECT"}`, "combat");
 
       if (isCorrect) {
         // Track correct answer (in memory)
