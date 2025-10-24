@@ -425,6 +425,10 @@ export interface PlayerState {
   
   // Enemy AI targeting
   threat: number; // Enemy targeting priority (default 1)
+  
+  // Ultimate abilities (level 15+ job abilities)
+  fightCount: number; // Total fights completed (for ultimate cooldown tracking)
+  lastUltimatesUsed: Record<string, number>; // Maps ultimate ID to fight number when last used
 }
 
 export interface CombatState {
