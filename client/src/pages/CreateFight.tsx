@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, PlusCircle, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, PlusCircle, Trash2, Upload, Edit, Image as ImageIcon } from "lucide-react";
 import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, type EquipmentItemDb, type Fight } from "@shared/schema";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { uploadImageToStorage } from "@/lib/imageUpload";
@@ -64,7 +64,10 @@ export default function CreateFight() {
     image: dragonImg,
     maxHealth: 50,
   });
+  const [editingEnemyIndex, setEditingEnemyIndex] = useState<number | null>(null);
+  const [uploadedEnemyImage, setUploadedEnemyImage] = useState<string | null>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
+  const enemyImageInputRef = useRef<HTMLInputElement>(null);
 
   const teacherId = localStorage.getItem("teacherId") || "";
 
@@ -185,21 +188,109 @@ export default function CreateFight() {
     setSelectedOptionIndex(null);
   };
 
+  const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 120;
+          canvas.height = 120;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          ctx.drawImage(img, 0, 0, 120, 120);
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Failed to create blob'));
+              return;
+            }
+            const resizedFile = new File([blob], file.name, { type: 'image/png' });
+            uploadImageToStorage(resizedFile).then(resolve).catch(reject);
+          }, 'image/png');
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleEnemyImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
+    }
+
+    try {
+      toast({ title: "Uploading image..." });
+      const imageUrl = await resizeImage(file);
+      setUploadedEnemyImage(imageUrl);
+      setCurrentEnemy({ ...currentEnemy, image: imageUrl });
+      toast({ title: "Image uploaded successfully (resized to 120x120px)" });
+    } catch (error) {
+      toast({ 
+        title: "Failed to upload image", 
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive" 
+      });
+    }
+  };
+
   const addEnemy = () => {
     if (!currentEnemy.name || !currentEnemy.maxHealth) {
       toast({ title: "Please fill in enemy name and health", variant: "destructive" });
       return;
     }
-    const newEnemy: Enemy = {
-      id: Date.now().toString(),
-      name: currentEnemy.name,
-      image: currentEnemy.image || dragonImg,
-      maxHealth: currentEnemy.maxHealth,
-    };
-    const updatedEnemies = [...enemies, newEnemy];
-    setEnemies(updatedEnemies);
-    form.setValue("enemies", updatedEnemies);
+
+    if (editingEnemyIndex !== null) {
+      // Update existing enemy
+      const updatedEnemies = [...enemies];
+      updatedEnemies[editingEnemyIndex] = {
+        id: enemies[editingEnemyIndex].id,
+        name: currentEnemy.name,
+        image: currentEnemy.image || dragonImg,
+        maxHealth: currentEnemy.maxHealth,
+      };
+      setEnemies(updatedEnemies);
+      form.setValue("enemies", updatedEnemies);
+      setEditingEnemyIndex(null);
+    } else {
+      // Add new enemy
+      const newEnemy: Enemy = {
+        id: Date.now().toString(),
+        name: currentEnemy.name,
+        image: currentEnemy.image || dragonImg,
+        maxHealth: currentEnemy.maxHealth,
+      };
+      const updatedEnemies = [...enemies, newEnemy];
+      setEnemies(updatedEnemies);
+      form.setValue("enemies", updatedEnemies);
+    }
+    
     setCurrentEnemy({ image: dragonImg, maxHealth: 50 });
+    setUploadedEnemyImage(null);
+  };
+
+  const editEnemy = (index: number) => {
+    const enemy = enemies[index];
+    setCurrentEnemy({
+      name: enemy.name,
+      image: enemy.image,
+      maxHealth: enemy.maxHealth,
+    });
+    setEditingEnemyIndex(index);
+    // Check if this is an uploaded image (starts with http)
+    if (enemy.image.startsWith('http')) {
+      setUploadedEnemyImage(enemy.image);
+    }
   };
 
   const onSubmit = (data: InsertFight) => {
@@ -665,7 +756,7 @@ export default function CreateFight() {
               <TabsContent value="enemies" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Add Enemy</CardTitle>
+                    <CardTitle>{editingEnemyIndex !== null ? 'Edit Enemy' : 'Add Enemy'}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
@@ -679,8 +770,44 @@ export default function CreateFight() {
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium">Enemy Image</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium">Enemy Image</label>
+                        <div>
+                          <input
+                            ref={enemyImageInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleEnemyImageUpload}
+                            className="hidden"
+                            data-testid="input-enemy-image-upload"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => enemyImageInputRef.current?.click()}
+                            data-testid="button-upload-enemy-image"
+                          >
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            Upload Custom Image
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">Choose from pre-defined sprites or upload your own (will be resized to 120x120px)</p>
                       <div className="grid grid-cols-5 gap-3 mt-2 max-h-96 overflow-y-auto pr-2">
+                        {uploadedEnemyImage && (
+                          <button
+                            type="button"
+                            onClick={() => setCurrentEnemy({ ...currentEnemy, image: uploadedEnemyImage })}
+                            className={`p-2 border-2 rounded-md hover-elevate ${
+                              currentEnemy.image === uploadedEnemyImage ? "border-primary" : "border-border"
+                            }`}
+                            data-testid="button-select-uploaded"
+                          >
+                            <img src={uploadedEnemyImage} alt="Custom Upload" className="w-full h-20 object-cover rounded" />
+                            <p className="text-xs mt-1 truncate">Custom</p>
+                          </button>
+                        )}
                         {[
                           { id: "spider", img: spiderImg, name: "Giant Spider" },
                           { id: "bat", img: batImg, name: "Vampire Bat" },
@@ -734,10 +861,25 @@ export default function CreateFight() {
                       />
                     </div>
 
-                    <Button type="button" onClick={addEnemy} className="w-full" data-testid="button-add-enemy">
+                    <Button type="button" onClick={addEnemy} className="w-full" data-testid={editingEnemyIndex !== null ? "button-update-enemy" : "button-add-enemy"}>
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Enemy
+                      {editingEnemyIndex !== null ? 'Update Enemy' : 'Add Enemy'}
                     </Button>
+                    {editingEnemyIndex !== null && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => {
+                          setEditingEnemyIndex(null);
+                          setCurrentEnemy({ image: dragonImg, maxHealth: 50 });
+                          setUploadedEnemyImage(null);
+                        }}
+                        className="w-full"
+                        data-testid="button-cancel-edit-enemy"
+                      >
+                        Cancel Edit
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -756,19 +898,30 @@ export default function CreateFight() {
                               <p className="text-sm text-muted-foreground">{enemy.maxHealth} HP</p>
                             </div>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              const updated = enemies.filter((_, idx) => idx !== i);
-                              setEnemies(updated);
-                              form.setValue("enemies", updated);
-                            }}
-                            data-testid={`button-delete-enemy-${i}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => editEnemy(i)}
+                              data-testid={`button-edit-enemy-${i}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                const updated = enemies.filter((_, idx) => idx !== i);
+                                setEnemies(updated);
+                                form.setValue("enemies", updated);
+                              }}
+                              data-testid={`button-delete-enemy-${i}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </CardContent>
