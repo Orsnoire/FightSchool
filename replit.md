@@ -61,3 +61,89 @@ Preferred communication style: Simple, everyday language.
 - **clsx + tailwind-merge**: Conditional className utilities.
 - **class-variance-authority**: Type-safe variant styling.
 - **nanoid**: Unique ID generation.
+
+## Developer Documentation
+
+### Adding a New Character Class/Job
+
+When adding a new character class to the game, follow this comprehensive checklist to ensure the class is fully integrated into all systems:
+
+#### 1. Schema & Type Definitions (`shared/schema.ts`)
+- [ ] Add the new class to the `CharacterClass` type union
+- [ ] Add the new class to the `ALL_CHARACTER_CLASSES` constant array
+- [ ] Define base stats in `CLASS_STATS` (baseHP, str, int, agi, mnd, vit, role)
+- [ ] Add starting equipment in `EQUIPMENT_ITEMS` (ensure classRestriction includes the new class)
+- [ ] If the class uses new stat mechanics, add fields to `PlayerState` interface
+- [ ] Update `getStartingEquipment()` to provide default equipment for the class
+
+#### 2. Job System (`shared/jobSystem.ts`)
+- [ ] Add job definition to `JOB_TREE` with:
+  - Unlock requirements (which jobs/levels required)
+  - Level rewards (passives, abilities, mechanic upgrades)
+  - Max level (typically 15)
+- [ ] If the class has unique mechanic upgrades, add to `MechanicUpgrade` interface
+- [ ] Add mechanic upgrade accumulation in `getTotalMechanicUpgrades()`
+
+#### 3. Combat Implementation (`server/routes.ts`)
+- [ ] Add damage calculation logic in `combatPhase()` function
+  - Determine damage type: physical, magical, ranged, or hybrid
+  - Handle class-specific abilities (similar to wizard fireball, herbalist healing, warlock siphon/hex)
+  - Implement MP costs if applicable
+- [ ] If the class has special combat phases, add logic to appropriate phase functions:
+  - `tankBlockingPhase()` for defensive abilities
+  - `enemyAIPhase()` for counter-attacks or passive effects
+  - DoT/buff tracking in combat phase loop
+- [ ] Add class-specific state resets on wrong answers (similar to scout combo points, wizard cooldowns)
+- [ ] Update aggro system if the class is a tank variant
+
+#### 4. Ultimate Abilities (`shared/ultimateAbilities.ts`)
+- [ ] Add ultimate ability definition to `ULTIMATE_ABILITIES` record:
+  - Unique ID and name
+  - Job class association
+  - Animation type (fire, ice, holy, dark, nature, lightning, spirit)
+  - Cooldown (typically 3 fights)
+  - Effect type and formula
+- [ ] Add damage/heal calculation in `calculateUltimateEffect()` function
+- [ ] Ensure animation type has corresponding visual assets
+
+#### 5. UI Components
+- [ ] Verify class appears in character selection UI
+- [ ] Add class-specific colors/styling if needed
+- [ ] Update combat UI to display class-specific abilities/states
+- [ ] Test that equipment filtering works for the new class
+
+#### 6. Testing
+- [ ] The tester account (`tester`/`test`) automatically includes ALL jobs at level 15
+  - This is handled by `ALL_CHARACTER_CLASSES` constant - no manual updates needed
+- [ ] Create fights to test class abilities at various levels
+- [ ] Verify damage formulas are balanced with other classes
+- [ ] Test class-specific UI elements and animations
+- [ ] Confirm equipment restrictions work correctly
+
+#### 7. Documentation
+- [ ] Update `CLASS_STATS` role descriptions
+- [ ] Document any new combat mechanics in code comments
+- [ ] Add ability descriptions to job tree rewards
+
+### Implemented Classes
+
+**Base Classes** (Level 1, available immediately):
+- **Warrior**: Tank with physical damage (ATK + STR), can block for allies
+- **Wizard**: Magical DPS (MAT + INT), fireball charge mechanic, MP-based
+- **Scout**: Ranged DPS (RTK + AGI), combo point system
+- **Herbalist**: Healer/support (MAT + AGI + MND), healing and potion crafting
+
+**Advanced Classes** (Unlockable):
+- **Warlock**: Curse specialist (MAT + INT), Siphon self-heal (level 4+), Hex DoT (level 1+), MP-based
+  - Siphon: Deals magical damage and heals for (INT/2 + siphonHealBonus) rounded up
+  - Hex: Applies (INT-1) curse damage per round for (2 + hexDuration) rounds to first enemy
+- **Knight, Paladin, Dark Knight, Sage, Ranger, Druid, Monk**: Defined in schema but not yet implemented in combat system
+
+### Key Files Reference
+
+- **Schema/Types**: `shared/schema.ts` - All type definitions, PlayerState, CharacterClass
+- **Job System**: `shared/jobSystem.ts` - Job trees, passive bonuses, mechanic upgrades
+- **Combat Logic**: `server/routes.ts` - Damage calculations, combat phases, WebSocket handlers
+- **Ultimate Abilities**: `shared/ultimateAbilities.ts` - Level 15+ special abilities
+- **Player Initialization**: `server/storage.ts` - PlayerState creation with default values
+- **Test Data**: `server/storage.ts` - seedTestStudent() automatically includes all jobs
