@@ -15,8 +15,25 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, PlusCircle, Trash2, Upload, Edit, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, PlusCircle, Trash2, Upload, Edit, Image as ImageIcon, GripVertical } from "lucide-react";
 import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, type EquipmentItemDb, type Fight } from "@shared/schema";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { uploadImageToStorage } from "@/lib/imageUpload";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
@@ -43,6 +60,76 @@ import headlessHorsemanImg from "@assets/generated_images/Headless_horseman_RPG_
 import werewolfImg from "@assets/generated_images/Werewolf_RPG_enemy_576e9732.png";
 import goblinSwarmImg from "@assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png";
 import Papa from "papaparse";
+
+interface SortableEnemyItemProps {
+  enemy: Enemy;
+  index: number;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function SortableEnemyItem({ enemy, index, onEdit, onDelete }: SortableEnemyItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: enemy.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between p-3 border border-border rounded-md bg-card"
+      data-testid={`enemy-item-${index}`}
+    >
+      <div className="flex items-center gap-3 flex-1">
+        <button
+          type="button"
+          className="cursor-grab active:cursor-grabbing touch-none"
+          {...attributes}
+          {...listeners}
+          data-testid={`button-drag-enemy-${index}`}
+        >
+          <GripVertical className="h-5 w-5 text-muted-foreground" />
+        </button>
+        <img src={enemy.image} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
+        <div>
+          <p className="font-medium">{enemy.name}</p>
+          <p className="text-sm text-muted-foreground">{enemy.maxHealth} HP</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onEdit}
+          data-testid={`button-edit-enemy-${index}`}
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onDelete}
+          data-testid={`button-delete-enemy-${index}`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function CreateFight() {
   const [, navigate] = useLocation();
@@ -311,6 +398,26 @@ export default function CreateFight() {
     const newLootTable = lootTable.filter((_, i) => i !== index);
     setLootTable(newLootTable);
     form.setValue("lootTable", newLootTable);
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = enemies.findIndex((e) => e.id === active.id);
+      const newIndex = enemies.findIndex((e) => e.id === over.id);
+
+      const reorderedEnemies = arrayMove(enemies, oldIndex, newIndex);
+      setEnemies(reorderedEnemies);
+      form.setValue("enemies", reorderedEnemies);
+    }
   };
 
   const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -849,16 +956,32 @@ export default function CreateFight() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium">Max Health: {currentEnemy.maxHealth}</label>
-                      <Slider
-                        value={[currentEnemy.maxHealth || 50]}
-                        onValueChange={([value]) => setCurrentEnemy({ ...currentEnemy, maxHealth: value })}
-                        min={10}
-                        max={200}
-                        step={10}
-                        data-testid="slider-enemy-health"
-                      />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Max Health</label>
+                      <div className="flex items-center gap-3">
+                        <Slider
+                          value={[currentEnemy.maxHealth || 50]}
+                          onValueChange={([value]) => setCurrentEnemy({ ...currentEnemy, maxHealth: value })}
+                          min={10}
+                          max={500}
+                          step={10}
+                          className="flex-1"
+                          data-testid="slider-enemy-health"
+                        />
+                        <Input
+                          type="number"
+                          value={currentEnemy.maxHealth || 50}
+                          onChange={(e) => {
+                            const value = Math.max(10, Math.min(500, parseInt(e.target.value) || 10));
+                            setCurrentEnemy({ ...currentEnemy, maxHealth: value });
+                          }}
+                          min={10}
+                          max={500}
+                          step={10}
+                          className="w-24"
+                          data-testid="input-enemy-health"
+                        />
+                      </div>
                     </div>
 
                     <Button type="button" onClick={addEnemy} className="w-full" data-testid={editingEnemyIndex !== null ? "button-update-enemy" : "button-add-enemy"}>
@@ -887,43 +1010,33 @@ export default function CreateFight() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Enemies ({enemies.length})</CardTitle>
+                      <p className="text-sm text-muted-foreground">Drag to reorder • Enemies appear in this order during combat</p>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      {enemies.map((enemy, i) => (
-                        <div key={enemy.id} className="flex items-center justify-between p-3 border border-border rounded-md" data-testid={`enemy-item-${i}`}>
-                          <div className="flex items-center gap-3">
-                            <img src={enemy.image} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
-                            <div>
-                              <p className="font-medium">{enemy.name}</p>
-                              <p className="text-sm text-muted-foreground">{enemy.maxHealth} HP</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => editEnemy(i)}
-                              data-testid={`button-edit-enemy-${i}`}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={enemies.map(e => e.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {enemies.map((enemy, i) => (
+                            <SortableEnemyItem
+                              key={enemy.id}
+                              enemy={enemy}
+                              index={i}
+                              onEdit={() => editEnemy(i)}
+                              onDelete={() => {
                                 const updated = enemies.filter((_, idx) => idx !== i);
                                 setEnemies(updated);
                                 form.setValue("enemies", updated);
                               }}
-                              data-testid={`button-delete-enemy-${i}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
                     </CardContent>
                   </Card>
                 )}
