@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import type { CombatState, Question, LootItem } from "@shared/schema";
 import { getFireballMaxChargeRounds } from "@shared/jobSystem";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Combat() {
   const [, navigate] = useLocation();
@@ -800,6 +801,61 @@ export default function Combat() {
           </div>
         </div>
       </div>
+
+      {/* ENEMY OVERLAY: Large centered enemy image during Combat phase */}
+      <AnimatePresence>
+        {enemy && combatState && combatState.currentPhase === "combat" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            style={{ paddingBottom: '10vh' }}
+            data-testid="enemy-overlay"
+          >
+            <div className="flex flex-col items-center gap-6 max-w-5xl w-full px-8">
+              <motion.h2
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                className="text-5xl font-serif font-bold text-damage drop-shadow-lg"
+                data-testid="text-enemy-phase-name"
+              >
+                COMBAT!
+              </motion.h2>
+              
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="relative"
+                style={{ maxHeight: '70vh', maxWidth: '80vw' }}
+              >
+                <img
+                  src={enemy.image}
+                  alt={enemy.name}
+                  className="object-contain rounded-lg"
+                  style={{ maxHeight: '70vh', maxWidth: '80vw', height: 'auto', width: 'auto' }}
+                  data-testid="img-enemy-large"
+                />
+              </motion.div>
+              
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+                className="flex flex-col items-center gap-3"
+              >
+                <h3 className="text-3xl font-serif font-bold text-foreground" data-testid="text-enemy-name-large">
+                  {enemy.name}
+                </h3>
+                <HealthBar current={enemy.health} max={enemy.maxHealth} className="w-96" />
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* FIXED PLAYER FOOTER: Always visible at bottom of screen */}
       {playerState && (
