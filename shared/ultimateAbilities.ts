@@ -170,6 +170,7 @@ export function calculateUltimateEffect(
     int: number;
     agi: number;
     mnd: number;
+    vit: number;
     atk: number;
     mat: number;
     rtk: number;
@@ -200,14 +201,14 @@ export function calculateUltimateEffect(
       return playerStats.maxHealth; // Full heal to all allies, revive KO'ed
     
     case "holy_judgment":
-      // Returns healing amount for allies (damage to enemies calculated separately)
-      return playerStats.str + playerStats.int + playerStats.mnd;
+      // Returns healing amount for allies: VIT + MND (damage to enemies = (STR+VIT+MND)/3)
+      return playerStats.vit + playerStats.mnd;
     
     case "shadow_requiem":
-      return playerStats.atk * (playerStats.str + playerStats.int + playerStats.mnd);
+      return playerStats.atk * (playerStats.str + playerStats.vit + playerStats.int);
     
     case "raining_blood":
-      return playerStats.atk * (playerStats.str + playerStats.int + playerStats.mnd);
+      return playerStats.atk * (playerStats.str + playerStats.vit + playerStats.int);
     
     default:
       return 0;

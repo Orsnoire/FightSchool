@@ -134,10 +134,29 @@ When adding a new character class to the game, follow this comprehensive checkli
 - **Herbalist**: Healer/support (MAT + AGI + MND), healing and potion crafting
 
 **Advanced Classes** (Unlockable):
-- **Warlock**: Curse specialist (MAT + INT), Siphon self-heal (level 4+), Hex DoT (level 1+), MP-based
+- **Warlock** (Wizard 2): Curse specialist (MAT + INT), Siphon self-heal (level 4+), Hex DoT (level 1+), MP-based
+  - Unlock: Wizard level 2
   - Siphon: Deals magical damage and heals for (INT/2 + siphonHealBonus) rounded up
   - Hex: Applies (INT-1) curse damage per round for (2 + hexDuration) rounds to first enemy
-- **Knight, Paladin, Dark Knight, Sage, Ranger, Druid, Monk**: Defined in schema but not yet implemented in combat system
+  - Ultimate: Soul Drain - Drain life from all enemies (INT × 4, heals 50% damage dealt)
+- **Priest** (Herbalist 2): Advanced healer (MAT + INT), holy magic specialist, MP-based healing
+  - Unlock: Herbalist level 2
+  - Mend: Heals target for MND HP (1 MP cost)
+  - Ultimate: Divine Grace - Full heal all allies, revive KO'ed players
+- **Paladin** (Warrior 2 + Priest 2): Holy defender (ATK + STR), tank/healer hybrid
+  - Unlock: Warrior level 2 AND Priest level 2
+  - Healing Guard: Blocks and heals target simultaneously
+  - Ultimate: Holy Judgment - Heal all for (VIT+MND), damage enemies for (STR+VIT+MND)/3
+- **Dark Knight** (Warrior 3 + Wizard 3): Dark warrior (ATK*(STR+VIT+INT)), tank/DPS with shadow magic
+  - Unlock: Warrior level 3 AND Wizard level 3
+  - Ruin Strike: Deals ATK*(STR+VIT+INT) melee damage (1 MP cost)
+  - Blood Sword: Self-heal for damage dealt (1 MP cost)
+  - Ultimate: Shadow Requiem - Massive damage to all enemies, heal for all damage dealt
+- **Blood Knight** (Warrior 2 + Warlock 5): Vampiric warrior (ATK*(VIT+STR)/2), lifesteal specialist
+  - Unlock: Warrior level 2 AND Warlock level 5
+  - Crimson Slash: Deals ATK*(VIT+STR)/2 damage with 50% lifesteal (1 MP cost)
+  - Dark Vigor: Passive 25% lifesteal on all damage
+  - Ultimate: Raining Blood - Damage all enemies, heal all allies for 50% damage dealt
 
 ### Key Files Reference
 

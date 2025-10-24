@@ -2169,6 +2169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             int: player.int,
             agi: player.agi,
             mnd: player.mnd,
+            vit: player.vit,
             atk: player.atk,
             mat: player.mat,
             rtk: player.rtk,
