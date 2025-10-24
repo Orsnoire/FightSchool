@@ -4,7 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Swords, Users, BarChart3, Copy, Edit, LogOut } from "lucide-react";
+import { PlusCircle, Swords, Users, BarChart3, Copy, Edit, LogOut, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Fight } from "@shared/schema";
@@ -71,6 +71,12 @@ export default function TeacherDashboard() {
               <Button variant="outline" size="default" data-testid="button-manage-items">
                 <Swords className="mr-2 h-5 w-5" />
                 Manage Items
+              </Button>
+            </Link>
+            <Link href="/teacher/guilds">
+              <Button variant="outline" size="default" data-testid="button-manage-guilds">
+                <Shield className="mr-2 h-5 w-5" />
+                Manage Guilds
               </Button>
             </Link>
             <Link href="/teacher/stats">

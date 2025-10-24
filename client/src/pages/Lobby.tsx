@@ -28,6 +28,8 @@ export default function Lobby() {
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot>("weapon");
   const [sessionCode, setSessionCode] = useState("");
   const [showClassChange, setShowClassChange] = useState(false);
+  const [soloFightId, setSoloFightId] = useState("");
+  const [isHostingSolo, setIsHostingSolo] = useState(false);
   const studentId = localStorage.getItem("studentId");
 
   useEffect(() => {
@@ -108,6 +110,61 @@ export default function Lobby() {
     navigate("/student/combat");
   };
 
+  const hostSoloMode = async () => {
+    if (!soloFightId.trim()) {
+      toast({ title: "Please enter a fight ID", variant: "destructive" });
+      return;
+    }
+
+    setIsHostingSolo(true);
+
+    // Create WebSocket connection to host solo mode
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      // Send host_solo message
+      socket.send(JSON.stringify({
+        type: "host_solo",
+        studentId: studentId,
+        fightId: soloFightId.trim(),
+      }));
+    };
+
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === "session_created") {
+        // Solo session created successfully
+        localStorage.setItem("sessionId", message.sessionId);
+        socket.close();
+        toast({
+          title: "Solo session created!",
+          description: `Session code: ${message.sessionId}`,
+        });
+        navigate("/student/combat");
+      } else if (message.type === "error") {
+        socket.close();
+        setIsHostingSolo(false);
+        toast({
+          title: "Failed to host solo mode",
+          description: message.message || "The fight may not have solo mode enabled",
+          variant: "destructive",
+        });
+      }
+    };
+
+    socket.onerror = () => {
+      socket.close();
+      setIsHostingSolo(false);
+      toast({
+        title: "Connection error",
+        description: "Failed to connect to server",
+        variant: "destructive",
+      });
+    };
+  };
+
   const updateEquipment = async (slot: EquipmentSlot, itemId: string) => {
     const studentId = localStorage.getItem("studentId");
     const response = await fetch(`/api/student/${studentId}/equipment`, {
@@ -164,6 +221,12 @@ export default function Lobby() {
             Battle Lobby
           </h1>
           <div className="flex gap-2">
+            <Link href="/student/guilds">
+              <Button variant="outline" data-testid="button-my-guilds">
+                <Users className="mr-2 h-4 w-4" />
+                My Guilds
+              </Button>
+            </Link>
             <Link href={`/student/${studentId}/stats`}>
               <Button variant="outline" data-testid="button-view-stats">
                 <BarChart3 className="mr-2 h-4 w-4" />
@@ -432,6 +495,45 @@ export default function Lobby() {
           </div>
 
           <div className="lg:col-span-3">
+            <Card className="mb-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-amber-500" />
+                  Host Solo Mode
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="solo-fight-id">Fight ID</Label>
+                  <Input
+                    id="solo-fight-id"
+                    value={soloFightId}
+                    onChange={(e) => setSoloFightId(e.target.value)}
+                    placeholder="Enter fight ID from your teacher"
+                    className="font-mono"
+                    data-testid="input-solo-fight-id"
+                    disabled={isHostingSolo}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !isHostingSolo) {
+                        hostSoloMode();
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ask your teacher for a fight ID to host a solo mode session
+                  </p>
+                </div>
+                <Button
+                  onClick={hostSoloMode}
+                  disabled={isHostingSolo}
+                  className="w-full"
+                  data-testid="button-host-solo"
+                >
+                  {isHostingSolo ? "Creating Session..." : "Host Solo Mode"}
+                </Button>
+              </CardContent>
+            </Card>
+
             <Card className="mb-4">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
