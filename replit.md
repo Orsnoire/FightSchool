@@ -29,7 +29,8 @@ Preferred communication style: Simple, everyday language.
 - **Student**: `/api/student/login` (account creation/login), `/api/student/:id/equipment` (equip/unequip items), `/api/student/:id/job-levels` (job progression).
 - **Session Validation**: `/api/sessions/:sessionId` (validates sessionId and returns session info for students to join).
 - **Stats**: `/api/combat-stats/student/:id` (personal stats), `/api/combat-stats/guild/:code` (guild stats).
-**WebSocket Protocol**: A custom message-based protocol handles `host` (teacher creates session, receives sessionId), `session_created` (server confirms session creation), `join` (student joins with sessionId), `combat_state`, `question`, `answer`, `phase_change`, and `game_over` events. All operations use sessionId as the primary identifier.
+- **Guild Management**: `/api/guilds` (create/list), `/api/guilds/:id` (get/update/delete), `/api/guilds/:id/archive` (archive guild), `/api/guilds/:guildId/members` (add/remove/list members), `/api/guilds/:guildId/fights` (assign/list fights), `/api/guilds/:guildId/leaderboard` (guild-specific leaderboards), `/api/guilds/code/:code` (validate guild codes), `/api/student/:studentId/guilds` (list student's joined guilds).
+**WebSocket Protocol**: A custom message-based protocol handles `host` (teacher creates session, receives sessionId), `session_created` (server confirms session creation), `join` (student joins with sessionId), `host_solo` (student hosts solo mode session), `toggle_ai` (enable/disable AI in solo mode), `block_joiners` (prevent new students from joining solo session), `combat_state`, `question`, `answer`, `phase_change`, and `game_over` events. All operations use sessionId as the primary identifier.
 
 ### Game Mechanics Architecture
 **Character Classes**: Four base classes (Warrior, Wizard, Scout, Herbalist) with unique stats and abilities. Advanced classes (e.g., Knight, Paladin) are unlockable through a job system.
@@ -41,6 +42,76 @@ Preferred communication style: Simple, everyday language.
 - **Equipment System**: Nullable equipment system allowing students to collect and equip items from loot tables, plus teacher-created custom equipment with quality tiers and stat bonuses.
 - **Visual Feedback**: Health bars display remaining health in green/yellow/red (based on percentage) against a muted red background showing lost health.
 **Question Types**: Supports multiple choice, true/false, and short answer questions with configurable time limits. Questions can be randomized per fight via teacher preference, using Fisher-Yates shuffle at combat start.
+
+## Guild System (Fully Implemented ✅)
+
+### Overview
+Teachers create and manage guilds (identified by unique 6-character codes) to organize students and fights. Students can join multiple guilds, view leaderboards showing top contributors, browse guild rosters, and earn XP for their guilds. Guild XP system uses the same level curve as players (levels 1-99).
+
+### Database Schema
+- **guilds**: id (UUID), teacherId, name, code (unique 6-char), description, level, experience, isArchived, createdAt
+- **guild_memberships**: id (UUID), guildId, studentId, joinedAt
+- **guild_fights**: id (UUID), guildId, fightId (assigned fights earn XP for guild)
+- **guild_leaderboards**: Pre-aggregated stats (studentId, guildId, damageDealt, questionsAnswered, etc.)
+
+### Backend Implementation
+**Storage Layer (server/storage.ts)**: 20+ methods for guild CRUD, member management, fight assignments, leaderboard aggregation, XP calculations
+**API Routes (server/routes.ts)**: Comprehensive endpoints for guilds, memberships, fight assignments, leaderboards, guild code validation
+
+### Frontend Implementation
+**Teacher Pages**:
+- `/teacher/guilds`: Dashboard showing all guilds with create/edit/delete capabilities
+- `/teacher/guild/:id`: Detailed view with tabs for Fights (assign/remove fights), Members (view roster), Info (edit guild details, archive)
+
+**Student Pages**:
+- `/student/guilds`: Browse joined guilds with cards showing level, XP, member count
+- `/student/guild/:id`: Detailed view with tabs for Leaderboard (top contributors by damage/questions), Roster (all members with nicknames), Info (guild description/stats)
+
+### Key Features
+- **Multi-Guild Membership**: Students can join unlimited guilds using 6-character codes
+- **Guild XP System**: Guilds earn 100% XP from assigned fights only, using same level curve as players (levels 1-99)
+- **Leaderboards**: Real-time aggregation showing top contributors by damage dealt, questions answered, etc.
+- **Guild Code Validation**: Frontend validates codes before allowing join attempts
+- **Roster Display**: Shows all guild members with their nicknames and join dates
+
+### Implementation Notes
+- Guild IDs use UUID format (varchar with gen_random_uuid())
+- Guild XP stored in `experience` column (critical: not `totalXP`)
+- Student roster displays `nickname` field from students table
+- Join validation checks guild existence before POST request
+- Leave guild properly deletes membership and updates UI
+
+## Solo Mode (Fully Implemented ✅)
+
+### Overview
+Students can practice fights alone or with friends without teacher supervision. Teachers enable solo mode per fight. Solo sessions have unique mechanics: starting HP of 10, scales +2 HP per player up to fight's max HP (capped at 32), AI auto-enables at 5+ players.
+
+### WebSocket Handlers
+**New Message Types**:
+- `host_solo`: Student creates solo session (requires studentId, fightId). Server validates fight has soloModeEnabled=true
+- `toggle_ai`: Host toggles AI-controlled players in solo session
+- `block_joiners`: Host prevents new students from joining mid-session
+- Session tracks `hostStudentId`, `aiEnabled`, `joinersBlocked` flags
+
+### HP Scaling Algorithm
+```
+startingHP = 10
+scaledHP = min(10 + (2 * playerCount), fightMaxHP)
+cappedHP = min(scaledHP, 32)
+```
+
+### Student UI (client/src/pages/Lobby.tsx)
+- Solo Mode section with fight ID input
+- "Host Solo Mode" button triggers WebSocket `host_solo` message
+- Session creation returns sessionId, navigates to `/student/combat`
+- Error handling for invalid fight IDs or solo mode disabled
+- Form validation ensures fight ID is entered
+
+### Implementation Notes
+- Solo mode fights earn XP for performance only (no guild XP)
+- Host has special controls not available in teacher-hosted sessions
+- Sessions isolated per fight template (multiple solo sessions can exist simultaneously)
+- Backend validates `soloModeEnabled` flag before creating session
 
 ## External Dependencies
 
