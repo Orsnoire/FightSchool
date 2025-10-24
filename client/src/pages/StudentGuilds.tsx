@@ -25,10 +25,12 @@ export default function StudentGuilds() {
 
   const joinGuildMutation = useMutation({
     mutationFn: async (code: string) => {
-      const guildsData = await fetch(`/api/guilds/code/${code.toUpperCase()}`).then(r => r.json());
-      if (!guildsData) {
-        throw new Error("Guild not found");
+      const response = await fetch(`/api/guilds/code/${code.toUpperCase()}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Guild not found");
       }
+      const guildsData = await response.json();
       return await apiRequest("POST", `/api/guilds/${guildsData.id}/members`, {
         studentId: studentId!,
       });

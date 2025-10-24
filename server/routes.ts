@@ -303,10 +303,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Remove member from guild
   app.delete("/api/guilds/:guildId/members/:studentId", async (req, res) => {
     try {
+      console.log(`[DELETE] Removing student ${req.params.studentId} from guild ${req.params.guildId}`);
       const removed = await storage.removeMemberFromGuild(req.params.guildId, req.params.studentId);
+      console.log(`[DELETE] Removal result: ${removed}`);
       if (!removed) return res.status(404).json({ error: "Membership not found" });
       res.json({ success: true });
     } catch (error: any) {
+      console.log(`[DELETE] Error removing member:`, error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -322,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get student's guilds
-  app.get("/api/students/:studentId/guilds", async (req, res) => {
+  app.get("/api/student/:studentId/guilds", async (req, res) => {
     try {
       const guilds = await storage.getStudentGuilds(req.params.studentId);
       res.json(guilds);

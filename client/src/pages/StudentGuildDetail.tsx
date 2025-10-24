@@ -193,7 +193,7 @@ export default function StudentGuildDetail() {
                       >
                         <div>
                           <p className="font-medium">
-                            Member {member.studentId.slice(0, 8)}
+                            {member.nickname || `Member ${member.studentId?.slice(0, 8)}` || 'Unknown'}
                             {member.studentId === studentId && (
                               <span className="ml-2 text-sm text-primary">(You)</span>
                             )}

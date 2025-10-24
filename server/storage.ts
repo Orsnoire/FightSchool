@@ -858,6 +858,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async removeMemberFromGuild(guildId: string, studentId: string): Promise<boolean> {
+    console.log(`[STORAGE] Deleting membership: guildId=${guildId}, studentId=${studentId}`);
     const result = await db
       .delete(guildMemberships)
       .where(
@@ -866,21 +867,24 @@ export class DatabaseStorage implements IStorage {
           eq(guildMemberships.studentId, studentId)
         )
       );
+    console.log(`[STORAGE] Delete rowCount: ${result.rowCount}`);
     return result.rowCount !== null && result.rowCount > 0;
   }
 
-  async getGuildMembers(guildId: string): Promise<Student[]> {
-    const memberships = await db
-      .select()
+  async getGuildMembers(guildId: string): Promise<any[]> {
+    const result = await db
+      .select({
+        id: guildMemberships.id,
+        studentId: guildMemberships.studentId,
+        joinedAt: guildMemberships.joinedAt,
+        nickname: students.nickname,
+        characterClass: students.characterClass,
+      })
       .from(guildMemberships)
+      .leftJoin(students, eq(guildMemberships.studentId, students.id))
       .where(eq(guildMemberships.guildId, guildId));
 
-    if (memberships.length === 0) {
-      return [];
-    }
-
-    const studentIds = memberships.map(m => m.studentId);
-    return await db.select().from(students).where(inArray(students.id, studentIds));
+    return result;
   }
 
   async getStudentGuilds(studentId: string): Promise<Guild[]> {
