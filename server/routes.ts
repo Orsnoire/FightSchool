@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage } from "@shared/schema";
 import { log } from "./vite";
-import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP } from "@shared/jobSystem";
+import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect, getAvailableUltimates } from "@shared/ultimateAbilities";
 
 interface ExtendedWebSocket extends WebSocket {
@@ -1147,6 +1147,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (player.characterClass === "herbalist") {
             // Herbalist: Hybrid damage using MAT + AGI + MND
             damage = calculateHybridDamage(player.mat, player.agi, player.mnd);
+          } else if (player.characterClass === "warlock") {
+            // Warlock: Magical damage using MAT + INT with Siphon self-heal
+            const warlockLevel = player.jobLevels.warlock || 0;
+            const mechanicUpgrades = getTotalMechanicUpgrades(player.jobLevels);
+            
+            // Base magical damage
+            damage = calculateMagicalDamage(player.mat, player.int);
+            mpCost = 2; // Base spell MP cost
+            
+            // Siphon unlocks at level 4: heals for (INT/2 + siphonHealBonus) rounded up
+            if (warlockLevel >= 4 && player.mp >= mpCost) {
+              const siphonHealAmount = Math.ceil(player.int / 2 + (mechanicUpgrades.siphonHealBonus || 0));
+              const healAmount = Math.min(siphonHealAmount, player.maxHealth - player.health);
+              player.health = Math.min(player.maxHealth, player.health + healAmount);
+              player.healingDone += healAmount;
+            }
+            
+            // Consume MP (if player has enough)
+            if (player.mp >= mpCost) {
+              player.mp = Math.max(0, player.mp - mpCost);
+            } else {
+              // Not enough MP - no damage
+              damage = 0;
+            }
           } else {
             // Other classes: use physical damage as default
             damage = calculatePhysicalDamage(player.atk, player.str);
