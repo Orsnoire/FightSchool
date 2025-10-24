@@ -16,52 +16,25 @@ export interface UltimateAbility {
 }
 
 export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
-  // Warrior tree ultimates
-  knight: {
-    id: "divine_slash",
-    name: "Divine Slash",
-    description: "Unleash a holy strike that deals massive damage to all enemies",
-    jobClass: "knight",
+  // Base class ultimates (level 15 cross-class abilities)
+  warrior: {
+    id: "berserker_rage",
+    name: "Berserker Rage",
+    description: "Enter a battle frenzy, dealing devastating physical damage to all enemies",
+    jobClass: "warrior",
     animationType: "lightning",
     cooldown: 3,
     effect: {
       type: "damage",
-      value: "STR × 5 + ATK × 3",
+      value: "STR × 6 + ATK × 4",
     },
   },
 
-  paladin: {
-    id: "holy_restoration",
-    name: "Holy Restoration",
-    description: "Channel divine energy to fully heal all allies",
-    jobClass: "paladin",
-    animationType: "holy",
-    cooldown: 3,
-    effect: {
-      type: "heal",
-      value: "100% HP to all allies",
-    },
-  },
-
-  dark_knight: {
-    id: "shadow_rend",
-    name: "Shadow Rend",
-    description: "Sacrifice your own HP to deal devastating dark damage",
-    jobClass: "dark_knight",
-    animationType: "dark",
-    cooldown: 3,
-    effect: {
-      type: "damage",
-      value: "(Current HP × 0.5) + (STR × 4)",
-    },
-  },
-
-  // Wizard tree ultimates
-  sage: {
-    id: "meteor_storm",
-    name: "Meteor Storm",
-    description: "Rain destruction from the heavens upon all foes",
-    jobClass: "sage",
+  wizard: {
+    id: "arcane_barrage",
+    name: "Arcane Barrage",
+    description: "Unleash a torrent of pure magical energy that obliterates all foes",
+    jobClass: "wizard",
     animationType: "fire",
     cooldown: 3,
     effect: {
@@ -70,6 +43,33 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     },
   },
 
+  scout: {
+    id: "assassinate",
+    name: "Assassinate",
+    description: "Strike from the shadows with lethal precision, dealing massive damage",
+    jobClass: "scout",
+    animationType: "dark",
+    cooldown: 3,
+    effect: {
+      type: "damage",
+      value: "AGI × 6 + RTK × 4",
+    },
+  },
+
+  herbalist: {
+    id: "sacred_grove",
+    name: "Sacred Grove",
+    description: "Call upon nature's blessing to fully restore all allies",
+    jobClass: "herbalist",
+    animationType: "nature",
+    cooldown: 3,
+    effect: {
+      type: "heal",
+      value: "100% HP to all allies",
+    },
+  },
+
+  // Advanced class ultimates
   warlock: {
     id: "soul_drain",
     name: "Soul Drain",
@@ -80,47 +80,6 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
     effect: {
       type: "damage",
       value: "INT × 4 (heals for 50% damage dealt)",
-    },
-  },
-
-  // Scout tree ultimates
-  ranger: {
-    id: "rapid_barrage",
-    name: "Rapid Barrage",
-    description: "Fire a devastating volley of arrows at lightning speed",
-    jobClass: "ranger",
-    animationType: "lightning",
-    cooldown: 3,
-    effect: {
-      type: "damage",
-      value: "AGI × 5 + RTK × 3",
-    },
-  },
-
-  monk: {
-    id: "thousand_fists",
-    name: "Thousand Fists",
-    description: "Unleash an unstoppable flurry of strikes",
-    jobClass: "monk",
-    animationType: "spirit",
-    cooldown: 3,
-    effect: {
-      type: "damage",
-      value: "(STR + AGI) × 3",
-    },
-  },
-
-  // Herbalist tree ultimates
-  druid: {
-    id: "natures_wrath",
-    name: "Nature's Wrath",
-    description: "Call upon the fury of nature to devastate enemies and heal allies",
-    jobClass: "druid",
-    animationType: "nature",
-    cooldown: 3,
-    effect: {
-      type: "damage",
-      value: "MND × 4 + MAT × 2 (heals all allies for 25% damage)",
     },
   },
 };
@@ -170,29 +129,20 @@ export function calculateUltimateEffect(
   if (!ultimate) return 0;
 
   switch (ultimateId) {
-    case "divine_slash":
-      return playerStats.str * 5 + playerStats.atk * 3;
+    case "berserker_rage":
+      return playerStats.str * 6 + playerStats.atk * 4;
     
-    case "holy_restoration":
-      return playerStats.maxHealth; // Full heal
-    
-    case "shadow_rend":
-      return Math.floor(playerStats.health * 0.5) + playerStats.str * 4;
-    
-    case "meteor_storm":
+    case "arcane_barrage":
       return playerStats.int * 6 + playerStats.mat * 4;
     
+    case "assassinate":
+      return playerStats.agi * 6 + playerStats.rtk * 4;
+    
+    case "sacred_grove":
+      return playerStats.maxHealth; // Full heal to all allies
+    
     case "soul_drain":
-      return playerStats.int * 4;
-    
-    case "rapid_barrage":
-      return playerStats.agi * 5 + playerStats.rtk * 3;
-    
-    case "thousand_fists":
-      return (playerStats.str + playerStats.agi) * 3;
-    
-    case "natures_wrath":
-      return playerStats.mnd * 4 + playerStats.mat * 2;
+      return playerStats.int * 4; // Heals for 50% of this damage
     
     default:
       return 0;
