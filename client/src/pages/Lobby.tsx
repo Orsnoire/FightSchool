@@ -229,11 +229,11 @@ export default function Lobby() {
   };
 
   if (!student || !student.characterClass || !student.gender) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-black flex items-center justify-center">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-black">
       <header className="sticky top-0 z-50 border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-serif font-bold" data-testid="text-lobby-title">
