@@ -925,14 +925,22 @@ export class DatabaseStorage implements IStorage {
           hiddenLeaderboardMetrics: [],
           enableGroupQuests: true,
         });
+        
+        console.log(`Test guild created (code: ${code})`);
+      }
 
-        // Add tester student to the guild
+      // Ensure tester student is a member of the guild (even if guild already existed)
+      const [existingMembership] = await db
+        .select()
+        .from(guildMemberships)
+        .where(and(eq(guildMemberships.guildId, guildId), eq(guildMemberships.studentId, tester.id)));
+      
+      if (!existingMembership) {
         await db.insert(guildMemberships).values({
-          guildId: guild.id,
+          guildId: guildId,
           studentId: tester.id,
         });
-        
-        console.log(`Test guild created (code: ${code}) with tester student`);
+        console.log('Tester student added to Test Guild');
       }
 
       // Get the test fight

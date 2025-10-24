@@ -10,7 +10,7 @@ import herbalistFemale from "@assets/generated_images/Herbalist_female_character
 
 interface PlayerAvatarProps {
   characterClass: CharacterClass;
-  gender: Gender;
+  gender?: Gender;
   size?: "xs" | "sm" | "md" | "lg";
   showBorder?: boolean;
   className?: string;
@@ -28,6 +28,7 @@ const CHARACTER_IMAGES: Record<CharacterClass, Record<Gender, string>> = {
   ranger: { A: scoutMale, B: scoutFemale },
   druid: { A: herbalistMale, B: herbalistFemale },
   monk: { A: warriorMale, B: warriorFemale },
+  warlock: { A: wizardMale, B: wizardFemale },
 };
 
 const SIZE_CLASSES = {
@@ -44,7 +45,8 @@ export function PlayerAvatar({
   showBorder = true,
   className = "",
 }: PlayerAvatarProps) {
-  const image = CHARACTER_IMAGES[characterClass][gender];
+  const safeGender = gender || "A";
+  const image = CHARACTER_IMAGES[characterClass][safeGender];
   const borderColor = `border-${characterClass}`;
 
   return (

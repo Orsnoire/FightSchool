@@ -81,7 +81,7 @@ export default function StudentGuildDetail() {
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      if (message.type === "session_created") {
+      if (message.type === "solo_session_created" || message.type === "session_created") {
         // Solo session created successfully
         localStorage.setItem("sessionId", message.sessionId);
         socket.close();

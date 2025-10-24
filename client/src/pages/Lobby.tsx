@@ -637,7 +637,7 @@ export default function Lobby() {
                       <div className="relative">
                         <PlayerAvatar
                           characterClass={classType}
-                          gender={student.gender!}
+                          gender={student.gender}
                           size="md"
                         />
                         <Badge 
