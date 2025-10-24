@@ -59,6 +59,8 @@ export default function Combat() {
   const enemyHitResetTimer = useRef<NodeJS.Timeout | null>(null);
   const playerHitDelayTimer = useRef<NodeJS.Timeout | null>(null);
   const playerHitResetTimer = useRef<NodeJS.Timeout | null>(null);
+  const shieldPulseTimer = useRef<NodeJS.Timeout | null>(null);
+  const healingPulseTimer = useRef<NodeJS.Timeout | null>(null);
   // B6/B7 FIX: Connection status and reconnection logic
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
@@ -293,8 +295,9 @@ export default function Combat() {
           duration: 2500,
         });
         // Trigger healing pulse animation
+        if (healingPulseTimer.current) clearTimeout(healingPulseTimer.current);
         setShowHealingPulse(true);
-        setTimeout(() => setShowHealingPulse(false), 1500);
+        healingPulseTimer.current = setTimeout(() => setShowHealingPulse(false), 1500);
         // Add floating heal number
         setFloatingNumbers(prev => [...prev, {
           id: `heal-${Date.now()}`,
@@ -349,8 +352,9 @@ export default function Combat() {
         duration: 2500,
       });
       // Trigger shield pulse animation
+      if (shieldPulseTimer.current) clearTimeout(shieldPulseTimer.current);
       setShowShieldPulse(true);
-      setTimeout(() => setShowShieldPulse(false), 1500);
+      shieldPulseTimer.current = setTimeout(() => setShowShieldPulse(false), 1500);
     }
 
     // Detect enemy attacks (health decreases during combat phase for ANY player - broadcast to all)
@@ -458,6 +462,8 @@ export default function Combat() {
       if (enemyHitResetTimer.current) clearTimeout(enemyHitResetTimer.current);
       if (playerHitDelayTimer.current) clearTimeout(playerHitDelayTimer.current);
       if (playerHitResetTimer.current) clearTimeout(playerHitResetTimer.current);
+      if (shieldPulseTimer.current) clearTimeout(shieldPulseTimer.current);
+      if (healingPulseTimer.current) clearTimeout(healingPulseTimer.current);
     };
   }, []);
 
