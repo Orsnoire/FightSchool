@@ -20,10 +20,10 @@ export function generateGuildCode(): string {
 }
 
 // Character classes and equipment types
-export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock";
+export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock" | "priest" | "paladin" | "dark_knight" | "blood_knight";
 export type BaseClass = "warrior" | "wizard" | "scout" | "herbalist";
 export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbalist"];
-export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock"];
+export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock", "priest", "paladin", "dark_knight", "blood_knight"];
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
@@ -685,7 +685,11 @@ export const CLASS_STATS: Record<CharacterClass, BaseJobStats> = {
   wizard: { baseHP: 7, int: 2, role: "DPS - Magical damage" },
   scout: { baseHP: 7, agi: 2, role: "DPS - Ranged damage" },
   herbalist: { baseHP: 10, mnd: 1, role: "Healer - Can heal allies" },
-  warlock: { baseHP: 7, int: 2, role: "Curse specialist - Wizard variant" },
+  warlock: { baseHP: 7, int: 2, role: "Curse specialist - DoT damage" },
+  priest: { baseHP: 10, mnd: 3, role: "Healer - Advanced healing specialist" },
+  paladin: { baseHP: 16, vit: 1, str: 1, mnd: 1, role: "Tank/Healer - Holy defender" },
+  dark_knight: { baseHP: 14, vit: 1, str: 1, int: 1, role: "Tank/DPS - Dark magic melee" },
+  blood_knight: { baseHP: 20, str: 1, int: 2, vit: 1, role: "Tank/DPS - Lifesteal specialist" },
 };
 
 // Complete character stats (all stats combined)
