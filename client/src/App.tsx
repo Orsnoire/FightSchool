@@ -21,6 +21,7 @@ import StudentStats from "@/pages/StudentStats";
 import StudentEquipment from "@/pages/StudentEquipment";
 import StudentGuilds from "@/pages/StudentGuilds";
 import StudentGuildDetail from "@/pages/StudentGuildDetail";
+import StudentGuildLobby from "@/pages/StudentGuildLobby";
 
 function Router() {
   return (
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/student/lobby" component={Lobby} />
       <Route path="/student/guilds" component={StudentGuilds} />
       <Route path="/student/guild/:id" component={StudentGuildDetail} />
+      <Route path="/student/guild-lobby/:id" component={StudentGuildLobby} />
       <Route path="/student/combat" component={Combat} />
       <Route path="/student/:id/stats" component={StudentStats} />
       <Route component={NotFound} />

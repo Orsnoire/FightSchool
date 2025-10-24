@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, BASE_CLASSES, ALL_CHARACTER_CLASSES } from "@shared/schema";
+import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, BASE_CLASSES, ALL_CHARACTER_CLASSES } from "@shared/schema";
 import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -30,6 +30,7 @@ export default function Lobby() {
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot>("weapon");
   const [sessionCode, setSessionCode] = useState("");
   const [showClassModal, setShowClassModal] = useState(false);
+  const [showGuildDialog, setShowGuildDialog] = useState(false);
   const [soloFightId, setSoloFightId] = useState("");
   const [isHostingSolo, setIsHostingSolo] = useState(false);
   const studentId = localStorage.getItem("studentId");
@@ -88,6 +89,12 @@ export default function Lobby() {
     acc[item.id] = item;
     return acc;
   }, {} as Record<string, EquipmentItemDb>);
+
+  // Fetch student's guilds
+  const { data: studentGuilds = [] } = useQuery<Guild[]>({
+    queryKey: [`/api/student/${studentId}/guilds`],
+    enabled: !!studentId,
+  });
 
   const joinFight = async () => {
     if (!sessionCode.trim()) {
@@ -456,38 +463,21 @@ export default function Lobby() {
             <Card className="mb-4">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-amber-500" />
-                  Host Solo Mode
+                  <Users className="h-5 w-5 text-primary" />
+                  Your Guilds
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="solo-fight-id">Fight ID</Label>
-                  <Input
-                    id="solo-fight-id"
-                    value={soloFightId}
-                    onChange={(e) => setSoloFightId(e.target.value)}
-                    placeholder="Enter fight ID from your teacher"
-                    className="font-mono"
-                    data-testid="input-solo-fight-id"
-                    disabled={isHostingSolo}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !isHostingSolo) {
-                        hostSoloMode();
-                      }
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ask your teacher for a fight ID to host a solo mode session
-                  </p>
-                </div>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Access guild fights and collaborate with your classmates
+                </p>
                 <Button
-                  onClick={hostSoloMode}
-                  disabled={isHostingSolo}
+                  onClick={() => setShowGuildDialog(true)}
                   className="w-full"
-                  data-testid="button-host-solo"
+                  data-testid="button-view-guilds"
                 >
-                  {isHostingSolo ? "Creating Session..." : "Host Solo Mode"}
+                  <Users className="mr-2 h-4 w-4" />
+                  View Guilds
                 </Button>
               </CardContent>
             </Card>
@@ -660,6 +650,73 @@ export default function Lobby() {
                 );
               });
             })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Guild Selection Dialog */}
+      <Dialog open={showGuildDialog} onOpenChange={setShowGuildDialog}>
+        <DialogContent className="max-w-2xl" data-testid="dialog-guild-selection">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-serif">Select a Guild</DialogTitle>
+            <DialogDescription>
+              Choose a guild to access its fights and leaderboards
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {studentGuilds.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  You haven't joined any guilds yet
+                </p>
+                <Button
+                  onClick={() => {
+                    setShowGuildDialog(false);
+                    navigate("/student/guilds");
+                  }}
+                  data-testid="button-browse-guilds"
+                >
+                  Browse Guilds
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-3 max-h-96 overflow-y-auto">
+                {studentGuilds.map((guild) => (
+                  <Card
+                    key={guild.id}
+                    className="cursor-pointer hover-elevate active-elevate-2"
+                    onClick={() => {
+                      setShowGuildDialog(false);
+                      navigate(`/student/guild-lobby/${guild.id}`);
+                    }}
+                    data-testid={`button-select-guild-${guild.id}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-lg" data-testid={`text-guild-name-${guild.id}`}>
+                            {guild.name}
+                          </h3>
+                          {guild.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                              {guild.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Trophy className="h-3 w-3" />
+                            Lv {guild.level}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
