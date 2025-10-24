@@ -526,7 +526,7 @@ export default function StudentGuildLobby() {
                       <div className="relative">
                         <PlayerAvatar
                           characterClass={classType}
-                          gender={(student?.gender || "male") as "male" | "female"}
+                          gender={student?.gender || "A"}
                           size="md"
                         />
                         <Badge 
