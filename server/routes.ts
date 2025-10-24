@@ -1839,6 +1839,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ws.studentId = student.id;
           ws.sessionId = sessionId;
           ws.fightId = session.fightId;
+          
+          // Preserve isHost status if this student is the solo mode host
+          if (session.soloModeEnabled && session.soloModeHostId === student.id) {
+            ws.isHost = true;
+            log(`[WebSocket] Solo mode host ${student.nickname} joined their own session ${sessionId}`, "websocket");
+          }
 
           // Add player to combat if not already in
           if (!session.players[student.id]) {
