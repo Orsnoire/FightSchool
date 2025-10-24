@@ -1058,6 +1058,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const question = fight.questions[actualQuestionIndex];
 
     // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
+    
+    // Process Hex DoT damage from Warlocks (ticks before player damage)
+    for (const [playerId, player] of Object.entries(session.players)) {
+      if (player.isDead || player.hexRoundsRemaining <= 0 || !player.hexedEnemyId) continue;
+      
+      // Find the hexed enemy
+      const hexedEnemy = session.enemies.find(e => e.id === player.hexedEnemyId);
+      if (hexedEnemy && hexedEnemy.health > 0) {
+        // Deal hex damage
+        const hexDamage = player.hexDamage;
+        hexedEnemy.health = Math.max(0, hexedEnemy.health - hexDamage);
+        player.damageDealt += hexDamage;
+        
+        log(`[Combat] ${player.nickname}'s Hex deals ${hexDamage} curse damage to ${hexedEnemy.name}`, "combat");
+      }
+      
+      // Decrement hex rounds
+      player.hexRoundsRemaining -= 1;
+      if (player.hexRoundsRemaining <= 0) {
+        player.hexedEnemyId = undefined;
+        player.hexDamage = 0;
+      }
+    }
+    
     // Process answers and deal damage
     for (const [playerId, player] of Object.entries(session.players)) {
       if (player.isDead) continue;
@@ -1148,7 +1172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Herbalist: Hybrid damage using MAT + AGI + MND
             damage = calculateHybridDamage(player.mat, player.agi, player.mnd);
           } else if (player.characterClass === "warlock") {
-            // Warlock: Magical damage using MAT + INT with Siphon self-heal
+            // Warlock: Magical damage using MAT + INT with Siphon self-heal and Hex DoT
             const warlockLevel = player.jobLevels.warlock || 0;
             const mechanicUpgrades = getTotalMechanicUpgrades(player.jobLevels);
             
@@ -1162,6 +1186,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const healAmount = Math.min(siphonHealAmount, player.maxHealth - player.health);
               player.health = Math.min(player.maxHealth, player.health + healAmount);
               player.healingDone += healAmount;
+            }
+            
+            // Hex is available at level 1+: applies DoT to target enemy
+            // Hex damage = (INT - 1), Duration = (2 + hexDuration)
+            if (warlockLevel >= 1 && session.enemies.length > 0) {
+              const targetEnemy = session.enemies[0]; // Target first enemy
+              const hexDamageValue = Math.max(1, player.int - 1); // Minimum 1 damage
+              const hexDurationValue = 2 + (mechanicUpgrades.hexDuration || 0);
+              
+              // Apply or refresh hex on target
+              player.hexedEnemyId = targetEnemy.id;
+              player.hexDamage = hexDamageValue;
+              player.hexRoundsRemaining = hexDurationValue;
             }
             
             // Consume MP (if player has enough)
