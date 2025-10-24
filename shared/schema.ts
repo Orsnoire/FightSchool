@@ -624,6 +624,10 @@ export function getStartingEquipment(characterClass: CharacterClass): { weapon: 
     scout: "basic_bow",
     herbalist: "basic_herbs",
     warlock: "basic_staff",
+    priest: "basic_staff",      // MAT-based healer
+    paladin: "basic_sword",      // ATK-based tank/healer
+    dark_knight: "basic_sword",  // ATK-based tank/DPS
+    blood_knight: "basic_sword", // ATK-based tank/DPS
   };
 
   return {

@@ -454,6 +454,274 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
       },
     }
   },
+
+  priest: {
+    id: "priest",
+    name: "Priest",
+    description: "Advanced healer - Master of holy magic",
+    maxLevel: 15,
+    unlockRequirements: { herbalist: 2 },
+    levelRewards: {
+      1: { 
+        abilities: [{
+          id: "mend",
+          name: "Mend",
+          description: "Heals target for MND HP. Costs 1 MP.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { mnd: 1 } },
+      3: { passives: { vit: 1 } },
+      4: { 
+        abilities: [{
+          id: "purify",
+          name: "Purify",
+          description: "Removes enemy poison debuffs from ally. Phase 2. Costs 1 MP.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { mnd: 1 } },
+      6: { passives: { vit: 1 } },
+      7: { passives: { int: 1 } },
+      8: { 
+        abilities: [{
+          id: "mend_crossclass",
+          name: "Mend",
+          description: "Cross-class unlock. Heals target for MND HP. Costs 1 MP.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { mnd: 1 } },
+      10: { 
+        abilities: [{
+          id: "bless",
+          name: "Bless",
+          description: "Buff. Lasts MND/2 rounds. Raises AGI, STR and INT by MND/3.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { vit: 1 } },
+      12: { 
+        abilities: [{
+          id: "holy_light",
+          name: "Holy Light",
+          description: "Heal all players in the fight for MND/2 HP. Costs 5 MP.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { vit: 1 } },
+      14: { passives: { mnd: 1 } },
+      15: { 
+        abilities: [{
+          id: "divine_grace",
+          name: "Divine Grace",
+          description: "Cross-class unlock. Heal all players to full HP and restore any KO'ed players to full HP. Phase 2 ability. Limit: 1 use per fight. Costs 5 MP.",
+          isCrossClass: true,
+        }]
+      },
+    }
+  },
+
+  paladin: {
+    id: "paladin",
+    name: "Paladin",
+    description: "Holy defender - Tank/Healer hybrid",
+    maxLevel: 15,
+    unlockRequirements: { warrior: 2, priest: 2 },
+    levelRewards: {
+      1: { 
+        abilities: [{
+          id: "healing_guard",
+          name: "Healing Guard",
+          description: "Heals target as well as blocks for them this turn.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { mnd: 1 } },
+      3: { passives: { vit: 1 } },
+      4: { 
+        abilities: [{
+          id: "lay_on_hands",
+          name: "Lay on Hands",
+          description: "Heals target for (VIT+MND)/2. 5 round cooldown.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { str: 1 } },
+      6: { passives: { vit: 1 } },
+      7: { passives: { mnd: 1 } },
+      8: { 
+        abilities: [{
+          id: "healing_guard_ally_crossclass",
+          name: "Healing Guard Ally",
+          description: "Cross-class unlock. Heals target as well as blocks for them this turn.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { str: 1 } },
+      10: { 
+        abilities: [{
+          id: "aegis",
+          name: "Aegis",
+          description: "Blocks target and that target's aggro is transferred to the Paladin who used Aegis.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { mnd: 1 } },
+      12: { 
+        abilities: [{
+          id: "sacred_strike",
+          name: "Sacred Strike",
+          description: "Deals ATK*(STR+MND+VIT) heal damage (if answer is incorrect, no damage is dealt – treat as a miss). Paladin takes no damage on wrong answer this round. 5 round cooldown.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { vit: 1 } },
+      14: { passives: { str: 1 } },
+      15: { 
+        abilities: [{
+          id: "holy_judgment",
+          name: "Holy Judgment",
+          description: "Cross-class unlock. Heals all current players for (VIT+MND) HP and deals (STR+VIT+MND)/3 healing damage to all current enemies.",
+          isCrossClass: true,
+        }]
+      },
+    }
+  },
+
+  dark_knight: {
+    id: "dark_knight",
+    name: "Dark Knight",
+    description: "Dark warrior - Tank/DPS with shadow magic",
+    maxLevel: 15,
+    unlockRequirements: { warrior: 3, wizard: 3 },
+    levelRewards: {
+      1: { 
+        abilities: [{
+          id: "ruin_strike",
+          name: "Ruin Strike",
+          description: "Deals ATK*(STR + VIT + INT) melee dmg. Costs 1 MP.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { int: 1 } },
+      3: { passives: { str: 1 } },
+      4: { 
+        abilities: [{
+          id: "blood_sword",
+          name: "Blood Sword",
+          description: "Heals the dark knight for the damage he dealt this round. Can be used in conjunction with other abilities. Costs 1 MP.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { int: 1 } },
+      6: { passives: { str: 1 } },
+      7: { passives: { vit: 1 } },
+      8: { 
+        abilities: [{
+          id: "ruin_strike_crossclass",
+          name: "Ruin Strike",
+          description: "Cross-class unlock. Deals ATK*(STR + VIT + INT) melee dmg. Costs 1 MP.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { str: 1 } },
+      10: { 
+        abilities: [{
+          id: "blood_price",
+          name: "Blood Price",
+          description: "Deals ATK*(STR+VIT+INT)*2 melee dmg. Deals ATK dmg to the Dark Knight who used the ability.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { int: 1 } },
+      12: { 
+        abilities: [{
+          id: "dread_aura",
+          name: "Dread Aura",
+          description: "Reduces enemy DMG by (INT)/3 (round up) for 3 rounds. Costs 3 MP.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { str: 1 } },
+      14: { passives: { int: 1 } },
+      15: { 
+        abilities: [{
+          id: "shadow_requiem",
+          name: "Shadow Requiem",
+          description: "Cross-class unlock. Deals ATK*(STR+VIT+INT) melee dmg to all current enemies. Dark Knight is healed for all damage done in this way. Once per fight.",
+          isCrossClass: true,
+        }]
+      },
+    }
+  },
+
+  blood_knight: {
+    id: "blood_knight",
+    name: "Blood Knight",
+    description: "Vampiric warrior - Lifesteal specialist",
+    maxLevel: 15,
+    unlockRequirements: { warrior: 2, warlock: 5 },
+    levelRewards: {
+      1: { 
+        abilities: [{
+          id: "crimson_slash",
+          name: "Crimson Slash",
+          description: "Deals ATK * (VIT + STR)/2 melee damage to one target. Heal for 50% of the damage dealt. Active (choose in phase 1). Costs 1 MP.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { str: 1 } },
+      3: { passives: { vit: 1 } },
+      4: { 
+        abilities: [{
+          id: "dark_vigor",
+          name: "Dark Vigor",
+          description: "(passive) Heal for 25% of all damage dealt by this dark knight.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { str: 1 } },
+      6: { passives: { vit: 1 } },
+      7: { passives: { int: 1 } },
+      8: { 
+        abilities: [{
+          id: "crimson_slash_crossclass",
+          name: "Crimson Slash",
+          description: "Cross-class unlock. Deals ATK * (VIT + STR)/2 melee damage to one target. Heal for 50% of the damage dealt. Costs 1 MP.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { str: 1 } },
+      10: { 
+        abilities: [{
+          id: "hemorrhage",
+          name: "Hemorrhage",
+          description: "Deal a heavy strike that causes the enemy to bleed. Deals ATK melee dmg, and creates a bleed effect that deals ATK/2 per round for 2 rounds. Costs 1 MP.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { str: 1 } },
+      12: { 
+        abilities: [{
+          id: "vampiric_guard",
+          name: "Vampiric Guard",
+          description: "(Passive) Now, when a Blood Knight takes damage, damage calculation ignores VIT. If the Blood Knight deals damage the next round, the Blood Knight gains MP equal to 100% + 5 of damage taken in this way.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { int: 1 } },
+      14: { passives: { str: 1 } },
+      15: { 
+        abilities: [{
+          id: "raining_blood",
+          name: "Raining Blood",
+          description: "Cross-class unlock. Deal ATK*(STR+VIT+INT) magic damage to all current enemies. Heal all allies for 50% of the damage dealt in this way.",
+          isCrossClass: true,
+        }]
+      },
+    }
+  },
 };
 
 // Get all abilities a player has unlocked across all jobs
