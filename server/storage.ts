@@ -434,6 +434,10 @@ export class DatabaseStorage implements IStorage {
       deaths: 0,
       lastActionDamage: 0, // Track last damage dealt for UI display
       threat: 1, // Default threat level for enemy AI targeting
+      
+      // Ultimate abilities (level 15+ job abilities)
+      fightCount: 0, // Total fights completed
+      lastUltimatesUsed: {}, // Maps ultimate ID to fight number when last used
     };
 
     session.players[student.id] = playerState;

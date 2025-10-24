@@ -5,6 +5,7 @@ import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP } from "@shared/jobSystem";
+import { ULTIMATE_ABILITIES, calculateUltimateEffect, getAvailableUltimates } from "@shared/ultimateAbilities";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -1974,6 +1975,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Batch broadcast to reduce message flood
           scheduleBroadcastUpdate(ws.sessionId);
+        } else if (message.type === "use_ultimate" && ws.studentId && ws.sessionId) {
+          const sessionId = ws.sessionId; // Capture for closure
+          const session = await storage.getCombatSession(sessionId);
+          if (!session) return;
+          
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead) {
+            log(`[WebSocket] Ignoring ultimate from dead/missing player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
+          const ultimateId = message.ultimateId;
+          const ultimate = Object.values(ULTIMATE_ABILITIES).find(u => u.id === ultimateId);
+          
+          if (!ultimate) {
+            log(`[WebSocket] Unknown ultimate: ${ultimateId}`, "websocket");
+            return;
+          }
+          
+          // Check if player has this ultimate unlocked (level 15+ in corresponding job)
+          const jobLevel = player.jobLevels[ultimate.jobClass] || 0;
+          if (jobLevel < 15) {
+            log(`[WebSocket] Player ${ws.studentId} doesn't have ${ultimate.jobClass} at level 15`, "websocket");
+            return;
+          }
+          
+          // Check cooldown
+          const lastUsed = player.lastUltimatesUsed[ultimateId] || -999;
+          const fightsAgo = player.fightCount - lastUsed;
+          if (fightsAgo < ultimate.cooldown && lastUsed !== -999) {
+            log(`[WebSocket] Ultimate ${ultimateId} on cooldown for player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
+          log(`[WebSocket] Player ${ws.studentId} uses ultimate: ${ultimate.name}`, "websocket");
+          
+          // Pause combat and broadcast ultimate animation
+          await storage.updateCombatSession(sessionId, { currentPhase: "waiting" });
+          
+          // Broadcast animation to all players
+          broadcastToCombat(sessionId, {
+            type: "ultimate_animation",
+            playerName: player.nickname,
+            ultimateName: ultimate.name,
+            animationType: ultimate.animationType,
+            currentClass: player.characterClass,
+            currentGender: player.gender,
+          });
+          
+          // Calculate and apply ultimate effects
+          const effectValue = calculateUltimateEffect(ultimateId, {
+            str: player.str,
+            int: player.int,
+            agi: player.agi,
+            mnd: player.mnd,
+            atk: player.atk,
+            mat: player.mat,
+            rtk: player.rtk,
+            health: player.health,
+            maxHealth: player.maxHealth,
+          });
+          
+          // Apply effects based on ultimate type
+          if (ultimate.effect.type === "damage") {
+            // Deal damage to all enemies
+            for (const enemy of session.enemies) {
+              enemy.health = Math.max(0, enemy.health - effectValue);
+            }
+            player.damageDealt += effectValue;
+            player.lastActionDamage = effectValue;
+            
+            // Some ultimates also heal (like soul_drain and natures_wrath)
+            if (ultimateId === "soul_drain") {
+              const healAmount = Math.floor(effectValue * 0.5);
+              player.health = Math.min(player.maxHealth, player.health + healAmount);
+              player.healingDone += healAmount;
+            } else if (ultimateId === "natures_wrath") {
+              const healAmount = Math.floor(effectValue * 0.25);
+              // Heal all players
+              for (const p of Object.values(session.players)) {
+                if (!p.isDead) {
+                  p.health = Math.min(p.maxHealth, p.health + healAmount);
+                  p.healingDone += (p.studentId === player.studentId) ? healAmount * Object.keys(session.players).length : 0;
+                }
+              }
+            } else if (ultimateId === "shadow_rend") {
+              // Shadow rend costs 50% of current HP
+              const hpCost = Math.floor(player.health * 0.5);
+              player.health -= hpCost;
+              player.damageTaken += hpCost;
+            }
+          } else if (ultimate.effect.type === "heal") {
+            // Heal all players (paladin's holy_restoration)
+            for (const p of Object.values(session.players)) {
+              if (!p.isDead) {
+                const healAmount = p.maxHealth - p.health;
+                p.health = p.maxHealth;
+                if (p.studentId === player.studentId) {
+                  player.healingDone += healAmount;
+                }
+              }
+            }
+          }
+          
+          // Update cooldown
+          player.lastUltimatesUsed[ultimateId] = player.fightCount;
+          
+          // Save session with updated state
+          await storage.updateCombatSession(sessionId, {
+            players: session.players,
+            enemies: session.enemies,
+          });
+          
+          // Broadcast updated state
+          const updatedSession = await storage.getCombatSession(sessionId);
+          broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
+          
+          // Resume combat after animation (4 seconds)
+          setTimeout(async () => {
+            const currentSession = await storage.getCombatSession(sessionId);
+            if (!currentSession) return;
+            
+            // Resume to previous phase (question or combat)
+            await storage.updateCombatSession(sessionId, { 
+              currentPhase: session.currentQuestionIndex < 1 ? "question" : "combat"
+            });
+            
+            const resumedSession = await storage.getCombatSession(sessionId);
+            broadcastToCombat(sessionId, { type: "combat_state", state: resumedSession });
+          }, 4000);
         }
       } catch (error) {
         log(`[WebSocket] Error: ${error}`, "websocket");

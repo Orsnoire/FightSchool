@@ -441,6 +441,13 @@ export interface CombatState {
   questionStartTime?: number;
   phaseStartTime?: number;
   questionOrder?: number[]; // Array of question indices (shuffled if randomizeQuestions is true)
+  
+  // Solo mode fields
+  soloModeEnabled?: boolean;
+  soloModeHostId?: string; // Student ID of the host
+  soloModeStartHP?: number; // Starting HP for solo mode (scales with players)
+  soloModeAIEnabled?: boolean; // Whether AI players are enabled
+  soloModeJoinersBlocked?: boolean; // Whether new players can join
 }
 
 // Equipment item definition
