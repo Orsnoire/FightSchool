@@ -486,8 +486,8 @@ export default function Combat() {
         </div>
       )}
 
-      {/* B4 FIX: Main combat area with fixed viewport sizing */}
-      <div className="flex-1 flex gap-2 px-2 overflow-hidden" style={{ height: 'calc(100vh - 12.5vh - 10vh)' }}>
+      {/* B4 FIX: Main combat area with fixed viewport sizing and bottom padding for fixed player footer */}
+      <div className="flex-1 flex gap-2 px-2 overflow-hidden pb-2" style={{ height: 'calc(100vh - 12.5vh)', paddingBottom: 'calc(10vh + 0.5rem)' }}>
         {/* B4 FIX: Left column - 2-column grid, tiny avatars, no names */}
         <div className="flex-shrink-0 hidden lg:block overflow-y-auto" style={{ width: '10vw' }} data-testid="players-left-column">
           <div className="grid grid-cols-2 gap-1">
@@ -801,9 +801,9 @@ export default function Combat() {
         </div>
       </div>
 
-      {/* B4 FIX: Player footer constrained to fixed height */}
+      {/* FIXED PLAYER FOOTER: Always visible at bottom of screen */}
       {playerState && (
-        <div className="bg-card border-t border-border p-2" style={{ height: '10vh' }}>
+        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border p-2 z-50" style={{ height: '10vh' }}>
           <div className="flex items-center gap-3 h-full max-w-7xl mx-auto">
             <div style={{ width: '48px', height: '48px' }}>
               <PlayerAvatar characterClass={playerState.characterClass} gender={playerState.gender} size="md" />
