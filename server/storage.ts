@@ -799,10 +799,11 @@ export class DatabaseStorage implements IStorage {
         })
         .returning();
 
-      // Create job levels for all base classes + warlock at level 15
-      const jobsToLevel: CharacterClass[] = ['warrior', 'wizard', 'scout', 'herbalist', 'warlock'];
+      // Create job levels for ALL character classes at level 15
+      // This is future-proof: when new jobs are added to CharacterClass, they'll automatically be added here
+      const { ALL_CHARACTER_CLASSES } = await import('@shared/schema');
       
-      for (const jobClass of jobsToLevel) {
+      for (const jobClass of ALL_CHARACTER_CLASSES) {
         await db.insert(studentJobLevels).values({
           studentId: student.id,
           jobClass,
@@ -811,7 +812,7 @@ export class DatabaseStorage implements IStorage {
         });
       }
 
-      console.log('Test student "tester" created with level 15 in all jobs');
+      console.log(`Test student "tester" created with level 15 in all ${ALL_CHARACTER_CLASSES.length} jobs`);
     } catch (error) {
       console.error('Failed to seed test student:', error);
     }
