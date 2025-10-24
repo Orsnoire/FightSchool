@@ -10,7 +10,7 @@ import { ComboPoints } from "@/components/ComboPoints";
 import { VictoryModal } from "@/components/VictoryModal";
 import { FloatingNumber } from "@/components/FloatingNumber";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles } from "lucide-react";
 import type { CombatState, Question, LootItem } from "@shared/schema";
 import { getFireballMaxChargeRounds } from "@shared/jobSystem";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +52,8 @@ export default function Combat() {
   const [floatingNumbers, setFloatingNumbers] = useState<Array<{ id: string; value: number; type: "damage" | "heal" }>>([]);
   // Shield block animation
   const [showShieldPulse, setShowShieldPulse] = useState(false);
+  // Healing pulse animation
+  const [showHealingPulse, setShowHealingPulse] = useState(false);
   // Animation timer refs for cleanup
   const enemyHitDelayTimer = useRef<NodeJS.Timeout | null>(null);
   const enemyHitResetTimer = useRef<NodeJS.Timeout | null>(null);
@@ -290,6 +292,15 @@ export default function Combat() {
           description: `You were healed by ${healer.nickname} for +${healAmount} health`,
           duration: 2500,
         });
+        // Trigger healing pulse animation
+        setShowHealingPulse(true);
+        setTimeout(() => setShowHealingPulse(false), 1500);
+        // Add floating heal number
+        setFloatingNumbers(prev => [...prev, {
+          id: `heal-${Date.now()}`,
+          value: healAmount,
+          type: "heal"
+        }]);
       }
     }
 
@@ -976,7 +987,7 @@ export default function Combat() {
                 </AnimatePresence>
                 
                 {/* Floating damage numbers */}
-                {floatingNumbers.map((num) => (
+                {floatingNumbers.filter(num => num.type === "damage").map((num) => (
                   <FloatingNumber
                     key={num.id}
                     value={num.value}
@@ -1022,6 +1033,29 @@ export default function Combat() {
                   </motion.div>
                 )}
               </AnimatePresence>
+              {/* Healing pulse animation */}
+              <AnimatePresence>
+                {showHealingPulse && (
+                  <motion.div
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: [0.5, 1.3, 0.5], opacity: [0, 1, 0] }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  >
+                    <Sparkles className="h-10 w-10 text-herbalist drop-shadow-lg" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {/* Floating heal numbers */}
+              {floatingNumbers.filter(num => num.type === "heal").map((num) => (
+                <FloatingNumber
+                  key={num.id}
+                  value={num.value}
+                  type={num.type}
+                  onComplete={() => removeFloatingNumber(num.id)}
+                />
+              ))}
             </div>
             <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-center justify-between mb-1">
