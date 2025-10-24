@@ -891,46 +891,64 @@ export class DatabaseStorage implements IStorage {
       }
 
       // Check if test guild already exists
-      const existingGuild = await db.select().from(guilds).where(eq(guilds.name, 'Test Guild'));
-      if (existingGuild.length > 0) {
-        return; // Already seeded
+      const [existingGuild] = await db.select().from(guilds).where(eq(guilds.name, 'Test Guild'));
+      
+      let guildId: string;
+      
+      if (existingGuild) {
+        guildId = existingGuild.id;
+      } else {
+        // Create test guild
+        const code = generateGuildCode();
+        const [guild] = await db.insert(guilds).values({
+          teacherId: teacher.id,
+          name: 'Test Guild',
+          code,
+          description: 'A test guild for trying out features',
+          level: 1,
+          experience: 0,
+          isArchived: false,
+        }).returning();
+        
+        guildId = guild.id;
+
+        // Create default settings for the guild
+        await db.insert(guildSettings).values({
+          guildId: guild.id,
+          hiddenLeaderboardMetrics: [],
+          enableGroupQuests: true,
+        });
+
+        // Add tester student to the guild
+        await db.insert(guildMemberships).values({
+          guildId: guild.id,
+          studentId: tester.id,
+        });
+        
+        console.log(`Test guild created (code: ${code}) with tester student`);
       }
 
-      // Create test guild
-      const code = generateGuildCode();
-      const [guild] = await db.insert(guilds).values({
-        teacherId: teacher.id,
-        name: 'Test Guild',
-        code,
-        description: 'A test guild for trying out features',
-        level: 1,
-        experience: 0,
-        isArchived: false,
-      }).returning();
-
-      // Create default settings for the guild
-      await db.insert(guildSettings).values({
-        guildId: guild.id,
-        hiddenLeaderboardMetrics: [],
-        enableGroupQuests: true,
-      });
-
-      // Add tester student to the guild
-      await db.insert(guildMemberships).values({
-        guildId: guild.id,
-        studentId: tester.id,
-      });
-
-      // Get the test fight and assign it to the guild
+      // Get the test fight
       const [testFight] = await db.select().from(fights).where(eq(fights.title, 'Ultimate Test Fight'));
-      if (testFight) {
+      if (!testFight) {
+        console.error('Cannot assign test fight: fight not found');
+        return;
+      }
+
+      // Check if fight is already assigned to the guild
+      const [existingAssignment] = await db
+        .select()
+        .from(guildFights)
+        .where(and(eq(guildFights.guildId, guildId), eq(guildFights.fightId, testFight.id)));
+      
+      if (!existingAssignment) {
+        // Assign the test fight to the guild
         await db.insert(guildFights).values({
-          guildId: guild.id,
+          guildId,
           fightId: testFight.id,
         });
+        console.log('Test fight assigned to Test Guild');
       }
-
-      console.log(`Test guild created (code: ${code}) with tester student and test fight assigned`);
     } catch (error) {
       console.error('Failed to seed test guild:', error);
     }
