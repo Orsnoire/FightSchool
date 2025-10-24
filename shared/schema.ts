@@ -159,9 +159,11 @@ export const combatSessions = pgTable("combat_sessions", {
   questionOrder: jsonb("question_order").$type<number[]>(),
   
   // Solo mode fields
-  isSoloMode: boolean("is_solo_mode").notNull().default(false),
-  soloHostId: varchar("solo_host_id"), // Student ID of host (null for teacher-hosted)
-  allowJoiners: boolean("allow_joiners").notNull().default(true), // Host can toggle
+  soloModeEnabled: boolean("solo_mode_enabled").notNull().default(false),
+  soloModeHostId: varchar("solo_mode_host_id"), // Student ID of host (null for teacher-hosted)
+  soloModeStartHP: integer("solo_mode_start_hp"), // Starting HP for solo mode (scales with players)
+  soloModeAIEnabled: boolean("solo_mode_ai_enabled").notNull().default(false), // Whether AI players are enabled
+  soloModeJoinersBlocked: boolean("solo_mode_joiners_blocked").notNull().default(false), // Whether new players can join
   guildId: varchar("guild_id"), // Which guild this session contributes XP to (for solo mode)
 });
 
