@@ -9,8 +9,10 @@ import { MPBar } from "@/components/MPBar";
 import { ComboPoints } from "@/components/ComboPoints";
 import { VictoryModal } from "@/components/VictoryModal";
 import { FloatingNumber } from "@/components/FloatingNumber";
+import { RichContentRenderer } from "@/components/RichContentRenderer";
+import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles, Calculator } from "lucide-react";
 import type { CombatState, Question, LootItem } from "@shared/schema";
 import { getFireballMaxChargeRounds } from "@shared/jobSystem";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +29,7 @@ export default function Combat() {
   const [healTarget, setHealTarget] = useState<string>("");
   const [isCreatingPotion, setIsCreatingPotion] = useState(false);
   const [isChargingFireball, setIsChargingFireball] = useState(false);
+  const [mathMode, setMathMode] = useState(false);
   const [showVictoryModal, setShowVictoryModal] = useState(false);
   const [victoryData, setVictoryData] = useState<{
     xpGained: number;
@@ -694,12 +697,15 @@ export default function Combat() {
           {/* B5 FIX: Only show question modal when phase change modal is not visible */}
           {!showPhaseChangeModal && combatState.currentPhase === "question" && currentQuestion && (
             <Card className="p-8 border-primary/30 max-h-[80vh] flex flex-col">
-              <div className="mb-6 flex items-center justify-between flex-shrink-0">
-                <h3 className="text-2xl font-bold" data-testid="text-question">{currentQuestion.question}</h3>
-                <div className="flex items-center gap-2 text-warning">
-                  <Clock className="h-5 w-5" />
-                  <span className="text-xl font-bold" data-testid="text-timer">{timeRemaining}s</span>
+              <div className="mb-6 flex-shrink-0">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold">Question</h3>
+                  <div className="flex items-center gap-2 text-warning">
+                    <Clock className="h-5 w-5" />
+                    <span className="text-xl font-bold" data-testid="text-timer">{timeRemaining}s</span>
+                  </div>
                 </div>
+                <RichContentRenderer html={currentQuestion.question} className="text-lg" />
               </div>
               <ScrollArea className="flex-1 pr-4">{/* B8 FIX: Scroll area for question content */}
 
@@ -713,8 +719,8 @@ export default function Combat() {
                       onClick={() => setSelectedAnswer(option)}
                       data-testid={`button-option-${i}`}
                     >
-                      <span className="font-semibold mr-3">{String.fromCharCode(65 + i)}.</span>
-                      {option}
+                      <span className="font-semibold mr-3 flex-shrink-0">{String.fromCharCode(65 + i)}.</span>
+                      <RichContentRenderer html={option} className="flex-1" />
                     </Button>
                   ))}
                 </div>
@@ -737,14 +743,38 @@ export default function Combat() {
               )}
 
               {currentQuestion.type === "short_answer" && (
-                <input
-                  type="text"
-                  value={selectedAnswer}
-                  onChange={(e) => setSelectedAnswer(e.target.value)}
-                  className="w-full p-4 border border-border rounded-md bg-background"
-                  placeholder="Type your answer..."
-                  data-testid="input-answer"
-                />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Your Answer</label>
+                    <Button
+                      type="button"
+                      variant={mathMode ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMathMode(!mathMode)}
+                      data-testid="button-toggle-math-mode"
+                      className="gap-2"
+                    >
+                      <Calculator className="h-4 w-4" />
+                      {mathMode ? "Math Mode ON" : "Math Mode OFF"}
+                    </Button>
+                  </div>
+                  {mathMode ? (
+                    <MathEditor
+                      value={selectedAnswer}
+                      onChange={(latex) => setSelectedAnswer(latex)}
+                      placeholder="Enter math expression..."
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={selectedAnswer}
+                      onChange={(e) => setSelectedAnswer(e.target.value)}
+                      className="w-full p-4 border border-border rounded-md bg-background"
+                      placeholder="Type your answer..."
+                      data-testid="input-answer"
+                    />
+                  )}
+                </div>
               )}
 
               {playerState?.characterClass === "herbalist" && (

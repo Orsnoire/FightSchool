@@ -474,6 +474,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(studentsWithoutPasswords);
   });
 
+  // Object storage endpoints for question images
+  const { ObjectStorageService, ObjectNotFoundError } = await import("./objectStorage");
+  
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      log(`[Object Storage] Error accessing object: ${error}`, "server");
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  app.post("/api/objects/upload", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error: any) {
+      log(`[Object Storage] Error generating upload URL: ${error}`, "server");
+      res.status(500).json({ error: error.message || "Failed to generate upload URL" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time combat  

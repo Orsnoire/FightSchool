@@ -17,6 +17,8 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, PlusCircle, Trash2, Upload } from "lucide-react";
 import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, type EquipmentItemDb, type Fight } from "@shared/schema";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import { uploadImageToStorage } from "@/lib/imageUpload";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
 import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
 import wizardImg from "@assets/generated_images/Dark_wizard_enemy_illustration_a897a309.png";
@@ -521,11 +523,11 @@ export default function CreateFight() {
 
                     <div>
                       <label className="text-sm font-medium">Question</label>
-                      <Input
-                        value={currentQuestion.question || ""}
-                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
+                      <RichTextEditor
+                        content={currentQuestion.question || ""}
+                        onChange={(html) => setCurrentQuestion({ ...currentQuestion, question: html })}
                         placeholder="Enter your question text"
-                        data-testid="input-question"
+                        onImageUpload={uploadImageToStorage}
                       />
                     </div>
 
@@ -540,22 +542,25 @@ export default function CreateFight() {
                           }}
                         >
                           {currentQuestion.options?.map((opt, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                              <RadioGroupItem
-                                value={String(i)}
-                                id={`option-${i}`}
-                                data-testid={`radio-option-${i}`}
-                                disabled={!opt}
-                              />
-                              <Input
-                                value={opt}
-                                onChange={(e) => {
+                            <div key={i} className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <RadioGroupItem
+                                  value={String(i)}
+                                  id={`option-${i}`}
+                                  data-testid={`radio-option-${i}`}
+                                  disabled={!opt}
+                                />
+                                <Label htmlFor={`option-${i}`} className="text-sm">Option {i + 1} (Click to mark as correct)</Label>
+                              </div>
+                              <RichTextEditor
+                                content={opt}
+                                onChange={(html) => {
                                   setCurrentQuestion((prev) => {
                                     const newOpts = [...(prev.options || [])];
-                                    newOpts[i] = e.target.value;
+                                    newOpts[i] = html;
                                     return { ...prev, options: newOpts };
                                   });
-                                  if (selectedOptionIndex === i && !e.target.value) {
+                                  if (selectedOptionIndex === i && !html) {
                                     setSelectedOptionIndex(null);
                                     toast({ 
                                       title: "Selection cleared", 
@@ -564,9 +569,9 @@ export default function CreateFight() {
                                     });
                                   }
                                 }}
-                                placeholder={`Option ${i + 1}`}
-                                data-testid={`input-option-${i}`}
-                                className="flex-1"
+                                placeholder={`Enter option ${i + 1} text`}
+                                onImageUpload={uploadImageToStorage}
+                                compact={true}
                               />
                             </div>
                           ))}
@@ -596,11 +601,12 @@ export default function CreateFight() {
                     {currentQuestion.type === "short_answer" && (
                       <div>
                         <label className="text-sm font-medium">Correct Answer</label>
-                        <Input
-                          value={currentQuestion.correctAnswer || ""}
-                          onChange={(e) => setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value })}
+                        <RichTextEditor
+                          content={currentQuestion.correctAnswer || ""}
+                          onChange={(html) => setCurrentQuestion({ ...currentQuestion, correctAnswer: html })}
                           placeholder="Enter the correct answer"
-                          data-testid="input-correct-answer"
+                          onImageUpload={uploadImageToStorage}
+                          compact={true}
                         />
                       </div>
                     )}
