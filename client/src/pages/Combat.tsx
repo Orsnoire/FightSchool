@@ -39,6 +39,9 @@ export default function Combat() {
   const [showPhaseChangeModal, setShowPhaseChangeModal] = useState(false);
   const [phaseChangeName, setPhaseChangeName] = useState<string>("");
   const [shuffleOptions, setShuffleOptions] = useState<boolean>(true);
+  // Phase transition overlay
+  const [showPhaseTransition, setShowPhaseTransition] = useState(false);
+  const [phaseTransitionText, setPhaseTransitionText] = useState("");
   // B10 FIX: Track answer feedback for damage toast
   const [lastAnsweredCorrectly, setLastAnsweredCorrectly] = useState<boolean | null>(null);
   const [previousPhase, setPreviousPhase] = useState<string>("");
@@ -61,6 +64,7 @@ export default function Combat() {
   const playerHitResetTimer = useRef<NodeJS.Timeout | null>(null);
   const shieldPulseTimer = useRef<NodeJS.Timeout | null>(null);
   const healingPulseTimer = useRef<NodeJS.Timeout | null>(null);
+  const phaseTransitionTimer = useRef<NodeJS.Timeout | null>(null);
   // B6/B7 FIX: Connection status and reconnection logic
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
@@ -270,6 +274,21 @@ export default function Combat() {
     setPreviousPhase(currentPhase);
   }, [combatState?.currentPhase, previousPhase, lastAnsweredCorrectly, toast]);
 
+  // Show dramatic phase transition overlays for major phases
+  useEffect(() => {
+    if (!combatState) return;
+    
+    const currentPhase = combatState.currentPhase;
+    
+    // Show transition when entering combat phase (both player attacks and enemy counterattacks happen here)
+    if (currentPhase === "combat" && previousPhase !== "combat" && previousPhase !== "") {
+      if (phaseTransitionTimer.current) clearTimeout(phaseTransitionTimer.current);
+      setPhaseTransitionText("COMBAT PHASE!");
+      setShowPhaseTransition(true);
+      phaseTransitionTimer.current = setTimeout(() => setShowPhaseTransition(false), 1500);
+    }
+  }, [combatState?.currentPhase, previousPhase]);
+
   // Show toasts for healing, blocking, and enemy attacks
   useEffect(() => {
     const studentId = localStorage.getItem("studentId");
@@ -464,6 +483,7 @@ export default function Combat() {
       if (playerHitResetTimer.current) clearTimeout(playerHitResetTimer.current);
       if (shieldPulseTimer.current) clearTimeout(shieldPulseTimer.current);
       if (healingPulseTimer.current) clearTimeout(healingPulseTimer.current);
+      if (phaseTransitionTimer.current) clearTimeout(phaseTransitionTimer.current);
     };
   }, []);
 
@@ -1015,6 +1035,34 @@ export default function Combat() {
                 <HealthBar current={enemy.health} max={enemy.maxHealth} className="w-96" />
               </motion.div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Phase Transition Overlay */}
+      <AnimatePresence>
+        {showPhaseTransition && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
+            data-testid="overlay-phase-transition"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 1.2, opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="text-6xl font-serif font-bold text-primary drop-shadow-2xl"
+              style={{
+                textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.5)'
+              }}
+              data-testid="text-phase-transition"
+            >
+              {phaseTransitionText}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
