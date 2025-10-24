@@ -1,0 +1,276 @@
+Statistics Redesign:
+-	These are the current statistics: ATK, HP and DEF
+-	From now on, those statistics are defunct.
+-	As part of the statistics refactoring, I would want the current character display to display all current stat values (including adjustments from gear), and all of the current build’s active and passive abilities.
+-	As part of the refactoring, I think the cleanest way is to have the current class pull from the database based on the passives unlocked by their current progress, rather than save up bonuses from levels and save them onto the character database.
+-	(in my opinion) the character database for a given player should have only the levels achieved for each available job, and whether that player has looted each loot item.
+New statistics:
+-	STR: Strength. Adds damage to physical attacks
+-	INT: Intelligence. Adds MP and damage to magical attacks
+-	AGI: Agility. Adds damage to ranged attacks. Reduces damage agro by AGI.
+-	MND: Mind. Adds MP and healing to spells, and healing damage to attacks
+-	VIT: Vitality. Reduces damage by VIT/2 points and adds VIT HP to starting HP.
+-	HP: Hit Points. Job starting HP + VIT.
+-	MP: Magic Points. (INT + MND)x3
+-	DEF: Defense. Reduces damage by DEF points.
+-	ATK: Attack. Raises melee damage by ATK points.
+-	MAT: Magic Attack. Raises magic damage by MAT points.
+-	RTK: Ranged Attack. Raises ranged attack damage by RTK points.
+-	Combo Points: Only visible on a class that uses combo points. Starting Max Combo Points = AGI*2. It shows up as a different resource under the HP (empty circles when not stored, and add 1 for each round damage is dealt).
+Base job beginning stats (THESE ARE NOT TO BE AWARDED AS PASSIVE STAT BONUSES):
+-	Warrior: HP 15 VIT 1 STR 1
+-	Wizard: HP 7 INT 2
+-	Scout: HP 7 AGI 2
+-	Herbalist: HP 10 MND 1
+
+Original Job Refactoring:
+Warrior (starting) Base dmg: (ATK + STR)
+•	Lvl 1 – Block
+•	Lvl 2 – +1 VIT
+•	Lvl 3 – +1 STR
+•	Lvl 4 – Shield Bash
+•	Lvl 5 – +1 VIT
+•	Lvl 6 – +1 STR
+•	Lvl 7 – +1 VIT
+•	Lvl 8 – Block(Cross-Class)
+•	Lvl 9 – +1 STR
+•	Lvl 10 – Provoke
+•	Lvl 11 – +1 VIT
+•	Lvl 12 – Crushing Blow
+•	Lvl 13 – +1 STR
+•	Lvl 14 – +1 VIT
+•	Lvl 15 – Unbreakable (Ultimate) (Cross Class)
+Block: Prevents VIT/2 damage to targeted player this turn.
+Shield Bash: Deals VIT/2 melee damage to enemy upon a successful block. CD 2.
+Provoke: CD 2. Gain current top agro + 1. Direct all damage from missed answers this round to the provoking warrior.
+Crushing Blow: Deals (ATK+STR) melee damage to target. +1 threat from all current enemies.
+Unbreakable: Warrior blocks all damage for the remainder of the round. 1 use per fight. Shield bash can activate on damage blocked in this way.
+Wizard (starting) Base dmg: (MAT + INT)
+•	Lvl 1 – Fireball
+•	Lvl 2 - +1 INT
+•	Lvl 3 - +1 VIT
+•	Lvl 4 – Frost Bolt
+•	Lvl 5 - +1 INT
+•	Lvl 6 - +1 VIT
+•	Lvl 7 - +1 INT
+•	Lvl 8 – Fireball (Cross Class)
+•	Lvl 9 - +1 INT
+•	Lvl 10 – Manashield
+•	Lvl 11 - +1 INT
+•	Lvl 12 – (New) Fireblast
+•	Lvl 13 - +1 INT
+•	Lvl 14 - +1 INT
+•	Lvl 15 – Manabomb (Ultimate)(Cross Class)
+Fireball: Deals INT*3 damage to current target. Active. Costs 1 MP.
+Frost Bolt: Can be cast during phase 2 for additional damage that round. Only usable when fireball hasn’t been cast yet this round. Deals an additional  INT*1 ice damage this round. Costs 1 MP.
+Manashield: Active. CD 3. Reduce the next INT damage you would otherwise take. (development note: player should have a buff icon show on ONLY their avatar – buffs shouldn’t show on the avatars displayed for other characters).
+Fireblast: Deals INT*(MP spent)*3 fire damage. Active. Costs all remaining MP. 
+Manabomb: Once per encounter. Phase 2 cast. Deal INT*2 Arcane damage to all current enemies.
+Scout (starting) Base dmg: (RTK + AGI)
+•	Lvl 1 – Headshot
+•	Lvl 2 - +1 AGI
+•	Lvl 3 - +1 VIT
+•	Lvl 4 – Aim
+•	Lvl 5 - +1 AGI
+•	Lvl 6 - +1 VIT
+•	Lvl 7 - +1 Combo Point (only for classes that use them)
+•	Lvl 8 – Headshot (Cross Class) (unlocks combo points for jobs with Headshot equipped)
+•	Lvl 9 - +1 AGI
+•	Lvl 10 - Mark
+•	Lvl 11 - +1 Combo Point (only for classes that use them)
+•	Lvl 12 – Dodge.
+•	Lvl 13 – +1 AGI
+•	Lvl 14 - +1 AGI
+•	Lvl 15 – Killshot (Ultimate)(Cross Class) (also unlocks combo points if equipped)
+Headshot: Check box lights up when combo points reach 3. Deals RTK*(Combo Points)*AGI ranged damage. Costs 3 combo points
+Aim: Check box lights up if scout has at least 1 combo point available. Deals (RTK+AGI)*2 DMG to current target. Costs 1 combo point.
+Mark: Check box lights up if scout has at least 2 combo points available. Causes marked enemy to take 200% damage from all sources for the current turn. Costs 2 combo points. Used in phase 1 after answering but before the end of the phase.
+Dodge: Useable in phase 2 if the scout got an answer wrong. CD 3. Avoids the damage Scout would have taken this round from answering incorrectly.
+Killshot: Once per encounter. Deals RTK*AGI*2 ranged damage. For  each 5% of enemy HP below 45%, adds +10% chance to instantly kill the target.
+Herbalist (starting) Basic dmg: (MAT + AGI + MND) dmg.
+•	Lvl 1 – Healing Potion/Craft Healing Potion
+•	Lvl 2 – VIT +1
+•	Lvl 3 – MND +1
+•	Lvl 4 – Craft Healing Potion
+•	Lvl 5 – MND +1
+•	Lvl 6 – Potions when crafting +1
+•	Lvl 7 – VIT +1
+•	Lvl 8 – Healing Potion/Craft Healing Potion (Cross Class unlock)
+•	Lvl 9 – MND +1            
+•	Lvl 10 – Craft Shield Potion
+•	Lvl 11 – Potions when crafting +1
+•	Lvl 12 – Potion Diffuser
+•	Lvl 13 – MND +1
+•	Lvl 14 – VIT +1
+•	Lvl 15 – Life Potion (Ultimate)(Cross Class)
+Healing Potion: Phase 1 action; player must choose to heal rather than damage. Heals MND+1 HP. Target selected in phase 2.
+Craft Healing Potion: Phase 1 action. You can craft Healing Potions (carry 5 by default 5 max). You cannot craft a potion on the turn you choose to heal rather than damage.
+Craft Shield Potion: Phase 1 action. You can craft Shield Potions (carry 0 default up to 3 max). 
+Shield Potion: Phase 1 action. Blocks the next MND damage that the target would have taken. Costs 1 Shield Potion.
+Life Potion: Phase 2 instant. Revive all KO'd allies (return each KOed player to MND HP). Cross-class unlock
+
+Expanded Job Leveling Design Overview (Levels 1–15)
+Each job gains abilities at key milestones and stat improvements in between. Every class has 4 total abilities (Level 1, 4, 10, 12, 15) and 6 total stat upgrades spread across the non-ability levels. Levels 8 and the five remaining levels modify or enhance existing abilities.
+Job level requirements are listed next to the job name.
+New mechanic: upon the first time a player enters the lobby after the job requirements are met, that job will show up in a modular window with a toast and shiny graphic animation behind the new job. 
+New lobby load logic: Check all current job levels. Check level requirements for advanced jobs. If advanced job requirements are met, employ the new mechanic.
+Warlock (Wizard 2) Base attack: (MAT + INT) curse
+Base Stats: HP 7 INT 2
+•	Lvl 1 – Hex
+•	Lvl 2 – +1 INT
+•	Lvl 3 – +1 to (HEXDUR)
+•	Lvl 4 – Siphon
+•	Lvl 5 – +1 to siphon healing
+•	Lvl 6 – +1 HP
+•	Lvl 7 – +1 INT
+•	Lvl 8 –Hex (Cross-Class)
+•	Lvl 9 – + 1 to the (HEXDUR)
+•	Lvl 10 – Pact Surge
+•	Lvl 11 – +1 HP
+•	Lvl 12 – Abyssal Drain
+•	Lvl 13 – +1 INT
+•	Lvl 14 – +1 to (HEXDUR)
+•	Lvl 15 – Soul Echo (Ultimate) (Cross Class)
+Hex: Deals the targeted enemy (HEXDMG) curse damage per round for the next (HEXDUR) rounds. (HEXDMG)= INT – 1. (HEXDUR)=2 + passives/equipment. Casting hex on a hexed target sets timer to y.
+Siphon: Deals INT curse damage and heals INT/2 rounded up.
+Pact Surge: Spend HP/4 to gain ATK in the amount of the HP spent.
+Abyssal Drain: Buff. Lasts 2 turns. Deal base dmg to all current enemies. Heal for HP = damage dealt. Costs 2 MP.
+Soul Echo: (passive) Hex now deals (HEXDMG)(HEXDUR)/2 curse damage in the first combat round after it is cast.
+________________________________________
+Priest (Herbalist 2) Base dmg: (MAT + MND) heal damage
+Base Stats: HP 10 MND 3
+•	Lvl 1 – Mend
+•	Lvl 2 – +1 MND <new stat>
+•	Lvl 3 – +1 HP
+•	Lvl 4 – Purify
+•	Lvl 5 – +1 MND
+•	Lvl 6 – +1 HP
+•	Lvl 7 – +1 INT
+•	Lvl 8 –Mend (Cross-Class)
+•	Lvl 9 – +1 MND
+•	Lvl 10 – Bless
+•	Lvl 11 – +1 HP
+•	Lvl 12 – Holy Light
+•	Lvl 13 – +1 VIT
+•	Lvl 14 – +1 MND
+•	Lvl 15 – Divine Grace (Ultimate) (Cross Class)
+Mend: Heals target for MND HP. Costs 1 MP.
+Purify: Removes enemy poison debuffs from ally. Phase 2. Costs 1 MP
+Bless: Buff. Lasts MND/2 rounds. Raises AGI, STR and INT by MND/3
+Holy Light: Heal all players in the fight for MND/2 HP. Costs 5 MP
+Divine Grace: Heal all players to full HP and restore any KO’ed players to full HP. Phase 2 ability. Limit: 1 use per fight. Costs 5 MP.
+________________________________________
+Paladin (Warrior 2/Priest 2) Base dmg (ATK + STR + MND) heal damage
+Base Stats: HP 16 VIT 1 STR 1 MND 1
+•	Lvl 1 – Healing Guard
+•	Lvl 2 – +1 MND
+•	Lvl 3 – +1 VIT
+•	Lvl 4 – Lay on Hands
+•	Lvl 5 – +1 STR
+•	Lvl 6 – +1 VIT
+•	Lvl 7 – +1 MND
+•	Lvl 8 – Healing Guard Ally (Cross-Class): Now usable cross-class.
+•	Lvl 9 – +1 STR
+•	Lvl 10 – Aegis
+•	Lvl 11 – +1 MND
+•	Lvl 12 – Sacred Strike
+•	Lvl 13 – +1 VIT
+•	Lvl 14 – +1 ATK
+•	Lvl 15 – Holy Judgment (Ultimate)(Cross Class)
+Healing Guard: Heals target as well as blocks for them this turn.
+Lay on Hands: Heals target for (VIT+MND)/2. 5 round cooldown.
+Aegis: Blocks target and that target’s aggro is transferred to the Paladin who used Aegis (agro transfer should show up on the blocking toast)
+Sacred Strike: Deals ATK*(STR+MND+VIT) heal damage (if answer is incorrect, no damage is dealt – treat as a miss). Paladin takes no damage on wrong answer this round. 5 round cooldown.
+Holy Judgement: Heals all current players for (VIT+MND) HP and deals (STR+VIT+MND)/3 healing damage to all current enemies.
+________________________________________
+Dark Knight (Warrior 3/Wizard 3) Base DMG (STR+ATK+VIT) melee
+Base Stats: HP 14 VIT 1 STR 1 INT 1
+•	Lvl 1 – Ruin Strike
+•	Lvl 2 – +1 INT
+•	Lvl 3 – +1 STR
+•	Lvl 4 – Blood Sword
+•	Lvl 5 – +1 INT
+•	Lvl 6 – +1 STR
+•	Lvl 7 – +1 VIT
+•	Lvl 8 –Ruin Strike (Cross-Class)
+•	Lvl 9 – +1 STR
+•	Lvl 10 – Blood Price
+•	Lvl 11 – +1 INT
+•	Lvl 12 – Dread Aura
+•	Lvl 13 – +1 STR
+•	Lvl 14 – +1 INT
+•	Lvl 15 – Shadow Requiem (Ultimate) (Cross Class)
+Ruin Strike: Deals ATK*(STR + VIT + INT) melee dmg. Costs 1 MP
+Blood Oath: Heals the dark knight for the damage he dealt this round. Can be used in conjunction with other abilities. Costs 1 MP.
+Dread Aura: Reduces enemy DMG by (INT)/3 (round up) for 3 rounds. Costs 3 MP.
+Blood Price: Deals ATK*(STR+VIT+INT)*2 melee dmg. Deals ATK dmg to the Dark Knight who used the ability.
+Shadow Requiem: Deals ATK(STR+VIT+INT) melee dmg to all current enemies. Dark Knight is healed for all damage done in this way. Once per fight.
+________________________________________
+Blood Knight (Warrior 2 / Warlock 5) Base dmg (STR+ATK+INT) curse
+Base Stats: HP 20 STR 1 INT 2 VIT 1
+•	Lvl 1 – Crimson Slash
+•	Lvl 2 – +1 STR
+•	Lvl 3 – +1 VIT
+•	Lvl 4 – Dark Vigor
+•	Lvl 5 – +1 STR
+•	Lvl 6 – +1 VIT
+•	Lvl 7 – +1 INT
+•	Lvl 8 –Crimson Slash (Cross-Class)
+•	Lvl 9 – +1 STR
+•	Lvl 10 – Hemorrhage
+•	Lvl 11 – +1 STR
+•	Lvl 12 – Vampiric Guard
+•	Lvl 13 – +1 INT
+•	Lvl 14 – +1 to HEMDUR
+•	Lvl 15 – Raining Blood (Ultimate) (Cross Class)
+Crimson Slash: Deals ATK * (VIT + STR)/2 melee damage to one target. Heal for 50% of the damage dealt. Active (choose in phase 1). Costs 1 MP.
+Dark Vigor (passive): Heal for 25% of all damage dealt by this dark knight.
+Hemmorhage: Deal a heavy strike that causes the enemy to bleed. Deals ATK melee dmg, and creates a bleed effect that deals ATK/2 per round for (HEMDUR) rounds. (HEMDUR) is set to (HEMDUR) upon application of the debuff. HEMDUR = 2 rounds. Hemmorhage costs 1 MP
+Vampiric Guard (Passive): Now, when a Dark Knight takes damage, damage calculation ignores VIT. If the Dark Knight deals damage the next round, the Dark Knight gains MP equal to 100% + 5 of damage taken in this way.
+Raining Blood: Deal ATK*(STR+VIT+INT) magic damage to all current enemies. Heal all allies for 50% of the damage dealt in this way.
+________________________________________
+Monk (Warrior 2, Scout 2) Base dmg: (ATK + STR + AGI) melee
+Base Stats: 10 HP  1 VIT  1 STR  1 AGI 
+•	Lvl 1 – Stance: Fortify
+•	Lvl 2 – +1 AGI
+•	Lvl 3 – +1 STR
+•	Lvl 4 – Flurry
+•	Lvl 5 – +1 VIT
+•	Lvl 6 – +1 AGI
+•	Lvl 7 – +1 STR
+•	Lvl 8 – Stance: Fortify (Cross-Class)
+•	Lvl 9 – +1 AGI
+•	Lvl 10 – Deflect
+•	Lvl 11 – +1 STR
+•	Lvl 12 – Focused Palm
+•	Lvl 13 – +1 VIT
+•	Lvl 14 – +1 STR
+•	Lvl 15 – Inner Peace (Ultimate) (Cross Class)
+Fortify: Stance (permanent buff until cancelled). Use tank threat calculation while active. Grants 2*VIT while active. Generate 1 combo point each time you take damage.
+Flurry: Phase 1 ability. 4 combo points. Deals (ATK + STR + AGI)*3. Melee damage
+Deflect: Phase 2 ability. Grants ability to select block targets. If you take damage while blocking, deal that amount of damage to the current enemy target.
+Focused Palm: Phase 1 ability. 5 combo points. Deals (ATK + 4*STR + 4*AGI) melee damage.
+Inner Peace: Gain top aggro +1. Heals the monk to full HP. Take no damage this turn. One use per fight.
+________________________________________
+Ranger (Scout 8) Base dmg (RTK + 2*AGI) ranged
+Base Stats: 7 HP  3 AGI
+•	Lvl 1 – Prey
+•	Lvl 2 – +1 AGI
+•	Lvl 3 – +1 maximum combo points
+•	Lvl 4 – Twin Shot
+•	Lvl 5 – +1 AGI
+•	Lvl 6 – +1 AGI
+•	Lvl 7 – +1 maximum combo points
+•	Lvl 8 – Prey (Cross-Class)
+•	Lvl 9 – +1 AGI
+•	Lvl 10 – Disengage
+•	Lvl 11 – +1 AGI
+•	Lvl 12 – Hunter’s Volley
+•	Lvl 13 – +1 AGI
+•	Lvl 14 – +1 maximum combo points
+•	Lvl 15 – Arrowstorm (Ultimate) (Cross Class)
+Prey: The Ranger marks one target enemy as his prey. Debuff. Until canceled or removed. Marked enemy takes 200% damage from all sources. Costs 2 combo points
+Twin Shot: The ranger attacks with two arrows. On simultaneous mode, the extra hit always goes to the Prey target. Each arrow deals (RTK + AGI)*4 damage. Costs 2 combo points
+Disengage: The ranger drops all aggro. Gains 1 combo point.
+Hunter’s Volley: The ranger deals 5 waves of damage to all targets. Each wave deals (RTK + AGI)*2 damage to each target. 5 combo points.
+Arrowstorm (Ultimate): The ranger deals 10 waves of damage to all targets, and 1 final hit to the marked target.
