@@ -1208,6 +1208,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Not enough MP - no damage
               damage = 0;
             }
+          } else if (player.characterClass === "priest") {
+            // Priest: Magical damage using MAT + INT (mend healing ability)
+            damage = calculateMagicalDamage(player.mat, player.int);
+            mpCost = 1; // Mend spell costs 1 MP
+            
+            // Consume MP (if player has enough)
+            if (player.mp >= mpCost) {
+              player.mp = Math.max(0, player.mp - mpCost);
+            } else {
+              // Not enough MP - no damage
+              damage = 0;
+            }
+          } else if (player.characterClass === "paladin") {
+            // Paladin: Physical damage using ATK + STR (tank/healer hybrid)
+            damage = calculatePhysicalDamage(player.atk, player.str);
+            mpCost = 1; // Paladin abilities cost 1 MP
+            
+            // Consume MP (if player has enough)
+            if (player.mp >= mpCost) {
+              player.mp = Math.max(0, player.mp - mpCost);
+            } else {
+              // Not enough MP - reduce damage by 50%
+              damage = Math.floor(damage * 0.5);
+            }
+          } else if (player.characterClass === "dark_knight") {
+            // Dark Knight: Ruin Strike - ATK * (STR + VIT + INT) melee damage
+            const statSum = player.str + player.vit + player.int;
+            damage = player.atk * statSum;
+            mpCost = 1; // Ruin Strike costs 1 MP
+            
+            // Consume MP (if player has enough)
+            if (player.mp >= mpCost) {
+              player.mp = Math.max(0, player.mp - mpCost);
+            } else {
+              // Not enough MP - use physical damage fallback
+              damage = calculatePhysicalDamage(player.atk, player.str);
+            }
+          } else if (player.characterClass === "blood_knight") {
+            // Blood Knight: Crimson Slash - ATK * (VIT + STR)/2 melee damage with 50% lifesteal
+            const statSum = player.vit + player.str;
+            damage = Math.floor(player.atk * (statSum / 2));
+            mpCost = 1; // Crimson Slash costs 1 MP
+            
+            // Consume MP and apply lifesteal (if player has enough)
+            if (player.mp >= mpCost) {
+              player.mp = Math.max(0, player.mp - mpCost);
+              
+              // Lifesteal: heal for 50% of damage dealt
+              const lifestealAmount = Math.floor(damage * 0.5);
+              const healAmount = Math.min(lifestealAmount, player.maxHealth - player.health);
+              player.health = Math.min(player.maxHealth, player.health + healAmount);
+              player.healingDone += healAmount;
+            } else {
+              // Not enough MP - use physical damage fallback without lifesteal
+              damage = calculatePhysicalDamage(player.atk, player.str);
+            }
           } else {
             // Other classes: use physical damage as default
             damage = calculatePhysicalDamage(player.atk, player.str);

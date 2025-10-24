@@ -82,6 +82,58 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
       value: "INT × 4 (heals for 50% damage dealt)",
     },
   },
+
+  priest: {
+    id: "divine_grace",
+    name: "Divine Grace",
+    description: "Heal all players to full HP and restore any KO'ed players to full HP",
+    jobClass: "priest",
+    animationType: "holy",
+    cooldown: 3,
+    effect: {
+      type: "heal",
+      value: "100% HP to all allies, revive KO'ed",
+    },
+  },
+
+  paladin: {
+    id: "holy_judgment",
+    name: "Holy Judgment",
+    description: "Heals all players for (VIT+MND) HP and deals (STR+VIT+MND)/3 healing damage to all enemies",
+    jobClass: "paladin",
+    animationType: "holy",
+    cooldown: 3,
+    effect: {
+      type: "heal",
+      value: "(VIT+MND) to allies, (STR+VIT+MND)/3 damage",
+    },
+  },
+
+  dark_knight: {
+    id: "shadow_requiem",
+    name: "Shadow Requiem",
+    description: "Deals ATK*(STR+VIT+INT) melee damage to all enemies. Dark Knight is healed for all damage done",
+    jobClass: "dark_knight",
+    animationType: "dark",
+    cooldown: 3,
+    effect: {
+      type: "damage",
+      value: "ATK × (STR+VIT+INT) (heals for 100% damage)",
+    },
+  },
+
+  blood_knight: {
+    id: "raining_blood",
+    name: "Raining Blood",
+    description: "Deal ATK*(STR+VIT+INT) magic damage to all enemies. Heal all allies for 50% of damage dealt",
+    jobClass: "blood_knight",
+    animationType: "dark",
+    cooldown: 3,
+    effect: {
+      type: "damage",
+      value: "ATK × (STR+VIT+INT) (heals allies 50%)",
+    },
+  },
 };
 
 // Helper to check if player has ultimate available
@@ -143,6 +195,19 @@ export function calculateUltimateEffect(
     
     case "soul_drain":
       return playerStats.int * 4; // Heals for 50% of this damage
+    
+    case "divine_grace":
+      return playerStats.maxHealth; // Full heal to all allies, revive KO'ed
+    
+    case "holy_judgment":
+      // Returns healing amount for allies (damage to enemies calculated separately)
+      return playerStats.str + playerStats.int + playerStats.mnd;
+    
+    case "shadow_requiem":
+      return playerStats.atk * (playerStats.str + playerStats.int + playerStats.mnd);
+    
+    case "raining_blood":
+      return playerStats.atk * (playerStats.str + playerStats.int + playerStats.mnd);
     
     default:
       return 0;
