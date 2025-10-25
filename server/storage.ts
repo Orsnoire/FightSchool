@@ -365,14 +365,11 @@ export class DatabaseStorage implements IStorage {
       wizard: 0,
       scout: 0,
       herbalist: 0,
-      knight: 0,
+      warlock: 0,
+      priest: 0,
       paladin: 0,
       dark_knight: 0,
-      sage: 0,
-      ranger: 0,
-      druid: 0,
-      monk: 0,
-      warlock: 0,
+      blood_knight: 0,
     };
     
     for (const record of jobLevelRecords) {
@@ -794,7 +791,7 @@ export class DatabaseStorage implements IStorage {
           nickname: 'tester',
           password: hashedPassword,
           characterClass: 'warrior' as CharacterClass,
-          gender: 'male' as Gender,
+          gender: 'A' as Gender,
           inventory: [],
         })
         .returning();

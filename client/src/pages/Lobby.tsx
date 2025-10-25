@@ -190,7 +190,7 @@ export default function Lobby() {
 
   const handleLogout = () => {
     localStorage.removeItem("studentId");
-    navigate("/student/login");
+    navigate("/");
   };
 
   const handleClassChange = async (newClass: CharacterClass) => {
@@ -603,7 +603,7 @@ export default function Lobby() {
               // Convert job levels array to map
               const jobLevelMap: Record<CharacterClass, number> = {
                 warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                knight: 0, paladin: 0, dark_knight: 0, sage: 0, ranger: 0, druid: 0, monk: 0, warlock: 0,
+                warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0,
               };
               
               jobLevels.forEach(jl => {

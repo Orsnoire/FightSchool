@@ -13,7 +13,6 @@ import CreateFight from "@/pages/CreateFight";
 import HostFight from "@/pages/HostFight";
 import TeacherGuilds from "@/pages/TeacherGuilds";
 import TeacherGuildDetail from "@/pages/TeacherGuildDetail";
-import StudentLogin from "@/pages/StudentLogin";
 import CharacterSelect from "@/pages/CharacterSelect";
 import Lobby from "@/pages/Lobby";
 import Combat from "@/pages/Combat";
@@ -37,7 +36,6 @@ function Router() {
       <Route path="/teacher/create" component={CreateFight} />
       <Route path="/teacher/edit/:id" component={CreateFight} />
       <Route path="/teacher/host/:id" component={HostFight} />
-      <Route path="/student/login" component={StudentLogin} />
       <Route path="/student/character-select" component={CharacterSelect} />
       <Route path="/student/equipment" component={StudentEquipment} />
       <Route path="/student/lobby" component={Lobby} />

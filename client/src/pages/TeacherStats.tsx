@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart3, Trophy, Heart, Swords, Shield } from "lucide-react";
+import { BarChart3, Trophy, Heart, Swords, Shield, ArrowLeft } from "lucide-react";
 import type { CombatStat } from "@shared/schema";
 
 export default function TeacherStats() {
@@ -46,9 +48,14 @@ export default function TeacherStats() {
     : [];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950">
       <header className="sticky top-0 z-50 border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
+          <Link href="/teacher">
+            <Button variant="ghost" size="icon" data-testid="button-back-dashboard">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
           <h1 className="text-2xl font-serif font-bold text-primary" data-testid="text-title">
             Class Statistics
           </h1>

@@ -2119,6 +2119,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const session = await storage.getCombatSession(sessionId);
           if (!session) return;
           
+          // Only allow ultimates during question phase
+          if (session.currentPhase !== "question") {
+            log(`[WebSocket] Ignoring ultimate - not in question phase (current: ${session.currentPhase})`, "websocket");
+            return;
+          }
+          
           const player = session.players[ws.studentId];
           if (!player || player.isDead) {
             log(`[WebSocket] Ignoring ultimate from dead/missing player ${ws.studentId}`, "websocket");

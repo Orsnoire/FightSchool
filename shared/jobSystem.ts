@@ -527,7 +527,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     name: "Paladin",
     description: "Holy defender - Tank/Healer hybrid",
     maxLevel: 15,
-    unlockRequirements: { warrior: 2, priest: 2 },
+    unlockRequirements: { warrior: 4, priest: 2 },
     levelRewards: {
       1: { 
         abilities: [{
@@ -594,7 +594,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     name: "Dark Knight",
     description: "Dark warrior - Tank/DPS with shadow magic",
     maxLevel: 15,
-    unlockRequirements: { warrior: 3, wizard: 3 },
+    unlockRequirements: { warrior: 2, wizard: 4 },
     levelRewards: {
       1: { 
         abilities: [{
@@ -661,7 +661,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     name: "Blood Knight",
     description: "Vampiric warrior - Lifesteal specialist",
     maxLevel: 15,
-    unlockRequirements: { warrior: 2, warlock: 5 },
+    unlockRequirements: { warrior: 2, warlock: 2 },
     levelRewards: {
       1: { 
         abilities: [{
