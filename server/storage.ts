@@ -867,8 +867,8 @@ export class DatabaseStorage implements IStorage {
           {
             id: randomUUID(),
             name: 'Training Dummy',
-            maxHP: 60,
-            currentHP: 60,
+            image: '',
+            maxHealth: 60,
           },
         ],
         baseXP: 20,
