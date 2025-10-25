@@ -420,7 +420,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "hex_crossclass",
           name: "Hex",
-          description: "Cross-class unlock. Deals the targeted enemy (HEXDMG) curse damage per round for the next (HEXDUR) rounds.",
+          description: "Cross-class unlock. Deals the targeted enemy (INT-1) curse damage per round for the next (2 + duration upgrades) rounds.",
           isCrossClass: true,
         }]
       },
@@ -448,7 +448,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "soul_echo",
           name: "Soul Echo",
-          description: "Cross-class unlock. (passive) Hex now deals (HEXDMG)(HEXDUR)/2 curse damage in the first combat round after it is cast.",
+          description: "Cross-class unlock. (passive) Hex now deals bonus curse damage equal to (hex damage × hex duration) / 2 in the first combat round after it is cast.",
           isCrossClass: true,
         }]
       },

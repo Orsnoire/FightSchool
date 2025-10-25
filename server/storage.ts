@@ -420,6 +420,8 @@ export class DatabaseStorage implements IStorage {
       potionCount: student.characterClass === 'herbalist' ? 5 : 0,
       isCreatingPotion: false,
       jobLevels: jobLevelMap,
+      crossClassAbility1: student.crossClassAbility1,
+      crossClassAbility2: student.crossClassAbility2,
       isChargingFireball: false,
       fireballChargeRounds: 0,
       fireballCooldown: 0,
@@ -784,7 +786,7 @@ export class DatabaseStorage implements IStorage {
 
       const hashedPassword = hashPassword('test');
       
-      // Create tester student with all jobs at level 15
+      // Create tester student with all jobs at level 15 and a default cross-class ability equipped
       const [student] = await db
         .insert(students)
         .values({
@@ -793,6 +795,7 @@ export class DatabaseStorage implements IStorage {
           characterClass: 'warrior' as CharacterClass,
           gender: 'A' as Gender,
           inventory: [],
+          crossClassAbility1: 'unbreakable', // Default equipped ultimate for testing
         })
         .returning();
 

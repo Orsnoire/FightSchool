@@ -410,6 +410,10 @@ export interface PlayerState {
   // Job system integration
   jobLevels: Record<CharacterClass, number>; // Level for each job class (0 if not started)
   
+  // Cross-class abilities
+  crossClassAbility1?: string | null; // ID of equipped cross-class ability 1
+  crossClassAbility2?: string | null; // ID of equipped cross-class ability 2
+  
   // Wizard fireball ability
   isChargingFireball: boolean; // For wizards - manually charging fireball
   fireballChargeRounds: number; // 0-2 rounds charged

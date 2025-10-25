@@ -5,7 +5,7 @@ import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades } from "@shared/jobSystem";
-import { ULTIMATE_ABILITIES, calculateUltimateEffect, getAvailableUltimates } from "@shared/ultimateAbilities";
+import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -1526,38 +1526,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const victoryData: Record<string, any> = {};
       for (const player of Object.values(session.players)) {
         // Calculate XP based on combat performance
-        const xpGained = calculateXP({
-          questionsCorrect: player.questionsCorrect,
-          questionsIncorrect: player.questionsIncorrect,
-          damageBlocked: 0, // Warriors block damage but this isn't tracked currently
-          healingDone: player.healingDone || 0,
-          bonusDamage: Math.max(0, player.damageDealt - player.questionsCorrect), // Bonus damage above base
-          baseFightXP: fight.baseXP || 10,
-        });
+        let xpGained: number;
         
-        // Award XP to the player's current class (skip if solo mode - performance XP only)
-        if (!session.soloModeEnabled) {
-          const result = await storage.awardXPToJob(
-            player.studentId,
-            player.characterClass,
-            xpGained
-          );
-          
-          victoryData[player.studentId] = {
-            xpGained,
-            leveledUp: result.leveledUp,
-            newLevel: result.newLevel,
-            currentXP: result.jobLevel.experience,
-          };
+        if (session.soloModeEnabled) {
+          // Solo mode: Individual contribution formula
+          // (damageDealt × 1 + healingDone × 2 + damageBlocked × 2) × questionsCorrect
+          const individualContribution = 
+            (player.damageDealt || 0) + 
+            (player.healingDone || 0) * 2 + 
+            (player.damageBlocked || 0) * 2;
+          xpGained = individualContribution * (player.questionsCorrect || 0);
         } else {
-          // Solo mode: performance XP only, no persistent XP awards
-          victoryData[player.studentId] = {
-            xpGained,
-            leveledUp: false,
-            newLevel: 1,
-            currentXP: 0,
-          };
+          // Normal mode: Standard XP calculation
+          xpGained = calculateXP({
+            questionsCorrect: player.questionsCorrect,
+            questionsIncorrect: player.questionsIncorrect,
+            damageBlocked: player.damageBlocked || 0,
+            healingDone: player.healingDone || 0,
+            bonusDamage: Math.max(0, player.damageDealt - player.questionsCorrect),
+            baseFightXP: fight.baseXP || 10,
+          });
         }
+        
+        // Award XP to the player's current class
+        const result = await storage.awardXPToJob(
+          player.studentId,
+          player.characterClass,
+          xpGained
+        );
+        
+        victoryData[player.studentId] = {
+          xpGained,
+          leveledUp: result.leveledUp,
+          newLevel: result.newLevel,
+          currentXP: result.jobLevel.experience,
+        };
         
         // Increment fightCount for ultimate ability cooldown tracking
         player.fightCount = (player.fightCount || 0) + 1;
@@ -1778,10 +1781,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           await new Promise(resolve => setTimeout(resolve, 200));
 
-          // Create solo mode combat session with initial HP = 10
+          // Create solo mode combat session - enemies use their actual maxHP from fight template
           const session = await storage.createCombatSession(message.fightId, fight, {
             soloModeEnabled: true,
-            soloModeStartHP: 10,
             soloModeHostId: message.studentId,
             soloModeAIEnabled: false,
             soloModeJoinersBlocked: false,
@@ -1791,13 +1793,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Auto-add the host as first player
           await storage.addPlayerToCombat(session.sessionId, student);
-
-          // Update session with scaled HP (10 + 2 per player = 12 for 1 player, capped at 32)
-          const playerCount = Object.keys(session.players).length + 1; // +1 for host
-          const scaledHP = Math.min(10 + (playerCount * 2), 32);
-          await storage.updateCombatSession(session.sessionId, {
-            soloModeStartHP: scaledHP,
-          });
 
           const updatedSession = await storage.getCombatSession(session.sessionId);
 
@@ -1905,21 +1900,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Add player to combat if not already in
           if (!session.players[student.id]) {
             await storage.addPlayerToCombat(sessionId, student);
-          }
-
-          // Scale HP for solo mode when new player joins
-          if (session.soloModeEnabled) {
-            const updatedSessionForCount = await storage.getCombatSession(sessionId);
-            if (updatedSessionForCount) {
-              const playerCount = Object.keys(updatedSessionForCount.players).length;
-              const scaledHP = Math.min(10 + (playerCount * 2), 32);
-              
-              await storage.updateCombatSession(sessionId, {
-                soloModeStartHP: scaledHP,
-              });
-              
-              log(`[WebSocket] Solo mode HP scaled to ${scaledHP} for ${playerCount} players`, "websocket");
-            }
           }
 
           const updatedSession = await storage.getCombatSession(sessionId);

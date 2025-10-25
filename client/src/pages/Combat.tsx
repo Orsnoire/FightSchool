@@ -1262,11 +1262,10 @@ export default function Combat() {
                     </>
                   )}
                   
-                  {/* Ultimate Ability Buttons */}
-                  {playerState && playerState.jobLevels && Object.values(ULTIMATE_ABILITIES).map((ultimate) => {
-                    const jobLevel = playerState.jobLevels[ultimate.jobClass] || 0;
-                    const isUnlocked = jobLevel >= 15;
-                    if (!isUnlocked) return null;
+                  {/* Ultimate Ability Button - Only show equipped cross-class ability */}
+                  {playerState && playerState.crossClassAbility1 && (() => {
+                    const ultimate = ULTIMATE_ABILITIES[playerState.crossClassAbility1];
+                    if (!ultimate) return null;
                     
                     const lastUsed = playerState.lastUltimatesUsed?.[ultimate.id] || -999;
                     const fightsAgo = (playerState.fightCount || 0) - lastUsed;
@@ -1275,25 +1274,26 @@ export default function Combat() {
                     
                     return (
                       <Button
-                        key={ultimate.id}
                         size="sm"
                         variant={isOnCooldown ? "outline" : "default"}
                         disabled={isOnCooldown || playerState.isDead || combatState.currentPhase === "waiting"}
                         onClick={() => useUltimate(ultimate.id)}
-                        className="whitespace-nowrap"
+                        className="max-w-[120px] h-auto py-1 px-2"
                         data-testid={`button-ultimate-${ultimate.id}`}
-                        title={`${ultimate.name} (${ultimate.jobClass})\n${ultimate.description}\n${isOnCooldown ? `Cooldown: ${remainingCooldown} fights` : 'Ready!'}`}
+                        title={`${ultimate.name}\n${ultimate.description}\n${isOnCooldown ? `Cooldown: ${remainingCooldown} fights` : 'Ready!'}`}
                       >
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        {isOnCooldown ? `${ultimate.name.slice(0, 8)}... (${remainingCooldown})` : ultimate.name.slice(0, 8)}
+                        <Sparkles className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span className="text-xs leading-tight break-words">
+                          {isOnCooldown ? `${ultimate.name} (${remainingCooldown})` : ultimate.name}
+                        </span>
                       </Button>
                     );
-                  })}
+                  })()}
                 </div>
               </div>
               
-              {/* Combo Points (displayed above bars for scouts and anyone with combo points) */}
-              {playerState.maxComboPoints > 0 && (
+              {/* Combo Points (only display if combo-related ability is equipped) */}
+              {playerState.crossClassAbility1 === "killshot" && playerState.maxComboPoints > 0 && (
                 <ComboPoints current={playerState.comboPoints} max={playerState.maxComboPoints} />
               )}
               
