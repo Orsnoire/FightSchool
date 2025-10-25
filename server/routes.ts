@@ -948,6 +948,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const fight = await storage.getFight(session.fightId);
     if (!fight) return;
     
+    // Apply solo mode HP scaling on first question only
+    if (session.soloModeEnabled && session.currentQuestionIndex === 0) {
+      const players = Object.values(session.players);
+      const playerCount = players.length;
+      
+      // Calculate total job levels above 2 from all players' current jobs
+      let totalLevelsAbove2 = 0;
+      for (const player of players) {
+        const currentJobLevel = player.jobLevels[player.characterClass] || 1;
+        if (currentJobLevel > 2) {
+          totalLevelsAbove2 += (currentJobLevel - 2);
+        }
+      }
+      
+      // Formula: 10 HP base + 2 HP per player + 5 HP per job level above 2
+      const scaledHP = 10 + (2 * playerCount) + (5 * totalLevelsAbove2);
+      
+      // Apply scaled HP to all enemies (capped at their maxHealth from fight template)
+      session.enemies = session.enemies.map(enemy => ({
+        ...enemy,
+        health: Math.min(scaledHP, enemy.maxHealth)
+      }));
+      
+      // Save the scaled enemy HP
+      await storage.updateCombatSession(sessionId, { enemies: session.enemies });
+      log(`[Solo Mode] Applied HP scaling: ${playerCount} players, ${totalLevelsAbove2} levels above 2 = ${scaledHP} HP (capped at maxHealth)`, "combat");
+    }
+    
     // Reset inactivity timer on new question
     resetInactivityTimer(sessionId);
 
@@ -1525,28 +1553,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate and award XP for each player
       const victoryData: Record<string, any> = {};
       for (const player of Object.values(session.players)) {
-        // Calculate XP based on combat performance
-        let xpGained: number;
-        
-        if (session.soloModeEnabled) {
-          // Solo mode: Individual contribution formula
-          // (damageDealt × 1 + healingDone × 2 + damageBlocked × 2) × questionsCorrect
-          const individualContribution = 
-            (player.damageDealt || 0) + 
-            (player.healingDone || 0) * 2 + 
-            (player.damageBlocked || 0) * 2;
-          xpGained = individualContribution * (player.questionsCorrect || 0);
-        } else {
-          // Normal mode: Standard XP calculation
-          xpGained = calculateXP({
-            questionsCorrect: player.questionsCorrect,
-            questionsIncorrect: player.questionsIncorrect,
-            damageBlocked: player.damageBlocked || 0,
-            healingDone: player.healingDone || 0,
-            bonusDamage: Math.max(0, player.damageDealt - player.questionsCorrect),
-            baseFightXP: fight.baseXP || 10,
-          });
-        }
+        // Calculate XP based on combat performance using individual contribution formula
+        // (damageDealt × 1 + healingDone × 2 + damageBlocked × 2) × questionsCorrect
+        const individualContribution = 
+          (player.damageDealt || 0) + 
+          (player.healingDone || 0) * 2 + 
+          (player.damageBlocked || 0) * 2;
+        const xpGained = individualContribution * (player.questionsCorrect || 0);
         
         // Award XP to the player's current class
         const result = await storage.awardXPToJob(
