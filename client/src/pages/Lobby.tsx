@@ -11,7 +11,7 @@ import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterC
 import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { getTotalPassiveBonuses, getTotalMechanicUpgrades } from "@shared/jobSystem";
+import { getTotalPassiveBonuses, getTotalMechanicUpgrades, getCrossClassAbilities } from "@shared/jobSystem";
 import { calculateCharacterStats } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 
@@ -185,6 +185,41 @@ export default function Lobby() {
     if (response.ok) {
       setStudent(await response.json());
       toast({ title: "Equipment updated!" });
+    }
+  };
+
+  const updateCrossClassAbility = async (abilityId: string | null) => {
+    try {
+      const studentId = localStorage.getItem("studentId");
+      const response = await fetch(`/api/student/${studentId}/equipment`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ crossClassAbility1: abilityId }),
+      });
+
+      if (response.ok) {
+        setStudent(await response.json());
+        toast({ title: abilityId ? "Cross-class ability equipped!" : "Cross-class ability removed!" });
+      } else {
+        let errorMessage = "Please try again";
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } catch {
+          // Failed to parse JSON error, use default message
+        }
+        toast({ 
+          title: "Failed to update ability", 
+          description: errorMessage,
+          variant: "destructive" 
+        });
+      }
+    } catch (error) {
+      toast({ 
+        title: "Network error", 
+        description: "Failed to connect to server",
+        variant: "destructive" 
+      });
     }
   };
 
@@ -582,6 +617,103 @@ export default function Lobby() {
                       })}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Cross-Class Ability */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Cross-Class Ability
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Equip one ability from another class you've leveled up
+                </p>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  // Create job level map
+                  const jobLevelMap: Record<CharacterClass, number> = {
+                    warrior: 0, wizard: 0, scout: 0, herbalist: 0,
+                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0,
+                  };
+                  jobLevels.forEach(jl => {
+                    jobLevelMap[jl.jobClass] = jl.level;
+                  });
+
+                  const availableAbilities = student?.characterClass 
+                    ? getCrossClassAbilities(student.characterClass, jobLevelMap)
+                    : [];
+
+                  if (availableAbilities.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No cross-class abilities unlocked yet</p>
+                        <p className="text-xs mt-2">Level other jobs to unlock abilities!</p>
+                      </div>
+                    );
+                  }
+
+                  const equippedAbility = availableAbilities.find(a => a.id === student?.crossClassAbility1);
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Currently Equipped */}
+                      {equippedAbility && (
+                        <div className="p-3 border-2 border-primary rounded-md bg-primary/5">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm flex items-center gap-1">
+                                <Sparkles className="h-3 w-3" />
+                                {equippedAbility.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {equippedAbility.description}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updateCrossClassAbility(null)}
+                              data-testid="button-unequip-ability"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Available Abilities */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Available Abilities:</p>
+                        <div className="grid gap-2">
+                          {availableAbilities.map((ability) => {
+                            const isEquipped = ability.id === student?.crossClassAbility1;
+                            
+                            return (
+                              <Card
+                                key={ability.id}
+                                className={`cursor-pointer hover-elevate ${
+                                  isEquipped ? "ring-2 ring-primary opacity-50" : ""
+                                }`}
+                                onClick={() => !isEquipped && updateCrossClassAbility(ability.id)}
+                                data-testid={`ability-${ability.id}`}
+                              >
+                                <CardContent className="p-3">
+                                  <p className="font-semibold text-sm">{ability.name}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {ability.description}
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
