@@ -1,0 +1,183 @@
+What’s working well (high level)
+
+Clear modular architecture & typing
+
+Shared @shared/schema + jobSystem give you a single source of truth for the domain model (classes, questions, fights, combat state). That makes rules, DB schema and client code easy to keep in sync. (See the schema and equipment/class definitions.) 
+
+schema
+
+Defensive validation
+
+You validate inputs with Zod before DB operations (insertFightSchema, insertCombatStatSchema, etc.), which reduces class of bugs from malformed requests. 
+
+schema
+
+Nice separation of persistence
+
+IStorage and DatabaseStorage are great: they make the storage implementation swappable and centralize DB code. That makes tests and future scaling easier. 
+
+storage
+
+Rich game logic
+
+The server includes a complete combat loop (question → tank/blocks/heals → combat → check state), class-specific mechanics (wizard fireball / scout combo / herbalist), and integration with job system for passive/ability scaling. This is the hard bit, and it’s already in place. 
+
+routes +1
+
+Full-stack readiness
+
+Build scripts, vite development setup and a React client are configured so you can iterate UI and backend together. The package.json shows you’re set up for dev/build pipelines. 
+
+package
+
+Things to fix / harden (priority + explanations)
+
+I’ll group these into urgent correctness/security, scalability/robustness, and quality/maintenance.
+
+Urgent / correctness
+1) Error handler rethrows after sending response (will crash)
+
+In server/index.ts you send res.status(...).json({ message }) and then immediately throw err. That will bring down the process (uncaught exception) after you’ve already sent a response. You probably intended to log or pass to next middleware. Fix to log and do not rethrow, or forward to a process manager that will restart cleanly.
+Example location: server/index.ts lines where you set the error handler. 
+
+index
+
+Fix (example):
+
+app.use((err, _req, res, _next) => {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  console.error(err); // keep the stack
+  res.status(status).json({ message });
+  // do not throw — let the process keep serving
+});
+
+2) Authentication flows return user objects but no session or token
+
+/api/teacher/login and /api/student/login return teacher/student info but there’s no session cookie, JWT, or other auth token in the response. That’s a security/usability gap: client-side auth state is unclear and server-side protected endpoints are not protected. You have express-session and passport in package.json, but they’re not wired in routes yet. See teacher/student login code. 
+
+routes
+
+Suggestion: pick one approach and implement globally:
+
+express-session with secure cookies and CSRF protection, or
+
+stateless JWT with short expiry and refresh tokens.
+Also ensure teacher endpoints that manage fights require auth middleware.
+
+3) Password hashing: OK but be explicit about cost
+
+You use scryptSync with a random salt — that’s good. Make the scrypt parameters explicit (N,r,p) or use modern argon2 library for straightforward safe defaults. And make sure you store/verify using the same parameters. See hashPassword / verifyPassword. 
+
+storage
+
+Scalability / robustness
+4) Race conditions & DB concurrency in combat flow
+
+The combat loop stores the entire CombatState in a JSON column and frequently reads/writes it (getCombatSession, updateCombatSession, updatePlayerState, etc.). When multiple players act concurrently you can get write-after-read races: two updates read the same JSON, patch different parts, and one write overwrites the other.
+
+Examples:
+
+startQuestion sets timers and resets player states, then writes; those async updates can overlap with updatePlayerState calls during the question phase. (See timers in startQuestion and combatTimers.) 
+
+routes
+
+addPlayerToCombat reads the session, mutates session.players[...], then writes back. That’s a read->modify->write without transactions or optimistic concurrency. If two addPlayerToCombat calls race, one player could be lost. 
+
+storage
+
+Fixes / mitigations:
+
+Use atomic DB updates when possible (update a single JSON path) or a row-level transaction/lock. Drizzle/Postgres supports UPDATE ... SET players = jsonb_set(players, ...) or WITH statements to atomically update nested JSON.
+
+For high concurrency, move ephemeral combat state into Redis (or another in-memory store) and persist periodic snapshots to Postgres (or on fight end). Redis makes concurrent updates and locks cheap, and reduces Postgres JSON churn.
+
+Alternatively, split player state into a separate table (one row per player per fight) to avoid whole-state races.
+
+5) Timer cleanup & WS close handler is empty
+
+You create combatTimers but ws.on("close") is a no-op — if the host or clients disconnect unexpectedly, timers and sessions could leak. You should cleanup timers and optionally mark players as offline. See ws.on("close") and combatTimers. 
+
+routes
+
+Fix: on close, if ws.isHost then cancel combat timers and mark session ended; if ws.studentId, mark player offline or remove player. Also ensure timers are cleared when a fight ends.
+
+6) Broadcast approach will not scale well
+
+broadcastToCombat iterates all wss.clients and filters — fine for small classes but not for large scale. Better to maintain a map of fightId → Set of sockets (or use ws rooms abstraction) to avoid checking every client on every broadcast. See broadcastToCombat. 
+
+routes
+
+Quality & maintenance
+7) Missing tests, CI, docs & API contract
+
+There aren’t visible unit tests or an OpenAPI contract. For a product this complex I’d add:
+
+Unit tests for jobSystem calculations (XP, level up), and for combat edge cases.
+
+Integration tests for the combat loop (simulate multiple players).
+
+CI (lint + typecheck + tests).
+
+API docs / OpenAPI for teacher/student flows so client/server evolve in lockstep.
+
+8) Use of any and some untyped updates
+
+There are a few places that use any (and some updates: any) — tightening types improves IDE help and catches bugs earlier. For example abilityUpdates: any in combat code. Use stricter types or Partial<PlayerState> for updates. 
+
+routes
+
+9) Logging & observability
+
+You have a logging helper — good — but add structured logs, request IDs and metrics (requests/sec, websocket messages/sec, fight durations). Those make debugging production issues much easier; also add Sentry or similar for uncaught exceptions.
+
+Tiny concrete code suggestions
+
+Do not throw err in express error handler — replace with logging. (See above.)
+
+WS close cleanup — example:
+
+ws.on("close", async () => {
+  log("[WebSocket] Connection closed", "websocket");
+  if (ws.fightId && ws.isHost) {
+    // end fight / cancel timers
+    const timer = combatTimers.get(ws.fightId);
+    if (timer) clearTimeout(timer);
+    combatTimers.delete(ws.fightId);
+    // optionally mark session ended
+  }
+  if (ws.fightId && ws.studentId) {
+    // mark player offline or remove from session
+    // await storage.updatePlayerState(ws.fightId, ws.studentId, { isDisconnected: true });
+  }
+});
+
+
+Atomic player updates — avoid get -> mutate -> update. Use DB-level JSON updates or separate rows per player. Example (Postgres JSONB jsonb_set) or a small Redis-backed HSET fight:<id> players <playerId> <json> strategy.
+
+Auth — wire express-session or JWT so teacher routes are protected:
+
+app.post('/api/teacher/login', async (req,res) => {
+  // on success:
+  req.session!.teacherId = teacher.id;
+  res.json({ success: true });
+});
+
+
+or return { token } if using JWT.
+
+Prioritised checklist (my recommendation)
+
+Fix error handler so the process doesn’t crash on every error. (Critical)
+
+Add auth/session for teacher/student flows so protected endpoints are actually protected. (Critical)
+
+Add WS close cleanup and ensure timers are canceled on fight end or host disconnect. (High)
+
+Address concurrency: either move combat state to Redis or make DB updates atomic/split player state into rows. (High)
+
+Add tests for jobSystem and combat edge cases (streak resets, wizard charge/cooldown, headshot combos). (Medium)
+
+Add simple load testing for WebSocket flows (simulate many students) to measure broadcast performance and DB write contention. (Medium)
+
+CI/lint/typecheck and add basic API docs (OpenAPI). (Low → Medium)
