@@ -39,7 +39,8 @@ export default function HostFight() {
 
     socket.onopen = () => {
       setConnectionStatus("connected");
-      socket.send(JSON.stringify({ type: "host", fightId }));
+      // Send existing sessionId to rejoin instead of creating a new session
+      socket.send(JSON.stringify({ type: "host", fightId, sessionId }));
     };
 
     socket.onmessage = (event) => {

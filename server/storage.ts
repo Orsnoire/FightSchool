@@ -462,14 +462,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updatePlayerState(sessionId: string, studentId: string, updates: Partial<PlayerState>): Promise<void> {
-    const session = await this.getCombatSession(sessionId);
-    if (!session || !session.players[studentId]) return;
-
-    session.players[studentId] = { ...session.players[studentId], ...updates };
+    // RACE CONDITION FIX: Use atomic jsonb_set to prevent concurrent update conflicts
+    // This prevents the read-modify-write race when multiple players act simultaneously
+    
+    // Filter out undefined/null values to prevent Postgres errors
+    const definedUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, value]) => value !== undefined && value !== null)
+    );
+    
+    if (Object.keys(definedUpdates).length === 0) return;
+    
+    // Build nested jsonb_set calls for atomic multi-field update
+    let sqlQuery = sql`players`;
+    for (const [key, value] of Object.entries(definedUpdates)) {
+      sqlQuery = sql`jsonb_set(${sqlQuery}::jsonb, ${`{${studentId},${key}}`}, ${JSON.stringify(value)}::jsonb, true)`;
+    }
+    
+    // Execute atomic update
     await db
       .update(combatSessions)
-      .set({ players: session.players })
-      .where(eq(combatSessions.sessionId, sessionId));
+      .set({ players: sqlQuery })
+      .where(sql`${combatSessions.sessionId} = ${sessionId} AND ${combatSessions.players} ? ${studentId}`)
+      .execute();
   }
 
   // Combat stats operations

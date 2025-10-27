@@ -1862,6 +1862,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
+          // CRITICAL FIX: Check if host is trying to rejoin an existing session
+          if (message.sessionId) {
+            try {
+              const existingSession = await storage.getCombatSession(message.sessionId);
+              if (existingSession && existingSession.fightId === message.fightId) {
+                log(`[WebSocket] Host rejoining existing session ${message.sessionId}`, "websocket");
+                
+                // Close any old host connections for this session
+                wss.clients.forEach((client) => {
+                  const existingWs = client as ExtendedWebSocket;
+                  if (existingWs !== ws && existingWs.sessionId === message.sessionId && existingWs.isHost) {
+                    log(`[WebSocket] Closing old host connection for session ${message.sessionId}`, "websocket");
+                    existingWs.close(1000, "Host reconnected");
+                  }
+                });
+                
+                // Set connection properties
+                ws.fightId = message.fightId;
+                ws.sessionId = message.sessionId;
+                ws.isHost = true;
+                
+                // Send existing session back to host
+                ws.send(JSON.stringify({ 
+                  type: "session_created", 
+                  sessionId: existingSession.sessionId,
+                  state: existingSession 
+                }));
+                log(`[WebSocket] Host successfully rejoined session ${message.sessionId}`, "websocket");
+                return;
+              } else {
+                log(`[WebSocket] Session ${message.sessionId} not found or fight mismatch, creating new session`, "websocket");
+              }
+            } catch (error) {
+              log(`[WebSocket] Error checking for existing session: ${error}, creating new session`, "websocket");
+            }
+          }
+          
           // B1/B12 FIX: Clean up any existing host connections for this fight first
           // This prevents multiple host connections for the same fight
           wss.clients.forEach((client) => {
@@ -2411,13 +2448,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    ws.on("close", () => {
-      // Cleanup on connection close
-      if (ws.fightId && ws.studentId) {
-        log(`[WebSocket] Student ${ws.studentId} disconnected from fight ${ws.fightId}`, "websocket");
+    ws.on("close", async () => {
+      // CRITICAL FIX: Proper cleanup on connection close
+      
+      // Handle host disconnection
+      if (ws.isHost && ws.sessionId) {
+        log(`[WebSocket] Host disconnected from session ${ws.sessionId}`, "websocket");
+        
+        // Clear timers for this session to prevent orphaned timers
+        // But DON'T delete the session - allow host to rejoin
+        const combatTimer = combatTimers.get(ws.sessionId);
+        if (combatTimer) {
+          clearTimeout(combatTimer);
+          combatTimers.delete(ws.sessionId);
+          log(`[WebSocket] Cleared combat timer for session ${ws.sessionId}`, "websocket");
+        }
+        
+        const broadcastTimer = pendingBroadcasts.get(ws.sessionId);
+        if (broadcastTimer) {
+          clearTimeout(broadcastTimer);
+          pendingBroadcasts.delete(ws.sessionId);
+          log(`[WebSocket] Cleared broadcast timer for session ${ws.sessionId}`, "websocket");
+        }
+        
+        const inactivityTimer = inactivityTimers.get(ws.sessionId);
+        if (inactivityTimer) {
+          clearTimeout(inactivityTimer);
+          inactivityTimers.delete(ws.sessionId);
+          log(`[WebSocket] Cleared inactivity timer for session ${ws.sessionId}`, "websocket");
+        }
+        
+        // Session remains in DB so host can reconnect and rejoin
+        log(`[WebSocket] Session ${ws.sessionId} preserved for potential host reconnection`, "websocket");
       }
-      if (ws.isHost && ws.fightId) {
-        log(`[WebSocket] Host disconnected from fight ${ws.fightId}`, "websocket");
+      
+      // Handle student disconnection
+      if (ws.studentId && ws.sessionId) {
+        log(`[WebSocket] Student ${ws.studentId} disconnected from session ${ws.sessionId}`, "websocket");
+        
+        // Mark player as disconnected in session state (without removing them)
+        try {
+          const session = await storage.getCombatSession(ws.sessionId);
+          if (session && session.players[ws.studentId]) {
+            // Note: We don't currently have an isDisconnected field, but we could add one
+            // For now, just log it - students can rejoin using the same sessionId
+            log(`[WebSocket] Student ${ws.studentId} can rejoin session ${ws.sessionId}`, "websocket");
+          }
+        } catch (error) {
+          log(`[WebSocket] Error handling student disconnect: ${error}`, "websocket");
+        }
       }
     });
   });
