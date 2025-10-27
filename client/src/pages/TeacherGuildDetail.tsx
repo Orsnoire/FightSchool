@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Users, Trophy, Swords, UserMinus, Copy, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -109,6 +110,23 @@ export default function TeacherGuildDetail() {
       toast({
         title: "Error",
         description: "Failed to unassign fight",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleSoloModeMutation = useMutation({
+    mutationFn: async ({ fightId, enabled }: { fightId: string; enabled: boolean }) => {
+      return await apiRequest("PATCH", `/api/guilds/${guildId}/fights/${fightId}/solo-mode`, { enabled });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/guilds/${guildId}/fights`] });
+      toast({ title: "Solo mode updated", description: "Solo mode setting has been changed" });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update solo mode",
         variant: "destructive",
       });
     },
@@ -356,7 +374,7 @@ export default function TeacherGuildDetail() {
                       {assignedFights.map((fight) => (
                         <div
                           key={fight.id}
-                          className="flex items-center justify-between p-3 rounded-lg border"
+                          className="flex items-center gap-3 p-3 rounded-lg border"
                           data-testid={`assigned-fight-${fight.id}`}
                         >
                           <div className="flex-1">
@@ -364,6 +382,19 @@ export default function TeacherGuildDetail() {
                             <p className="text-sm text-muted-foreground">
                               {fight.questions?.length || 0} questions
                             </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label htmlFor={`solo-${fight.id}`} className="text-sm text-muted-foreground whitespace-nowrap">
+                              Solo Mode
+                            </label>
+                            <Switch
+                              id={`solo-${fight.id}`}
+                              checked={fight.soloModeEnabled}
+                              onCheckedChange={(enabled) => 
+                                toggleSoloModeMutation.mutate({ fightId: fight.id, enabled })
+                              }
+                              data-testid={`switch-solo-${fight.id}`}
+                            />
                           </div>
                           <Button
                             variant="ghost"
