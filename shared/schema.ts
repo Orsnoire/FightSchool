@@ -246,6 +246,7 @@ export const guildFights = pgTable("guild_fights", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   guildId: varchar("guild_id").notNull(),
   fightId: varchar("fight_id").notNull(),
+  soloModeEnabled: boolean("solo_mode_enabled").notNull().default(false), // Per-guild solo mode setting
   assignedAt: bigint("assigned_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
