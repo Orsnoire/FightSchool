@@ -17,9 +17,17 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
 
 const itemFormSchema = insertEquipmentItemSchema.extend({
-  hpBonus: z.coerce.number().min(0).optional(),
-  attackBonus: z.coerce.number().min(0).optional(),
-  defenseBonus: z.coerce.number().min(0).optional(),
+  stats: z.object({
+    str: z.coerce.number().min(0).optional(),
+    int: z.coerce.number().min(0).optional(),
+    agi: z.coerce.number().min(0).optional(),
+    mnd: z.coerce.number().min(0).optional(),
+    vit: z.coerce.number().min(0).optional(),
+    atk: z.coerce.number().min(0).optional(),
+    mat: z.coerce.number().min(0).optional(),
+    rtk: z.coerce.number().min(0).optional(),
+    def: z.coerce.number().min(0).optional(),
+  }).optional(),
 });
 
 type ItemFormData = z.infer<typeof itemFormSchema>;
@@ -55,9 +63,17 @@ export default function ItemManagement() {
       quality: "common",
       slot: "weapon",
       iconUrl: null,
-      hpBonus: 0,
-      attackBonus: 0,
-      defenseBonus: 0,
+      stats: {
+        str: 0,
+        int: 0,
+        agi: 0,
+        mnd: 0,
+        vit: 0,
+        atk: 0,
+        mat: 0,
+        rtk: 0,
+        def: 0,
+      },
     },
   });
 
@@ -125,9 +141,17 @@ export default function ItemManagement() {
       quality: item.quality,
       slot: item.slot,
       iconUrl: item.iconUrl,
-      hpBonus: item.hpBonus || 0,
-      attackBonus: item.attackBonus || 0,
-      defenseBonus: item.defenseBonus || 0,
+      stats: {
+        str: item.stats?.str || 0,
+        int: item.stats?.int || 0,
+        agi: item.stats?.agi || 0,
+        mnd: item.stats?.mnd || 0,
+        vit: item.stats?.vit || 0,
+        atk: item.stats?.atk || 0,
+        mat: item.stats?.mat || 0,
+        rtk: item.stats?.rtk || 0,
+        def: item.stats?.def || 0,
+      },
     });
   };
 
@@ -279,48 +303,134 @@ export default function ItemManagement() {
                     )}
                   />
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="hpBonus"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>HP Bonus</FormLabel>
-                          <FormControl>
-                            <Input type="number" min="0" {...field} data-testid="input-hp-bonus" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground">Base Stats</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="stats.str"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>STR (Strength)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-str" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="stats.int"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>INT (Intelligence)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-int" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="stats.agi"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>AGI (Agility)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-agi" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                    <FormField
-                      control={form.control}
-                      name="attackBonus"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Attack Bonus</FormLabel>
-                          <FormControl>
-                            <Input type="number" min="0" {...field} data-testid="input-attack-bonus" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="stats.mnd"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>MND (Mind)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-mnd" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="stats.vit"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>VIT (Vitality)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-vit" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="stats.def"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>DEF (Defense)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-def" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                    <FormField
-                      control={form.control}
-                      name="defenseBonus"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Defense Bonus</FormLabel>
-                          <FormControl>
-                            <Input type="number" min="0" {...field} data-testid="input-defense-bonus" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <h3 className="text-sm font-semibold text-muted-foreground pt-2">Combat Stats</h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="stats.atk"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>ATK (Physical Attack)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-atk" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="stats.mat"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>MAT (Magic Attack)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-mat" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="stats.rtk"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>RTK (Ranged Attack)</FormLabel>
+                            <FormControl>
+                              <Input type="number" min="0" {...field} data-testid="input-stat-rtk" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
 
                   <DialogFooter>
@@ -375,15 +485,25 @@ export default function ItemManagement() {
                       <Badge variant="outline" data-testid={`item-slot-${item.id}`}>{item.slot}</Badge>
                     </div>
                     <div className="text-sm space-y-1">
-                      {item.hpBonus !== null && item.hpBonus > 0 && (
-                        <p data-testid={`item-hp-${item.id}`}>❤️ HP +{item.hpBonus}</p>
-                      )}
-                      {item.attackBonus !== null && item.attackBonus > 0 && (
-                        <p data-testid={`item-attack-${item.id}`}>⚔️ ATK +{item.attackBonus}</p>
-                      )}
-                      {item.defenseBonus !== null && item.defenseBonus > 0 && (
-                        <p data-testid={`item-defense-${item.id}`}>🛡️ DEF +{item.defenseBonus}</p>
-                      )}
+                      {item.stats && Object.entries(item.stats).map(([stat, value]) => {
+                        if (!value || value === 0) return null;
+                        const statLabels: Record<string, string> = {
+                          str: "STR",
+                          int: "INT",
+                          agi: "AGI",
+                          mnd: "MND",
+                          vit: "VIT",
+                          atk: "ATK",
+                          mat: "MAT",
+                          rtk: "RTK",
+                          def: "DEF",
+                        };
+                        return (
+                          <p key={stat} data-testid={`item-stat-${stat}-${item.id}`}>
+                            {statLabels[stat] || stat.toUpperCase()} +{value}
+                          </p>
+                        );
+                      })}
                     </div>
                   </div>
                 </CardContent>
