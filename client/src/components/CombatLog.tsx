@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Zap, Heart, Shield, Skull, Sparkles, Swords } from "lucide-react";
 
 export interface CombatLogEvent {
@@ -93,7 +92,11 @@ export function CombatLog({ events }: CombatLogProps) {
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden p-0">
-        <ScrollArea className="h-full px-6 pb-4" ref={scrollRef} onScroll={handleScroll}>
+        <div 
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto px-6 pb-4"
+        >
           {filteredEvents.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery ? "No matching events found" : "Combat events will appear here..."}
@@ -128,7 +131,7 @@ export function CombatLog({ events }: CombatLogProps) {
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );

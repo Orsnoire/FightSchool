@@ -8,6 +8,7 @@ import { HealthBar } from "@/components/HealthBar";
 import { Play, ArrowLeft, Skull, XCircle, Wifi, WifiOff, RefreshCw, Crown } from "lucide-react";
 import type { Fight, CombatState } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { CombatLog, type CombatLogEvent } from "@/components/CombatLog";
 
 export default function HostFight() {
   const [, params] = useRoute("/teacher/host/:id");
@@ -26,6 +27,7 @@ export default function HostFight() {
   const [hasStarted, setHasStarted] = useState(false);
   // B6/B7 FIX: Connection status tracking for host
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
+  const [combatLogEvents, setCombatLogEvents] = useState<CombatLogEvent[]>([]);
 
   // B6/B7 FIX: Manual reconnect function for host
   const connectWebSocket = () => {
@@ -46,8 +48,12 @@ export default function HostFight() {
         setSessionId(message.sessionId);
         setCombatState(message.state);
         setHasStarted(false);
+        setCombatLogEvents([]); // Clear log on new session
       } else if (message.type === "combat_state") {
         setCombatState(message.state);
+      } else if (message.type === "combat_log") {
+        // Add new combat log event
+        setCombatLogEvents(prev => [...prev, message.event]);
       } else if (message.type === "game_over") {
         toast({ 
           title: message.victory ? "Victory!" : "Fight Ended", 
@@ -156,8 +162,8 @@ export default function HostFight() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <main className="container mx-auto px-4 py-8 h-[calc(100vh-120px)] flex flex-col gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-[2]">
           <div className="lg:col-span-3">
             <Card>
               <CardHeader>
@@ -275,6 +281,11 @@ export default function HostFight() {
               </Card>
             )}
           </div>
+        </div>
+        
+        {/* Combat Log - Bottom 1/3 of screen */}
+        <div className="flex-1 min-h-0">
+          <CombatLog events={combatLogEvents} />
         </div>
       </main>
     </div>

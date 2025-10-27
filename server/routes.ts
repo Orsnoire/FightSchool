@@ -853,6 +853,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  function broadcastCombatLogEvent(
+    sessionId: string,
+    type: "damage" | "heal" | "block" | "death" | "phase_change" | "ability" | "info",
+    message: string,
+    options?: { playerName?: string; targetName?: string; value?: number }
+  ) {
+    const event = {
+      type: "combat_log",
+      event: {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: Date.now(),
+        type,
+        message,
+        playerName: options?.playerName,
+        targetName: options?.targetName,
+        value: options?.value,
+      },
+    };
+
+    wss.clients.forEach((client) => {
+      const ws = client as ExtendedWebSocket;
+      // Only send to hosts in this session
+      if (ws.readyState === WebSocket.OPEN && ws.sessionId === sessionId && ws.isHost) {
+        ws.send(JSON.stringify(event));
+      }
+    });
+  }
+
   // Broadcast batching to reduce message flood with many players
   const pendingBroadcasts: Map<string, NodeJS.Timeout> = new Map();
   const BROADCAST_DEBOUNCE_MS = 50; // Batch updates within 50ms window
@@ -1014,6 +1042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.updateCombatSession(sessionId, { players: session.players });
 
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Question Phase" });
+    broadcastCombatLogEvent(sessionId, "phase_change", `Question ${session.currentQuestionIndex + 1}: ${question.question.substring(0, 50)}...`);
     broadcastToCombat(sessionId, { type: "question", question, shuffleOptions: fight.shuffleOptions });
     const updatedSession = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
@@ -1032,6 +1061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     await storage.updateCombatSession(sessionId, { currentPhase: "tank_blocking" });
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Tank Blocking & Healing" });
+    broadcastCombatLogEvent(sessionId, "phase_change", "Tank Blocking & Healing Phase");
     
     // PERFORMANCE FIX (B1, B2): Process healing in memory (Herbalist, Priest, Paladin)
     for (const [playerId, player] of Object.entries(session.players)) {
@@ -1043,14 +1073,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (target && !target.isDead) {
           const herbalistLevel = player.jobLevels.herbalist || 1;
           const healAmount = getHealingPower(herbalistLevel);
+          const actualHeal = Math.min(healAmount, target.maxHealth - target.health);
           // Update target health in memory
           target.health = Math.min(target.health + healAmount, target.maxHealth);
           // Use up a potion (in memory)
           player.potionCount -= 1;
-          player.healingDone += healAmount;
+          player.healingDone += actualHeal;
           
           // AGGRO SYSTEM: Healing gains +2 aggro per healing point
-          player.threat += healAmount * 2;
+          player.threat += actualHeal * 2;
+          
+          // Combat log event for healing
+          broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} heals ${target.nickname} with a potion`, {
+            playerName: player.nickname,
+            targetName: target.nickname,
+            value: actualHeal,
+          });
         }
       }
       
@@ -1059,14 +1097,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const target = session.players[player.healTarget];
         if (target && !target.isDead) {
           const healAmount = player.mnd;
+          const actualHeal = Math.min(healAmount, target.maxHealth - target.health);
           // Update target health in memory
           target.health = Math.min(target.health + healAmount, target.maxHealth);
           // Use 1 MP
           player.mp = Math.max(0, player.mp - 1);
-          player.healingDone += healAmount;
+          player.healingDone += actualHeal;
           
           // AGGRO SYSTEM: Healing gains +2 aggro per healing point
-          player.threat += healAmount * 2;
+          player.threat += actualHeal * 2;
+          
+          // Combat log event for healing
+          broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} casts Mend on ${target.nickname}`, {
+            playerName: player.nickname,
+            targetName: target.nickname,
+            value: actualHeal,
+          });
         }
       }
       
@@ -1076,13 +1122,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (target && !target.isDead) {
           // Heal for VIT HP
           const healAmount = player.vit;
+          const actualHeal = Math.min(healAmount, target.maxHealth - target.health);
           target.health = Math.min(target.health + healAmount, target.maxHealth);
           // Use 1 MP
           player.mp = Math.max(0, player.mp - 1);
-          player.healingDone += healAmount;
+          player.healingDone += actualHeal;
           
           // AGGRO SYSTEM: Healing gains +2 aggro per healing point
-          player.threat += healAmount * 2;
+          player.threat += actualHeal * 2;
+          
+          // Combat log event for healing
+          broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} uses Healing Guard on ${target.nickname}`, {
+            playerName: player.nickname,
+            targetName: target.nickname,
+            value: actualHeal,
+          });
         }
       }
     }
@@ -1112,6 +1166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     await storage.updateCombatSession(sessionId, { currentPhase: "combat" });
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Combat!" });
+    broadcastCombatLogEvent(sessionId, "phase_change", "Combat Phase - Players Attack!");
 
     // Use questionOrder array to get the actual question index (supports randomization)
     const actualQuestionIndex = session.questionOrder 
@@ -1346,6 +1401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (session.enemies.length > 0 && damage > 0) {
             // Update enemy health in memory
             const enemy = session.enemies[0];
+            const enemyName = enemy.name;
             enemy.health = Math.max(0, enemy.health - damage);
             
             // Track damage dealt (in memory)
@@ -1359,6 +1415,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const isTank = tankClasses.includes(player.characterClass);
             const aggroPerDamage = isTank ? 3 : 1;
             player.threat += damage * aggroPerDamage;
+            
+            // Combat log event for damage
+            broadcastCombatLogEvent(sessionId, "damage", `${player.nickname} deals ${damage} damage to ${enemyName}`, {
+              playerName: player.nickname,
+              targetName: enemyName,
+              value: damage,
+            });
+            
+            // Check if enemy was defeated
+            if (enemy.health === 0) {
+              broadcastCombatLogEvent(sessionId, "death", `${enemyName} was defeated!`, {
+                targetName: enemyName,
+              });
+            }
           }
         }
       } else {
@@ -1406,12 +1476,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           player.damageTaken += damageAmount;
           if (wasAlive && nowDead) {
             player.deaths += 1;
+            // Combat log event for player death
+            broadcastCombatLogEvent(sessionId, "death", `${player.nickname} has been defeated!`, {
+              playerName: player.nickname,
+            });
           }
         } else if (blockerPlayer) {
           // AGGRO SYSTEM: Tank who successfully blocks gains +1 aggro per damage point blocked
           const damageAmount = fight.baseEnemyDamage || 1;
           blockerPlayer.damageBlocked += damageAmount;
           blockerPlayer.threat += damageAmount; // +1 aggro per damage blocked
+          
+          // Combat log event for blocking
+          broadcastCombatLogEvent(sessionId, "block", `${blockerPlayer.nickname} blocks damage for ${player.nickname}`, {
+            playerName: blockerPlayer.nickname,
+            targetName: player.nickname,
+            value: damageAmount,
+          });
         }
       }
     }
@@ -1458,6 +1539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!fight) return;
 
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Enemy Turn" });
+    broadcastCombatLogEvent(sessionId, "phase_change", "Enemy Turn - Enemies Attack!");
 
     // Default enemy AI: Attack player with highest threat
     // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
