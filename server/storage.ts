@@ -99,6 +99,7 @@ export interface IStorage {
   // Guild fight assignment operations
   assignFightToGuild(guildId: string, fightId: string): Promise<GuildFight>;
   unassignFightFromGuild(guildId: string, fightId: string): Promise<boolean>;
+  toggleGuildFightSoloMode(guildId: string, fightId: string, enabled: boolean): Promise<GuildFight | undefined>;
   getGuildFights(guildId: string): Promise<Fight[]>;
   getFightGuilds(fightId: string): Promise<Guild[]>;
   
@@ -1167,6 +1168,20 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount !== null && result.rowCount > 0;
   }
 
+  async toggleGuildFightSoloMode(guildId: string, fightId: string, enabled: boolean): Promise<GuildFight | undefined> {
+    const [updated] = await db
+      .update(guildFights)
+      .set({ soloModeEnabled: enabled })
+      .where(
+        and(
+          eq(guildFights.guildId, guildId),
+          eq(guildFights.fightId, fightId)
+        )
+      )
+      .returning();
+    return updated;
+  }
+
   async getGuildFights(guildId: string): Promise<Fight[]> {
     const assignments = await db
       .select()
@@ -1180,6 +1195,11 @@ export class DatabaseStorage implements IStorage {
     const fightIds = assignments.map(a => a.fightId);
     const dbFights = await db.select().from(fights).where(inArray(fights.id, fightIds));
 
+    // Create map of fightId -> guild-specific soloModeEnabled
+    const soloModeMap = new Map(
+      assignments.map(a => [a.fightId, a.soloModeEnabled])
+    );
+
     return dbFights.map(f => ({
       ...f,
       questions: f.questions as any,
@@ -1187,6 +1207,8 @@ export class DatabaseStorage implements IStorage {
       lootTable: (f.lootTable as any) || [],
       enemyScript: f.enemyScript || undefined,
       createdAt: Number(f.createdAt),
+      // Override with guild-specific solo mode setting
+      soloModeEnabled: soloModeMap.get(f.id) ?? f.soloModeEnabled,
     }));
   }
 
