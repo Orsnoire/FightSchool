@@ -80,6 +80,19 @@ export const insertStudentSchema = createInsertSchema(students).omit({
 export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
 
+// Equipment stats type matching EquipmentStats interface
+export interface EquipmentItemStats {
+  str?: number;
+  int?: number;
+  agi?: number;
+  mnd?: number;
+  vit?: number;
+  def?: number;
+  atk?: number;
+  mat?: number;
+  rtk?: number;
+}
+
 // Equipment items table (teacher-created custom items)
 export const equipmentItems = pgTable("equipment_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -89,9 +102,7 @@ export const equipmentItems = pgTable("equipment_items", {
   itemType: text("item_type").notNull().$type<ItemType>(),
   quality: text("quality").notNull().$type<ItemQuality>(),
   slot: text("slot").notNull().$type<EquipmentSlot>(),
-  hpBonus: integer("hp_bonus").notNull().default(0),
-  attackBonus: integer("attack_bonus").notNull().default(0),
-  defenseBonus: integer("defense_bonus").notNull().default(0),
+  stats: jsonb("stats").notNull().$type<EquipmentItemStats>().default({}),
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
