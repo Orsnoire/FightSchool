@@ -1046,6 +1046,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ? session.questionOrder[session.currentQuestionIndex] 
       : session.currentQuestionIndex;
     const question = fight.questions[actualQuestionIndex];
+    
+    // Safety check: ensure question exists
+    if (!question) {
+      log(`[Combat] ERROR: Question not found at index ${actualQuestionIndex} for fight ${session.fightId}`, "combat");
+      return;
+    }
+    
     await storage.updateCombatSession(sessionId, {
       currentPhase: "question",
       questionStartTime: Date.now(),
@@ -1068,7 +1075,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.updateCombatSession(sessionId, { players: session.players });
 
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Question Phase" });
-    broadcastCombatLogEvent(sessionId, "phase_change", `Question ${session.currentQuestionIndex + 1}: ${question.question.substring(0, 50)}...`);
+    const questionPreview = question.question?.substring(0, 50) || "Question";
+    broadcastCombatLogEvent(sessionId, "phase_change", `Question ${session.currentQuestionIndex + 1}: ${questionPreview}...`);
     broadcastToCombat(sessionId, { type: "question", question, shuffleOptions: fight.shuffleOptions });
     const updatedSession = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
