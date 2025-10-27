@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, TANK_CLASSES } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
@@ -1485,8 +1485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let blocked = false;
         let blockerPlayer = null;
         for (const [blockerId, blocker] of Object.entries(session.players)) {
-          const tankClasses = ["warrior", "knight", "paladin", "dark_knight", "blood_knight"];
-          if (blocker.blockTarget === targetId && tankClasses.includes(blocker.characterClass) && !blocker.isDead) {
+          if (blocker.blockTarget === targetId && TANK_CLASSES.includes(blocker.characterClass) && !blocker.isDead) {
             blocked = true;
             blockerPlayer = blocker;
             break;

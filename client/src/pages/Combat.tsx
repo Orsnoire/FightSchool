@@ -14,6 +14,7 @@ import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles, Calculator, Swords } from "lucide-react";
 import type { CombatState, Question, LootItem, CharacterClass, Gender } from "@shared/schema";
+import { TANK_CLASSES } from "@shared/schema";
 import { getFireballMaxChargeRounds } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, type AnimationType } from "@shared/ultimateAbilities";
 import { UltimateAnimation } from "@/components/UltimateAnimation";
@@ -387,10 +388,10 @@ export default function Combat() {
 
     // Detect when you're being blocked by someone - check PREVIOUS state
     const previousBlocker = Object.values(previousCombatState.players).find(
-      p => p.blockTarget === studentId && p.characterClass === "warrior" && !p.isDead
+      p => p.blockTarget === studentId && TANK_CLASSES.includes(p.characterClass) && !p.isDead
     );
     const currentBlocker = Object.values(combatState.players).find(
-      p => p.blockTarget === studentId && p.characterClass === "warrior" && !p.isDead
+      p => p.blockTarget === studentId && TANK_CLASSES.includes(p.characterClass) && !p.isDead
     );
     // Show toast when blocker starts blocking (wasn't blocking before, is blocking now)
     if (currentBlocker && !previousBlocker) {
@@ -708,7 +709,7 @@ export default function Combat() {
           <div className="grid grid-cols-2 gap-1">
             {leftPlayers.map((player) => {
               const isBeingBlocked = Object.values(combatState.players).some(
-                p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
+                p => p.blockTarget === player.studentId && TANK_CLASSES.includes(p.characterClass) && !p.isDead
               );
               const isBeingHealed = Object.values(combatState.players).some(
                 p => p.isHealing && p.healTarget === player.studentId && p.characterClass === "herbalist" && !p.isDead
@@ -1004,17 +1005,16 @@ export default function Combat() {
             </Card>
           )}
 
-          {combatState.currentPhase === "tank_blocking" && ["warrior", "knight", "paladin", "dark_knight", "blood_knight"].includes(playerState?.characterClass || "") && !playerState.isDead && (
+          {combatState.currentPhase === "tank_blocking" && playerState && TANK_CLASSES.includes(playerState.characterClass) && !playerState.isDead && (
             <Card className="p-8">
               <h3 className="text-2xl font-bold mb-6">Select Ally to Protect</h3>
               <div className="max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-3 gap-4">
                   {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => {
                     const isMyTarget = playerState.blockTarget === player.studentId;
-                    const tankClasses = ["warrior", "knight", "paladin", "dark_knight", "blood_knight"];
                     const allBlockers = Object.values(combatState.players).filter(
                       p => p.blockTarget === player.studentId && 
-                      tankClasses.includes(p.characterClass) && 
+                      TANK_CLASSES.includes(p.characterClass) && 
                       !p.isDead
                     );
                     const otherBlockers = allBlockers.filter(p => p.studentId !== studentId);
@@ -1054,7 +1054,7 @@ export default function Combat() {
           <div className="grid grid-cols-2 gap-1">
             {rightPlayers.map((player) => {
               const isBeingBlocked = Object.values(combatState.players).some(
-                p => p.blockTarget === player.studentId && p.characterClass === "warrior" && !p.isDead
+                p => p.blockTarget === player.studentId && TANK_CLASSES.includes(p.characterClass) && !p.isDead
               );
               const isBeingHealed = Object.values(combatState.players).some(
                 p => p.isHealing && p.healTarget === player.studentId && p.characterClass === "herbalist" && !p.isDead
