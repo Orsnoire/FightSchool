@@ -301,7 +301,12 @@ export class DatabaseStorage implements IStorage {
       currentQuestionIndex: 0,
       currentPhase: "waiting",
       players: {},
-      enemies: fight.enemies.map((e) => ({ ...e, health: e.maxHealth })),
+      // Initialize enemies with placeholder HP (will be calculated when first question starts)
+      enemies: fight.enemies.map((e) => ({ 
+        ...e, 
+        health: 0, 
+        maxHealth: 0 
+      })),
       questionOrder,
       soloModeEnabled: soloModeOptions?.soloModeEnabled || false,
       soloModeStartHP: soloModeOptions?.soloModeStartHP || undefined,

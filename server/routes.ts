@@ -992,32 +992,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const fight = await storage.getFight(session.fightId);
     if (!fight) return;
     
-    // Apply solo mode HP scaling on first question only
-    if (session.soloModeEnabled && session.currentQuestionIndex === 0) {
+    // Calculate dynamic enemy HP on first question only
+    if (session.currentQuestionIndex === 0) {
       const players = Object.values(session.players);
-      const playerCount = players.length;
       
-      // Calculate total job levels above 2 from all players' current jobs
-      let totalLevelsAbove2 = 0;
+      // Calculate total player levels earned across all jobs
+      let totalPlayerLevels = 0;
       for (const player of players) {
-        const currentJobLevel = player.jobLevels[player.characterClass] || 1;
-        if (currentJobLevel > 2) {
-          totalLevelsAbove2 += (currentJobLevel - 2);
+        // Sum all job levels for this player
+        for (const jobClass in player.jobLevels) {
+          totalPlayerLevels += player.jobLevels[jobClass as CharacterClass] || 0;
         }
       }
       
-      // Formula: 10 HP base + 2 HP per player + 5 HP per job level above 2
-      const scaledHP = 10 + (2 * playerCount) + (5 * totalLevelsAbove2);
+      // Base HP formula: (# of questions) × (total player levels earned) + 10
+      const questionCount = fight.questions.length;
+      const baseHP = (questionCount * totalPlayerLevels) + 10;
       
-      // Apply scaled HP to all enemies (capped at their maxHealth from fight template)
-      session.enemies = session.enemies.map(enemy => ({
-        ...enemy,
-        health: Math.min(scaledHP, enemy.maxHealth)
-      }));
+      // Apply difficulty multiplier to each enemy and set their HP
+      session.enemies = session.enemies.map(enemy => {
+        // Get the enemy template from the fight to access difficultyMultiplier
+        const enemyTemplate = fight.enemies.find(e => e.id === enemy.id);
+        const difficultyMultiplier = enemyTemplate?.difficultyMultiplier || 10;
+        
+        // Calculate final HP: baseHP × difficultyMultiplier
+        const calculatedHP = baseHP * difficultyMultiplier;
+        
+        return {
+          ...enemy,
+          health: calculatedHP,
+          maxHealth: calculatedHP
+        };
+      });
       
-      // Save the scaled enemy HP
+      // Save the calculated enemy HP
       await storage.updateCombatSession(sessionId, { enemies: session.enemies });
-      log(`[Solo Mode] Applied HP scaling: ${playerCount} players, ${totalLevelsAbove2} levels above 2 = ${scaledHP} HP (capped at maxHealth)`, "combat");
+      log(`[Combat] Calculated enemy HP: ${questionCount} questions × ${totalPlayerLevels} player levels + 10 = ${baseHP} base HP`, "combat");
     }
     
     // Reset inactivity timer on new question
