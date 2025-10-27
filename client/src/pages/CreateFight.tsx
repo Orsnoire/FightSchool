@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -34,7 +35,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { RichTextEditor } from "@/components/RichTextEditor";
+// import { RichTextEditor } from "@/components/RichTextEditor"; // Disabled for now - using basic text input
 import { uploadImageToStorage } from "@/lib/imageUpload";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
 import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
@@ -191,7 +192,7 @@ export default function CreateFight() {
       lootTable: [],
       randomizeQuestions: false,
       shuffleOptions: true,
-      soloModeEnabled: false,
+      soloModeEnabled: true, // Default to true - controlled per-guild in guild settings
     },
   });
 
@@ -210,7 +211,7 @@ export default function CreateFight() {
         lootTable: existingFight.lootTable,
         randomizeQuestions: existingFight.randomizeQuestions,
         shuffleOptions: existingFight.shuffleOptions,
-        soloModeEnabled: existingFight.soloModeEnabled,
+        soloModeEnabled: true, // Always true - controlled per-guild in guild settings
       });
       setQuestions(existingFight.questions);
       setEnemies(existingFight.enemies);
@@ -660,29 +661,7 @@ export default function CreateFight() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="soloModeEnabled"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="checkbox-solo-mode-enabled"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Enable Solo Mode
-                        </FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Allow students to practice this fight on their own or with friends outside of class
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
+{/* Solo mode is now controlled per-guild in guild settings */}
               </CardContent>
             </Card>
 
@@ -746,11 +725,12 @@ export default function CreateFight() {
 
                     <div>
                       <label className="text-sm font-medium">Question</label>
-                      <RichTextEditor
-                        content={currentQuestion.question || ""}
-                        onChange={(html) => setCurrentQuestion({ ...currentQuestion, question: html })}
+                      <Textarea
+                        value={currentQuestion.question || ""}
+                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
                         placeholder="Enter your question text"
-                        onImageUpload={uploadImageToStorage}
+                        className="min-h-[100px]"
+                        data-testid="textarea-question"
                       />
                     </div>
 
@@ -775,15 +755,16 @@ export default function CreateFight() {
                                 />
                                 <Label htmlFor={`option-${i}`} className="text-sm">Option {i + 1} (Click to mark as correct)</Label>
                               </div>
-                              <RichTextEditor
-                                content={opt}
-                                onChange={(html) => {
+                              <Textarea
+                                value={opt}
+                                onChange={(e) => {
+                                  const value = e.target.value;
                                   setCurrentQuestion((prev) => {
                                     const newOpts = [...(prev.options || [])];
-                                    newOpts[i] = html;
+                                    newOpts[i] = value;
                                     return { ...prev, options: newOpts };
                                   });
-                                  if (selectedOptionIndex === i && !html) {
+                                  if (selectedOptionIndex === i && !value) {
                                     setSelectedOptionIndex(null);
                                     toast({ 
                                       title: "Selection cleared", 
@@ -793,8 +774,8 @@ export default function CreateFight() {
                                   }
                                 }}
                                 placeholder={`Enter option ${i + 1} text`}
-                                onImageUpload={uploadImageToStorage}
-                                compact={true}
+                                className="min-h-[60px]"
+                                data-testid={`textarea-option-${i}`}
                               />
                             </div>
                           ))}
@@ -824,12 +805,11 @@ export default function CreateFight() {
                     {currentQuestion.type === "short_answer" && (
                       <div>
                         <label className="text-sm font-medium">Correct Answer</label>
-                        <RichTextEditor
-                          content={currentQuestion.correctAnswer || ""}
-                          onChange={(html) => setCurrentQuestion({ ...currentQuestion, correctAnswer: html })}
+                        <Input
+                          value={currentQuestion.correctAnswer || ""}
+                          onChange={(e) => setCurrentQuestion({ ...currentQuestion, correctAnswer: e.target.value })}
                           placeholder="Enter the correct answer"
-                          onImageUpload={uploadImageToStorage}
-                          compact={true}
+                          data-testid="input-correct-answer"
                         />
                       </div>
                     )}
