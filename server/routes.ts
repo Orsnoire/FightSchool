@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage } from "@shared/schema";
 import { log } from "./vite";
-import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades } from "@shared/jobSystem";
+import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
 
 interface ExtendedWebSocket extends WebSocket {
@@ -1033,18 +1033,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.updateCombatSession(sessionId, { currentPhase: "tank_blocking" });
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Tank Blocking & Healing" });
     
-    // PERFORMANCE FIX (B1, B2): Process potion healing in memory
+    // PERFORMANCE FIX (B1, B2): Process healing in memory (Herbalist, Priest, Paladin)
     for (const [playerId, player] of Object.entries(session.players)) {
       if (player.isDead) continue;
       
+      // Herbalist potion healing
       if (player.isHealing && player.healTarget && player.characterClass === "herbalist" && player.potionCount > 0) {
         const target = session.players[player.healTarget];
         if (target && !target.isDead) {
-          const healAmount = 1;
+          const herbalistLevel = player.jobLevels.herbalist || 1;
+          const healAmount = getHealingPower(herbalistLevel);
           // Update target health in memory
           target.health = Math.min(target.health + healAmount, target.maxHealth);
           // Use up a potion (in memory)
           player.potionCount -= 1;
+          player.healingDone += healAmount;
+          
+          // AGGRO SYSTEM: Healing gains +2 aggro per healing point
+          player.threat += healAmount * 2;
+        }
+      }
+      
+      // Priest Mend spell healing (MND HP, 1 MP cost)
+      if (player.isHealing && player.healTarget && player.characterClass === "priest" && player.mp >= 1) {
+        const target = session.players[player.healTarget];
+        if (target && !target.isDead) {
+          const healAmount = player.mnd;
+          // Update target health in memory
+          target.health = Math.min(target.health + healAmount, target.maxHealth);
+          // Use 1 MP
+          player.mp = Math.max(0, player.mp - 1);
+          player.healingDone += healAmount;
+          
+          // AGGRO SYSTEM: Healing gains +2 aggro per healing point
+          player.threat += healAmount * 2;
+        }
+      }
+      
+      // Paladin Healing Guard (blocks AND heals, 1 MP cost)
+      if (player.isHealing && player.healTarget && player.characterClass === "paladin" && player.mp >= 1) {
+        const target = session.players[player.healTarget];
+        if (target && !target.isDead) {
+          // Heal for VIT HP
+          const healAmount = player.vit;
+          target.health = Math.min(target.health + healAmount, target.maxHealth);
+          // Use 1 MP
+          player.mp = Math.max(0, player.mp - 1);
           player.healingDone += healAmount;
           
           // AGGRO SYSTEM: Healing gains +2 aggro per healing point
@@ -1237,33 +1271,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
               damage = 0;
             }
           } else if (player.characterClass === "priest") {
-            // Priest: Magical damage using MAT + INT (mend healing ability)
-            damage = calculateMagicalDamage(player.mat, player.int);
-            mpCost = 1; // Mend spell costs 1 MP
-            
-            // Consume MP (if player has enough)
-            if (player.mp >= mpCost) {
-              player.mp = Math.max(0, player.mp - mpCost);
-            } else {
-              // Not enough MP - no damage
+            // Priest: Can heal with Mend OR deal magical damage
+            if (player.isHealing && player.healTarget) {
+              // Priest chose to heal - healing happens in tank_blocking phase
               damage = 0;
+            } else {
+              // Deal magical damage using MAT + INT
+              damage = calculateMagicalDamage(player.mat, player.int);
+              mpCost = 1;
+              
+              // Consume MP (if player has enough)
+              if (player.mp >= mpCost) {
+                player.mp = Math.max(0, player.mp - mpCost);
+              } else {
+                // Not enough MP - no damage
+                damage = 0;
+              }
             }
           } else if (player.characterClass === "paladin") {
-            // Paladin: Physical damage using ATK + STR (tank/healer hybrid)
-            damage = calculatePhysicalDamage(player.atk, player.str);
-            mpCost = 1; // Paladin abilities cost 1 MP
-            
-            // Consume MP (if player has enough)
-            if (player.mp >= mpCost) {
-              player.mp = Math.max(0, player.mp - mpCost);
+            // Paladin: Can use Healing Guard (heal+block) OR deal physical damage
+            if (player.isHealing && player.healTarget) {
+              // Paladin chose to heal - healing happens in tank_blocking phase
+              damage = 0;
             } else {
-              // Not enough MP - reduce damage by 50%
-              damage = Math.floor(damage * 0.5);
+              // Deal physical damage using ATK + STR
+              damage = calculatePhysicalDamage(player.atk, player.str);
+              mpCost = 1;
+              
+              // Consume MP (if player has enough)
+              if (player.mp >= mpCost) {
+                player.mp = Math.max(0, player.mp - mpCost);
+              } else {
+                // Not enough MP - reduce damage by 50%
+                damage = Math.floor(damage * 0.5);
+              }
             }
           } else if (player.characterClass === "dark_knight") {
             // Dark Knight: Ruin Strike - ATK * (STR + VIT + INT) melee damage
             const statSum = player.str + player.vit + player.int;
-            damage = player.atk * statSum;
+            damage = Math.floor((player.atk * statSum) / 2);
             mpCost = 1; // Ruin Strike costs 1 MP
             
             // Consume MP (if player has enough)
@@ -1276,7 +1322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else if (player.characterClass === "blood_knight") {
             // Blood Knight: Crimson Slash - ATK * (VIT + STR)/2 melee damage with 50% lifesteal
             const statSum = player.vit + player.str;
-            damage = Math.floor(player.atk * (statSum / 2));
+            damage = Math.floor((player.atk * (statSum / 2)) / 2);
             mpCost = 1; // Crimson Slash costs 1 MP
             
             // Consume MP and apply lifesteal (if player has enough)
@@ -1439,7 +1485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let blocked = false;
         let blockerPlayer = null;
         for (const [blockerId, blocker] of Object.entries(session.players)) {
-          const tankClasses = ["warrior", "knight", "paladin", "dark_knight"];
+          const tankClasses = ["warrior", "knight", "paladin", "dark_knight", "blood_knight"];
           if (blocker.blockTarget === targetId && tankClasses.includes(blocker.characterClass) && !blocker.isDead) {
             blocked = true;
             blockerPlayer = blocker;

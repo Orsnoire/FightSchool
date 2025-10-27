@@ -782,20 +782,20 @@ export function getPlayerCombatStats(playerState: PlayerState, weapon: string, h
 
 // Calculate damage for different attack types
 export function calculatePhysicalDamage(atk: number, str: number): number {
-  return atk + str;
+  return Math.floor((atk + str) / 2);
 }
 
 export function calculateMagicalDamage(mat: number, int: number): number {
-  return mat + int;
+  return Math.floor((mat + int) / 2);
 }
 
 export function calculateRangedDamage(rtk: number, agi: number): number {
-  return rtk + agi;
+  return Math.floor((rtk + agi) / 2);
 }
 
 export function calculateHybridDamage(mat: number, agi: number, mnd: number): number {
   // For Herbalist base damage
-  return mat + agi + mnd;
+  return Math.floor((mat + agi + mnd) / 2);
 }
 
 // Calculate damage reduction

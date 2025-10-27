@@ -1004,16 +1004,17 @@ export default function Combat() {
             </Card>
           )}
 
-          {combatState.currentPhase === "tank_blocking" && playerState?.characterClass === "warrior" && !playerState.isDead && (
+          {combatState.currentPhase === "tank_blocking" && ["warrior", "knight", "paladin", "dark_knight", "blood_knight"].includes(playerState?.characterClass || "") && !playerState.isDead && (
             <Card className="p-8">
               <h3 className="text-2xl font-bold mb-6">Select Ally to Protect</h3>
               <div className="max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-3 gap-4">
                   {Object.values(combatState.players).filter((p) => !p.isDead).map((player) => {
                     const isMyTarget = playerState.blockTarget === player.studentId;
+                    const tankClasses = ["warrior", "knight", "paladin", "dark_knight", "blood_knight"];
                     const allBlockers = Object.values(combatState.players).filter(
                       p => p.blockTarget === player.studentId && 
-                      p.characterClass === "warrior" && 
+                      tankClasses.includes(p.characterClass) && 
                       !p.isDead
                     );
                     const otherBlockers = allBlockers.filter(p => p.studentId !== studentId);

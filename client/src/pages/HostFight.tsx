@@ -188,9 +188,9 @@ export default function HostFight() {
                           {player.hasAnswered && combatState.currentPhase === "question" && (
                             <div className="text-xs text-health">✓ Answered</div>
                           )}
-                          {(player.characterClass === "wizard" || player.characterClass === "scout") && (
+                          {player.characterClass === "scout" && (
                             <div className="text-xs text-muted-foreground">
-                              Streak: {player.streakCounter}/3
+                              Combo Points: {player.comboPoints || 0}/{player.maxComboPoints || 3}
                             </div>
                           )}
                         </CardContent>

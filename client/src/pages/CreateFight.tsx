@@ -191,6 +191,7 @@ export default function CreateFight() {
       lootTable: [],
       randomizeQuestions: false,
       shuffleOptions: true,
+      soloModeEnabled: false,
     },
   });
 
@@ -209,6 +210,7 @@ export default function CreateFight() {
         lootTable: existingFight.lootTable,
         randomizeQuestions: existingFight.randomizeQuestions,
         shuffleOptions: existingFight.shuffleOptions,
+        soloModeEnabled: existingFight.soloModeEnabled,
       });
       setQuestions(existingFight.questions);
       setEnemies(existingFight.enemies);
@@ -653,6 +655,29 @@ export default function CreateFight() {
                         </FormLabel>
                         <p className="text-sm text-muted-foreground">
                           Randomize the order of multiple choice and true/false options when displayed to students
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="soloModeEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-solo-mode-enabled"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Enable Solo Mode
+                        </FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Allow students to practice this fight on their own or with friends outside of class
                         </p>
                       </div>
                     </FormItem>

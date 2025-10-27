@@ -11,7 +11,7 @@ import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterC
 import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { getTotalPassiveBonuses, getTotalMechanicUpgrades, getCrossClassAbilities } from "@shared/jobSystem";
+import { getTotalPassiveBonuses, getTotalMechanicUpgrades, getCrossClassAbilities, getUnlockedJobs } from "@shared/jobSystem";
 import { calculateCharacterStats } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 
@@ -742,7 +742,10 @@ export default function Lobby() {
                 jobLevelMap[jl.jobClass] = jl.level;
               });
               
-              return ALL_CHARACTER_CLASSES.map((classType) => {
+              // Get only unlocked jobs based on requirements
+              const unlockedJobs = getUnlockedJobs(jobLevelMap);
+              
+              return unlockedJobs.map((classType) => {
                 const level = jobLevelMap[classType] || 0;
                 const isCurrentClass = student.characterClass === classType;
                 
