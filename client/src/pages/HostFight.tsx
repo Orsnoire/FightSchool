@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
-import { Play, ArrowLeft, Skull, XCircle, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { Play, ArrowLeft, Skull, XCircle, Wifi, WifiOff, RefreshCw, Crown } from "lucide-react";
 import type { Fight, CombatState } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -166,36 +166,55 @@ export default function HostFight() {
               <CardContent>
                 {combatState && Object.keys(combatState.players).length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {Object.values(combatState.players).map((player) => (
-                      <Card key={player.studentId} className={player.isDead ? "opacity-50" : ""} data-testid={`player-${player.studentId}`}>
-                        <CardContent className="p-4 flex flex-col items-center gap-2">
-                          <div className="relative">
-                            <PlayerAvatar
-                              characterClass={player.characterClass}
-                              gender={player.gender}
-                              size="md"
-                            />
-                            {player.isDead && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <Skull className="h-8 w-8 text-damage" />
+                    {(() => {
+                      const players = Object.values(combatState.players);
+                      const maxThreat = Math.max(...players.map(p => p.threat || 0));
+                      const aggroLeader = players.find(p => p.threat === maxThreat && maxThreat > 0);
+                      
+                      return players.map((player) => {
+                        const isAggroLeader = aggroLeader && player.studentId === aggroLeader.studentId;
+                        
+                        return (
+                          <Card key={player.studentId} className={`${player.isDead ? "opacity-50" : ""} ${isAggroLeader ? "ring-2 ring-warrior ring-offset-2" : ""}`} data-testid={`player-${player.studentId}`}>
+                            <CardContent className="p-4 flex flex-col items-center gap-2">
+                              <div className="relative">
+                                <PlayerAvatar
+                                  characterClass={player.characterClass}
+                                  gender={player.gender}
+                                  size="md"
+                                />
+                                {player.isDead && (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <Skull className="h-8 w-8 text-damage" />
+                                  </div>
+                                )}
+                                {isAggroLeader && !player.isDead && (
+                                  <div className="absolute -top-1 -right-1 bg-warrior rounded-full p-1 shadow-lg" data-testid={`aggro-leader-${player.studentId}`}>
+                                    <Crown className="h-4 w-4 text-white" />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          <span className="text-sm font-semibold text-center" data-testid={`text-name-${player.studentId}`}>
-                            {player.nickname}
-                          </span>
-                          <HealthBar current={player.health} max={player.maxHealth} className="w-full" showText={false} />
-                          {player.hasAnswered && combatState.currentPhase === "question" && (
-                            <div className="text-xs text-health">✓ Answered</div>
-                          )}
-                          {player.characterClass === "scout" && (
-                            <div className="text-xs text-muted-foreground">
-                              Combo Points: {player.comboPoints || 0}/{player.maxComboPoints || 3}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+                              <span className="text-sm font-semibold text-center" data-testid={`text-name-${player.studentId}`}>
+                                {player.nickname}
+                                {isAggroLeader && <span className="ml-1 text-warrior">👑</span>}
+                              </span>
+                              <HealthBar current={player.health} max={player.maxHealth} className="w-full" showText={false} />
+                              {player.hasAnswered && combatState.currentPhase === "question" && (
+                                <div className="text-xs text-health">✓ Answered</div>
+                              )}
+                              {player.characterClass === "scout" && (
+                                <div className="text-xs text-muted-foreground">
+                                  Combo Points: {player.comboPoints || 0}/{player.maxComboPoints || 3}
+                                </div>
+                              )}
+                              <div className="text-xs text-muted-foreground">
+                                Threat: {player.threat || 0}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      });
+                    })()}
                   </div>
                 ) : (
                   <div className="text-center py-12">
