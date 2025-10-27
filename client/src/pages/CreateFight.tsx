@@ -105,7 +105,13 @@ function SortableEnemyItem({ enemy, index, onEdit, onDelete }: SortableEnemyItem
         <img src={enemy.image} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
         <div>
           <p className="font-medium">{enemy.name}</p>
-          <p className="text-sm text-muted-foreground">{enemy.maxHealth} HP</p>
+          <p className="text-sm text-muted-foreground">
+            Difficulty: {enemy.difficultyMultiplier}
+            {enemy.difficultyMultiplier <= 10 && " (Trash Pack)"}
+            {enemy.difficultyMultiplier > 10 && enemy.difficultyMultiplier <= 30 && " (Elite)"}
+            {enemy.difficultyMultiplier > 30 && enemy.difficultyMultiplier <= 60 && " (Boss)"}
+            {enemy.difficultyMultiplier > 60 && " (Epic Boss)"}
+          </p>
         </div>
       </div>
       <div className="flex gap-2">
@@ -150,7 +156,7 @@ export default function CreateFight() {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [currentEnemy, setCurrentEnemy] = useState<Partial<Enemy>>({
     image: dragonImg,
-    maxHealth: 50,
+    difficultyMultiplier: 10,
   });
   const [editingEnemyIndex, setEditingEnemyIndex] = useState<number | null>(null);
   const [uploadedEnemyImage, setUploadedEnemyImage] = useState<string | null>(null);
@@ -335,8 +341,8 @@ export default function CreateFight() {
   };
 
   const addEnemy = () => {
-    if (!currentEnemy.name || !currentEnemy.maxHealth) {
-      toast({ title: "Please fill in enemy name and health", variant: "destructive" });
+    if (!currentEnemy.name || !currentEnemy.difficultyMultiplier) {
+      toast({ title: "Please fill in enemy name and difficulty", variant: "destructive" });
       return;
     }
 
@@ -347,7 +353,7 @@ export default function CreateFight() {
         id: enemies[editingEnemyIndex].id,
         name: currentEnemy.name,
         image: currentEnemy.image || dragonImg,
-        maxHealth: currentEnemy.maxHealth,
+        difficultyMultiplier: currentEnemy.difficultyMultiplier,
       };
       setEnemies(updatedEnemies);
       form.setValue("enemies", updatedEnemies);
@@ -358,14 +364,14 @@ export default function CreateFight() {
         id: Date.now().toString(),
         name: currentEnemy.name,
         image: currentEnemy.image || dragonImg,
-        maxHealth: currentEnemy.maxHealth,
+        difficultyMultiplier: currentEnemy.difficultyMultiplier,
       };
       const updatedEnemies = [...enemies, newEnemy];
       setEnemies(updatedEnemies);
       form.setValue("enemies", updatedEnemies);
     }
     
-    setCurrentEnemy({ image: dragonImg, maxHealth: 50 });
+    setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10 });
     setUploadedEnemyImage(null);
   };
 
@@ -374,7 +380,7 @@ export default function CreateFight() {
     setCurrentEnemy({
       name: enemy.name,
       image: enemy.image,
-      maxHealth: enemy.maxHealth,
+      difficultyMultiplier: enemy.difficultyMultiplier,
     });
     setEditingEnemyIndex(index);
     // Check if this is an uploaded image (starts with http)
@@ -962,29 +968,38 @@ export default function CreateFight() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Max Health</label>
+                      <label className="text-sm font-medium">
+                        Difficulty: {currentEnemy.difficultyMultiplier || 10}
+                        {(currentEnemy.difficultyMultiplier || 10) <= 10 && " (Trash Pack)"}
+                        {(currentEnemy.difficultyMultiplier || 10) > 10 && (currentEnemy.difficultyMultiplier || 10) <= 30 && " (Elite)"}
+                        {(currentEnemy.difficultyMultiplier || 10) > 30 && (currentEnemy.difficultyMultiplier || 10) <= 60 && " (Boss)"}
+                        {(currentEnemy.difficultyMultiplier || 10) > 60 && " (Epic Boss)"}
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        HP scales with questions × player levels. Low values = quick fights, high values = epic battles.
+                      </p>
                       <div className="flex items-center gap-3">
                         <Slider
-                          value={[currentEnemy.maxHealth || 50]}
-                          onValueChange={([value]) => setCurrentEnemy({ ...currentEnemy, maxHealth: value })}
-                          min={10}
-                          max={500}
-                          step={10}
+                          value={[currentEnemy.difficultyMultiplier || 10]}
+                          onValueChange={([value]) => setCurrentEnemy({ ...currentEnemy, difficultyMultiplier: value })}
+                          min={1}
+                          max={100}
+                          step={1}
                           className="flex-1"
-                          data-testid="slider-enemy-health"
+                          data-testid="slider-enemy-difficulty"
                         />
                         <Input
                           type="number"
-                          value={currentEnemy.maxHealth || 50}
+                          value={currentEnemy.difficultyMultiplier || 10}
                           onChange={(e) => {
-                            const value = Math.max(10, Math.min(500, parseInt(e.target.value) || 10));
-                            setCurrentEnemy({ ...currentEnemy, maxHealth: value });
+                            const value = Math.max(1, Math.min(100, parseInt(e.target.value) || 10));
+                            setCurrentEnemy({ ...currentEnemy, difficultyMultiplier: value });
                           }}
-                          min={10}
-                          max={500}
-                          step={10}
+                          min={1}
+                          max={100}
+                          step={1}
                           className="w-24"
-                          data-testid="input-enemy-health"
+                          data-testid="input-enemy-difficulty"
                         />
                       </div>
                     </div>
@@ -999,7 +1014,7 @@ export default function CreateFight() {
                         variant="outline" 
                         onClick={() => {
                           setEditingEnemyIndex(null);
-                          setCurrentEnemy({ image: dragonImg, maxHealth: 50 });
+                          setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10 });
                           setUploadedEnemyImage(null);
                         }}
                         className="w-full"
