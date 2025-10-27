@@ -1137,9 +1137,19 @@ export class DatabaseStorage implements IStorage {
       return existing[0];
     }
 
+    // Get fight to copy soloModeEnabled setting
+    const [fight] = await db
+      .select()
+      .from(fights)
+      .where(eq(fights.id, fightId));
+
     const [assignment] = await db
       .insert(guildFights)
-      .values({ guildId, fightId })
+      .values({ 
+        guildId, 
+        fightId,
+        soloModeEnabled: fight?.soloModeEnabled || false
+      })
       .returning();
 
     return assignment;
