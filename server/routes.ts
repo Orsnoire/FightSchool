@@ -362,6 +362,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle solo mode for guild fight
+  app.patch("/api/guilds/:guildId/fights/:fightId/solo-mode", async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      if (typeof enabled !== "boolean") {
+        return res.status(400).json({ error: "enabled must be a boolean" });
+      }
+
+      const updated = await storage.toggleGuildFightSoloMode(req.params.guildId, req.params.fightId, enabled);
+      if (!updated) return res.status(404).json({ error: "Fight assignment not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Get guild fights
   app.get("/api/guilds/:guildId/fights", async (req, res) => {
     try {
