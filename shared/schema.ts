@@ -330,14 +330,14 @@ export interface Enemy {
   id: string;
   name: string;
   image: string;
-  maxHealth: number;
+  difficultyMultiplier: number; // 1-100: scales base HP (questions × totalPlayerLevels + 10)
 }
 
 export const enemySchema = z.object({
   id: z.string(),
   name: z.string().min(1),
   image: z.string(),
-  maxHealth: z.number().min(1).max(1000),
+  difficultyMultiplier: z.number().min(1).max(100).default(10),
 });
 
 // Fight schema (teacher creates)
