@@ -127,10 +127,10 @@ export default function TeacherDashboard() {
         )}
 
         <div className="mb-8">
-          <h2 className="text-4xl font-serif font-bold mb-2" data-testid="text-page-title">
+          <h2 className="text-4xl font-serif font-bold mb-2 text-white" data-testid="text-page-title">
             Your Battles
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-gray-300">
             Create epic quiz battles and launch them for your students
           </p>
         </div>
@@ -211,7 +211,7 @@ export default function TeacherDashboard() {
             ))}
           </div>
         ) : (
-          <Card className="border-dashed">
+          <Card className="border-dashed bg-card/90">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Swords className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold mb-2">No fights yet</h3>
