@@ -1240,7 +1240,7 @@ export default function Combat() {
       {/* Healer Target Selection Modal */}
       {combatState && playerState && studentId && (
         <HealingModal
-          open={isHealing && !playerState.isDead && HEALER_CLASSES.includes(playerState.characterClass)}
+          open={isHealing && !playerState.isDead && HEALER_CLASSES.includes(playerState.characterClass) && combatState.currentPhase === "combat"}
           players={combatState.players}
           currentPlayerId={studentId}
           currentHealTarget={healTarget}
