@@ -752,30 +752,9 @@ export default function Combat() {
           </div>
         </div>
 
-        {/* Center column: Main content with Combat Log */}
-        <div className="flex-1 flex flex-col relative">
-          {/* Combat Log - Fullscreen or bottom of screen */}
-          {combatLogFullscreen ? (
-            <div className="absolute inset-0 z-30 bg-background/95 backdrop-blur-sm">
-              <CombatLog 
-                events={combatLogEvents} 
-                isFullscreen={true}
-                onToggleFullscreen={() => setCombatLogFullscreen(false)}
-              />
-            </div>
-          ) : (
-            <div className="absolute bottom-0 left-0 right-0 h-1/3 z-20">
-              <CombatLog 
-                events={combatLogEvents} 
-                isFullscreen={false}
-                onToggleFullscreen={() => setCombatLogFullscreen(true)}
-              />
-            </div>
-          )}
-
-          {/* Main content area */}
-          <div className="flex-1 flex items-center justify-center" style={{ paddingBottom: combatLogFullscreen ? '0' : '33.33%' }}>
-            <div className="w-full max-w-4xl">
+        {/* Center column: Main content */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-4xl">
           {/* Solo Mode Host Controls - Waiting Phase */}
           {combatState.soloModeEnabled && combatState.soloModeHostId === studentId && combatState.currentPhase === "waiting" && (
             <Card className="p-8 border-primary/30">
@@ -1003,8 +982,7 @@ export default function Combat() {
 
             </div>
           </div>
-        </div>
-
+        
         {/* B4 FIX: Right column - 2-column grid, tiny avatars, no names */}
         <div className="flex-shrink-0 hidden lg:block overflow-y-auto" style={{ width: '10vw' }} data-testid="players-right-column">
           <div className="grid grid-cols-2 gap-1">
