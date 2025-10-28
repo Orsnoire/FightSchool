@@ -14,12 +14,13 @@ import { FloatingNumber } from "@/components/FloatingNumber";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles, Calculator, Swords } from "lucide-react";
+import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Swords, Calculator, Sparkles } from "lucide-react";
 import type { CombatState, Question, LootItem, CharacterClass, Gender } from "@shared/schema";
 import { TANK_CLASSES, HEALER_CLASSES } from "@shared/schema";
-import { getFireballMaxChargeRounds } from "@shared/jobSystem";
-import { ULTIMATE_ABILITIES, type AnimationType } from "@shared/ultimateAbilities";
+import { type AnimationType, ULTIMATE_ABILITIES } from "@shared/ultimateAbilities";
 import { UltimateAnimation } from "@/components/UltimateAnimation";
+import { AbilityBar } from "@/components/AbilityBar";
+import { ABILITY_DISPLAYS } from "@shared/abilityUI";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Combat() {
@@ -32,9 +33,8 @@ export default function Combat() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isHealing, setIsHealing] = useState(false);
   const [healTarget, setHealTarget] = useState<string>("");
-  const [isCreatingPotion, setIsCreatingPotion] = useState(false);
-  const [isChargingFireball, setIsChargingFireball] = useState(false);
   const [mathMode, setMathMode] = useState(false);
+  const [usedAbilityInPhase1, setUsedAbilityInPhase1] = useState<string | null>(null);
   const [showVictoryModal, setShowVictoryModal] = useState(false);
   const [victoryData, setVictoryData] = useState<{
     xpGained: number;
@@ -148,7 +148,7 @@ export default function Combat() {
         setTimeRemaining(message.question.timeLimit);
         setIsHealing(false);
         setHealTarget("");
-        setIsCreatingPotion(false);
+        setUsedAbilityInPhase1(null); // Reset ability usage
         if (message.shuffleOptions !== undefined) {
           setShuffleOptions(message.shuffleOptions);
         }
@@ -252,16 +252,12 @@ export default function Combat() {
     }
   }, [timeRemaining, combatState?.currentPhase]);
 
-  // Sync charging state from server
+  // Track ability usage and reset on phase changes
   useEffect(() => {
-    const studentId = localStorage.getItem("studentId");
-    if (combatState && studentId) {
-      const playerState = combatState.players[studentId];
-      if (playerState?.isChargingFireball !== undefined) {
-        setIsChargingFireball(playerState.isChargingFireball);
-      }
+    if (combatState?.currentPhase === "question") {
+      setUsedAbilityInPhase1(null); // Reset when entering question phase
     }
-  }, [combatState]);
+  }, [combatState?.currentPhase]);
 
   // B5 FIX: Auto-dismiss phase change modal after 3 seconds
   useEffect(() => {
@@ -528,16 +524,6 @@ export default function Combat() {
       const isCorrect = selectedAnswer.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
       setLastAnsweredCorrectly(isCorrect);
       
-      // If creating potion, send create_potion message first
-      if (isCreatingPotion) {
-        ws.send(JSON.stringify({ type: "create_potion" }));
-      }
-      
-      // If charging fireball, send charge_fireball message first
-      if (isChargingFireball) {
-        ws.send(JSON.stringify({ type: "charge_fireball" }));
-      }
-      
       ws.send(JSON.stringify({ 
         type: "answer", 
         answer: selectedAnswer,
@@ -568,6 +554,67 @@ export default function Combat() {
         duration: 2000,
       });
     }
+  };
+  
+  // Handle ability bar clicks
+  const handleAbilityClick = (abilityId: string) => {
+    const abilityConfig = ABILITY_DISPLAYS[abilityId];
+    if (!abilityConfig) {
+      console.warn("Unknown ability clicked:", abilityId);
+      return;
+    }
+    
+    // Check if it's an ultimate/cross-class ability (from ULTIMATE_ABILITIES)
+    const isUltimate = !!ULTIMATE_ABILITIES[abilityId];
+    
+    // Ultimate abilities can be used during combat/tank_blocking phases, not just question phase
+    if (isUltimate) {
+      if (combatState?.currentPhase === "waiting" || combatState?.currentPhase === "game_over") {
+        toast({
+          title: "Cannot use ability",
+          description: "Ultimate abilities cannot be used right now",
+          variant: "destructive",
+        });
+        return;
+      }
+      useUltimate(abilityId);
+      return;
+    }
+    
+    // Regular job abilities typically work in question phase
+    if (combatState?.currentPhase !== "question") {
+      toast({
+        title: "Cannot use ability",
+        description: "This ability can only be used during the question phase",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Track that ability was used in phase 1
+    setUsedAbilityInPhase1(abilityId);
+    
+    // Send appropriate message to server based on ability type
+    if (abilityConfig.opensHealingWindow) {
+      // Mark as healing - healing window will open in phase 2
+      setIsHealing(true);
+    } else if (abilityConfig.isToggle) {
+      // For toggleable abilities like fireball charging
+      if (ws && abilityId === "fireball") {
+        ws.send(JSON.stringify({ type: "charge_fireball" }));
+      }
+    } else if (abilityId === "craft_healing_potion" || abilityId === "craft_shield_potion") {
+      // Potion crafting abilities
+      if (ws) {
+        ws.send(JSON.stringify({ type: "create_potion" }));
+      }
+    }
+    
+    toast({
+      title: "Ability Activated",
+      description: `Using ${abilityConfig.name}`,
+      duration: 1500,
+    });
   };
 
   const removeFloatingNumber = (id: string) => {
@@ -891,65 +938,6 @@ export default function Combat() {
                     </div>
                   )}
 
-              {playerState?.characterClass === "herbalist" && (
-                <div className="mt-6 p-4 border border-health/30 rounded-md bg-health/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-health">Potions: {playerState.potionCount} / 5</span>
-                  </div>
-                  
-                  {playerState.potionCount > 0 && (
-                    <label className="flex items-center gap-2 mb-3">
-                      <input
-                        type="checkbox"
-                        checked={isHealing}
-                        onChange={(e) => setIsHealing(e.target.checked)}
-                        className="w-4 h-4"
-                        data-testid="checkbox-healing"
-                      />
-                      <span className="text-sm font-medium text-health">Use potion to heal (in Phase 2)</span>
-                    </label>
-                  )}
-                  
-                  {playerState.potionCount < 5 && (
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={isCreatingPotion}
-                        onChange={(e) => setIsCreatingPotion(e.target.checked)}
-                        className="w-4 h-4"
-                        data-testid="checkbox-create-potion"
-                      />
-                      <span className="text-sm font-medium text-health">Craft potion instead of dealing damage</span>
-                    </label>
-                  )}
-                </div>
-              )}
-
-              {playerState?.characterClass === "wizard" && playerState.fireballCooldown === 0 && (() => {
-                const wizardLevel = playerState.jobLevels?.wizard || 0;
-                const maxChargeRounds = getFireballMaxChargeRounds(wizardLevel);
-                return (
-                  <div className="mt-6 p-4 border border-wizard/30 rounded-md bg-wizard/10">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={isChargingFireball}
-                        onChange={(e) => setIsChargingFireball(e.target.checked)}
-                        className="w-4 h-4"
-                        data-testid="checkbox-charge-fireball"
-                      />
-                      <span className="text-sm font-medium text-wizard">
-                        Charge fireball (takes {maxChargeRounds} turns, deals 2x damage)
-                      </span>
-                    </label>
-                    {playerState.fireballChargeRounds > 0 && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Charging: {playerState.fireballChargeRounds} / {maxChargeRounds} turns
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
 
                 </ScrollArea>
               </div>
@@ -1130,59 +1118,17 @@ export default function Combat() {
         )}
       </AnimatePresence>
 
-      {/* ABILITY SECTION: Above footer, between side columns - Square ability buttons */}
+      {/* NEW ABILITY BAR: 7 slots for job abilities + cross-class */}
       {playerState && combatState.currentPhase !== "waiting" && combatState.currentPhase !== "game_over" && (
-        <div className="fixed bottom-0 left-0 right-0 z-40" style={{ paddingLeft: '10vw', paddingRight: '10vw', paddingBottom: '10vh' }}>
-          <div className="bg-card/90 backdrop-blur-sm border-t border-border p-2">
-            <div className="flex items-center gap-2 justify-center flex-wrap">
-              {/* Herbalist: Potion Creation */}
-              {playerState.characterClass === "herbalist" && (
-                <Button
-                  size="icon"
-                  variant={isCreatingPotion ? "default" : "outline"}
-                  onClick={() => setIsCreatingPotion(!isCreatingPotion)}
-                  disabled={playerState.isDead || playerState.potionCount >= 5}
-                  className="w-16 h-16"
-                  data-testid="button-toggle-potion"
-                  title={`Potions: ${playerState.potionCount} / 5${isCreatingPotion ? ' (Creating)' : ''}`}
-                >
-                  <div className="flex flex-col items-center justify-center">
-                    <Sparkles className="h-6 w-6 mb-1" />
-                    <span className="text-xs">{playerState.potionCount}/5</span>
-                  </div>
-                </Button>
-              )}
-              
-              {/* Wizard: Fireball Charge Status */}
-              {playerState.characterClass === "wizard" && (
-                <Button
-                  size="icon"
-                  variant={isChargingFireball ? "default" : "outline"}
-                  onClick={() => setIsChargingFireball(!isChargingFireball)}
-                  disabled={playerState.isDead || playerState.fireballCooldown > 0}
-                  className="w-16 h-16"
-                  data-testid="button-toggle-fireball"
-                  title={playerState.fireballCooldown > 0 ? `Cooldown: ${playerState.fireballCooldown}` : `Charge: ${playerState.fireballChargeRounds}`}
-                >
-                  <div className="flex flex-col items-center justify-center">
-                    <Calculator className="h-6 w-6 mb-1" />
-                    <span className="text-xs">
-                      {playerState.fireballCooldown > 0 ? `CD:${playerState.fireballCooldown}` : `${playerState.fireballChargeRounds}`}
-                    </span>
-                  </div>
-                </Button>
-              )}
-              
-              {/* Scout: Combo Points Display */}
-              {playerState.characterClass === "scout" && playerState.maxComboPoints > 0 && (
-                <div className="w-16 h-16 flex flex-col items-center justify-center border border-border rounded bg-card/50">
-                  <Swords className="h-6 w-6 mb-1" />
-                  <span className="text-xs font-semibold">{playerState.comboPoints}/{playerState.maxComboPoints}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        <AbilityBar
+          currentJob={playerState.characterClass}
+          currentJobLevel={playerState.jobLevels?.[playerState.characterClass] || 1}
+          crossClassAbility1={playerState.crossClassAbility1 || undefined}
+          crossClassAbility2={playerState.crossClassAbility2 || undefined}
+          onAbilityClick={handleAbilityClick}
+          isDead={playerState.isDead}
+          isWaitingPhase={false}
+        />
       )}
 
       {/* FIXED PLAYER FOOTER: Always visible at bottom of screen */}
@@ -1246,34 +1192,6 @@ export default function Combat() {
                       )}
                     </>
                   )}
-                  
-                  {/* Ultimate Ability Button - Only show equipped cross-class ability */}
-                  {playerState && playerState.crossClassAbility1 && (() => {
-                    const ultimate = ULTIMATE_ABILITIES[playerState.crossClassAbility1];
-                    if (!ultimate) return null;
-                    
-                    const lastUsed = playerState.lastUltimatesUsed?.[ultimate.id] || -999;
-                    const fightsAgo = (playerState.fightCount || 0) - lastUsed;
-                    const isOnCooldown = fightsAgo < ultimate.cooldown && lastUsed !== -999;
-                    const remainingCooldown = isOnCooldown ? ultimate.cooldown - fightsAgo : 0;
-                    
-                    return (
-                      <Button
-                        size="sm"
-                        variant={isOnCooldown ? "outline" : "default"}
-                        disabled={isOnCooldown || playerState.isDead || combatState.currentPhase === "waiting"}
-                        onClick={() => useUltimate(ultimate.id)}
-                        className="max-w-[120px] h-auto py-1 px-2"
-                        data-testid={`button-ultimate-${ultimate.id}`}
-                        title={`${ultimate.name}\n${ultimate.description}\n${isOnCooldown ? `Cooldown: ${remainingCooldown} fights` : 'Ready!'}`}
-                      >
-                        <Sparkles className="h-3 w-3 mr-1 flex-shrink-0" />
-                        <span className="text-xs leading-tight break-words">
-                          {isOnCooldown ? `${ultimate.name} (${remainingCooldown})` : ultimate.name}
-                        </span>
-                      </Button>
-                    );
-                  })()}
                 </div>
               </div>
               

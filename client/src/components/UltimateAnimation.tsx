@@ -24,7 +24,7 @@ export function UltimateAnimation({
 
   // Generate particles for animation
   useEffect(() => {
-    const particleCount = animationType === "wizard" ? 30 : 20;
+    const particleCount = (animationType === "fire" || animationType === "ice" || animationType === "holy") ? 30 : 20;
     const newParticles = Array.from({ length: particleCount }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
@@ -45,37 +45,70 @@ export function UltimateAnimation({
   // Get animation-specific colors and effects
   const getAnimationConfig = () => {
     switch (animationType) {
-      case "warrior":
+      case "fire":
         return {
           primaryColor: "#ef4444", // red
           secondaryColor: "#f97316", // orange
           glowColor: "rgba(239, 68, 68, 0.5)",
           particleColor: "#fbbf24", // yellow
-          effect: "slash",
+          effect: "fire-burst",
         };
-      case "wizard":
+      case "ice":
+        return {
+          primaryColor: "#06b6d4", // cyan
+          secondaryColor: "#3b82f6", // blue
+          glowColor: "rgba(6, 182, 212, 0.5)",
+          particleColor: "#67e8f9", // light cyan
+          effect: "ice-shards",
+        };
+      case "holy":
+        return {
+          primaryColor: "#fbbf24", // gold
+          secondaryColor: "#fef3c7", // light yellow
+          glowColor: "rgba(251, 191, 36, 0.5)",
+          particleColor: "#fde68a", // pale gold
+          effect: "holy-light",
+        };
+      case "dark":
+        return {
+          primaryColor: "#7c3aed", // violet
+          secondaryColor: "#581c87", // dark purple
+          glowColor: "rgba(124, 58, 237, 0.5)",
+          particleColor: "#a78bfa", // light purple
+          effect: "dark-energy",
+        };
+      case "nature":
+        return {
+          primaryColor: "#84cc16", // lime
+          secondaryColor: "#22c55e", // green
+          glowColor: "rgba(132, 204, 22, 0.5)",
+          particleColor: "#d9f99d", // light lime
+          effect: "nature-bloom",
+        };
+      case "lightning":
+        return {
+          primaryColor: "#eab308", // yellow
+          secondaryColor: "#fef08a", // light yellow
+          glowColor: "rgba(234, 179, 8, 0.5)",
+          particleColor: "#fef9c3", // pale yellow
+          effect: "lightning-strike",
+        };
+      case "spirit":
+        return {
+          primaryColor: "#ec4899", // pink
+          secondaryColor: "#f0abfc", // light purple
+          glowColor: "rgba(236, 72, 153, 0.5)",
+          particleColor: "#fbcfe8", // light pink
+          effect: "spirit-aura",
+        };
+      default:
+        // Fallback for any missing types
         return {
           primaryColor: "#8b5cf6", // purple
           secondaryColor: "#3b82f6", // blue
           glowColor: "rgba(139, 92, 246, 0.5)",
           particleColor: "#a78bfa", // light purple
-          effect: "magic-circle",
-        };
-      case "scout":
-        return {
-          primaryColor: "#10b981", // green
-          secondaryColor: "#fbbf24", // yellow
-          glowColor: "rgba(16, 185, 129, 0.5)",
-          particleColor: "#34d399", // light green
-          effect: "speed-lines",
-        };
-      case "herbalist":
-        return {
-          primaryColor: "#84cc16", // lime
-          secondaryColor: "#fbbf24", // gold
-          glowColor: "rgba(132, 204, 22, 0.5)",
-          particleColor: "#d9f99d", // light lime
-          effect: "nature-aura",
+          effect: "energy",
         };
     }
   };
@@ -256,8 +289,8 @@ export function UltimateAnimation({
         </motion.div>
       </motion.div>
 
-      {/* Screen shake effect for warrior types */}
-      {animationType === "warrior" && (
+      {/* Screen shake effect for physical/lightning types */}
+      {(animationType === "lightning" || animationType === "dark") && (
         <motion.div
           className="absolute inset-0 pointer-events-none"
           animate={{
