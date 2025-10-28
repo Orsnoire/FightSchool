@@ -93,13 +93,13 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "raining_blood": { id: "raining_blood", icon: "CloudRain", name: "Raining Blood" },
   
   // CROSS-CLASS UNLOCK ABILITIES (Level 8)
-  "block_crossclass": { id: "block_crossclass", icon: "Shield", name: "Block" },
-  "fireball_crossclass": { id: "fireball_crossclass", icon: "Flame", name: "Fireball" },
+  "block_crossclass": { id: "block_crossclass", icon: "Shield", name: "Block", requiresTarget: true },
+  "fireball_crossclass": { id: "fireball_crossclass", icon: "Flame", name: "Fireball", isToggle: true },
   "headshot_crossclass": { id: "headshot_crossclass", icon: "Target", name: "Headshot" },
-  "healing_potion_crossclass": { id: "healing_potion_crossclass", icon: "Beaker", name: "Healing Potion" },
-  "hex_crossclass": { id: "hex_crossclass", icon: "Skull", name: "Hex" },
-  "mend_crossclass": { id: "mend_crossclass", icon: "Plus", name: "Mend" },
-  "healing_guard_ally_crossclass": { id: "healing_guard_ally_crossclass", icon: "ShieldCheck", name: "Healing Guard" },
+  "healing_potion_crossclass": { id: "healing_potion_crossclass", icon: "Beaker", name: "Healing Potion", opensHealingWindow: true },
+  "hex_crossclass": { id: "hex_crossclass", icon: "Skull", name: "Hex", requiresTarget: true },
+  "mend_crossclass": { id: "mend_crossclass", icon: "Plus", name: "Mend", opensHealingWindow: true },
+  "healing_guard_ally_crossclass": { id: "healing_guard_ally_crossclass", icon: "ShieldCheck", name: "Healing Guard", requiresTarget: true, opensHealingWindow: true },
   "ruin_strike_crossclass": { id: "ruin_strike_crossclass", icon: "Zap", name: "Ruin Strike" },
   "crimson_slash_crossclass": { id: "crimson_slash_crossclass", icon: "Swords", name: "Crimson Slash" },
 };
