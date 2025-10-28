@@ -28,6 +28,7 @@ export default function HostFight() {
   // B6/B7 FIX: Connection status tracking for host
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
   const [combatLogEvents, setCombatLogEvents] = useState<CombatLogEvent[]>([]);
+  const [combatLogFullscreen, setCombatLogFullscreen] = useState(false);
 
   // B6/B7 FIX: Manual reconnect function for host
   const connectWebSocket = () => {
@@ -284,9 +285,23 @@ export default function HostFight() {
           </div>
         </div>
         
-        {/* Combat Log - Bottom 1/3 of screen */}
-        <div className="flex-1 min-h-0">
-          <CombatLog events={combatLogEvents} />
+        {/* Combat Log - Bottom 1/3 of screen with fullscreen toggle */}
+        <div className="flex-1 min-h-0 relative">
+          {combatLogFullscreen ? (
+            <div className="absolute inset-0 z-30 bg-background">
+              <CombatLog 
+                events={combatLogEvents} 
+                isFullscreen={true}
+                onToggleFullscreen={() => setCombatLogFullscreen(false)}
+              />
+            </div>
+          ) : (
+            <CombatLog 
+              events={combatLogEvents} 
+              isFullscreen={false}
+              onToggleFullscreen={() => setCombatLogFullscreen(true)}
+            />
+          )}
         </div>
       </main>
     </div>

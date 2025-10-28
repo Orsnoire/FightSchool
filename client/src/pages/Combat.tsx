@@ -13,7 +13,6 @@ import { HealingModal } from "@/components/HealingModal";
 import { FloatingNumber } from "@/components/FloatingNumber";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
-import { CombatLog, type CombatLogEvent } from "@/components/CombatLog";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles, Calculator, Swords } from "lucide-react";
 import type { CombatState, Question, LootItem, CharacterClass, Gender } from "@shared/schema";
@@ -88,10 +87,6 @@ export default function Combat() {
     currentClass: CharacterClass;
     currentGender: Gender;
   } | null>(null);
-  // Combat log fullscreen state
-  const [combatLogFullscreen, setCombatLogFullscreen] = useState(false);
-  // Combat log events
-  const [combatLogEvents, setCombatLogEvents] = useState<CombatLogEvent[]>([]);
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
@@ -199,8 +194,8 @@ export default function Combat() {
           setShowUltimateAnimation(false);
         }, 4000);
       } else if (message.type === "combat_log") {
-        // Combat log event received
-        setCombatLogEvents(prev => [...prev, message.event]);
+        // Silently consume combat log events (displayed on host view only)
+        // Students don't display the log but still receive events to keep WebSocket healthy
       }
     };
 
@@ -1135,20 +1130,54 @@ export default function Combat() {
         )}
       </AnimatePresence>
 
-      {/* ABILITY SECTION: Above footer, between side columns */}
-      {playerState && (
+      {/* ABILITY SECTION: Above footer, between side columns - Square ability buttons */}
+      {playerState && combatState.currentPhase !== "waiting" && combatState.currentPhase !== "game_over" && (
         <div className="fixed bottom-0 left-0 right-0 z-40" style={{ paddingLeft: '10vw', paddingRight: '10vw', paddingBottom: '10vh' }}>
           <div className="bg-card/90 backdrop-blur-sm border-t border-border p-2">
             <div className="flex items-center gap-2 justify-center flex-wrap">
-              {/* Placeholder for additional abilities that aren't in the footer */}
+              {/* Herbalist: Potion Creation */}
               {playerState.characterClass === "herbalist" && (
-                <div className="flex items-center gap-2 text-sm text-health">
-                  <span>Potions: {playerState.potionCount} / 5</span>
-                </div>
+                <Button
+                  size="icon"
+                  variant={isCreatingPotion ? "default" : "outline"}
+                  onClick={() => setIsCreatingPotion(!isCreatingPotion)}
+                  disabled={playerState.isDead || playerState.potionCount >= 5}
+                  className="w-16 h-16"
+                  data-testid="button-toggle-potion"
+                  title={`Potions: ${playerState.potionCount} / 5${isCreatingPotion ? ' (Creating)' : ''}`}
+                >
+                  <div className="flex flex-col items-center justify-center">
+                    <Sparkles className="h-6 w-6 mb-1" />
+                    <span className="text-xs">{playerState.potionCount}/5</span>
+                  </div>
+                </Button>
               )}
-              {playerState.characterClass === "wizard" && playerState.fireballCooldown > 0 && (
-                <div className="flex items-center gap-2 text-sm text-wizard">
-                  <span>Fireball Cooldown: {playerState.fireballCooldown}</span>
+              
+              {/* Wizard: Fireball Charge Status */}
+              {playerState.characterClass === "wizard" && (
+                <Button
+                  size="icon"
+                  variant={isChargingFireball ? "default" : "outline"}
+                  onClick={() => setIsChargingFireball(!isChargingFireball)}
+                  disabled={playerState.isDead || playerState.fireballCooldown > 0}
+                  className="w-16 h-16"
+                  data-testid="button-toggle-fireball"
+                  title={playerState.fireballCooldown > 0 ? `Cooldown: ${playerState.fireballCooldown}` : `Charge: ${playerState.fireballChargeRounds}`}
+                >
+                  <div className="flex flex-col items-center justify-center">
+                    <Calculator className="h-6 w-6 mb-1" />
+                    <span className="text-xs">
+                      {playerState.fireballCooldown > 0 ? `CD:${playerState.fireballCooldown}` : `${playerState.fireballChargeRounds}`}
+                    </span>
+                  </div>
+                </Button>
+              )}
+              
+              {/* Scout: Combo Points Display */}
+              {playerState.characterClass === "scout" && playerState.maxComboPoints > 0 && (
+                <div className="w-16 h-16 flex flex-col items-center justify-center border border-border rounded bg-card/50">
+                  <Swords className="h-6 w-6 mb-1" />
+                  <span className="text-xs font-semibold">{playerState.comboPoints}/{playerState.maxComboPoints}</span>
                 </div>
               )}
             </div>
