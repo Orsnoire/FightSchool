@@ -2097,6 +2097,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
+          // CRITICAL FIX: Close any existing connections for this student in this session
+          // This prevents connection explosion on reconnects/refreshes
+          let closedOldConnections = 0;
+          wss.clients.forEach((client) => {
+            const existingWs = client as ExtendedWebSocket;
+            // Close if same student+session but different WebSocket object
+            if (existingWs !== ws && 
+                existingWs.studentId === student.id && 
+                existingWs.sessionId === sessionId &&
+                (existingWs.readyState === WebSocket.OPEN || existingWs.readyState === WebSocket.CONNECTING)) {
+              existingWs.close(1000, "Student reconnected");
+              closedOldConnections++;
+            }
+          });
+          if (closedOldConnections > 0) {
+            log(`[WebSocket] Closed ${closedOldConnections} old connection(s) for student ${student.nickname} in session ${sessionId}`, "websocket");
+          }
+
           // Set both sessionId (primary) and fightId (cached) on the WebSocket
           ws.studentId = student.id;
           ws.sessionId = sessionId;
