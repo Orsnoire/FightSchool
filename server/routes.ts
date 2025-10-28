@@ -890,8 +890,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     wss.clients.forEach((client) => {
       const ws = client as ExtendedWebSocket;
-      // Only send to hosts in this session
-      if (ws.readyState === WebSocket.OPEN && ws.sessionId === sessionId && ws.isHost) {
+      // Send to all players in this session (not just hosts)
+      if (ws.readyState === WebSocket.OPEN && ws.sessionId === sessionId) {
         ws.send(JSON.stringify(event));
       }
     });
@@ -1005,9 +1005,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Base HP formula: (# of questions) × (total player levels earned) + 10
+      // Base HP formula: (# of questions) × (total player levels earned) × 0.5 + 10
       const questionCount = fight.questions.length;
-      const baseHP = (questionCount * totalPlayerLevels) + 10;
+      const baseHP = (questionCount * totalPlayerLevels * 0.5) + 10;
       
       // Apply difficulty multiplier to each enemy and set their HP
       session.enemies = session.enemies.map(enemy => {
@@ -1105,8 +1105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (player.isHealing && player.healTarget && player.characterClass === "herbalist" && player.potionCount > 0) {
         const target = session.players[player.healTarget];
         if (target && !target.isDead) {
-          const herbalistLevel = player.jobLevels.herbalist || 1;
-          const healAmount = getHealingPower(herbalistLevel);
+          // Heal for MND/2 (rounded up)
+          const healAmount = Math.ceil(player.mnd / 2);
           const actualHeal = Math.min(healAmount, target.maxHealth - target.health);
           // Update target health in memory
           target.health = Math.min(target.health + healAmount, target.maxHealth);

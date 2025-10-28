@@ -13,6 +13,7 @@ import { HealingModal } from "@/components/HealingModal";
 import { FloatingNumber } from "@/components/FloatingNumber";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
+import { CombatLog, type CombatLogEvent } from "@/components/CombatLog";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Sparkles, Calculator, Swords } from "lucide-react";
 import type { CombatState, Question, LootItem, CharacterClass, Gender } from "@shared/schema";
@@ -87,6 +88,10 @@ export default function Combat() {
     currentClass: CharacterClass;
     currentGender: Gender;
   } | null>(null);
+  // Combat log fullscreen state
+  const [combatLogFullscreen, setCombatLogFullscreen] = useState(false);
+  // Combat log events
+  const [combatLogEvents, setCombatLogEvents] = useState<CombatLogEvent[]>([]);
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
@@ -193,6 +198,9 @@ export default function Combat() {
         setTimeout(() => {
           setShowUltimateAnimation(false);
         }, 4000);
+      } else if (message.type === "combat_log") {
+        // Combat log event received
+        setCombatLogEvents(prev => [...prev, message.event]);
       }
     };
 
@@ -744,9 +752,30 @@ export default function Combat() {
           </div>
         </div>
 
-        {/* Center column: Main content */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-4xl">
+        {/* Center column: Main content with Combat Log */}
+        <div className="flex-1 flex flex-col relative">
+          {/* Combat Log - Fullscreen or bottom of screen */}
+          {combatLogFullscreen ? (
+            <div className="absolute inset-0 z-30 bg-background/95 backdrop-blur-sm">
+              <CombatLog 
+                events={combatLogEvents} 
+                isFullscreen={true}
+                onToggleFullscreen={() => setCombatLogFullscreen(false)}
+              />
+            </div>
+          ) : (
+            <div className="absolute bottom-0 left-0 right-0 h-1/3 z-20">
+              <CombatLog 
+                events={combatLogEvents} 
+                isFullscreen={false}
+                onToggleFullscreen={() => setCombatLogFullscreen(true)}
+              />
+            </div>
+          )}
+
+          {/* Main content area */}
+          <div className="flex-1 flex items-center justify-center" style={{ paddingBottom: combatLogFullscreen ? '0' : '33.33%' }}>
+            <div className="w-full max-w-4xl">
           {/* Solo Mode Host Controls - Waiting Phase */}
           {combatState.soloModeEnabled && combatState.soloModeHostId === studentId && combatState.currentPhase === "waiting" && (
             <Card className="p-8 border-primary/30">
@@ -803,7 +832,8 @@ export default function Combat() {
           {/* B5 FIX: Only show question modal when phase change modal is not visible */}
           {!showPhaseChangeModal && combatState.currentPhase === "question" && currentQuestion && (
             <Card className="p-8 border-primary/30 max-h-[80vh] flex flex-col">
-              <div className="mb-6 flex-shrink-0">
+              {/* Top half: Question prompt */}
+              <div className="flex-1 flex flex-col mb-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold">Question</h3>
                   <div className="flex items-center gap-2 text-warning">
@@ -811,77 +841,81 @@ export default function Combat() {
                     <span className="text-xl font-bold" data-testid="text-timer">{timeRemaining}s</span>
                   </div>
                 </div>
-                <RichContentRenderer html={currentQuestion.question} className="text-lg" />
+                <ScrollArea className="flex-1">
+                  <RichContentRenderer html={currentQuestion.question} className="text-lg" />
+                </ScrollArea>
               </div>
-              <ScrollArea className="flex-1 pr-4">{/* B8 FIX: Scroll area for question content */}
 
-              {currentQuestion.type === "multiple_choice" && displayOptions && (
-                <div className="space-y-3">
-                  {displayOptions.map((option, i) => (
-                    <Button
-                      key={i}
-                      variant={selectedAnswer === option ? "default" : "outline"}
-                      className="w-full justify-start text-left h-auto py-4"
-                      onClick={() => setSelectedAnswer(option)}
-                      data-testid={`button-option-${i}`}
-                    >
-                      <span className="font-semibold mr-3 flex-shrink-0">{String.fromCharCode(65 + i)}.</span>
-                      <RichContentRenderer html={option} className="flex-1" />
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              {currentQuestion.type === "true_false" && displayOptions && (
-                <div className="grid grid-cols-2 gap-4">
-                  {displayOptions.map((option, i) => (
-                    <Button
-                      key={i}
-                      variant={selectedAnswer === option ? "default" : "outline"}
-                      className="h-20"
-                      onClick={() => setSelectedAnswer(option)}
-                      data-testid={i === 0 ? "button-true" : "button-false"}
-                    >
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              {currentQuestion.type === "short_answer" && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Your Answer</label>
-                    <Button
-                      type="button"
-                      variant={mathMode ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setMathMode(!mathMode)}
-                      data-testid="button-toggle-math-mode"
-                      className="gap-2"
-                    >
-                      <Calculator className="h-4 w-4" />
-                      {mathMode ? "Math Mode ON" : "Math Mode OFF"}
-                    </Button>
-                  </div>
-                  {mathMode ? (
-                    <MathEditor
-                      value={selectedAnswer}
-                      onChange={(latex) => setSelectedAnswer(latex)}
-                      placeholder="Enter math expression..."
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={selectedAnswer}
-                      onChange={(e) => setSelectedAnswer(e.target.value)}
-                      className="w-full p-4 border border-border rounded-md bg-background"
-                      placeholder="Type your answer..."
-                      data-testid="input-answer"
-                    />
+              {/* Bottom half: Answer options */}
+              <div className="flex-1 flex flex-col">
+                <ScrollArea className="flex-1 pr-4">
+                  {currentQuestion.type === "multiple_choice" && displayOptions && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {displayOptions.map((option, i) => (
+                        <Button
+                          key={i}
+                          variant={selectedAnswer === option ? "default" : "outline"}
+                          className="w-full justify-start text-left h-auto py-4"
+                          onClick={() => setSelectedAnswer(option)}
+                          data-testid={`button-option-${i}`}
+                        >
+                          <span className="font-semibold mr-3 flex-shrink-0">{String.fromCharCode(65 + i)}.</span>
+                          <RichContentRenderer html={option} className="flex-1" />
+                        </Button>
+                      ))}
+                    </div>
                   )}
-                </div>
-              )}
+
+                  {currentQuestion.type === "true_false" && displayOptions && (
+                    <div className="grid grid-cols-2 gap-4">
+                      {displayOptions.map((option, i) => (
+                        <Button
+                          key={i}
+                          variant={selectedAnswer === option ? "default" : "outline"}
+                          className="h-20"
+                          onClick={() => setSelectedAnswer(option)}
+                          data-testid={i === 0 ? "button-true" : "button-false"}
+                        >
+                          {option.charAt(0).toUpperCase() + option.slice(1)}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+
+                  {currentQuestion.type === "short_answer" && (
+                    <div className="space-y-3 flex flex-col items-center">
+                      <div className="flex items-center justify-between w-full max-w-md">
+                        <label className="text-sm font-medium">Your Answer</label>
+                        <Button
+                          type="button"
+                          variant={mathMode ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setMathMode(!mathMode)}
+                          data-testid="button-toggle-math-mode"
+                          className="gap-2"
+                        >
+                          <Calculator className="h-4 w-4" />
+                          {mathMode ? "Math Mode ON" : "Math Mode OFF"}
+                        </Button>
+                      </div>
+                      {mathMode ? (
+                        <MathEditor
+                          value={selectedAnswer}
+                          onChange={(latex) => setSelectedAnswer(latex)}
+                          placeholder="Enter math expression..."
+                        />
+                      ) : (
+                        <input
+                          type="text"
+                          value={selectedAnswer}
+                          onChange={(e) => setSelectedAnswer(e.target.value)}
+                          className="w-full max-w-md p-4 border border-border rounded-md bg-background"
+                          placeholder="Type your answer..."
+                          data-testid="input-answer"
+                        />
+                      )}
+                    </div>
+                  )}
 
               {playerState?.characterClass === "herbalist" && (
                 <div className="mt-6 p-4 border border-health/30 rounded-md bg-health/10">
@@ -943,7 +977,9 @@ export default function Combat() {
                 );
               })()}
 
-              </ScrollArea>
+                </ScrollArea>
+              </div>
+
               <Button
                 size="lg"
                 className="w-full mt-6 flex-shrink-0"
@@ -965,6 +1001,7 @@ export default function Combat() {
             </Card>
           )}
 
+            </div>
           </div>
         </div>
 
@@ -1119,6 +1156,27 @@ export default function Combat() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ABILITY SECTION: Above footer, between side columns */}
+      {playerState && (
+        <div className="fixed bottom-0 left-0 right-0 z-40" style={{ paddingLeft: '10vw', paddingRight: '10vw', paddingBottom: '10vh' }}>
+          <div className="bg-card/90 backdrop-blur-sm border-t border-border p-2">
+            <div className="flex items-center gap-2 justify-center flex-wrap">
+              {/* Placeholder for additional abilities that aren't in the footer */}
+              {playerState.characterClass === "herbalist" && (
+                <div className="flex items-center gap-2 text-sm text-health">
+                  <span>Potions: {playerState.potionCount} / 5</span>
+                </div>
+              )}
+              {playerState.characterClass === "wizard" && playerState.fireballCooldown > 0 && (
+                <div className="flex items-center gap-2 text-sm text-wizard">
+                  <span>Fireball Cooldown: {playerState.fireballCooldown}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FIXED PLAYER FOOTER: Always visible at bottom of screen */}
       {playerState && (

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Zap, Heart, Shield, Skull, Sparkles, Swords } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Zap, Heart, Shield, Skull, Sparkles, Swords, Maximize2, Minimize2 } from "lucide-react";
 
 export interface CombatLogEvent {
   id: string;
@@ -15,9 +16,11 @@ export interface CombatLogEvent {
 
 interface CombatLogProps {
   events: CombatLogEvent[];
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
-export function CombatLog({ events }: CombatLogProps) {
+export function CombatLog({ events, isFullscreen = false, onToggleFullscreen }: CombatLogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -78,7 +81,29 @@ export function CombatLog({ events }: CombatLogProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="flex-shrink-0 pb-3">
-        <CardTitle className="text-lg">Combat Log</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-lg">Combat Log</CardTitle>
+          {onToggleFullscreen && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onToggleFullscreen}
+              data-testid="button-toggle-fullscreen"
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="h-4 w-4 mr-1" />
+                  Exit Fullscreen
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="h-4 w-4 mr-1" />
+                  Fullscreen
+                </>
+              )}
+            </Button>
+          )}
+        </div>
         <div className="relative mt-2">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
