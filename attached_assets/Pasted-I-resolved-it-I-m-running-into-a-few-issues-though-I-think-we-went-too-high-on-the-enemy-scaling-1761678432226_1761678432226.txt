@@ -1,0 +1,13 @@
+I resolved it. 
+
+I'm running into a few issues though. I think we went too high on the enemy scaling. Let's add a 1/2 coefficient to the scaling factor (still add a constant 10). I may want to change it further later.
+
+Also: solo mode isn't showing as available. Please check that students who are registered to a guild have access to any fight that is toggled as solo mode "on" in that guild's fight management/assignment ui. Verify that the toggle in the "on" position in the management UI corresponds to an "on" position in the database. Verify that students who are joined into the guild and have that guild code have permissions to create sessions for those solo fights (and/or join sessions in progress) without a session code (the session code should be generated in the background).
+
+I'm still being told that healing isn't adding health despite clicking on them. Please investigate the Herbalist healing formula (It should heal for the herbalist's current MND amount of HP divided by 2 (rounded up)). 
+
+I think also that ability buttons are missing, but I think that's a larger UI issue. I'm thinking the best way to deal with abilities is to carve out a portion of the UI just above the HP bars & avatar etc. To accommodate this, maybe slightly shrink the question pane. To avoid readability problems, let's organize the question pane differently, where the top half is the prompt and the bottom half is the answer possibilities (2 rows, 2 columns of buttons for MC, entry bar for SA, and 2 buttons for t/f). Make the buttons with the MC questions contain the answer for that button. Use vector text scaling so that it fits (i.e. have every question occupy the same screen real estate). Abilities, let's have those be the same size as the avatar/HP bar, in squares, and line up each along the bottom of the screen. Create placeholder icons for the abilities, and use the color scheme of blue for tank abilities, purple for magic abilities, orange for ranged abilities, red for melee attacks, and green for healing abilities. For the button, have the color a darker gradient for available, a very light gradient for on cooldown/unavailable, and a light gradient with a dark outline for "pressed" (i.e. will activate this round).
+
+Finally, I noticed that the combat log IS showing up, but I'd like it to be bigger. Please give a "full screen" option taht fills the whole host pane other than the buttons at the top and the information pane on the right.
+
+Please clarify with any questions so I can specify the UI changes.
