@@ -28,6 +28,11 @@ Preferred communication style: Simple, everyday language.
 ### Game Mechanics Architecture
 - **Character Classes**: Four base classes (Warrior, Wizard, Scout, Herbalist) with unique stats and abilities. Advanced classes (e.g., Knight, Paladin) are unlockable through a job system.
 - **Combat System**: Turn-based question phases where correct answers deal damage and incorrect answers result in player damage. Features include enemy AI, warrior blocking, herbalist healing, and a customizable equipment system.
+  - **Block & Healing Phase**: After each question, a 10-second phase allows tanks to select block targets and healers to choose heal targets. The phase has three end conditions: (1) 10-second timer expiry, (2) 5 seconds of inactivity, or (3) all selections complete. Uses modal-based UI with intelligent filtering/sorting:
+    - **BlockingModal** (for tanks): Filters to threat leader OR missing HP, sorts by threat descending then HP ascending
+    - **HealingModal** (for healers): Filters to missing HP only, sorts by most missing HP descending
+    - Real-time countdown timer broadcast via WebSocket (`phase_timer` message type)
+    - Race-condition-free implementation using `phaseEnded` and `isCheckingSelections` guards
 - **Question Types**: Supports multiple choice, true/false, and short answer questions with configurable time limits and randomization.
 - **Guild System**: Teachers create and manage guilds for organizing students and fights. Students can join multiple guilds, view leaderboards, and earn XP.
 - **Solo Mode**: Students can practice fights alone or with friends. Host controls allow enabling AI for absent players and blocking new joiners mid-session.
