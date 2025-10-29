@@ -160,6 +160,7 @@ export default function CreateFight() {
   });
   const [editingEnemyIndex, setEditingEnemyIndex] = useState<number | null>(null);
   const [uploadedEnemyImage, setUploadedEnemyImage] = useState<string | null>(null);
+  const [isUploadingCSV, setIsUploadingCSV] = useState(false);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const enemyImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -433,6 +434,8 @@ export default function CreateFight() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setIsUploadingCSV(true);
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -491,6 +494,7 @@ export default function CreateFight() {
           }
           
           if (parsedQuestions.length === 0) {
+            setIsUploadingCSV(false);
             toast({ 
               title: "No valid questions found", 
               description: "Please check your CSV format",
@@ -499,19 +503,34 @@ export default function CreateFight() {
             return;
           }
           
-          const updatedQuestions = [...questions, ...parsedQuestions];
-          setQuestions(updatedQuestions);
-          form.setValue("questions", updatedQuestions);
-          
-          toast({ 
-            title: `Successfully imported ${parsedQuestions.length} questions`,
-            variant: "default"
-          });
-          
-          if (csvInputRef.current) {
-            csvInputRef.current.value = "";
-          }
+          // Use setTimeout to allow the browser to process the parsed questions
+          // This prevents blocking the main thread with large CSV files
+          setTimeout(() => {
+            try {
+              const updatedQuestions = [...questions, ...parsedQuestions];
+              setQuestions(updatedQuestions);
+              form.setValue("questions", updatedQuestions);
+              
+              setIsUploadingCSV(false);
+              toast({ 
+                title: `Successfully imported ${parsedQuestions.length} questions`,
+                variant: "default"
+              });
+              
+              if (csvInputRef.current) {
+                csvInputRef.current.value = "";
+              }
+            } catch (error) {
+              setIsUploadingCSV(false);
+              toast({ 
+                title: "Failed to add questions", 
+                description: error instanceof Error ? error.message : "Unknown error",
+                variant: "destructive" 
+              });
+            }
+          }, 0);
         } catch (error) {
+          setIsUploadingCSV(false);
           toast({ 
             title: "Failed to parse CSV", 
             description: error instanceof Error ? error.message : "Unknown error",
@@ -520,6 +539,7 @@ export default function CreateFight() {
         }
       },
       error: (error) => {
+        setIsUploadingCSV(false);
         toast({ 
           title: "Failed to read CSV file", 
           description: error.message,
@@ -714,10 +734,11 @@ export default function CreateFight() {
                           variant="outline"
                           size="sm"
                           onClick={() => csvInputRef.current?.click()}
+                          disabled={isUploadingCSV}
                           data-testid="button-upload-csv"
                         >
                           <Upload className="mr-2 h-4 w-4" />
-                          Import CSV
+                          {isUploadingCSV ? "Importing..." : "Import CSV"}
                         </Button>
                       </div>
                     </div>
