@@ -28,12 +28,12 @@ export function useTeacherAuth() {
           description: "Please log in again",
           variant: "destructive",
         });
-        navigate("/teacher");
+        navigate("/");
       }
     } catch (error) {
       console.error("Session check failed:", error);
       setIsAuthenticated(false);
-      navigate("/teacher");
+      navigate("/");
     } finally {
       setIsChecking(false);
     }
