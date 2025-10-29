@@ -1,54 +1,76 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { Check, X, Shield, Heart, Swords, Flame } from "lucide-react";
+import type { ResolutionFeedback } from "@shared/schema";
 
 interface CombatFeedbackModalProps {
   open: boolean;
-  type: "correct" | "incorrect" | "blocked" | "healed" | "ability_damage" | "you_blocked" | "you_healed";
-  message: string;
+  feedback: ResolutionFeedback;
   shake?: boolean;
 }
 
 export function CombatFeedbackModal({ 
   open, 
-  type,
-  message,
+  feedback,
   shake = false
 }: CombatFeedbackModalProps) {
   const getIcon = () => {
-    switch (type) {
-      case "correct":
+    switch (feedback.type) {
+      case "correct_damage":
         return <Check className="w-16 h-16 text-primary" />;
-      case "incorrect":
+      case "incorrect_damage":
         return <X className="w-16 h-16 text-destructive" />;
-      case "blocked":
-      case "you_blocked":
-        return <Shield className="w-16 h-16 text-warrior" />;
-      case "healed":
-      case "you_healed":
-        return <Heart className="w-16 h-16 text-health" />;
-      case "ability_damage":
+      case "correct_ability":
+      case "ability_damage_phase2":
         return <Flame className="w-16 h-16 text-primary" />;
+      case "blocked_for_player":
+        return <Shield className="w-16 h-16 text-warrior" />;
+      case "got_blocked":
+        return <Shield className="w-16 h-16 text-accent" />;
+      case "healed_player":
+        return <Heart className="w-16 h-16 text-health" />;
       default:
         return <Swords className="w-16 h-16" />;
     }
   };
 
   const getColor = () => {
-    switch (type) {
-      case "correct":
-      case "ability_damage":
+    switch (feedback.type) {
+      case "correct_damage":
+      case "correct_ability":
+      case "ability_damage_phase2":
         return "border-primary";
-      case "incorrect":
+      case "incorrect_damage":
         return "border-destructive";
-      case "blocked":
-      case "you_blocked":
+      case "blocked_for_player":
         return "border-warrior";
-      case "healed":
-      case "you_healed":
+      case "got_blocked":
+        return "border-accent";
+      case "healed_player":
         return "border-health";
       default:
         return "border-foreground";
+    }
+  };
+
+  const getMessage = () => {
+    switch (feedback.type) {
+      case "correct_damage":
+        return `You dealt ${feedback.damage} damage to ${feedback.enemyName}!`;
+      case "incorrect_damage":
+        return `You took ${feedback.damage} damage from ${feedback.enemyName}!`;
+      case "correct_ability":
+        return `You dealt ${feedback.damage} damage to ${feedback.enemyName} with ${feedback.abilityName}!`;
+      case "blocked_for_player":
+        return `You blocked ${feedback.blockedDamage} damage for ${feedback.blockedPlayer}!`;
+      case "got_blocked":
+        return `${feedback.blockingPlayer} blocked damage for you!`;
+      case "healed_player":
+        return `You healed ${feedback.healedPlayer} for ${feedback.healedAmount} HP!`;
+      case "ability_damage_phase2":
+        return `You dealt ${feedback.damage} damage to ${feedback.enemyName} with ${feedback.abilityName}!`;
+      default:
+        return "Action completed!";
     }
   };
 
@@ -56,7 +78,7 @@ export function CombatFeedbackModal({
     <Dialog open={open}>
       <DialogContent 
         className="max-w-2xl border-0 bg-transparent shadow-none p-0 [&>button]:hidden"
-        data-testid={`modal-feedback-${type}`}
+        data-testid={`modal-feedback-${feedback.type}`}
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0, y: 20 }}
@@ -78,7 +100,7 @@ export function CombatFeedbackModal({
               className="text-3xl font-bold text-center"
               data-testid="text-feedback-message"
             >
-              {message}
+              {getMessage()}
             </p>
           </div>
         </motion.div>

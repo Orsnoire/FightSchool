@@ -11,11 +11,13 @@ import { VictoryModal } from "@/components/VictoryModal";
 import { BlockingModal } from "@/components/BlockingModal";
 import { HealingModal } from "@/components/HealingModal";
 import { FloatingNumber } from "@/components/FloatingNumber";
+import { CombatFeedbackModal } from "@/components/CombatFeedbackModal";
+import { PartyDamageModal } from "@/components/PartyDamageModal";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Swords, Calculator, Sparkles } from "lucide-react";
-import type { CombatState, Question, LootItem, CharacterClass, Gender } from "@shared/schema";
+import type { CombatState, Question, LootItem, CharacterClass, Gender, ResolutionFeedback, PartyDamageData } from "@shared/schema";
 import { TANK_CLASSES, HEALER_CLASSES } from "@shared/schema";
 import { type AnimationType, ULTIMATE_ABILITIES } from "@shared/ultimateAbilities";
 import { UltimateAnimation } from "@/components/UltimateAnimation";
@@ -92,6 +94,15 @@ export default function Combat() {
   const [showFixedSubmit, setShowFixedSubmit] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const primarySubmitRef = useRef<HTMLButtonElement>(null);
+  
+  // Resolution feedback system
+  const [feedbackQueue, setFeedbackQueue] = useState<ResolutionFeedback[]>([]);
+  const [partyDamageData, setPartyDamageData] = useState<PartyDamageData | null>(null);
+  const [currentModalIndex, setCurrentModalIndex] = useState(0);
+  const [resolutionPhaseStartTime, setResolutionPhaseStartTime] = useState<number | null>(null);
+  const [showPartyDamageModal, setShowPartyDamageModal] = useState(false);
+  const resolutionTimeoutTimer = useRef<NodeJS.Timeout | null>(null);
+  const modalSequenceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
@@ -209,6 +220,22 @@ export default function Combat() {
       } else if (message.type === "combat_log") {
         // Silently consume combat log events (displayed on host view only)
         // Students don't display the log but still receive events to keep WebSocket healthy
+      } else if (message.type === "resolution_feedback") {
+        // Individual resolution feedback - add to queue
+        // Clear the 4-second timeout since we received valid feedback
+        if (resolutionTimeoutTimer.current) {
+          clearTimeout(resolutionTimeoutTimer.current);
+          resolutionTimeoutTimer.current = null;
+        }
+        setFeedbackQueue(prev => [...prev, message.feedback]);
+      } else if (message.type === "party_damage_summary") {
+        // Party damage summary - store for display after individual modals
+        // Clear the 4-second timeout since we received valid data
+        if (resolutionTimeoutTimer.current) {
+          clearTimeout(resolutionTimeoutTimer.current);
+          resolutionTimeoutTimer.current = null;
+        }
+        setPartyDamageData(message.data);
       }
     };
 
@@ -236,6 +263,17 @@ export default function Combat() {
     return () => {
       isUnmounting.current = true;
       socket.close();
+      
+      // Clean up all timers on unmount
+      if (resolutionTimeoutTimer.current) clearTimeout(resolutionTimeoutTimer.current);
+      if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
+      if (phaseTransitionTimer.current) clearTimeout(phaseTransitionTimer.current);
+      if (enemyHitDelayTimer.current) clearTimeout(enemyHitDelayTimer.current);
+      if (enemyHitResetTimer.current) clearTimeout(enemyHitResetTimer.current);
+      if (playerHitDelayTimer.current) clearTimeout(playerHitDelayTimer.current);
+      if (playerHitResetTimer.current) clearTimeout(playerHitResetTimer.current);
+      if (shieldPulseTimer.current) clearTimeout(shieldPulseTimer.current);
+      if (healingPulseTimer.current) clearTimeout(healingPulseTimer.current);
     };
   }, [connectWebSocket]);
 
@@ -332,6 +370,75 @@ export default function Combat() {
       phaseTransitionTimer.current = setTimeout(() => setShowPhaseTransition(false), 1500);
     }
   }, [combatState?.currentPhase, previousPhase]);
+
+  // Track when question_resolution phase starts and set 4-second timeout
+  useEffect(() => {
+    if (!combatState) return;
+    
+    const currentPhase = combatState.currentPhase;
+    
+    // Reset everything when entering question_resolution phase
+    if (currentPhase === "question_resolution" && previousPhase !== "question_resolution") {
+      setResolutionPhaseStartTime(Date.now());
+      setFeedbackQueue([]);
+      setPartyDamageData(null);
+      setCurrentModalIndex(0);
+      setShowPartyDamageModal(false);
+      
+      // Set 4-second timeout - if no feedback appears, reset the feedback system
+      if (resolutionTimeoutTimer.current) clearTimeout(resolutionTimeoutTimer.current);
+      resolutionTimeoutTimer.current = setTimeout(() => {
+        // Timeout reached - clear any pending feedback
+        setFeedbackQueue([]);
+        setPartyDamageData(null);
+        setCurrentModalIndex(0);
+        setShowPartyDamageModal(false);
+        setResolutionPhaseStartTime(null);
+      }, 4000);
+    }
+    
+    // Clean up when leaving question_resolution phase
+    if (previousPhase === "question_resolution" && currentPhase !== "question_resolution") {
+      if (resolutionTimeoutTimer.current) clearTimeout(resolutionTimeoutTimer.current);
+      if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
+      setFeedbackQueue([]);
+      setPartyDamageData(null);
+      setCurrentModalIndex(0);
+      setShowPartyDamageModal(false);
+      setResolutionPhaseStartTime(null);
+    }
+  }, [combatState?.currentPhase, previousPhase]);
+
+  // Modal sequencing system - show modals one by one every 2 seconds
+  useEffect(() => {
+    if (feedbackQueue.length === 0 || combatState?.currentPhase !== "question_resolution") {
+      return;
+    }
+    
+    // Start showing modals from the queue
+    if (currentModalIndex < feedbackQueue.length) {
+      // Clear any existing timer
+      if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
+      
+      // Show current modal for 2 seconds, then advance to next
+      modalSequenceTimer.current = setTimeout(() => {
+        setCurrentModalIndex(prev => prev + 1);
+      }, 2000);
+    } else if (currentModalIndex === feedbackQueue.length && partyDamageData && !showPartyDamageModal) {
+      // All individual modals shown, now show party damage modal
+      setShowPartyDamageModal(true);
+      
+      // Auto-hide party damage modal after 2 seconds
+      if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
+      modalSequenceTimer.current = setTimeout(() => {
+        setShowPartyDamageModal(false);
+      }, 2000);
+    }
+    
+    return () => {
+      if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
+    };
+  }, [feedbackQueue, currentModalIndex, partyDamageData, showPartyDamageModal, combatState?.currentPhase]);
 
   // Show toasts for healing, blocking, and enemy attacks
   useEffect(() => {
@@ -1390,6 +1497,31 @@ export default function Combat() {
           healerClass={playerState.characterClass}
           timeRemaining={blockHealingTimeRemaining}
           onSelectTarget={setHealTarget}
+        />
+      )}
+
+      {/* Resolution Feedback Modal - individual player feedback */}
+      {feedbackQueue.length > 0 && currentModalIndex < feedbackQueue.length && combatState?.currentPhase === "question_resolution" && (
+        <CombatFeedbackModal
+          open={true}
+          feedback={feedbackQueue[currentModalIndex]}
+          shake={feedbackQueue[currentModalIndex].type === "incorrect_damage"}
+        />
+      )}
+
+      {/* Party Damage Summary Modal */}
+      {showPartyDamageModal && partyDamageData && combatState && (
+        <PartyDamageModal
+          open={true}
+          totalDamage={partyDamageData.totalDamage}
+          enemyName={partyDamageData.enemiesHit.length === 1 ? partyDamageData.enemiesHit[0].enemyName : ""}
+          enemyImage={partyDamageData.enemiesHit.length === 1 ? partyDamageData.enemiesHit[0].enemyImage : undefined}
+          multipleEnemies={partyDamageData.enemiesHit.length > 1 ? partyDamageData.enemiesHit.map(e => ({
+            id: e.enemyId,
+            name: e.enemyName,
+            image: e.enemyImage,
+            damage: 0
+          })) : undefined}
         />
       )}
 
