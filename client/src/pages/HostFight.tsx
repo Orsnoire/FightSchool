@@ -168,7 +168,7 @@ export default function HostFight() {
               data-testid="button-start"
             >
               <Play className="mr-2 h-4 w-4" />
-              Start Fight
+              Start
             </Button>
             <Button
               variant="outline"
@@ -177,7 +177,7 @@ export default function HostFight() {
               data-testid="button-force-question"
             >
               <RotateCw className="mr-2 h-4 w-4" />
-              Force New Question
+              Force Round Restart
             </Button>
             <Button
               variant="destructive"
@@ -199,7 +199,7 @@ export default function HostFight() {
               <CardHeader>
                 <CardTitle>Connected Students ({playerCount})</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
                 {combatState && Object.keys(combatState.players).length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {(() => {
@@ -255,14 +255,18 @@ export default function HostFight() {
                 ) : (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground mb-6">Waiting for students to join...</p>
-                    {sessionId && (
-                      <div className="bg-primary/10 border-2 border-primary rounded-lg p-6 inline-block">
-                        <p className="text-sm text-muted-foreground mb-2">Share this Session Code with students:</p>
-                        <p className="text-4xl font-bold font-mono text-primary tracking-widest" data-testid="text-session-code">
-                          {sessionId}
-                        </p>
-                      </div>
-                    )}
+                  </div>
+                )}
+                
+                {/* Waiting Phase Join Code Modal - Always visible during waiting phase */}
+                {combatState?.currentPhase === "waiting" && sessionId && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <div className="bg-card/95 backdrop-blur-sm border-4 border-primary rounded-lg p-12 shadow-2xl pointer-events-auto" data-testid="modal-join-code">
+                      <p className="text-sm text-muted-foreground mb-4 text-center">Share this Session Code with students:</p>
+                      <p className="text-6xl font-bold font-mono text-primary tracking-widest text-center" data-testid="text-session-code-modal">
+                        {sessionId}
+                      </p>
+                    </div>
                   </div>
                 )}
               </CardContent>

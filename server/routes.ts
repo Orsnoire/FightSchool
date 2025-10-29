@@ -1104,10 +1104,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Save ALL player resets at once - HUGE performance improvement
     await storage.updateCombatSession(sessionId, { players: session.players });
 
-    broadcastToCombat(sessionId, { type: "phase_change", phase: "Question Phase" });
+    // Determine if this is the first question or a subsequent one
+    const phaseMessage = session.isFirstQuestionOfSession ? "Question" : "Next Question";
+    broadcastToCombat(sessionId, { type: "phase_change", phase: phaseMessage });
     const questionPreview = question.question?.substring(0, 50) || "Question";
     broadcastCombatLogEvent(sessionId, "phase_change", `Question ${session.currentQuestionIndex + 1}: ${questionPreview}...`);
     broadcastToCombat(sessionId, { type: "question", question, shuffleOptions: fight.shuffleOptions });
+    
+    // Mark that we've shown the first question
+    if (session.isFirstQuestionOfSession) {
+      await storage.updateCombatSession(sessionId, { isFirstQuestionOfSession: false });
+    }
     const updatedSession = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
 
@@ -1123,7 +1130,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const session = await storage.getCombatSession(sessionId);
     if (!session) return;
 
-    await storage.updateCombatSession(sessionId, { currentPhase: "block_and_healing" });
+    // Calculate threat leader (happens at end of Question Phase, before abilities)
+    let highestThreat = 0;
+    let threatLeaderId: string | undefined = undefined;
+    for (const [playerId, player] of Object.entries(session.players)) {
+      if (player.isDead) continue;
+      if (player.threat > highestThreat) {
+        highestThreat = player.threat;
+        threatLeaderId = playerId;
+      }
+    }
+
+    await storage.updateCombatSession(sessionId, { 
+      currentPhase: "block_and_healing",
+      threatLeaderId: threatLeaderId
+    });
+    
+    // Broadcast updated combat state so crown icon appears
+    const sessionWithThreatLeader = await storage.getCombatSession(sessionId);
+    broadcastToCombat(sessionId, { type: "combat_state", state: sessionWithThreatLeader });
+    
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Block and Healing Phase" });
     broadcastCombatLogEvent(sessionId, "phase_change", "Block and Healing Phase");
     
@@ -1241,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     await storage.updateCombatSession(sessionId, { 
       currentPhase: "question_resolution",
-      threatLeaderId: threatLeaderId ?? null
+      threatLeaderId: threatLeaderId ?? undefined
     });
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Question Resolution" });
     broadcastCombatLogEvent(sessionId, "phase_change", "Question Resolution Phase");

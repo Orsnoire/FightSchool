@@ -174,6 +174,9 @@ export const combatSessions = pgTable("combat_sessions", {
   // Threat tracking
   threatLeaderId: varchar("threat_leader_id"), // Student ID of player with highest threat (null if none)
   
+  // Question tracking
+  isFirstQuestionOfSession: boolean("is_first_question_of_session").notNull().default(true), // Track if this is the first question
+  
   // Solo mode fields
   soloModeEnabled: boolean("solo_mode_enabled").notNull().default(false),
   soloModeHostId: varchar("solo_mode_host_id"), // Student ID of host (null for teacher-hosted)
@@ -475,7 +478,7 @@ export interface CombatState {
   phaseStartTime?: number;
   questionOrder?: number[]; // Array of question indices (shuffled if randomizeQuestions is true)
   threatLeaderId?: string; // Student ID of the current threat leader (for crown icon)
-  isFirstQuestion?: boolean; // Track if this is the first question of the session
+  isFirstQuestionOfSession?: boolean; // Track if this is the first question of the session
   
   // Solo mode fields
   soloModeEnabled?: boolean;

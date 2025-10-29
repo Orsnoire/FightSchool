@@ -157,8 +157,11 @@ export default function Combat() {
           setShuffleOptions(message.shuffleOptions);
         }
       } else if (message.type === "phase_change") {
-        setPhaseChangeName(message.phase);
-        setShowPhaseChangeModal(true);
+        // Show intro modal for "Question" and "Next Question" phases
+        if (message.phase === "Question" || message.phase === "Next Question") {
+          setPhaseChangeName(message.phase);
+          setShowPhaseChangeModal(true);
+        }
       } else if (message.type === "game_over") {
         gameIsOver.current = true;
         if (message.victory && message.xpGained !== undefined) {
@@ -922,8 +925,21 @@ export default function Combat() {
             </Card>
           )}
           
-          {/* B5 FIX: Only show question modal when phase change modal is not visible */}
-          {!showPhaseChangeModal && combatState.currentPhase === "question" && currentQuestion && (
+          {/* Timer-only modal after answer submission */}
+          {!showPhaseChangeModal && combatState.currentPhase === "question" && currentQuestion && playerState?.hasAnswered && (
+            <Card className="p-8 border-primary/30">
+              <div className="flex flex-col items-center gap-6">
+                <h2 className="text-3xl font-bold text-center">Waiting for other players...</h2>
+                <div className="flex items-center gap-3 text-warning">
+                  <Clock className="h-8 w-8" />
+                  <span className="text-5xl font-bold" data-testid="text-timer-large">{timeRemaining}s</span>
+                </div>
+              </div>
+            </Card>
+          )}
+          
+          {/* B5 FIX: Only show question modal when phase change modal is not visible and player hasn't answered yet */}
+          {!showPhaseChangeModal && combatState.currentPhase === "question" && currentQuestion && !playerState?.hasAnswered && (
             <Card className="p-8 border-primary/30 max-h-[80vh] flex flex-col">
               {/* Top half: Question prompt */}
               <div className="flex-1 flex flex-col mb-4">
