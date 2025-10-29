@@ -58,10 +58,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     req.session.teacherId = teacher.id;
     req.session.teacherEmail = teacher.email;
     
-    const { password: _, ...teacherWithoutPassword } = teacher;
-    res.json({
-      ...teacherWithoutPassword,
-      sessionActive: true,
+    // Save session before responding to ensure cookie is set
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).json({ error: "Failed to create session" });
+      }
+      
+      const { password: _, ...teacherWithoutPassword } = teacher;
+      res.json({
+        ...teacherWithoutPassword,
+        sessionActive: true,
+      });
     });
   });
 
