@@ -53,11 +53,6 @@ export default function Combat() {
   const [showPhaseChangeModal, setShowPhaseChangeModal] = useState(false);
   const [phaseChangeName, setPhaseChangeName] = useState<string>("");
   const [shuffleOptions, setShuffleOptions] = useState<boolean>(true);
-  // Phase transition overlay
-  const [showPhaseTransition, setShowPhaseTransition] = useState(false);
-  const [phaseTransitionText, setPhaseTransitionText] = useState("");
-  // B10 FIX: Track answer feedback for damage toast
-  const [lastAnsweredCorrectly, setLastAnsweredCorrectly] = useState<boolean | null>(null);
   const [previousPhase, setPreviousPhase] = useState<string>("");
   // Track previous combat state for detecting healing, blocking, and enemy attacks
   const [previousCombatState, setPreviousCombatState] = useState<CombatState | null>(null);
@@ -78,7 +73,6 @@ export default function Combat() {
   const playerHitResetTimer = useRef<NodeJS.Timeout | null>(null);
   const shieldPulseTimer = useRef<NodeJS.Timeout | null>(null);
   const healingPulseTimer = useRef<NodeJS.Timeout | null>(null);
-  const phaseTransitionTimer = useRef<NodeJS.Timeout | null>(null);
   // B6/B7 FIX: Connection status and reconnection logic
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
@@ -302,7 +296,6 @@ export default function Combat() {
       // Clean up all timers on unmount
       if (resolutionTimeoutTimer.current) clearTimeout(resolutionTimeoutTimer.current);
       if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
-      if (phaseTransitionTimer.current) clearTimeout(phaseTransitionTimer.current);
       if (enemyHitDelayTimer.current) clearTimeout(enemyHitDelayTimer.current);
       if (enemyHitResetTimer.current) clearTimeout(enemyHitResetTimer.current);
       if (playerHitDelayTimer.current) clearTimeout(playerHitDelayTimer.current);
@@ -359,56 +352,13 @@ export default function Combat() {
     }
   }, [showPhaseChangeModal]);
 
-  // B10 FIX: Show damage feedback toast when transitioning from question phase
-  useEffect(() => {
-    const studentId = localStorage.getItem("studentId");
-    if (!combatState || !studentId) return;
-    
-    const currentPhase = combatState.currentPhase;
-    const playerState = combatState.players[studentId];
-    
-    // Check if we just transitioned FROM question phase TO another phase
-    if (previousPhase === "question" && currentPhase !== "question" && lastAnsweredCorrectly !== null) {
-      // Show feedback toast
-      if (lastAnsweredCorrectly) {
-        // Player was correct - show actual damage dealt from stat calculations
-        const damageDealt = playerState?.lastActionDamage || 0;
-        toast({
-          title: "Correct Answer!",
-          description: damageDealt > 0 ? `You dealt ${damageDealt} damage!` : "You damaged the enemy!",
-          duration: 2500,
-        });
-      } else {
-        // Player was wrong - show damage taken (need to estimate from fight data)
-        toast({
-          title: "Incorrect Answer",
-          description: "You took damage from the enemy",
-          variant: "destructive",
-          duration: 2500,
-        });
-      }
-      // Reset feedback tracker
-      setLastAnsweredCorrectly(null);
-    }
-    
-    // Update previous phase
-    setPreviousPhase(currentPhase);
-  }, [combatState?.currentPhase, previousPhase, lastAnsweredCorrectly, toast]);
-
-  // Show dramatic phase transition overlays for major phases
+  // Update previous phase tracking (removed toast feedback - now handled by modals)
   useEffect(() => {
     if (!combatState) return;
-    
-    const currentPhase = combatState.currentPhase;
-    
-    // Show transition when entering question resolution phase
-    if (currentPhase === "question_resolution" && previousPhase !== "question_resolution" && previousPhase !== "") {
-      if (phaseTransitionTimer.current) clearTimeout(phaseTransitionTimer.current);
-      setPhaseTransitionText("QUESTION RESOLUTION!");
-      setShowPhaseTransition(true);
-      phaseTransitionTimer.current = setTimeout(() => setShowPhaseTransition(false), 1500);
-    }
-  }, [combatState?.currentPhase, previousPhase]);
+    setPreviousPhase(combatState.currentPhase);
+  }, [combatState?.currentPhase]);
+
+  // Phase transition overlays removed - vision document only specifies modals for feedback
 
   // Track when question_resolution phase starts and set 4-second timeout
   useEffect(() => {
@@ -536,7 +486,7 @@ export default function Combat() {
     };
   }, [enemyAIData, showCounterattackModal, currentAttackIndex]);
 
-  // Show toasts for healing, blocking, and enemy attacks
+  // Track animations for healing/blocking (toasts removed - now handled by modals)
   useEffect(() => {
     const studentId = localStorage.getItem("studentId");
     if (!combatState || !studentId || !previousCombatState) {
@@ -547,102 +497,38 @@ export default function Combat() {
     const currentPlayer = combatState.players[studentId];
     const previousPlayer = previousCombatState.players[studentId];
 
-    // Detect healing events - use PREVIOUS state to find who was healing
+    // Detect healing events for animation only
     if (currentPlayer && previousPlayer && currentPlayer.health > previousPlayer.health) {
-      // Find who was healing this player in the PREVIOUS state (before flags were cleared)
-      const healer = Object.values(previousCombatState.players).find(
-        p => p.isHealing && p.healTarget === studentId && p.characterClass === "herbalist" && !p.isDead
-      );
-      if (healer) {
-        const healAmount = currentPlayer.health - previousPlayer.health;
-        toast({
-          title: "Healed",
-          description: `You were healed by ${healer.nickname} for +${healAmount} health`,
-          duration: 2500,
-        });
-        // Trigger healing pulse animation
-        if (healingPulseTimer.current) clearTimeout(healingPulseTimer.current);
-        setShowHealingPulse(true);
-        healingPulseTimer.current = setTimeout(() => setShowHealingPulse(false), 1500);
-        // Add floating heal number
-        setFloatingNumbers(prev => [...prev, {
-          id: `heal-${Date.now()}`,
-          value: healAmount,
-          type: "heal"
-        }]);
-      }
+      const healAmount = currentPlayer.health - previousPlayer.health;
+      // Trigger healing pulse animation
+      if (healingPulseTimer.current) clearTimeout(healingPulseTimer.current);
+      setShowHealingPulse(true);
+      healingPulseTimer.current = setTimeout(() => setShowHealingPulse(false), 1500);
+      // Add floating heal number
+      setFloatingNumbers(prev => [...prev, {
+        id: `heal-${Date.now()}`,
+        value: healAmount,
+        type: "heal"
+      }]);
     }
 
-    // Detect when you healed someone - use PREVIOUS state to find heal target
-    if (currentPlayer && previousPlayer && currentPlayer.healingDone > previousPlayer.healingDone) {
-      const healAmount = currentPlayer.healingDone - previousPlayer.healingDone;
-      // Get heal target from PREVIOUS state (before it was cleared)
-      const healTargetId = previousPlayer.healTarget;
-      const healedPlayer = healTargetId ? combatState.players[healTargetId] : null;
-      if (healedPlayer) {
-        toast({
-          title: "Healing Success",
-          description: `You healed ${healedPlayer.nickname} for +${healAmount} health`,
-          duration: 2500,
-        });
-      }
-    }
-
-    // Detect blocking events - show when you start blocking someone
-    if (currentPlayer && previousPlayer) {
-      // Check if you just started blocking someone (or switched targets)
-      if (currentPlayer.blockTarget && currentPlayer.blockTarget !== previousPlayer.blockTarget) {
-        const blockedPlayer = combatState.players[currentPlayer.blockTarget];
-        if (blockedPlayer) {
-          toast({
-            title: "Protecting Ally",
-            description: `You blocked damage for ${blockedPlayer.nickname}`,
-            duration: 2500,
-          });
-        }
-      }
-    }
-
-    // Detect when you're being blocked by someone - check PREVIOUS state
+    // Detect when you're being blocked by someone for animation only
     const previousBlocker = Object.values(previousCombatState.players).find(
       p => p.blockTarget === studentId && TANK_CLASSES.includes(p.characterClass) && !p.isDead
     );
     const currentBlocker = Object.values(combatState.players).find(
       p => p.blockTarget === studentId && TANK_CLASSES.includes(p.characterClass) && !p.isDead
     );
-    // Show toast when blocker starts blocking (wasn't blocking before, is blocking now)
+    // Trigger shield pulse animation when blocker starts blocking
     if (currentBlocker && !previousBlocker) {
-      toast({
-        title: "Protected",
-        description: `You are protected by ${currentBlocker.nickname}`,
-        duration: 2500,
-      });
-      // Trigger shield pulse animation
       if (shieldPulseTimer.current) clearTimeout(shieldPulseTimer.current);
       setShowShieldPulse(true);
       shieldPulseTimer.current = setTimeout(() => setShowShieldPulse(false), 1500);
     }
 
-    // Detect enemy attacks (health decreases during enemy AI phase for ANY player - broadcast to all)
-    if (combatState.currentPhase === "enemy_ai") {
-      Object.entries(combatState.players).forEach(([playerId, currentPlayerState]) => {
-        const previousPlayerState = previousCombatState.players[playerId];
-        if (previousPlayerState && currentPlayerState.health < previousPlayerState.health) {
-          const damageAmount = previousPlayerState.health - currentPlayerState.health;
-          const enemy = combatState.enemies[0];
-          toast({
-            title: "Enemy Attack",
-            description: `${enemy?.name || "Enemy"} attacked ${currentPlayerState.nickname} for ${damageAmount} damage!`,
-            variant: "destructive",
-            duration: 2500,
-          });
-        }
-      });
-    }
-
     // Update previous combat state
     setPreviousCombatState(combatState);
-  }, [combatState, previousCombatState, toast]);
+  }, [combatState, previousCombatState]);
 
   // Detect attacks and trigger animations
   useEffect(() => {
@@ -730,7 +616,6 @@ export default function Combat() {
       if (playerHitResetTimer.current) clearTimeout(playerHitResetTimer.current);
       if (shieldPulseTimer.current) clearTimeout(shieldPulseTimer.current);
       if (healingPulseTimer.current) clearTimeout(healingPulseTimer.current);
-      if (phaseTransitionTimer.current) clearTimeout(phaseTransitionTimer.current);
     };
   }, []);
 
@@ -799,10 +684,6 @@ export default function Combat() {
 
   const submitAnswer = () => {
     if (ws && selectedAnswer && currentQuestion) {
-      // B10 FIX: Track if answer was correct for damage feedback toast
-      const isCorrect = selectedAnswer.trim().toLowerCase() === currentQuestion.correctAnswer.trim().toLowerCase();
-      setLastAnsweredCorrectly(isCorrect);
-      
       ws.send(JSON.stringify({ 
         type: "answer", 
         answer: selectedAnswer,
@@ -827,11 +708,7 @@ export default function Combat() {
   const useUltimate = (ultimateId: string) => {
     if (ws) {
       ws.send(JSON.stringify({ type: "use_ultimate", ultimateId }));
-      toast({
-        title: "Ultimate Activated!",
-        description: "Your ultimate ability is being unleashed...",
-        duration: 2000,
-      });
+      // Ultimate feedback shown via animation modal
     }
   };
   
@@ -889,11 +766,7 @@ export default function Combat() {
       }
     }
     
-    toast({
-      title: "Ability Activated",
-      description: `Using ${abilityConfig.name}`,
-      duration: 1500,
-    });
+    // Ability feedback shown via combat modals during resolution
   };
 
   const removeFloatingNumber = (id: string) => {
@@ -986,10 +859,6 @@ export default function Combat() {
               onClick={() => {
                 if (ws) {
                   ws.send(JSON.stringify({ type: "end_fight" }));
-                  toast({
-                    title: "Ending Fight",
-                    description: "Returning to lobby...",
-                  });
                   navigate("/student/lobby");
                 }
               }}
@@ -1394,33 +1263,7 @@ export default function Combat() {
         )}
       </AnimatePresence>
 
-      {/* Phase Transition Overlay */}
-      <AnimatePresence>
-        {showPhaseTransition && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 flex items-center justify-center pointer-events-none z-50"
-            data-testid="overlay-phase-transition"
-          >
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 1.2, opacity: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="text-6xl font-serif font-bold text-primary drop-shadow-2xl"
-              style={{
-                textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.5)'
-              }}
-              data-testid="text-phase-transition"
-            >
-              {phaseTransitionText}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Phase transition overlay removed - vision document specifies modals only */}
 
       {/* FIXED SUBMIT BUTTON: Appears above ability bar when primary button is scrolled out of view */}
       <AnimatePresence>
