@@ -15,6 +15,7 @@ import { CombatFeedbackModal } from "@/components/CombatFeedbackModal";
 import { PartyDamageModal } from "@/components/PartyDamageModal";
 import { EnemyAIModal } from "@/components/EnemyAIModal";
 import { CounterattackModal } from "@/components/CounterattackModal";
+import { NextQuestionModal } from "@/components/NextQuestionModal";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
@@ -114,6 +115,11 @@ export default function Combat() {
   const enemyAIModalTimer = useRef<NodeJS.Timeout | null>(null);
   const counterattackModalTimer = useRef<NodeJS.Timeout | null>(null);
   const enemyAICleanupTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Next Question modal state
+  const [showNextQuestionModal, setShowNextQuestionModal] = useState(false);
+  const [nextQuestionNumber, setNextQuestionNumber] = useState(0);
+  const nextQuestionTimer = useRef<NodeJS.Timeout | null>(null);
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
@@ -256,6 +262,15 @@ export default function Combat() {
         setCurrentAttackIndex(0);
         setShowEnemyAIModal(true);
         setShowCounterattackModal(false);
+      } else if (message.type === "next_question") {
+        setNextQuestionNumber(message.questionNumber);
+        setShowNextQuestionModal(true);
+        
+        // Auto-hide after 2 seconds (matching backend timing)
+        if (nextQuestionTimer.current) clearTimeout(nextQuestionTimer.current);
+        nextQuestionTimer.current = setTimeout(() => {
+          setShowNextQuestionModal(false);
+        }, 2000);
       }
     };
 
@@ -297,6 +312,7 @@ export default function Combat() {
       if (enemyAIModalTimer.current) clearTimeout(enemyAIModalTimer.current);
       if (counterattackModalTimer.current) clearTimeout(counterattackModalTimer.current);
       if (enemyAICleanupTimer.current) clearTimeout(enemyAICleanupTimer.current);
+      if (nextQuestionTimer.current) clearTimeout(nextQuestionTimer.current);
     };
   }, [connectWebSocket]);
 
@@ -1630,6 +1646,13 @@ export default function Combat() {
           currentClass={ultimateAnimationData.currentClass}
           currentGender={ultimateAnimationData.currentGender}
           onComplete={() => setShowUltimateAnimation(false)}
+        />
+      )}
+
+      {showNextQuestionModal && (
+        <NextQuestionModal
+          questionNumber={nextQuestionNumber}
+          isOpen={showNextQuestionModal}
         />
       )}
     </motion.div>

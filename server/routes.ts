@@ -2202,7 +2202,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await storage.updateCombatSession(sessionId, {
       currentQuestionIndex: session.currentQuestionIndex + 1,
     });
-    await startQuestion(sessionId);
+    
+    // Show "Next Question" modal to all students
+    broadcastToCombat(sessionId, {
+      type: "next_question",
+      questionNumber: session.currentQuestionIndex + 2, // +2 because we already incremented and it's 0-indexed
+    });
+    
+    // Delay to allow modal to display (2 seconds)
+    setTimeout(async () => {
+      await startQuestion(sessionId);
+    }, 2000);
   }
 
   // Heartbeat system to detect dead connections
