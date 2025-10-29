@@ -87,6 +87,10 @@ export default function Combat() {
     currentClass: CharacterClass;
     currentGender: Gender;
   } | null>(null);
+  // Smart submit button: show fixed button when primary button is scrolled out of view
+  const [showFixedSubmit, setShowFixedSubmit] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const primarySubmitRef = useRef<HTMLButtonElement>(null);
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
@@ -518,6 +522,69 @@ export default function Combat() {
     };
   }, []);
 
+  // Scroll detection: show fixed submit button when primary button is out of view
+  useEffect(() => {
+    const checkSubmitVisibility = () => {
+      if (!primarySubmitRef.current) return;
+      
+      // Get viewport element - search in the entire document since Radix portal might render elsewhere
+      const viewports = Array.from(document.querySelectorAll('[data-radix-scroll-area-viewport]'));
+      let scrollContainer: Element | null = null;
+      
+      // Find the viewport that contains our submit button
+      for (const viewport of viewports) {
+        if (viewport.contains(primarySubmitRef.current)) {
+          scrollContainer = viewport;
+          break;
+        }
+      }
+      
+      if (!scrollContainer) {
+        // If not in a scroll container, check window scroll
+        const submitRect = primarySubmitRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const abilityBarHeight = window.innerHeight * 0.1; // 10vh for ability bar
+        // Button is out of view if scrolled above viewport or below the visible area (minus ability bar)
+        const isScrolledAbove = submitRect.top < 0;
+        const isScrolledBelow = submitRect.bottom > (viewportHeight - abilityBarHeight);
+        const isOutOfView = isScrolledAbove || isScrolledBelow;
+        setShowFixedSubmit(isOutOfView);
+        return;
+      }
+      
+      const submitRect = primarySubmitRef.current.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
+      
+      // Check if submit button is partially or fully outside the visible area
+      // Button is hidden if ANY part is above or below the container viewport
+      const isPartiallyAbove = submitRect.top < containerRect.top;
+      const isPartiallyBelow = submitRect.bottom > containerRect.bottom;
+      const isOutOfView = isPartiallyAbove || isPartiallyBelow;
+      setShowFixedSubmit(isOutOfView);
+    };
+    
+    // Add scroll listeners to all potential scroll containers
+    const viewports = Array.from(document.querySelectorAll('[data-radix-scroll-area-viewport]'));
+    viewports.forEach(viewport => {
+      viewport.addEventListener('scroll', checkSubmitVisibility);
+    });
+    
+    // Also listen to window scroll
+    window.addEventListener('scroll', checkSubmitVisibility);
+    window.addEventListener('resize', checkSubmitVisibility);
+    
+    // Check on mount and when question changes
+    setTimeout(checkSubmitVisibility, 100); // Small delay to ensure DOM is ready
+    
+    return () => {
+      viewports.forEach(viewport => {
+        viewport.removeEventListener('scroll', checkSubmitVisibility);
+      });
+      window.removeEventListener('scroll', checkSubmitVisibility);
+      window.removeEventListener('resize', checkSubmitVisibility);
+    };
+  }, [currentQuestion]);
+
   const submitAnswer = () => {
     if (ws && selectedAnswer && currentQuestion) {
       // B10 FIX: Track if answer was correct for damage feedback toast
@@ -872,9 +939,9 @@ export default function Combat() {
                 </ScrollArea>
               </div>
 
-              {/* Bottom half: Answer options */}
+              {/* Bottom half: Answer options - scrollable with submit button inside */}
               <div className="flex-1 flex flex-col">
-                <ScrollArea className="flex-1 pr-4">
+                <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4">
                   {currentQuestion.type === "multiple_choice" && displayOptions && (
                     <div className="grid grid-cols-2 gap-3">
                       {displayOptions.map((option, i) => (
@@ -943,28 +1010,30 @@ export default function Combat() {
                     </div>
                   )}
 
-
+                  {/* Primary submit button - inside scroll area */}
+                  <div className="mt-6">
+                    <Button
+                      ref={primarySubmitRef}
+                      size="lg"
+                      className="w-full"
+                      onClick={submitAnswer}
+                      disabled={!selectedAnswer || playerState?.hasAnswered || (isHealing && !healTarget)}
+                      data-testid="button-submit"
+                    >
+                      {playerState?.hasAnswered ? (
+                        <>
+                          <Check className="mr-2 h-5 w-5" />
+                          Answer Submitted
+                        </>
+                      ) : isHealing ? (
+                        "Heal Target"
+                      ) : (
+                        "Submit Answer"
+                      )}
+                    </Button>
+                  </div>
                 </ScrollArea>
               </div>
-
-              <Button
-                size="lg"
-                className="w-full mt-6 flex-shrink-0"
-                onClick={submitAnswer}
-                disabled={!selectedAnswer || playerState?.hasAnswered || (isHealing && !healTarget)}
-                data-testid="button-submit"
-              >
-                {playerState?.hasAnswered ? (
-                  <>
-                    <Check className="mr-2 h-5 w-5" />
-                    Answer Submitted
-                  </>
-                ) : isHealing ? (
-                  "Heal Target"
-                ) : (
-                  "Submit Answer"
-                )}
-              </Button>
             </Card>
           )}
 
@@ -1124,6 +1193,41 @@ export default function Combat() {
             >
               {phaseTransitionText}
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* FIXED SUBMIT BUTTON: Appears above ability bar when primary button is scrolled out of view */}
+      <AnimatePresence>
+        {showFixedSubmit && combatState.currentPhase === "question" && currentQuestion && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-[10vh] left-0 right-0 z-40 px-4 pb-2"
+            style={{ paddingBottom: '0.5rem' }}
+          >
+            <div className="max-w-7xl mx-auto">
+              <Button
+                size="lg"
+                className="w-full shadow-lg backdrop-blur-sm bg-primary/95 hover:bg-primary border-2 border-primary-foreground/20"
+                onClick={submitAnswer}
+                disabled={!selectedAnswer || playerState?.hasAnswered || (isHealing && !healTarget)}
+                data-testid="button-submit-fixed"
+              >
+                {playerState?.hasAnswered ? (
+                  <>
+                    <Check className="mr-2 h-5 w-5" />
+                    Answer Submitted
+                  </>
+                ) : isHealing ? (
+                  "Heal Target"
+                ) : (
+                  "Submit Answer"
+                )}
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
