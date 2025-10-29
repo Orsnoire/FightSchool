@@ -443,6 +443,7 @@ export default function CreateFight() {
           for (const row of results.data as any[]) {
             const questionText = row["question text"]?.trim();
             const questionType = row["question type"]?.trim().toLowerCase();
+            const timerValue = row["timer"] || row["time limit"] || row["timelimit"];
             const answer1 = row["answer1"]?.trim();
             const answer2 = row["answer2"]?.trim();
             const answer3 = row["answer3"]?.trim();
@@ -452,14 +453,23 @@ export default function CreateFight() {
               continue;
             }
             
+            // Parse timer value, default to 30 if invalid
+            let timeLimit = 30;
+            if (timerValue) {
+              const parsed = parseInt(String(timerValue).trim());
+              if (!isNaN(parsed) && parsed >= 5 && parsed <= 120) {
+                timeLimit = parsed;
+              }
+            }
+            
             const newQuestion: Question = {
               id: Date.now().toString() + Math.random(),
               question: questionText,
-              type: questionType === "true/false" || questionType === "true_false" ? "true_false" : 
-                    questionType === "short answer" || questionType === "short_answer" ? "short_answer" : 
+              type: questionType === "true/false" || questionType === "true_false" || questionType === "tf" ? "true_false" : 
+                    questionType === "short answer" || questionType === "short_answer" || questionType === "sa" ? "short_answer" : 
                     "multiple_choice",
               correctAnswer: answer1,
-              timeLimit: 30,
+              timeLimit: timeLimit,
             };
             
             if (newQuestion.type === "multiple_choice") {
@@ -705,7 +715,8 @@ export default function CreateFight() {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">
-                      CSV format: "question text", "question type", "answer1", "answer2", "answer3", "answer4" (answer1 is the correct answer)
+                      CSV format: "question text", "question type", "timer", "answer1", "answer2", "answer3", "answer4"<br />
+                      Question types: multiple_choice, true_false, short_answer (timer in seconds, defaults to 30)
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
