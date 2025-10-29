@@ -31,6 +31,7 @@ export default function Combat() {
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [blockHealingTimeRemaining, setBlockHealingTimeRemaining] = useState<number | undefined>(undefined);
   const [isHealing, setIsHealing] = useState(false);
   const [healTarget, setHealTarget] = useState<string>("");
   const [mathMode, setMathMode] = useState(false);
@@ -161,6 +162,11 @@ export default function Combat() {
         if (message.phase === "Question" || message.phase === "Next Question") {
           setPhaseChangeName(message.phase);
           setShowPhaseChangeModal(true);
+        }
+      } else if (message.type === "phase_timer") {
+        // Update block_and_healing phase timer
+        if (message.phase === "block_and_healing") {
+          setBlockHealingTimeRemaining(message.timeRemaining);
         }
       } else if (message.type === "game_over") {
         gameIsOver.current = true;
@@ -1368,6 +1374,8 @@ export default function Combat() {
           players={combatState.players}
           currentPlayerId={studentId}
           currentBlockTarget={playerState.blockTarget || null}
+          threatLeaderId={combatState.threatLeaderId}
+          timeRemaining={blockHealingTimeRemaining}
           onSelectTarget={selectBlockTarget}
         />
       )}
@@ -1380,6 +1388,7 @@ export default function Combat() {
           currentPlayerId={studentId}
           currentHealTarget={healTarget}
           healerClass={playerState.characterClass}
+          timeRemaining={blockHealingTimeRemaining}
           onSelectTarget={setHealTarget}
         />
       )}

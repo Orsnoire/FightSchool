@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
-import { Shield } from "lucide-react";
+import { Shield, Clock } from "lucide-react";
 import type { PlayerState } from "@shared/schema";
 import { TANK_CLASSES } from "@shared/schema";
 
@@ -11,6 +11,8 @@ interface BlockingModalProps {
   players: Record<string, PlayerState>;
   currentPlayerId: string;
   currentBlockTarget: string | null;
+  threatLeaderId?: string;
+  timeRemaining?: number; // Timer in seconds
   onSelectTarget: (targetId: string) => void;
 }
 
@@ -19,9 +21,27 @@ export function BlockingModal({
   players, 
   currentPlayerId, 
   currentBlockTarget,
+  threatLeaderId,
+  timeRemaining,
   onSelectTarget 
 }: BlockingModalProps) {
-  const alivePlayers = Object.values(players).filter(p => !p.isDead);
+  // Filter: Only show players that are threat leader OR have missing HP
+  const filteredPlayers = Object.values(players).filter(p => {
+    if (p.isDead) return false;
+    const isThreatLeader = threatLeaderId === p.studentId;
+    const hasMissingHP = p.health < p.maxHealth;
+    return isThreatLeader || hasMissingHP;
+  });
+
+  // Sort: 1st by threat (highest first), 2nd by HP (lowest first)
+  const sortedPlayers = filteredPlayers.sort((a, b) => {
+    // Primary sort: threat (descending)
+    if (b.threat !== a.threat) {
+      return b.threat - a.threat;
+    }
+    // Secondary sort: HP (ascending - lowest HP first)
+    return a.health - b.health;
+  });
 
   return (
     <Dialog open={open}>
@@ -30,11 +50,17 @@ export function BlockingModal({
           <DialogTitle className="text-3xl font-bold text-center">
             Select Ally to Protect
           </DialogTitle>
+          {timeRemaining !== undefined && (
+            <div className="flex items-center justify-center gap-2 text-lg font-semibold text-muted-foreground pt-2">
+              <Clock className="h-5 w-5" />
+              <span>{timeRemaining}s remaining</span>
+            </div>
+          )}
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-2">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {alivePlayers.map((player) => {
+            {sortedPlayers.map((player) => {
               const isMyTarget = currentBlockTarget === player.studentId;
               const allBlockers = Object.values(players).filter(
                 p => p.blockTarget === player.studentId && 

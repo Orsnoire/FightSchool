@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Clock } from "lucide-react";
 import type { PlayerState, CharacterClass } from "@shared/schema";
 import { HEALER_CLASSES } from "@shared/schema";
 
@@ -12,6 +12,7 @@ interface HealingModalProps {
   currentPlayerId: string;
   currentHealTarget: string | null;
   healerClass: CharacterClass;
+  timeRemaining?: number; // Timer in seconds
   onSelectTarget: (targetId: string) => void;
 }
 
@@ -21,9 +22,21 @@ export function HealingModal({
   currentPlayerId, 
   currentHealTarget,
   healerClass,
+  timeRemaining,
   onSelectTarget 
 }: HealingModalProps) {
-  const alivePlayers = Object.values(players).filter(p => !p.isDead);
+  // Filter: Only show players with missing HP
+  const filteredPlayers = Object.values(players).filter(p => {
+    if (p.isDead) return false;
+    return p.health < p.maxHealth;
+  });
+
+  // Sort: By most missing HP to least (descending missing HP)
+  const sortedPlayers = filteredPlayers.sort((a, b) => {
+    const aMissingHP = a.maxHealth - a.health;
+    const bMissingHP = b.maxHealth - b.health;
+    return bMissingHP - aMissingHP; // Most missing HP first
+  });
   
   const getHealerTypeLabel = (characterClass: CharacterClass) => {
     if (characterClass === "herbalist") return "Potion Healing";
@@ -39,11 +52,17 @@ export function HealingModal({
           <DialogTitle className="text-3xl font-bold text-center text-health">
             {getHealerTypeLabel(healerClass)} - Select Target
           </DialogTitle>
+          {timeRemaining !== undefined && (
+            <div className="flex items-center justify-center gap-2 text-lg font-semibold text-muted-foreground pt-2">
+              <Clock className="h-5 w-5" />
+              <span>{timeRemaining}s remaining</span>
+            </div>
+          )}
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-2">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {alivePlayers.map((player) => {
+            {sortedPlayers.map((player) => {
               const isMyTarget = currentHealTarget === player.studentId;
               const allHealers = Object.values(players).filter(
                 p => p.isHealing && 
