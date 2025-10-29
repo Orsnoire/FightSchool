@@ -441,13 +441,20 @@ export default function CreateFight() {
           const parsedQuestions: Question[] = [];
           
           for (const row of results.data as any[]) {
-            const questionText = row["question text"]?.trim();
-            const questionType = row["question type"]?.trim().toLowerCase();
-            const timerValue = row["timer"] || row["time limit"] || row["timelimit"];
-            const answer1 = row["answer1"]?.trim();
-            const answer2 = row["answer2"]?.trim();
-            const answer3 = row["answer3"]?.trim();
-            const answer4 = row["answer4"]?.trim();
+            // Case-insensitive field lookup helper
+            const getField = (fieldName: string) => {
+              const keys = Object.keys(row);
+              const matchingKey = keys.find(k => k.toLowerCase() === fieldName.toLowerCase());
+              return matchingKey ? row[matchingKey] : undefined;
+            };
+            
+            const questionText = getField("question text")?.trim();
+            const questionType = getField("question type")?.trim().toLowerCase();
+            const timerValue = getField("timer") || getField("time limit") || getField("timelimit");
+            const answer1 = getField("answer1")?.trim();
+            const answer2 = getField("answer2")?.trim();
+            const answer3 = getField("answer3")?.trim();
+            const answer4 = getField("answer4")?.trim();
             
             if (!questionText || !questionType || !answer1) {
               continue;
@@ -716,7 +723,8 @@ export default function CreateFight() {
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">
                       CSV format: "question text", "question type", "timer", "answer1", "answer2", "answer3", "answer4"<br />
-                      Question types: multiple_choice, true_false, short_answer (timer in seconds, defaults to 30)
+                      Question types: multiple_choice/MC, true_false/TF, short_answer/SA (case-insensitive)<br />
+                      Timer: seconds (5-120), defaults to 30 if omitted
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
