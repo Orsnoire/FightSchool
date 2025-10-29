@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
-import { Play, ArrowLeft, Skull, XCircle, Wifi, WifiOff, RefreshCw, Crown } from "lucide-react";
+import { Play, ArrowLeft, Skull, XCircle, Wifi, WifiOff, RefreshCw, Crown, RotateCw } from "lucide-react";
 import type { Fight, CombatState } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { CombatLog, type CombatLogEvent } from "@/components/CombatLog";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function HostFight() {
   const [, params] = useRoute("/teacher/host/:id");
@@ -100,6 +101,24 @@ export default function HostFight() {
     }
   };
 
+  const forceQuestion = async () => {
+    if (!sessionId || !hasStarted) return;
+    
+    try {
+      await apiRequest("POST", `/api/combat/${sessionId}/force-question`);
+      toast({ 
+        title: "Question forced", 
+        description: "Starting new question phase" 
+      });
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to force question",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!fight) {
     return <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">Loading...</div>;
   }
@@ -150,6 +169,15 @@ export default function HostFight() {
             >
               <Play className="mr-2 h-4 w-4" />
               Start Fight
+            </Button>
+            <Button
+              variant="outline"
+              onClick={forceQuestion}
+              disabled={!hasStarted || connectionStatus !== "connected"}
+              data-testid="button-force-question"
+            >
+              <RotateCw className="mr-2 h-4 w-4" />
+              Force New Question
             </Button>
             <Button
               variant="destructive"

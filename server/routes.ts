@@ -696,6 +696,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stats);
   });
 
+  // Force question endpoint for host emergency unstick
+  app.post("/api/combat/:sessionId/force-question", async (req, res) => {
+    try {
+      const sessionId = req.params.sessionId;
+      const session = await storage.getCombatSession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      log(`[API] Force question requested for session ${sessionId}`, "server");
+      
+      // Clear any existing combat timer
+      const timer = combatTimers.get(sessionId);
+      if (timer) {
+        clearTimeout(timer);
+        combatTimers.delete(sessionId);
+        log(`[API] Cleared existing timer for session ${sessionId}`, "server");
+      }
+      
+      // Force start a new question phase
+      await startQuestion(sessionId);
+      
+      res.json({ success: true, message: "Question phase forced" });
+    } catch (error: any) {
+      log(`[API] Error forcing question: ${error}`, "server");
+      res.status(500).json({ error: error.message || "Failed to force question" });
+    }
+  });
+
   // Job progression endpoints
   app.get("/api/student/:studentId/job-levels", async (req, res) => {
     const jobLevels = await storage.getStudentJobLevels(req.params.studentId);
@@ -1005,9 +1035,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Base HP formula: (# of questions) × (total player levels earned) × 0.5 + 10
+      // Base HP formula: (# of questions) × (total player levels earned) × 0.1 + 10
       const questionCount = fight.questions.length;
-      const baseHP = (questionCount * totalPlayerLevels * 0.5) + 10;
+      const baseHP = (questionCount * totalPlayerLevels * 0.1) + 10;
       
       // Apply difficulty multiplier to each enemy and set their HP
       session.enemies = session.enemies.map(enemy => {
@@ -2204,6 +2234,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (message.type === "answer" && ws.studentId && ws.sessionId) {
           const session = await storage.getCombatSession(ws.sessionId);
           if (!session) return;
+          
+          // TIMER SUPREMACY: Ignore answers after question phase has ended
+          if (session.currentPhase !== "question") {
+            log(`[WebSocket] Ignoring late answer from ${ws.studentId} - phase already moved to ${session.currentPhase}`, "websocket");
+            return;
+          }
           
           // Only allow alive players to answer
           const player = session.players[ws.studentId];
