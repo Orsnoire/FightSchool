@@ -163,13 +163,16 @@ export const combatSessions = pgTable("combat_sessions", {
   sessionId: varchar("session_id", { length: 6 }).primaryKey(), // 6-character alphanumeric code
   fightId: varchar("fight_id").notNull(), // References fights table
   currentQuestionIndex: integer("current_question_index").notNull().default(0),
-  currentPhase: text("current_phase").notNull().$type<"waiting" | "question" | "tank_blocking" | "combat" | "game_over">(),
+  currentPhase: text("current_phase").notNull().$type<"waiting" | "question" | "block_and_healing" | "question_resolution" | "enemy_ai" | "state_check" | "game_over">(),
   players: jsonb("players").notNull().$type<Record<string, PlayerState>>(),
   enemies: jsonb("enemies").notNull(),
   questionStartTime: bigint("question_start_time", { mode: "number" }),
   phaseStartTime: bigint("phase_start_time", { mode: "number" }),
   jobLocked: boolean("job_locked").notNull().default(false),
   questionOrder: jsonb("question_order").$type<number[]>(),
+  
+  // Threat tracking
+  threatLeaderId: varchar("threat_leader_id"), // Student ID of player with highest threat (null if none)
   
   // Solo mode fields
   soloModeEnabled: boolean("solo_mode_enabled").notNull().default(false),
@@ -465,12 +468,14 @@ export interface CombatState {
   sessionId: string; // 6-character code for this session
   fightId: string; // Reference to fight template
   currentQuestionIndex: number;
-  currentPhase: "waiting" | "question" | "tank_blocking" | "combat" | "game_over";
+  currentPhase: "waiting" | "question" | "block_and_healing" | "question_resolution" | "enemy_ai" | "state_check" | "game_over";
   players: Record<string, PlayerState>;
   enemies: Array<{ id: string; name: string; image: string; health: number; maxHealth: number }>;
   questionStartTime?: number;
   phaseStartTime?: number;
   questionOrder?: number[]; // Array of question indices (shuffled if randomizeQuestions is true)
+  threatLeaderId?: string; // Student ID of the current threat leader (for crown icon)
+  isFirstQuestion?: boolean; // Track if this is the first question of the session
   
   // Solo mode fields
   soloModeEnabled?: boolean;

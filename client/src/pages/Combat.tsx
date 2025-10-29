@@ -311,10 +311,10 @@ export default function Combat() {
     
     const currentPhase = combatState.currentPhase;
     
-    // Show transition when entering combat phase (both player attacks and enemy counterattacks happen here)
-    if (currentPhase === "combat" && previousPhase !== "combat" && previousPhase !== "") {
+    // Show transition when entering question resolution phase
+    if (currentPhase === "question_resolution" && previousPhase !== "question_resolution" && previousPhase !== "") {
       if (phaseTransitionTimer.current) clearTimeout(phaseTransitionTimer.current);
-      setPhaseTransitionText("COMBAT PHASE!");
+      setPhaseTransitionText("QUESTION RESOLUTION!");
       setShowPhaseTransition(true);
       phaseTransitionTimer.current = setTimeout(() => setShowPhaseTransition(false), 1500);
     }
@@ -407,8 +407,8 @@ export default function Combat() {
       shieldPulseTimer.current = setTimeout(() => setShowShieldPulse(false), 1500);
     }
 
-    // Detect enemy attacks (health decreases during combat phase for ANY player - broadcast to all)
-    if (combatState.currentPhase === "combat") {
+    // Detect enemy attacks (health decreases during enemy AI phase for ANY player - broadcast to all)
+    if (combatState.currentPhase === "enemy_ai") {
       Object.entries(combatState.players).forEach(([playerId, currentPlayerState]) => {
         const previousPlayerState = previousCombatState.players[playerId];
         if (previousPlayerState && currentPlayerState.health < previousPlayerState.health) {
@@ -777,7 +777,12 @@ export default function Combat() {
                   title={player.nickname}
                 >
                   <div style={{ width: '24px', height: '24px' }}>
-                    <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="xs" />
+                    <PlayerAvatar 
+                      characterClass={player.characterClass} 
+                      gender={player.gender} 
+                      size="xs"
+                      isThreatLeader={combatState?.threatLeaderId === player.studentId}
+                    />
                   </div>
                   <div className="mt-0.5 w-full bg-destructive/30 rounded-sm overflow-hidden" style={{ height: '1px' }}>
                     <div 
@@ -987,7 +992,12 @@ export default function Combat() {
                   title={player.nickname}
                 >
                   <div style={{ width: '24px', height: '24px' }}>
-                    <PlayerAvatar characterClass={player.characterClass} gender={player.gender} size="xs" />
+                    <PlayerAvatar 
+                      characterClass={player.characterClass} 
+                      gender={player.gender} 
+                      size="xs"
+                      isThreatLeader={combatState?.threatLeaderId === player.studentId}
+                    />
                   </div>
                   <div className="mt-0.5 w-full bg-destructive/30 rounded-sm overflow-hidden" style={{ height: '1px' }}>
                     <div 
@@ -1005,9 +1015,9 @@ export default function Combat() {
         </div>
       </div>
 
-      {/* ENEMY OVERLAY: Large centered enemy image during Combat phase */}
+      {/* ENEMY OVERLAY: Large centered enemy image during Question Resolution phase */}
       <AnimatePresence>
-        {enemy && combatState && combatState.currentPhase === "combat" && (
+        {enemy && combatState && combatState.currentPhase === "question_resolution" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1136,7 +1146,12 @@ export default function Combat() {
         <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border p-2 z-50" style={{ height: '10vh' }}>
           <div className="flex items-center gap-3 h-full max-w-7xl mx-auto">
             <div className="relative" style={{ width: '48px', height: '48px' }}>
-              <PlayerAvatar characterClass={playerState.characterClass} gender={playerState.gender} size="md" />
+              <PlayerAvatar 
+                characterClass={playerState.characterClass} 
+                gender={playerState.gender} 
+                size="md"
+                isThreatLeader={combatState?.threatLeaderId === studentId}
+              />
               {/* Shield pulse animation */}
               <AnimatePresence>
                 {showShieldPulse && (
@@ -1229,7 +1244,7 @@ export default function Combat() {
       {/* Tank Blocking Modal */}
       {combatState && playerState && studentId && (
         <BlockingModal
-          open={combatState.currentPhase === "tank_blocking" && TANK_CLASSES.includes(playerState.characterClass) && !playerState.isDead}
+          open={combatState.currentPhase === "block_and_healing" && TANK_CLASSES.includes(playerState.characterClass) && !playerState.isDead}
           players={combatState.players}
           currentPlayerId={studentId}
           currentBlockTarget={playerState.blockTarget || null}
@@ -1240,7 +1255,7 @@ export default function Combat() {
       {/* Healer Target Selection Modal */}
       {combatState && playerState && studentId && (
         <HealingModal
-          open={isHealing && !playerState.isDead && HEALER_CLASSES.includes(playerState.characterClass) && combatState.currentPhase === "combat"}
+          open={isHealing && !playerState.isDead && HEALER_CLASSES.includes(playerState.characterClass) && combatState.currentPhase === "block_and_healing"}
           players={combatState.players}
           currentPlayerId={studentId}
           currentHealTarget={healTarget}

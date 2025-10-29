@@ -1113,19 +1113,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Auto-advance after time limit
     const timer = setTimeout(async () => {
-      await tankBlockingPhase(sessionId);
+      await blockAndHealingPhase(sessionId);
     }, question.timeLimit * 1000);
     combatTimers.set(sessionId, timer);
   }
 
-  async function tankBlockingPhase(sessionId: string) {
+  async function blockAndHealingPhase(sessionId: string) {
     const phaseStart = Date.now();
     const session = await storage.getCombatSession(sessionId);
     if (!session) return;
 
-    await storage.updateCombatSession(sessionId, { currentPhase: "tank_blocking" });
-    broadcastToCombat(sessionId, { type: "phase_change", phase: "Tank Blocking & Healing" });
-    broadcastCombatLogEvent(sessionId, "phase_change", "Tank Blocking & Healing Phase");
+    await storage.updateCombatSession(sessionId, { currentPhase: "block_and_healing" });
+    broadcastToCombat(sessionId, { type: "phase_change", phase: "Block and Healing Phase" });
+    broadcastCombatLogEvent(sessionId, "phase_change", "Block and Healing Phase");
     
     // PERFORMANCE FIX (B1, B2): Process healing in memory (Herbalist, Priest, Paladin)
     for (const [playerId, player] of Object.entries(session.players)) {
@@ -1211,16 +1211,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updatedSession = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
     
-    logPhaseTiming(sessionId, "tank_blocking", phaseStart);
+    logPhaseTiming(sessionId, "block_and_healing", phaseStart);
 
-    // Auto-advance after 5 seconds
+    // Auto-advance after 10 seconds (increased from 5)
     const timer = setTimeout(async () => {
-      await combatPhase(sessionId);
-    }, 5000);
+      await questionResolutionPhase(sessionId);
+    }, 10000);
     combatTimers.set(sessionId, timer);
   }
 
-  async function combatPhase(sessionId: string) {
+  async function questionResolutionPhase(sessionId: string) {
     const phaseStart = Date.now();
     const session = await storage.getCombatSession(sessionId);
     if (!session) return;
@@ -1228,9 +1228,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const fight = await storage.getFight(session.fightId);
     if (!fight) return;
 
-    await storage.updateCombatSession(sessionId, { currentPhase: "combat" });
-    broadcastToCombat(sessionId, { type: "phase_change", phase: "Combat!" });
-    broadcastCombatLogEvent(sessionId, "phase_change", "Combat Phase - Players Attack!");
+    // Calculate threat leader
+    let highestThreat = 0;
+    let threatLeaderId: string | null = null;
+    for (const [playerId, player] of Object.entries(session.players)) {
+      if (player.isDead) continue;
+      if (player.threat > highestThreat) {
+        highestThreat = player.threat;
+        threatLeaderId = playerId;
+      }
+    }
+
+    await storage.updateCombatSession(sessionId, { 
+      currentPhase: "question_resolution",
+      threatLeaderId: threatLeaderId ?? null
+    });
+    broadcastToCombat(sessionId, { type: "phase_change", phase: "Question Resolution" });
+    broadcastCombatLogEvent(sessionId, "phase_change", "Question Resolution Phase");
 
     // Use questionOrder array to get the actual question index (supports randomization)
     const actualQuestionIndex = session.questionOrder 
@@ -1586,12 +1600,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updatedSession = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
     
-    logPhaseTiming(sessionId, "combat", phaseStart);
+    logPhaseTiming(sessionId, "question_resolution", phaseStart);
 
-    // Auto-advance to enemy AI phase
+    // Auto-advance to enemy AI phase after 3 seconds
     setTimeout(async () => {
       await enemyAIPhase(sessionId);
-    }, 2000);
+    }, 3000);
   }
 
   async function enemyAIPhase(sessionId: string) {
@@ -1602,8 +1616,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const fight = await storage.getFight(session.fightId);
     if (!fight) return;
 
-    broadcastToCombat(sessionId, { type: "phase_change", phase: "Enemy Turn" });
-    broadcastCombatLogEvent(sessionId, "phase_change", "Enemy Turn - Enemies Attack!");
+    await storage.updateCombatSession(sessionId, { currentPhase: "enemy_ai" });
+    broadcastToCombat(sessionId, { type: "phase_change", phase: "Enemy AI Phase" });
+    broadcastCombatLogEvent(sessionId, "phase_change", "Enemy AI Phase - Enemies Attack!");
 
     // Default enemy AI: Attack player with highest threat
     // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
@@ -1668,10 +1683,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     logPhaseTiming(sessionId, "enemy_ai", phaseStart);
 
-    // Auto-advance to state check
+    // Auto-advance to state check after 3 seconds
     setTimeout(async () => {
-      await checkGameState(sessionId);
-    }, 2000);
+      await stateCheckPhase(sessionId);
+    }, 3000);
   }
 
   async function saveCombatStats(sessionId: string) {
@@ -1695,12 +1710,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  async function checkGameState(sessionId: string) {
+  async function stateCheckPhase(sessionId: string) {
     const session = await storage.getCombatSession(sessionId);
     if (!session) return;
     
     const fight = await storage.getFight(session.fightId);
     if (!fight) return;
+
+    await storage.updateCombatSession(sessionId, { currentPhase: "state_check" });
 
     // Check if all players dead
     const allPlayersDead = Object.values(session.players).every((p) => p.isDead);
@@ -2279,8 +2296,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               combatTimers.delete(ws.sessionId);
             }
             
-            // Immediately proceed to tank blocking phase
-            await tankBlockingPhase(ws.sessionId);
+            // Immediately proceed to block and healing phase
+            await blockAndHealingPhase(ws.sessionId);
           }
         } else if (message.type === "block" && ws.studentId && ws.sessionId) {
           const session = await storage.getCombatSession(ws.sessionId);
@@ -2488,9 +2505,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const currentSession = await storage.getCombatSession(sessionId);
             if (!currentSession) return;
             
-            // Resume to previous phase (question or combat)
+            // Resume to previous phase (question or question_resolution)
             await storage.updateCombatSession(sessionId, { 
-              currentPhase: session.currentQuestionIndex < 1 ? "question" : "combat"
+              currentPhase: session.currentQuestionIndex < 1 ? "question" : "question_resolution"
             });
             
             const resumedSession = await storage.getCombatSession(sessionId);
