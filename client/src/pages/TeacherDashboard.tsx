@@ -44,7 +44,7 @@ export default function TeacherDashboard() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/teacher/logout", { method: "POST" });
+      await fetch("/api/teacher/logout", { method: "POST", credentials: "include" });
     } catch (error) {
       console.error("Logout error:", error);
     }

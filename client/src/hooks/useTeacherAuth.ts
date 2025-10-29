@@ -14,7 +14,9 @@ export function useTeacherAuth() {
 
   async function checkSession() {
     try {
-      const response = await fetch("/api/teacher/check-session");
+      const response = await fetch("/api/teacher/check-session", {
+        credentials: "include"
+      });
       
       if (response.ok) {
         setIsAuthenticated(true);
