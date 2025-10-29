@@ -17,6 +17,31 @@ export default function TeacherDashboard() {
   const teacherId = localStorage.getItem("teacherId");
   const teacherGuildCode = localStorage.getItem("teacherGuildCode") || "";
 
+  const { data: fights, isLoading } = useQuery<Fight[]>({
+    queryKey: [`/api/teacher/${teacherId}/fights`],
+    enabled: !!teacherId && isAuthenticated && !isChecking,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 5000,
+  });
+
+  const deleteFightMutation = useMutation({
+    mutationFn: async (fightId: string) => {
+      return await apiRequest("DELETE", `/api/fights/${fightId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/teacher/${teacherId}/fights`] });
+      toast({ title: "Fight deleted", description: "The fight has been removed" });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to delete fight", 
+        variant: "destructive" 
+      });
+    },
+  });
+
   const handleLogout = async () => {
     try {
       await fetch("/api/teacher/logout", { method: "POST" });
@@ -39,34 +64,8 @@ export default function TeacherDashboard() {
   }
   
   if (!isAuthenticated) {
-    return null; // Will redirect to login
+    return null;
   }
-  
-  // B10 FIX: Auto-refresh fights to show updated data
-  const { data: fights, isLoading } = useQuery<Fight[]>({
-    queryKey: [`/api/teacher/${teacherId}/fights`],
-    enabled: !!teacherId,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchInterval: 5000, // Poll every 5s to catch fight updates
-  });
-
-  const deleteFightMutation = useMutation({
-    mutationFn: async (fightId: string) => {
-      return await apiRequest("DELETE", `/api/fights/${fightId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/teacher/${teacherId}/fights`] });
-      toast({ title: "Fight deleted", description: "The fight has been removed" });
-    },
-    onError: () => {
-      toast({ 
-        title: "Error", 
-        description: "Failed to delete fight", 
-        variant: "destructive" 
-      });
-    },
-  });
 
   const copyGuildCode = (guildCode: string) => {
     navigator.clipboard.writeText(guildCode);
