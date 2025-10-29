@@ -13,11 +13,13 @@ import { HealingModal } from "@/components/HealingModal";
 import { FloatingNumber } from "@/components/FloatingNumber";
 import { CombatFeedbackModal } from "@/components/CombatFeedbackModal";
 import { PartyDamageModal } from "@/components/PartyDamageModal";
+import { EnemyAIModal } from "@/components/EnemyAIModal";
+import { CounterattackModal } from "@/components/CounterattackModal";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Swords, Calculator, Sparkles } from "lucide-react";
-import type { CombatState, Question, LootItem, CharacterClass, Gender, ResolutionFeedback, PartyDamageData } from "@shared/schema";
+import type { CombatState, Question, LootItem, CharacterClass, Gender, ResolutionFeedback, PartyDamageData, EnemyAIAttackData } from "@shared/schema";
 import { TANK_CLASSES, HEALER_CLASSES } from "@shared/schema";
 import { type AnimationType, ULTIMATE_ABILITIES } from "@shared/ultimateAbilities";
 import { UltimateAnimation } from "@/components/UltimateAnimation";
@@ -103,6 +105,15 @@ export default function Combat() {
   const [showPartyDamageModal, setShowPartyDamageModal] = useState(false);
   const resolutionTimeoutTimer = useRef<NodeJS.Timeout | null>(null);
   const modalSequenceTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  // Enemy AI attack system
+  const [showEnemyAIModal, setShowEnemyAIModal] = useState(false);
+  const [enemyAIData, setEnemyAIData] = useState<{attacks: EnemyAIAttackData[], allEnemies: Array<{id: string, name: string, image: string}>} | null>(null);
+  const [currentAttackIndex, setCurrentAttackIndex] = useState(0);
+  const [showCounterattackModal, setShowCounterattackModal] = useState(false);
+  const enemyAIModalTimer = useRef<NodeJS.Timeout | null>(null);
+  const counterattackModalTimer = useRef<NodeJS.Timeout | null>(null);
+  const enemyAICleanupTimer = useRef<NodeJS.Timeout | null>(null);
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
@@ -236,6 +247,15 @@ export default function Combat() {
           resolutionTimeoutTimer.current = null;
         }
         setPartyDamageData(message.data);
+      } else if (message.type === "enemy_ai_attack") {
+        // Enemy AI attack - show enemy modal then counterattack modals
+        setEnemyAIData({
+          attacks: message.attacks,
+          allEnemies: message.allEnemies
+        });
+        setCurrentAttackIndex(0);
+        setShowEnemyAIModal(true);
+        setShowCounterattackModal(false);
       }
     };
 
@@ -274,6 +294,9 @@ export default function Combat() {
       if (playerHitResetTimer.current) clearTimeout(playerHitResetTimer.current);
       if (shieldPulseTimer.current) clearTimeout(shieldPulseTimer.current);
       if (healingPulseTimer.current) clearTimeout(healingPulseTimer.current);
+      if (enemyAIModalTimer.current) clearTimeout(enemyAIModalTimer.current);
+      if (counterattackModalTimer.current) clearTimeout(counterattackModalTimer.current);
+      if (enemyAICleanupTimer.current) clearTimeout(enemyAICleanupTimer.current);
     };
   }, [connectWebSocket]);
 
@@ -439,6 +462,63 @@ export default function Combat() {
       if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
     };
   }, [feedbackQueue, currentModalIndex, partyDamageData, showPartyDamageModal, combatState?.currentPhase]);
+
+  // Enemy AI attack modal sequencing
+  useEffect(() => {
+    if (!enemyAIData || enemyAIData.attacks.length === 0) {
+      return;
+    }
+    
+    // Clean up any existing timers
+    if (enemyAIModalTimer.current) clearTimeout(enemyAIModalTimer.current);
+    if (counterattackModalTimer.current) clearTimeout(counterattackModalTimer.current);
+    if (enemyAICleanupTimer.current) clearTimeout(enemyAICleanupTimer.current);
+    
+    // Step 1: Show EnemyAIModal for 800ms
+    if (showEnemyAIModal) {
+      enemyAIModalTimer.current = setTimeout(() => {
+        setShowEnemyAIModal(false);
+        // Step 2: Show first counterattack modal
+        setCurrentAttackIndex(0);
+        setShowCounterattackModal(true);
+      }, 800);
+    }
+    
+    return () => {
+      if (enemyAIModalTimer.current) clearTimeout(enemyAIModalTimer.current);
+    };
+  }, [enemyAIData, showEnemyAIModal]);
+
+  // Counterattack modal sequencing - advance through attacks
+  useEffect(() => {
+    if (!enemyAIData || !showCounterattackModal) {
+      return;
+    }
+    
+    // Clean up any existing timer
+    if (counterattackModalTimer.current) clearTimeout(counterattackModalTimer.current);
+    
+    // Show current attack for 2 seconds
+    counterattackModalTimer.current = setTimeout(() => {
+      if (currentAttackIndex < enemyAIData.attacks.length - 1) {
+        // More attacks to show - advance to next
+        setCurrentAttackIndex(prev => prev + 1);
+      } else {
+        // All attacks shown - hide modal and clean up after 3 seconds total
+        setShowCounterattackModal(false);
+        
+        if (enemyAICleanupTimer.current) clearTimeout(enemyAICleanupTimer.current);
+        enemyAICleanupTimer.current = setTimeout(() => {
+          setEnemyAIData(null);
+          setCurrentAttackIndex(0);
+        }, 3000);
+      }
+    }, 2000);
+    
+    return () => {
+      if (counterattackModalTimer.current) clearTimeout(counterattackModalTimer.current);
+    };
+  }, [enemyAIData, showCounterattackModal, currentAttackIndex]);
 
   // Show toasts for healing, blocking, and enemy attacks
   useEffect(() => {
@@ -1522,6 +1602,22 @@ export default function Combat() {
             image: e.enemyImage,
             damage: 0
           })) : undefined}
+        />
+      )}
+
+      {/* Enemy AI Attack Modal - shows enemies animating to center */}
+      {enemyAIData && showEnemyAIModal && (
+        <EnemyAIModal
+          open={true}
+          allEnemies={enemyAIData.allEnemies}
+        />
+      )}
+
+      {/* Counterattack Modal - shows individual attack details */}
+      {enemyAIData && showCounterattackModal && currentAttackIndex < enemyAIData.attacks.length && (
+        <CounterattackModal
+          open={true}
+          attack={enemyAIData.attacks[currentAttackIndex]}
         />
       )}
 

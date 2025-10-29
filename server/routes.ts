@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData, type EnemyAIAttackData } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
@@ -1910,6 +1910,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     broadcastToCombat(sessionId, { type: "phase_change", phase: "Enemy AI Phase" });
     broadcastCombatLogEvent(sessionId, "phase_change", "Enemy AI Phase - Enemies Attack!");
 
+    // Collect enemy attack data for frontend display
+    const enemyAttacks: EnemyAIAttackData[] = [];
+
     // Default enemy AI: Attack player with highest threat
     // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
     
@@ -1956,11 +1959,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (wasAlive && nowDead) {
             target.deaths += 1;
           }
+          
+          // Collect attack data for frontend display
+          enemyAttacks.push({
+            enemyName: enemy.name,
+            enemyImage: enemy.image,
+            enemyId: enemy.id,
+            targetPlayer: target.nickname,
+            damage: damageAmount,
+            blocked: false,
+          });
         } else if (blockerPlayer) {
           // Blocked! Tank absorbs damage and gains aggro
           blockerPlayer.damageBlocked += damageAmount;
           // AGGRO SYSTEM: Tank who successfully blocks gains +1 aggro per damage point blocked
           blockerPlayer.threat += damageAmount;
+          
+          // Collect attack data for frontend display (blocked)
+          enemyAttacks.push({
+            enemyName: enemy.name,
+            enemyImage: enemy.image,
+            enemyId: enemy.id,
+            targetPlayer: target.nickname,
+            damage: damageAmount,
+            blocked: true,
+            blockerName: blockerPlayer.nickname,
+          });
         }
       }
     }
@@ -1971,12 +1995,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updatedSession = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
     
+    // Broadcast enemy AI attack data to students for modal display
+    if (enemyAttacks.length > 0) {
+      broadcastToCombat(sessionId, {
+        type: "enemy_ai_attack",
+        attacks: enemyAttacks,
+        allEnemies: session.enemies.filter(e => e.health > 0).map(e => ({
+          id: e.id,
+          name: e.name,
+          image: e.image,
+        })),
+      });
+    }
+    
     logPhaseTiming(sessionId, "enemy_ai", phaseStart);
 
-    // Auto-advance to state check after 3 seconds
+    // Auto-advance to state check after all animations complete
+    // Timing calculation:
+    // - EnemyAIModal animation: 800ms
+    // - Each CounterattackModal: 2000ms
+    // - Final cleanup delay: 3000ms
+    // Total: 800 + (attacks * 2000) + 3000 = 3800 + (attacks * 2000)
+    const enemyAnimationTime = 800;      // Enemy modal animation
+    const counterattackTime = 2000;      // Per attack modal display
+    const cleanupTime = 3000;            // Final delay
+    const totalAnimationTime = enemyAnimationTime + (enemyAttacks.length * counterattackTime) + cleanupTime;
+    const delayTime = enemyAttacks.length > 0 ? totalAnimationTime : 1000;
+    
     setTimeout(async () => {
       await stateCheckPhase(sessionId);
-    }, 3000);
+    }, delayTime);
   }
 
   async function saveCombatStats(sessionId: string) {

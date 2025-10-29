@@ -883,6 +883,16 @@ export interface ResolutionFeedback {
   healedAmount?: number;        // Amount of HP healed
 }
 
+export interface EnemyAIAttackData {
+  enemyName: string;
+  enemyImage: string;
+  enemyId: string;
+  targetPlayer: string;      // Threat leader nickname
+  damage: number;
+  blocked: boolean;
+  blockerName?: string;      // If blocked, who blocked it
+}
+
 export interface PartyDamageData {
   totalDamage: number;
   enemiesHit: Array<{
