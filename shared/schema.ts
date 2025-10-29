@@ -860,3 +860,35 @@ export function getGuildLevelFromXP(xp: number): number {
   
   return level;
 }
+
+// Question Resolution Feedback Types
+export type ResolutionFeedbackType =
+  | "correct_damage"             // Student answered correctly and dealt base damage
+  | "incorrect_damage"           // Student answered incorrectly and took damage
+  | "correct_ability"            // Student answered correctly and used an ability (phase 1)
+  | "blocked_for_player"         // Tank successfully blocked damage for another player
+  | "got_blocked"                // Student got their damage blocked by a tank
+  | "healed_player"              // Healer successfully healed another player
+  | "ability_damage_phase2"      // Student used a block/healing phase ability that dealt damage
+
+export interface ResolutionFeedback {
+  type: ResolutionFeedbackType;
+  damage?: number;              // Damage dealt or taken
+  enemyName?: string;           // Enemy that was damaged or that attacked
+  abilityName?: string;         // Name of ability used
+  blockedPlayer?: string;       // Player who was blocked (for blocked_for_player)
+  blockedDamage?: number;       // Amount of damage blocked
+  blockingPlayer?: string;      // Player who did the blocking (for got_blocked)
+  healedPlayer?: string;        // Player who was healed
+  healedAmount?: number;        // Amount of HP healed
+}
+
+export interface PartyDamageData {
+  totalDamage: number;
+  enemiesHit: Array<{
+    enemyId: string;
+    enemyName: string;
+    enemyImage: string;
+    damageTaken: number;
+  }>;
+}

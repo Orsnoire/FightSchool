@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, TANK_CLASSES, HEALER_CLASSES, type CombatState } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
@@ -1115,6 +1115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Track last activity time for block_and_healing phase
   const blockHealingLastActivity: Map<string, number> = new Map();
+  
+  // Store healing feedback for question resolution phase
+  const healingFeedbackMap: Map<string, Map<string, ResolutionFeedback[]>> = new Map();
 
   async function blockAndHealingPhase(sessionId: string) {
     const phaseStart = Date.now();
@@ -1278,6 +1281,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const session = await storage.getCombatSession(sessionId);
     if (!session) return;
     
+    // Initialize healing feedback for this session
+    const sessionHealingFeedback = new Map<string, ResolutionFeedback[]>();
+    healingFeedbackMap.set(sessionId, sessionHealingFeedback);
+    
     // PERFORMANCE FIX (B1, B2): Process healing in memory (Herbalist, Priest, Paladin)
     for (const [playerId, player] of Object.entries(session.players)) {
       if (player.isDead) continue;
@@ -1297,6 +1304,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // AGGRO SYSTEM: Healing gains +2 aggro per healing point
           player.threat += actualHeal * 2;
+          
+          // Add healing feedback
+          if (!sessionHealingFeedback.has(playerId)) {
+            sessionHealingFeedback.set(playerId, []);
+          }
+          sessionHealingFeedback.get(playerId)!.push({
+            type: "healed_player",
+            healedPlayer: target.nickname,
+            healedAmount: actualHeal,
+          });
           
           // Combat log event for healing
           broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} heals ${target.nickname} with a potion`, {
@@ -1322,6 +1339,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // AGGRO SYSTEM: Healing gains +2 aggro per healing point
           player.threat += actualHeal * 2;
           
+          // Add healing feedback
+          if (!sessionHealingFeedback.has(playerId)) {
+            sessionHealingFeedback.set(playerId, []);
+          }
+          sessionHealingFeedback.get(playerId)!.push({
+            type: "healed_player",
+            healedPlayer: target.nickname,
+            healedAmount: actualHeal,
+          });
+          
           // Combat log event for healing
           broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} casts Mend on ${target.nickname}`, {
             playerName: player.nickname,
@@ -1345,6 +1372,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // AGGRO SYSTEM: Healing gains +2 aggro per healing point
           player.threat += actualHeal * 2;
+          
+          // Add healing feedback
+          if (!sessionHealingFeedback.has(playerId)) {
+            sessionHealingFeedback.set(playerId, []);
+          }
+          sessionHealingFeedback.get(playerId)!.push({
+            type: "healed_player",
+            healedPlayer: target.nickname,
+            healedAmount: actualHeal,
+          });
           
           // Combat log event for healing
           broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} uses Healing Guard on ${target.nickname}`, {
@@ -1400,6 +1437,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ? session.questionOrder[session.currentQuestionIndex] 
       : session.currentQuestionIndex;
     const question = fight.questions[actualQuestionIndex];
+
+    // Feedback collection for students
+    const playerFeedback = new Map<string, ResolutionFeedback[]>();
+    const enemyDamageMap = new Map<string, number>();
+    
+    // Merge healing feedback from block_and_healing phase
+    const healingFeedback = healingFeedbackMap.get(sessionId);
+    if (healingFeedback) {
+      for (const [playerId, feedbackList] of Array.from(healingFeedback.entries())) {
+        if (!playerFeedback.has(playerId)) {
+          playerFeedback.set(playerId, []);
+        }
+        playerFeedback.get(playerId)!.push(...feedbackList);
+      }
+      // Clean up after merging
+      healingFeedbackMap.delete(sessionId);
+    }
 
     // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
     
@@ -1635,6 +1689,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             player.damageDealt += damage;
             player.lastActionDamage = damage; // Track for UI display
             
+            // Track enemy damage for party summary
+            const currentDamage = enemyDamageMap.get(enemy.id) || 0;
+            enemyDamageMap.set(enemy.id, currentDamage + damage);
+            
+            // Add feedback for correct answer with base damage
+            if (!playerFeedback.has(playerId)) {
+              playerFeedback.set(playerId, []);
+            }
+            playerFeedback.get(playerId)!.push({
+              type: "correct_damage",
+              damage: damage,
+              enemyName: enemyName,
+            });
+            
             // AGGRO SYSTEM: Add threat based on damage dealt
             // Tank classes (warrior, knight, paladin, dark_knight) gain +3 aggro per damage
             // All other classes gain +1 aggro per damage
@@ -1701,6 +1769,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           player.health = newHealth;
           player.isDead = nowDead;
           player.damageTaken += damageAmount;
+          
+          // Add feedback for incorrect answer - player took damage
+          const enemyName = session.enemies.length > 0 ? session.enemies[0].name : "Enemy";
+          if (!playerFeedback.has(playerId)) {
+            playerFeedback.set(playerId, []);
+          }
+          playerFeedback.get(playerId)!.push({
+            type: "incorrect_damage",
+            damage: damageAmount,
+            enemyName: enemyName,
+          });
+          
           if (wasAlive && nowDead) {
             player.deaths += 1;
             // Combat log event for player death
@@ -1713,6 +1793,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const damageAmount = fight.baseEnemyDamage || 1;
           blockerPlayer.damageBlocked += damageAmount;
           blockerPlayer.threat += damageAmount; // +1 aggro per damage blocked
+          
+          // Add feedback for tank who blocked
+          const blockerId = Object.keys(session.players).find(id => session.players[id] === blockerPlayer);
+          if (blockerId) {
+            if (!playerFeedback.has(blockerId)) {
+              playerFeedback.set(blockerId, []);
+            }
+            playerFeedback.get(blockerId)!.push({
+              type: "blocked_for_player",
+              blockedPlayer: player.nickname,
+              blockedDamage: damageAmount,
+            });
+          }
+          
+          // Add feedback for player who got blocked
+          if (!playerFeedback.has(playerId)) {
+            playerFeedback.set(playerId, []);
+          }
+          playerFeedback.get(playerId)!.push({
+            type: "got_blocked",
+            blockingPlayer: blockerPlayer.nickname,
+            blockedDamage: damageAmount,
+          });
           
           // Combat log event for blocking
           broadcastCombatLogEvent(sessionId, "block", `${blockerPlayer.nickname} blocks damage for ${player.nickname}`, {
@@ -1748,6 +1851,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const updatedSession = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
+    
+    // Send individual feedback to each student
+    for (const [playerId, feedbackList] of Array.from(playerFeedback.entries())) {
+      if (feedbackList.length > 0) {
+        // Send to specific student only
+        wss.clients.forEach((ws: ExtendedWebSocket) => {
+          if (ws.readyState === WebSocket.OPEN && ws.sessionId === sessionId && ws.studentId === playerId) {
+            ws.send(JSON.stringify({
+              type: "resolution_feedback",
+              feedback: feedbackList,
+            }));
+          }
+        });
+      }
+    }
+    
+    // Calculate and send party damage summary
+    const totalDamage = Array.from(enemyDamageMap.values()).reduce((sum, dmg) => sum + dmg, 0);
+    const enemiesHit = session.enemies
+      .filter(enemy => enemyDamageMap.has(enemy.id))
+      .map(enemy => ({
+        enemyId: enemy.id,
+        enemyName: enemy.name,
+        enemyImage: enemy.image,
+        damageTaken: enemyDamageMap.get(enemy.id) || 0,
+      }));
+    
+    if (totalDamage > 0) {
+      const partyDamageData: PartyDamageData = {
+        totalDamage,
+        enemiesHit,
+      };
+      
+      broadcastToCombat(sessionId, {
+        type: "party_damage_summary",
+        data: partyDamageData,
+      });
+    }
     
     logPhaseTiming(sessionId, "question_resolution", phaseStart);
 
