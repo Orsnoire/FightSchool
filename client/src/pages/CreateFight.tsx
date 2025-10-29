@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
+import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { ArrowLeft, PlusCircle, Trash2, Upload, Edit, Image as ImageIcon, GripVertical } from "lucide-react";
 import { insertFightSchema, type InsertFight, type Question, type Enemy, type LootItem, type EquipmentItemDb, type Fight } from "@shared/schema";
 import {
@@ -142,6 +143,7 @@ export default function CreateFight() {
   const [, navigate] = useLocation();
   const [, params] = useRoute("/teacher/edit/:id");
   const { toast } = useToast();
+  const { isAuthenticated, isChecking } = useTeacherAuth();
   const fightId = params?.id;
   const isEditMode = !!fightId;
   
@@ -548,6 +550,18 @@ export default function CreateFight() {
       }
     });
   };
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">
+        <div className="text-white text-xl">Verifying session...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950">

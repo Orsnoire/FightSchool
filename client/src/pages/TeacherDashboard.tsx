@@ -6,21 +6,41 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Swords, Users, BarChart3, Copy, Edit, LogOut, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Fight } from "@shared/schema";
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const { isAuthenticated, isChecking } = useTeacherAuth();
   const teacherId = localStorage.getItem("teacherId");
   const teacherGuildCode = localStorage.getItem("teacherGuildCode") || "";
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/teacher/logout", { method: "POST" });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
     localStorage.removeItem("teacherId");
+    localStorage.removeItem("teacherEmail");
     localStorage.removeItem("teacherGuildCode");
     navigate("/");
     toast({ title: "Logged out", description: "You have been logged out successfully" });
   };
+  
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">
+        <div className="text-white text-xl">Verifying session...</div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
   
   // B10 FIX: Auto-refresh fights to show updated data
   const { data: fights, isLoading } = useQuery<Fight[]>({

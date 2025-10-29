@@ -8,6 +8,7 @@ import { HealthBar } from "@/components/HealthBar";
 import { Play, ArrowLeft, Skull, XCircle, Wifi, WifiOff, RefreshCw, Crown, RotateCw } from "lucide-react";
 import type { Fight, CombatState } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { CombatLog, type CombatLogEvent } from "@/components/CombatLog";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -15,6 +16,7 @@ export default function HostFight() {
   const [, params] = useRoute("/teacher/host/:id");
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { isAuthenticated, isChecking } = useTeacherAuth();
   const fightId = params?.id;
 
   const { data: fight } = useQuery<Fight>({
@@ -118,6 +120,18 @@ export default function HostFight() {
       });
     }
   };
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">
+        <div className="text-white text-xl">Verifying session...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
 
   if (!fight) {
     return <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">Loading...</div>;

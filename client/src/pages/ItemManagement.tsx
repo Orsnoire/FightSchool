@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, PlusCircle, Pencil, Trash2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEquipmentItemSchema, type EquipmentItemDb, type ItemType, type ItemQuality, type EquipmentSlot } from "@shared/schema";
@@ -45,6 +46,7 @@ const QUALITY_COLORS = {
 
 export default function ItemManagement() {
   const { toast } = useToast();
+  const { isAuthenticated, isChecking } = useTeacherAuth();
   const teacherId = localStorage.getItem("teacherId");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<EquipmentItemDb | null>(null);
@@ -160,6 +162,18 @@ export default function ItemManagement() {
     setEditingItem(null);
     form.reset();
   };
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">
+        <div className="text-white text-xl">Verifying session...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect to login
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950">

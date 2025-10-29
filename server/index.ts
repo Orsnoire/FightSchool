@@ -1,4 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
@@ -6,6 +8,29 @@ import { storage } from "./storage";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configure PostgreSQL session store
+const PgSession = connectPgSimple(session);
+const sessionStore = new PgSession({
+  conString: process.env.DATABASE_URL,
+  createTableIfMissing: true,
+  tableName: 'teacher_sessions',
+});
+
+// Configure session middleware with 60-minute rolling timeout
+app.use(session({
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  rolling: true, // Reset maxAge on every request
+  cookie: {
+    maxAge: 60 * 60 * 1000, // 60 minutes
+    httpOnly: true, // Prevent XSS attacks
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: 'lax', // CSRF protection
+  },
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();

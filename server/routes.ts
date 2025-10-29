@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
@@ -54,11 +54,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ error: "Invalid credentials" });
     }
     
+    // Create session
+    req.session.teacherId = teacher.id;
+    req.session.teacherEmail = teacher.email;
+    
     const { password: _, ...teacherWithoutPassword } = teacher;
-    res.json(teacherWithoutPassword);
+    res.json({
+      ...teacherWithoutPassword,
+      sessionActive: true,
+    });
   });
 
-  app.get("/api/teacher/:id", async (req, res) => {
+  app.post("/api/teacher/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to logout" });
+      }
+      res.clearCookie('connect.sid'); // Clear the session cookie
+      res.json({ success: true, message: "Logged out successfully" });
+    });
+  });
+
+  app.get("/api/teacher/check-session", async (req, res) => {
+    if (!req.session.teacherId) {
+      return res.status(401).json({ sessionActive: false });
+    }
+    
+    // Verify teacher still exists
+    const teacher = await storage.getTeacher(req.session.teacherId.toString());
+    if (!teacher) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ sessionActive: false });
+    }
+    
+    const { password: _, ...teacherWithoutPassword } = teacher;
+    res.json({
+      ...teacherWithoutPassword,
+      sessionActive: true,
+    });
+  });
+
+  // Session authentication middleware
+  const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.session.teacherId) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    next();
+  };
+
+  app.get("/api/teacher/:id", requireAuth, async (req, res) => {
     const teacher = await storage.getTeacher(req.params.id);
     if (!teacher) return res.status(404).json({ error: "Teacher not found" });
     const { password: _, ...teacherWithoutPassword } = teacher;
@@ -71,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(fights);
   });
 
-  app.get("/api/teacher/:teacherId/fights", async (req, res) => {
+  app.get("/api/teacher/:teacherId/fights", requireAuth, async (req, res) => {
     const fights = await storage.getFightsByTeacherId(req.params.teacherId);
     res.json(fights);
   });
@@ -82,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(fight);
   });
 
-  app.post("/api/fights", async (req, res) => {
+  app.post("/api/fights", requireAuth, async (req, res) => {
     try {
       const data = insertFightSchema.parse(req.body);
       const fight = await storage.createFight(data);
@@ -92,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/fights/:id", async (req, res) => {
+  app.patch("/api/fights/:id", requireAuth, async (req, res) => {
     try {
       const data = insertFightSchema.parse(req.body);
       const fight = await storage.updateFight(req.params.id, data);
@@ -103,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/fights/:id", async (req, res) => {
+  app.delete("/api/fights/:id", requireAuth, async (req, res) => {
     const deleted = await storage.deleteFight(req.params.id);
     if (!deleted) return res.status(404).json({ error: "Fight not found" });
     res.json({ success: true });
@@ -173,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(item);
   });
 
-  app.post("/api/equipment-items", async (req, res) => {
+  app.post("/api/equipment-items", requireAuth, async (req, res) => {
     try {
       const data = insertEquipmentItemSchema.parse(req.body);
       const item = await storage.createEquipmentItem(data);
@@ -183,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/equipment-items/:id", async (req, res) => {
+  app.patch("/api/equipment-items/:id", requireAuth, async (req, res) => {
     try {
       const item = await storage.getEquipmentItem(req.params.id);
       if (!item) return res.status(404).json({ error: "Equipment item not found" });
@@ -195,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/equipment-items/:id", async (req, res) => {
+  app.delete("/api/equipment-items/:id", requireAuth, async (req, res) => {
     const deleted = await storage.deleteEquipmentItem(req.params.id);
     if (!deleted) return res.status(404).json({ error: "Equipment item not found" });
     res.json({ success: true });
@@ -249,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a new guild
-  app.post("/api/guilds", async (req, res) => {
+  app.post("/api/guilds", requireAuth, async (req, res) => {
     try {
       const { teacherId, name, description } = req.body;
       if (!teacherId || !name) {
@@ -264,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update guild
-  app.patch("/api/guilds/:id", async (req, res) => {
+  app.patch("/api/guilds/:id", requireAuth, async (req, res) => {
     try {
       const guild = await storage.updateGuild(req.params.id, req.body);
       if (!guild) return res.status(404).json({ error: "Guild not found" });
@@ -275,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Archive guild
-  app.post("/api/guilds/:id/archive", async (req, res) => {
+  app.post("/api/guilds/:id/archive", requireAuth, async (req, res) => {
     try {
       const guild = await storage.archiveGuild(req.params.id);
       if (!guild) return res.status(404).json({ error: "Guild not found" });
@@ -287,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Guild membership endpoints
   // Add member to guild
-  app.post("/api/guilds/:guildId/members", async (req, res) => {
+  app.post("/api/guilds/:guildId/members", requireAuth, async (req, res) => {
     try {
       const { studentId } = req.body;
       if (!studentId) {
@@ -302,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Remove member from guild
-  app.delete("/api/guilds/:guildId/members/:studentId", async (req, res) => {
+  app.delete("/api/guilds/:guildId/members/:studentId", requireAuth, async (req, res) => {
     try {
       console.log(`[DELETE] Removing student ${req.params.studentId} from guild ${req.params.guildId}`);
       const removed = await storage.removeMemberFromGuild(req.params.guildId, req.params.studentId);
@@ -337,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Guild fight assignment endpoints
   // Assign fight to guild
-  app.post("/api/guilds/:guildId/fights", async (req, res) => {
+  app.post("/api/guilds/:guildId/fights", requireAuth, async (req, res) => {
     try {
       const { fightId } = req.body;
       if (!fightId) {
@@ -352,7 +396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unassign fight from guild
-  app.delete("/api/guilds/:guildId/fights/:fightId", async (req, res) => {
+  app.delete("/api/guilds/:guildId/fights/:fightId", requireAuth, async (req, res) => {
     try {
       const removed = await storage.unassignFightFromGuild(req.params.guildId, req.params.fightId);
       if (!removed) return res.status(404).json({ error: "Fight assignment not found" });
@@ -363,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Toggle solo mode for guild fight
-  app.patch("/api/guilds/:guildId/fights/:fightId/solo-mode", async (req, res) => {
+  app.patch("/api/guilds/:guildId/fights/:fightId/solo-mode", requireAuth, async (req, res) => {
     try {
       const { enabled } = req.body;
       if (typeof enabled !== "boolean") {
@@ -401,7 +445,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update guild settings
-  app.patch("/api/guilds/:guildId/settings", async (req, res) => {
+  app.patch("/api/guilds/:guildId/settings", requireAuth, async (req, res) => {
     try {
       const settings = await storage.updateGuildSettings(req.params.guildId, req.body);
       res.json(settings);
@@ -422,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create guild quest
-  app.post("/api/guilds/:guildId/quests", async (req, res) => {
+  app.post("/api/guilds/:guildId/quests", requireAuth, async (req, res) => {
     try {
       const { title, description, criteria } = req.body;
       if (!title || !description || !criteria) {
@@ -442,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update guild quest
-  app.patch("/api/guilds/:guildId/quests/:questId", async (req, res) => {
+  app.patch("/api/guilds/:guildId/quests/:questId", requireAuth, async (req, res) => {
     try {
       const quest = await storage.updateGuildQuest(req.params.questId, req.body);
       if (!quest) return res.status(404).json({ error: "Quest not found" });
@@ -453,7 +497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete guild quest
-  app.delete("/api/guilds/:guildId/quests/:questId", async (req, res) => {
+  app.delete("/api/guilds/:guildId/quests/:questId", requireAuth, async (req, res) => {
     try {
       const deleted = await storage.deleteGuildQuest(req.params.questId);
       if (!deleted) return res.status(404).json({ error: "Quest not found" });
@@ -819,8 +863,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Maps use sessionId as key (not fightId) for unique session tracking
   const combatTimers: Map<string, NodeJS.Timeout> = new Map();
-  const inactivityTimers: Map<string, NodeJS.Timeout> = new Map();
-  const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
   
   // Performance instrumentation
   function logPhaseTiming(sessionId: string, phase: string, startTime: number) {
@@ -842,50 +884,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     return count;
-  }
-
-  function resetInactivityTimer(sessionId: string) {
-    // Clear existing inactivity timer
-    const existingTimer = inactivityTimers.get(sessionId);
-    if (existingTimer) {
-      clearTimeout(existingTimer);
-    }
-    
-    // Set new inactivity timer
-    const timer = setTimeout(async () => {
-      log(`[WebSocket] Session ${sessionId} ending due to 10 minutes of inactivity`, "websocket");
-      
-      // Clear combat timer if any
-      const combatTimer = combatTimers.get(sessionId);
-      if (combatTimer) {
-        clearTimeout(combatTimer);
-        combatTimers.delete(sessionId);
-      }
-      
-      // Save combat stats
-      await saveCombatStats(sessionId);
-      
-      // End the fight
-      broadcastToCombat(sessionId, {
-        type: "game_over",
-        victory: false,
-        message: "Fight ended due to inactivity (10 minutes)",
-      });
-      
-      // Update combat session
-      await storage.updateCombatSession(sessionId, { currentPhase: "game_over" });
-      
-      // Clean up after timeout
-      setTimeout(async () => {
-        try {
-          await cleanupSession(sessionId);
-        } catch (error) {
-          log(`[Cleanup] Error during cleanup: ${error}`, "cleanup");
-        }
-      }, 2000);
-    }, INACTIVITY_TIMEOUT);
-    
-    inactivityTimers.set(sessionId, timer);
   }
 
   function broadcastToCombat(sessionId: string, message: any) {
@@ -993,13 +991,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log(`[Cleanup] Cleared broadcast timer for session ${sessionId}`, "cleanup");
     }
     
-    const inactivityTimer = inactivityTimers.get(sessionId);
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-      inactivityTimers.delete(sessionId);
-      log(`[Cleanup] Cleared inactivity timer for session ${sessionId}`, "cleanup");
-    }
-    
     // Disconnect all players
     disconnectAllPlayers(sessionId);
     log(`[Cleanup] Disconnected all players for session ${sessionId}`, "cleanup");
@@ -1060,9 +1051,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log(`[Combat] Calculated enemy HP: ${questionCount} questions × ${totalPlayerLevels} player levels + 10 = ${baseHP} base HP`, "combat");
     }
     
-    // Reset inactivity timer on new question
-    resetInactivityTimer(sessionId);
-
     // Loop questions: if we've reached the end, go back to the start
     if (session.currentQuestionIndex >= fight.questions.length) {
       await storage.updateCombatSession(sessionId, { currentQuestionIndex: 0 });
@@ -2372,13 +2360,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             combatTimers.delete(ws.sessionId);
           }
           
-          // Clear inactivity timer
-          const inactivityTimer = inactivityTimers.get(ws.sessionId);
-          if (inactivityTimer) {
-            clearTimeout(inactivityTimer);
-            inactivityTimers.delete(ws.sessionId);
-          }
-          
           // Save combat stats before ending
           await saveCombatStats(ws.sessionId);
           
@@ -2426,9 +2407,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          // Reset inactivity timer on player action
-          resetInactivityTimer(ws.sessionId);
-          
           log(`[WebSocket] Student ${ws.studentId} submitted answer: "${message.answer}"`, "websocket");
           
           await storage.updatePlayerState(ws.sessionId, ws.studentId, {
@@ -2471,9 +2449,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          // Reset inactivity timer on player action
-          resetInactivityTimer(ws.sessionId);
-          
           // Update block_and_healing phase activity tracker
           if (session.currentPhase === "block_and_healing") {
             blockHealingLastActivity.set(ws.sessionId, Date.now());
@@ -2495,9 +2470,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log(`[WebSocket] Ignoring heal from dead/missing player ${ws.studentId}`, "websocket");
             return;
           }
-          
-          // Reset inactivity timer on player action
-          resetInactivityTimer(ws.sessionId);
           
           // Update block_and_healing phase activity tracker
           if (session.currentPhase === "block_and_healing") {
@@ -2711,13 +2683,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clearTimeout(broadcastTimer);
           pendingBroadcasts.delete(ws.sessionId);
           log(`[WebSocket] Cleared broadcast timer for session ${ws.sessionId}`, "websocket");
-        }
-        
-        const inactivityTimer = inactivityTimers.get(ws.sessionId);
-        if (inactivityTimer) {
-          clearTimeout(inactivityTimer);
-          inactivityTimers.delete(ws.sessionId);
-          log(`[WebSocket] Cleared inactivity timer for session ${ws.sessionId}`, "websocket");
         }
         
         // Session remains in DB so host can reconnect and rejoin
