@@ -16,6 +16,10 @@ import darkKnightMale from "@assets/generated_images/Dark_Knight_male_character_
 import darkKnightFemale from "@assets/generated_images/Dark_Knight_female_character_sprite_503fb2e3.png";
 import bloodKnightMale from "@assets/generated_images/Blood_Knight_male_character_sprite_a7914e5c.png";
 import bloodKnightFemale from "@assets/generated_images/Blood_Knight_female_character_sprite_7d98ecae.png";
+import monkMale from "@assets/generated_images/Monk_male_character_sprite_2ec8e856.png";
+import monkFemale from "@assets/generated_images/Monk_female_character_sprite_2813bcc4.png";
+import warlockMale from "@assets/generated_images/Warlock_male_character_sprite_2481c4c6.png";
+import warlockFemale from "@assets/generated_images/Warlock_female_character_sprite_baea7862.png";
 
 interface PlayerAvatarProps {
   characterClass: CharacterClass;
@@ -31,12 +35,12 @@ const CHARACTER_IMAGES: Record<CharacterClass, Record<Gender, string>> = {
   wizard: { A: wizardMale, B: wizardFemale },
   scout: { A: scoutMale, B: scoutFemale },
   herbalist: { A: herbalistMale, B: herbalistFemale },
-  warlock: { A: wizardMale, B: wizardFemale },
+  warlock: { A: warlockMale, B: warlockFemale },
   priest: { A: priestMale, B: priestFemale },
   paladin: { A: paladinMale, B: paladinFemale },
   dark_knight: { A: darkKnightMale, B: darkKnightFemale },
   blood_knight: { A: bloodKnightMale, B: bloodKnightFemale },
-  monk: { A: warriorMale, B: warriorFemale }, // Using warrior sprites as placeholder
+  monk: { A: monkMale, B: monkFemale },
 };
 
 const SIZE_CLASSES = {
