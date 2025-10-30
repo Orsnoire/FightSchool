@@ -560,12 +560,16 @@ export default function Lobby() {
                                       <Lock className="h-3 w-3 text-muted-foreground" />
                                     )}
                                   </div>
-                                  {!isUnlocked && (
-                                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                      <Lock className="h-3 w-3" />
-                                      <span>Unlocks at level {unlockLevel}</span>
-                                    </div>
-                                  )}
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {isUnlocked ? (
+                                      <p>{abilityDisplay.description}</p>
+                                    ) : (
+                                      <div className="flex items-center gap-1">
+                                        <Lock className="h-3 w-3" />
+                                        <span>Unlocks at level {unlockLevel}</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </CardContent>
