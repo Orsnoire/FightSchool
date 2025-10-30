@@ -11,6 +11,7 @@ export type AbilityIcon =
   | "HeartPulse" | "Hand" | "ShieldCheck" | "Sword" // Paladin
   | "Axe" | "Droplet" | "UserX" | "Cloud"          // Dark Knight
   | "Syringe" | "Activity" | "Dna" | "CloudRain"   // Blood Knight
+  | "CircleDot" | "Waypoints"                      // Monk
   | "Plus";                                         // Cross-class abilities
 
 // Ability display configuration
@@ -81,6 +82,13 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "hemorrhage": { id: "hemorrhage", icon: "Dna", name: "Hemorrhage" },
   "vampiric_guard": { id: "vampiric_guard", icon: "CloudRain", name: "Vampiric Guard", isPassive: true },
   
+  // MONK
+  "fortify": { id: "fortify", icon: "Shield", name: "Fortify", isToggle: true },
+  "flurry": { id: "flurry", icon: "Zap", name: "Flurry" },
+  "deflect": { id: "deflect", icon: "ShieldHalf", name: "Deflect", isToggle: true },
+  "focused_palm": { id: "focused_palm", icon: "Target", name: "Focused Palm" },
+  "inner_peace": { id: "inner_peace", icon: "Star", name: "Inner Peace" },
+  
   // ULTIMATE/CROSS-CLASS ABILITIES (Level 15)
   "unbreakable": { id: "unbreakable", icon: "Shield", name: "Unbreakable" },
   "manabomb": { id: "manabomb", icon: "Bomb", name: "Manabomb" },
@@ -102,6 +110,7 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "healing_guard_ally_crossclass": { id: "healing_guard_ally_crossclass", icon: "ShieldCheck", name: "Healing Guard", requiresTarget: true, opensHealingWindow: true },
   "ruin_strike_crossclass": { id: "ruin_strike_crossclass", icon: "Zap", name: "Ruin Strike" },
   "crimson_slash_crossclass": { id: "crimson_slash_crossclass", icon: "Swords", name: "Crimson Slash" },
+  "fortify_crossclass": { id: "fortify_crossclass", icon: "Shield", name: "Fortify", isToggle: true },
 };
 
 // Job ability progression (levels 1, 4, 10, 12, 15)
@@ -174,6 +183,13 @@ export const JOB_ABILITY_SLOTS: Record<CharacterClass, {
     level10: "hemorrhage",
     level12: "vampiric_guard",
     level15: "raining_blood",
+  },
+  monk: {
+    level1: "fortify",
+    level4: "flurry",
+    level10: "deflect",
+    level12: "focused_palm",
+    level15: "inner_peace",
   },
 };
 

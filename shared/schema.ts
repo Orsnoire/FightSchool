@@ -20,11 +20,11 @@ export function generateGuildCode(): string {
 }
 
 // Character classes and equipment types
-export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock" | "priest" | "paladin" | "dark_knight" | "blood_knight";
+export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock" | "priest" | "paladin" | "dark_knight" | "blood_knight" | "monk";
 export type BaseClass = "warrior" | "wizard" | "scout" | "herbalist";
 export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbalist"];
-export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock", "priest", "paladin", "dark_knight", "blood_knight"];
-export const TANK_CLASSES: CharacterClass[] = ["warrior", "paladin", "dark_knight", "blood_knight"];
+export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock", "priest", "paladin", "dark_knight", "blood_knight", "monk"];
+export const TANK_CLASSES: CharacterClass[] = ["warrior", "paladin", "dark_knight", "blood_knight", "monk"];
 export const HEALER_CLASSES: CharacterClass[] = ["herbalist", "priest", "paladin"];
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
@@ -651,6 +651,7 @@ export function getStartingEquipment(characterClass: CharacterClass): { weapon: 
     paladin: "basic_sword",      // ATK-based tank/healer
     dark_knight: "basic_sword",  // ATK-based tank/DPS
     blood_knight: "basic_sword", // ATK-based tank/DPS
+    monk: "basic_sword",         // ATK-based tank/DPS with combo points
   };
 
   return {
@@ -717,6 +718,7 @@ export const CLASS_STATS: Record<CharacterClass, BaseJobStats> = {
   paladin: { baseHP: 16, vit: 1, str: 1, mnd: 1, role: "Tank/Healer - Holy defender" },
   dark_knight: { baseHP: 14, vit: 1, str: 1, int: 1, role: "Tank/DPS - Dark magic melee" },
   blood_knight: { baseHP: 20, str: 1, int: 2, vit: 1, role: "Tank/DPS - Lifesteal specialist" },
+  monk: { baseHP: 11, vit: 1, str: 1, agi: 1, role: "Tank/DPS - Stance-based combo fighter" },
 };
 
 // Complete character stats (all stats combined)

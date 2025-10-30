@@ -722,6 +722,73 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
       },
     }
   },
+
+  monk: {
+    id: "monk",
+    name: "Monk",
+    description: "Stance-based fighter - Tank/DPS hybrid with combo points",
+    maxLevel: 15,
+    unlockRequirements: { warrior: 2, scout: 2 },
+    levelRewards: {
+      1: { 
+        abilities: [{
+          id: "fortify",
+          name: "Fortify",
+          description: "Stance (toggle during question phase). Uses tank threat calculation while active. Grants 2*VIT HP while active. Generates 1 combo point per round when taking damage.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { vit: 1 } },
+      3: { passives: { str: 1 } },
+      4: { 
+        abilities: [{
+          id: "flurry",
+          name: "Flurry",
+          description: "Phase 1 ability. Costs 5 combo points. Deals (ATK + STR + AGI)*3 melee damage.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { vit: 1 } },
+      6: { passives: { agi: 1 } },
+      7: { passives: { str: 1 } },
+      8: { 
+        abilities: [{
+          id: "fortify_crossclass",
+          name: "Fortify",
+          description: "Cross-class unlock. Stance (toggle during question phase). Uses tank threat calculation while active. Grants 2*VIT HP while active.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { agi: 1 } },
+      10: { 
+        abilities: [{
+          id: "deflect",
+          name: "Deflect",
+          description: "Stance (toggle during question phase). Grants ability to select block targets. If you successfully block damage, reflect 75% of the blocked damage back to the current enemy target.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { str: 1 } },
+      12: { 
+        abilities: [{
+          id: "focused_palm",
+          name: "Focused Palm",
+          description: "Phase 1 ability. Costs 5 combo points. Deals (ATK + 4*STR + 4*AGI) melee damage.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { vit: 1 } },
+      14: { passives: { str: 1 } },
+      15: { 
+        abilities: [{
+          id: "inner_peace",
+          name: "Inner Peace",
+          description: "Cross-class unlock. Gain top aggro +1. Heals the monk to full HP. Take no damage this turn. One use per fight.",
+          isCrossClass: true,
+        }]
+      },
+    }
+  },
 };
 
 // Get all abilities a player has unlocked across all jobs
