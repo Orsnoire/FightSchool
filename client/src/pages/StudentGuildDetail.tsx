@@ -76,6 +76,7 @@ export default function StudentGuildDetail() {
         type: "host_solo",
         studentId: studentId,
         fightId: fightId,
+        guildId: guildId,
       }));
     };
 
