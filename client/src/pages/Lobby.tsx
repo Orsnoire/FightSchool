@@ -535,8 +535,9 @@ export default function Lobby() {
                   
                   return (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {Object.entries(abilitySlots).map(([levelStr, abilityId]) => {
-                        const unlockLevel = parseInt(levelStr);
+                      {Object.entries(abilitySlots).map(([levelKey, abilityId]) => {
+                        // Extract number from "level1", "level4", etc.
+                        const unlockLevel = parseInt(levelKey.replace("level", ""));
                         const isUnlocked = currentClassLevel >= unlockLevel;
                         const abilityDisplay = ABILITY_DISPLAYS[abilityId];
                         
