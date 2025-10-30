@@ -47,7 +47,7 @@ export function HealingModal({
     const results: { ability: AbilityDisplay; available: boolean; reason?: string }[] = [];
     
     // Get current job level
-    const currentJobLevel = currentPlayer.jobLevels?.find(jl => jl.jobClass === currentPlayer.characterClass)?.level || 1;
+    const currentJobLevel = currentPlayer.jobLevels?.[currentPlayer.characterClass] || 1;
     
     // Check job-specific healing abilities
     const jobAbilities = JOB_ABILITY_SLOTS[currentPlayer.characterClass];
