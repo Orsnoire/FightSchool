@@ -1121,7 +1121,7 @@ export default function Combat() {
                       size="lg"
                       className="w-full"
                       onClick={submitAnswer}
-                      disabled={!selectedAnswer || playerState?.hasAnswered || (isHealing && !healTarget)}
+                      disabled={!selectedAnswer || playerState?.hasAnswered}
                       data-testid="button-submit"
                     >
                       {playerState?.hasAnswered ? (
@@ -1291,7 +1291,7 @@ export default function Combat() {
                 size="lg"
                 className="w-full shadow-lg backdrop-blur-sm bg-primary/95 hover:bg-primary border-2 border-primary-foreground/20"
                 onClick={submitAnswer}
-                disabled={!selectedAnswer || playerState?.hasAnswered || (isHealing && !healTarget)}
+                disabled={!selectedAnswer || playerState?.hasAnswered}
                 data-testid="button-submit-fixed"
               >
                 {playerState?.hasAnswered ? (
