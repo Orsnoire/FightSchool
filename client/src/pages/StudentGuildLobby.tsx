@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,18 @@ export default function StudentGuildLobby() {
   const [showClassModal, setShowClassModal] = useState(false);
   const [student, setStudent] = useState<Student | null>(null);
   const [jobLevels, setJobLevels] = useState<StudentJobLevel[]>([]);
+
+  // Validate guild ID exists in URL - redirect to student dashboard if missing
+  useEffect(() => {
+    if (!guildId) {
+      toast({
+        title: "Invalid guild URL",
+        description: "Please select a guild from your dashboard",
+        variant: "destructive",
+      });
+      navigate("/student");
+    }
+  }, [guildId, navigate, toast]);
 
   // Fetch guild data
   const { data: guild, isLoading: guildLoading } = useQuery<Guild>({
@@ -141,6 +153,16 @@ export default function StudentGuildLobby() {
   };
 
   const hostSoloMode = async (fightId: string) => {
+    // Defensive check - ensure guildId exists (should always be true due to useEffect guard)
+    if (!guildId) {
+      toast({
+        title: "Error",
+        description: "Guild context is missing. Please return to your dashboard and select a guild.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setHostingFightId(fightId);
 
     // Create WebSocket connection to host solo mode
@@ -504,6 +526,7 @@ export default function StudentGuildLobby() {
               // Convert job levels array to map
               const jobLevelMap: Record<CharacterClass, number> = {
                 warrior: 0, wizard: 0, scout: 0, herbalist: 0, warlock: 0,
+                priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0,
               };
               
               jobLevels.forEach(jl => {
