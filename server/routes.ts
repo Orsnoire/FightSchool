@@ -440,6 +440,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get active solo mode sessions for a guild
+  app.get("/api/guilds/:guildId/active-sessions", async (req, res) => {
+    try {
+      const sessions = await storage.getActiveSoloSessionsByGuildId(req.params.guildId);
+      res.json(sessions);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Guild settings endpoints
   // Get guild settings
   app.get("/api/guilds/:guildId/settings", async (req, res) => {

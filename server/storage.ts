@@ -42,6 +42,7 @@ export interface IStorage {
   // Combat session operations
   getCombatSession(sessionId: string): Promise<CombatState | undefined>;
   getCombatSessionsByFightId(fightId: string): Promise<CombatState[]>; // Get all sessions for a fight
+  getActiveSoloSessionsByGuildId(guildId: string): Promise<CombatState[]>; // Get active solo mode sessions for a guild
   createCombatSession(fightId: string, fight: Fight): Promise<CombatState>;
   updateCombatSession(sessionId: string, updates: Partial<CombatState>): Promise<CombatState | undefined>;
   deleteCombatSession(sessionId: string): Promise<boolean>;
@@ -263,6 +264,20 @@ export class DatabaseStorage implements IStorage {
 
   async getCombatSessionsByFightId(fightId: string): Promise<CombatState[]> {
     const sessions = await db.select().from(combatSessions).where(eq(combatSessions.fightId, fightId));
+    return sessions as CombatState[];
+  }
+
+  async getActiveSoloSessionsByGuildId(guildId: string): Promise<CombatState[]> {
+    const sessions = await db
+      .select()
+      .from(combatSessions)
+      .where(
+        and(
+          eq(combatSessions.guildId, guildId),
+          eq(combatSessions.soloModeEnabled, true),
+          eq(combatSessions.currentPhase, "waiting")
+        )
+      );
     return sessions as CombatState[];
   }
 

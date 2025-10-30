@@ -6,10 +6,10 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, Users, Trophy, Scroll, Swords, Target } from "lucide-react";
+import { ArrowLeft, Users, Trophy, Scroll, Swords, Target, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { type Guild, type Student, type StudentJobLevel, type CharacterClass, ALL_CHARACTER_CLASSES } from "@shared/schema";
+import { type Guild, type Student, type StudentJobLevel, type CharacterClass, ALL_CHARACTER_CLASSES, type CombatState } from "@shared/schema";
 
 interface GuildMemberWithStudent {
   id: string;
@@ -27,15 +27,6 @@ interface LeaderboardEntry {
   fightsCompleted: number;
 }
 
-interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  progress: number;
-  target: number;
-  isCompleted: boolean;
-}
-
 interface Fight {
   id: string;
   title: string;
@@ -51,6 +42,7 @@ export default function StudentGuildLobby() {
   const { toast } = useToast();
   const studentId = localStorage.getItem("studentId");
   const [hostingFightId, setHostingFightId] = useState<string | null>(null);
+  const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
   const [showClassModal, setShowClassModal] = useState(false);
   const [student, setStudent] = useState<Student | null>(null);
   const [jobLevels, setJobLevels] = useState<StudentJobLevel[]>([]);
@@ -105,16 +97,17 @@ export default function StudentGuildLobby() {
     enabled: !!guildId,
   });
 
-  // Fetch quests
-  const { data: quests = [] } = useQuery<Quest[]>({
-    queryKey: [`/api/guilds/${guildId}/quests`],
-    enabled: !!guildId,
-  });
-
   // Fetch fights
   const { data: fights = [] } = useQuery<Fight[]>({
     queryKey: [`/api/guilds/${guildId}/fights`],
     enabled: !!guildId,
+  });
+
+  // Fetch active solo sessions
+  const { data: activeSessions = [] } = useQuery<CombatState[]>({
+    queryKey: [`/api/guilds/${guildId}/active-sessions`],
+    enabled: !!guildId,
+    refetchInterval: 5000, // Poll every 5 seconds for active sessions
   });
 
   const handleClassChange = async (newClass: CharacterClass) => {
@@ -213,6 +206,12 @@ export default function StudentGuildLobby() {
     };
   };
 
+  const joinSession = (sessionId: string) => {
+    setJoiningSessionId(sessionId);
+    localStorage.setItem("sessionId", sessionId);
+    navigate("/student/combat");
+  };
+
   if (guildLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900 flex items-center justify-center">
@@ -240,6 +239,15 @@ export default function StudentGuildLobby() {
 
   // Top 5 leaderboard entries
   const top5Leaderboard = leaderboard.slice(0, 5);
+
+  // Get fight data for active sessions and sort by oldest first (sessionId is generated chronologically)
+  const sessionsWithFightData = activeSessions
+    .map(session => {
+      const fight = fights.find(f => f.id === session.fightId);
+      return { session, fight };
+    })
+    .filter(item => item.fight)
+    .sort((a, b) => a.session.sessionId.localeCompare(b.session.sessionId));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900 flex flex-col">
@@ -271,22 +279,22 @@ export default function StudentGuildLobby() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 flex-1 flex flex-col gap-6 overflow-hidden">
-        {/* Top Section - 40% height with 3-column widget grid */}
-        <div className="h-[40%] min-h-[300px]">
+      <main className="container mx-auto px-4 py-6 flex-1 flex flex-col overflow-hidden">
+        {/* Top Third - Roster, Leaderboard, Fights */}
+        <div className="flex-1 min-h-0 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
             {/* Roster Widget */}
-            <Card className="flex flex-col">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Users className="h-5 w-5 text-primary" />
+            <Card className="flex flex-col min-h-0">
+              <CardHeader className="flex-shrink-0 pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-primary" />
                   Roster
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs">
                   {members.length} {members.length === 1 ? 'member' : 'members'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 overflow-hidden">
+              <CardContent className="flex-1 min-h-0 overflow-hidden pt-0">
                 <ScrollArea className="h-full">
                   {members.length > 0 ? (
                     <div className="space-y-2">
@@ -300,20 +308,20 @@ export default function StudentGuildLobby() {
                           }`}
                           data-testid={`roster-member-${member.studentId}`}
                         >
-                          <p className="font-medium text-sm">
+                          <p className="font-medium text-xs truncate">
                             {member.nickname}
                             {member.studentId === studentId && (
-                              <span className="ml-2 text-xs text-primary">(You)</span>
+                              <span className="ml-1 text-xs text-primary">(You)</span>
                             )}
                           </p>
-                          <p className="text-xs text-muted-foreground capitalize">
+                          <p className="text-xs text-muted-foreground capitalize truncate">
                             {member.characterClass || 'No class'}
                           </p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
+                    <div className="text-center py-8 text-muted-foreground text-xs">
                       No members yet
                     </div>
                   )}
@@ -322,15 +330,15 @@ export default function StudentGuildLobby() {
             </Card>
 
             {/* Leaderboard Widget */}
-            <Card className="flex flex-col">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Trophy className="h-5 w-5 text-primary" />
+            <Card className="flex flex-col min-h-0">
+              <CardHeader className="flex-shrink-0 pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Trophy className="h-4 w-4 text-primary" />
                   Leaderboard
                 </CardTitle>
-                <CardDescription>Top 5 by damage dealt</CardDescription>
+                <CardDescription className="text-xs">Top 5 by damage</CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 overflow-hidden">
+              <CardContent className="flex-1 min-h-0 overflow-hidden pt-0">
                 <ScrollArea className="h-full">
                   {top5Leaderboard.length > 0 ? (
                     <div className="space-y-2">
@@ -348,92 +356,64 @@ export default function StudentGuildLobby() {
                             <div className="flex items-center gap-2 min-w-0">
                               <Badge
                                 variant={index < 3 ? "default" : "outline"}
-                                className="flex-shrink-0 w-6 h-6 flex items-center justify-center p-0 text-xs"
+                                className="flex-shrink-0 w-5 h-5 flex items-center justify-center p-0 text-xs"
                               >
                                 {index + 1}
                               </Badge>
                               <div className="min-w-0">
-                                <p className="font-medium text-sm truncate">
+                                <p className="font-medium text-xs truncate">
                                   {entry.nickname}
-                                  {entry.studentId === studentId && (
-                                    <span className="ml-1 text-xs text-primary">(You)</span>
-                                  )}
-                                </p>
-                                <p className="text-xs text-muted-foreground capitalize truncate">
-                                  {entry.characterClass}
                                 </p>
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              <p className="font-bold text-sm text-destructive">
+                              <p className="font-bold text-xs text-destructive">
                                 {entry.totalDamageDealt}
                               </p>
-                              <p className="text-xs text-muted-foreground">DMG</p>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      No leaderboard data yet
+                    <div className="text-center py-8 text-muted-foreground text-xs">
+                      No data yet
                     </div>
                   )}
                 </ScrollArea>
               </CardContent>
             </Card>
 
-            {/* Quests Widget */}
-            <Card className="flex flex-col">
-              <CardHeader className="flex-shrink-0">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Scroll className="h-5 w-5 text-primary" />
-                  Quests
+            {/* Fights Widget */}
+            <Card className="flex flex-col min-h-0">
+              <CardHeader className="flex-shrink-0 pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Swords className="h-4 w-4 text-primary" />
+                  Fights
                 </CardTitle>
-                <CardDescription>Active guild quests</CardDescription>
+                <CardDescription className="text-xs">Available fights</CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 overflow-hidden">
+              <CardContent className="flex-1 min-h-0 overflow-hidden pt-0">
                 <ScrollArea className="h-full">
-                  {quests.length > 0 ? (
-                    <div className="space-y-3">
-                      {quests.map((quest) => (
+                  {fights.length > 0 ? (
+                    <div className="space-y-2">
+                      {fights.map((fight) => (
                         <div
-                          key={quest.id}
+                          key={fight.id}
                           className="p-2 rounded-md bg-muted/50 space-y-1"
-                          data-testid={`quest-${quest.id}`}
+                          data-testid={`fight-widget-${fight.id}`}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="font-medium text-sm">{quest.title}</p>
-                            {quest.isCompleted && (
-                              <Badge variant="default" className="text-xs">
-                                Complete
-                              </Badge>
-                            )}
-                          </div>
-                          {quest.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {quest.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-muted rounded-full h-2">
-                              <div
-                                className="bg-primary rounded-full h-2 transition-all"
-                                style={{
-                                  width: `${Math.min(100, (quest.progress / quest.target) * 100)}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {quest.progress}/{quest.target}
-                            </span>
+                          <p className="font-medium text-xs truncate">{fight.title}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{fight.questions?.length || 0}Q</span>
+                            <span>{fight.enemies?.length || 0}E</span>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      No active quests
+                    <div className="text-center py-8 text-muted-foreground text-xs">
+                      No fights
                     </div>
                   )}
                 </ScrollArea>
@@ -442,67 +422,86 @@ export default function StudentGuildLobby() {
           </div>
         </div>
 
-        {/* Bottom Section - 60% height with fight cards grid */}
-        <div className="h-[60%] min-h-[400px]">
+        {/* Middle Third - Guild Quests */}
+        <div className="flex-1 min-h-0 pb-4">
           <Card className="h-full flex flex-col">
             <CardHeader className="flex-shrink-0">
-              <CardTitle className="flex items-center gap-2">
-                <Swords className="h-5 w-5 text-primary" />
-                Guild Fights
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Scroll className="h-5 w-5 text-primary" />
+                Guild Quests
               </CardTitle>
-              <CardDescription>Practice these fights in solo mode</CardDescription>
+              <CardDescription className="text-xs">Complete quests to earn rewards</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 overflow-hidden">
+            <CardContent className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <Scroll className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-base font-semibold text-muted-foreground">Coming Soon</p>
+                <p className="text-xs text-muted-foreground mt-2">Guild quests will be available when the quest system is implemented</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bottom Third - Active Solo Sessions */}
+        <div className="flex-1 min-h-0 pb-4">
+          <Card className="h-full flex flex-col min-h-0">
+            <CardHeader className="flex-shrink-0">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="h-5 w-5 text-primary" />
+                Active Solo Sessions
+              </CardTitle>
+              <CardDescription className="text-xs">Join an in-progress fight</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 min-h-0 overflow-hidden">
               <ScrollArea className="h-full">
-                {fights.length > 0 ? (
+                {sessionsWithFightData.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-                    {fights.map((fight) => (
-                      <Card
-                        key={fight.id}
-                        className="hover-elevate"
-                        data-testid={`fight-card-${fight.id}`}
-                      >
-                        <CardContent className="p-4 space-y-3">
-                          <div>
-                            <h3 className="font-semibold text-lg mb-2">{fight.title}</h3>
-                            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Target className="h-4 w-4" />
-                                <span>{fight.questions?.length || 0} Questions</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Swords className="h-4 w-4" />
-                                <span>{fight.enemies?.length || 0} Enemies</span>
+                    {sessionsWithFightData.map(({ session, fight }) => {
+                      const playerCount = Object.keys(session.players || {}).length;
+                      const enemy = fight!.enemies[0]; // Show first enemy
+                      
+                      return (
+                        <Card
+                          key={session.sessionId}
+                          className="hover-elevate"
+                          data-testid={`session-card-${session.sessionId}`}
+                        >
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex items-center gap-3">
+                              {enemy?.image && (
+                                <img
+                                  src={enemy.image}
+                                  alt={enemy.name}
+                                  className="w-10 h-10 object-contain"
+                                  data-testid={`enemy-icon-${session.sessionId}`}
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-sm truncate">{fight!.title}</h3>
+                                <p className="text-xs text-muted-foreground">
+                                  {playerCount} {playerCount === 1 ? 'player' : 'players'}
+                                </p>
                               </div>
                             </div>
-                          </div>
-                          {fight.soloModeEnabled ? (
                             <Button
                               className="w-full"
-                              onClick={() => hostSoloMode(fight.id)}
-                              disabled={hostingFightId === fight.id}
-                              data-testid={`button-host-fight-${fight.id}`}
+                              size="sm"
+                              onClick={() => joinSession(session.sessionId)}
+                              disabled={joiningSessionId === session.sessionId}
+                              data-testid={`button-join-${session.sessionId}`}
                             >
-                              {hostingFightId === fight.id ? "Hosting..." : "Host Fight"}
+                              {joiningSessionId === session.sessionId ? 'Joining...' : 'Join'}
                             </Button>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              className="w-full"
-                              disabled
-                              data-testid={`button-host-fight-${fight.id}`}
-                            >
-                              Solo Mode Disabled
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <div className="text-center py-16">
-                    <Swords className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No fights assigned to this guild yet</p>
+                  <div className="text-center py-8">
+                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                    <p className="text-sm text-muted-foreground">No active sessions</p>
+                    <p className="text-xs text-muted-foreground mt-1">Host a fight from the Fights widget to start a session</p>
                   </div>
                 )}
               </ScrollArea>
