@@ -1044,9 +1044,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Base HP formula: (questions + levels + 10) / 2
-      const questionCount = fight.questions.length;
-      const baseHP = (questionCount + totalPlayerLevels + 10) / 2;
+      // Base HP formula: playerCount × (2.5 + avgJobLevel × 0.4)
+      // This makes difficultyMultiplier directly represent ~questions to survive at 70% accuracy
+      const playerCount = players.length;
+      const avgJobLevel = totalPlayerLevels / playerCount;
+      const baseHP = playerCount * (2.5 + avgJobLevel * 0.4);
       
       // Apply difficulty multiplier to each enemy and set their HP
       session.enemies = session.enemies.map(enemy => {
@@ -1066,7 +1068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Save the calculated enemy HP
       await storage.updateCombatSession(sessionId, { enemies: session.enemies });
-      log(`[Combat] Calculated enemy HP: ${questionCount} questions × ${totalPlayerLevels} player levels + 10 = ${baseHP} base HP`, "combat");
+      log(`[Combat] Calculated enemy HP: ${playerCount} players × (2.5 + ${avgJobLevel.toFixed(1)} avg level × 0.4) = ${baseHP.toFixed(1)} base HP`, "combat");
     }
     
     // Loop questions: if we've reached the end, go back to the start
