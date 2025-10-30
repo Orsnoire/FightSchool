@@ -280,145 +280,41 @@ export default function StudentGuildLobby() {
       </header>
 
       <main className="container mx-auto px-4 py-6 flex-1 flex flex-col overflow-hidden">
-        {/* Top Third - Roster, Leaderboard, Fights */}
+        {/* Top Third - Navigation Cards */}
         <div className="flex-1 min-h-0 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
-            {/* Roster Widget */}
-            <Card className="flex flex-col min-h-0">
-              <CardHeader className="flex-shrink-0 pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Users className="h-4 w-4 text-primary" />
-                  Roster
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  {members.length} {members.length === 1 ? 'member' : 'members'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 min-h-0 overflow-hidden pt-0">
-                <ScrollArea className="h-full">
-                  {members.length > 0 ? (
-                    <div className="space-y-2">
-                      {members.map((member) => (
-                        <div
-                          key={member.studentId}
-                          className={`p-2 rounded-md ${
-                            member.studentId === studentId
-                              ? 'bg-primary/10 border border-primary'
-                              : 'bg-muted/50'
-                          }`}
-                          data-testid={`roster-member-${member.studentId}`}
-                        >
-                          <p className="font-medium text-xs truncate">
-                            {member.nickname}
-                            {member.studentId === studentId && (
-                              <span className="ml-1 text-xs text-primary">(You)</span>
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground capitalize truncate">
-                            {member.characterClass || 'No class'}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground text-xs">
-                      No members yet
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            {/* Roster Navigation Card */}
+            <Link href={`/student/guilds/${guildId}/roster`}>
+              <Card className="hover-elevate active-elevate-2 cursor-pointer h-full flex flex-col items-center justify-center p-8" data-testid="link-roster">
+                <Users className="h-12 w-12 text-primary mb-4" />
+                <h3 className="text-xl font-serif font-bold mb-2">Guild Roster</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  View all {members.length} {members.length === 1 ? 'member' : 'members'}
+                </p>
+              </Card>
+            </Link>
 
-            {/* Leaderboard Widget */}
-            <Card className="flex flex-col min-h-0">
-              <CardHeader className="flex-shrink-0 pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Trophy className="h-4 w-4 text-primary" />
-                  Leaderboard
-                </CardTitle>
-                <CardDescription className="text-xs">Top 5 by damage</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 min-h-0 overflow-hidden pt-0">
-                <ScrollArea className="h-full">
-                  {top5Leaderboard.length > 0 ? (
-                    <div className="space-y-2">
-                      {top5Leaderboard.map((entry, index) => (
-                        <div
-                          key={entry.studentId}
-                          className={`p-2 rounded-md ${
-                            entry.studentId === studentId
-                              ? 'bg-primary/10 border border-primary'
-                              : 'bg-muted/50'
-                          }`}
-                          data-testid={`leaderboard-entry-${index}`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Badge
-                                variant={index < 3 ? "default" : "outline"}
-                                className="flex-shrink-0 w-5 h-5 flex items-center justify-center p-0 text-xs"
-                              >
-                                {index + 1}
-                              </Badge>
-                              <div className="min-w-0">
-                                <p className="font-medium text-xs truncate">
-                                  {entry.nickname}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right flex-shrink-0">
-                              <p className="font-bold text-xs text-destructive">
-                                {entry.totalDamageDealt}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground text-xs">
-                      No data yet
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            {/* Leaderboard Navigation Card */}
+            <Link href={`/student/guilds/${guildId}/leaderboard`}>
+              <Card className="hover-elevate active-elevate-2 cursor-pointer h-full flex flex-col items-center justify-center p-8" data-testid="link-leaderboard">
+                <Trophy className="h-12 w-12 text-primary mb-4" />
+                <h3 className="text-xl font-serif font-bold mb-2">Leaderboard</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  View top performers
+                </p>
+              </Card>
+            </Link>
 
-            {/* Fights Widget */}
-            <Card className="flex flex-col min-h-0">
-              <CardHeader className="flex-shrink-0 pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Swords className="h-4 w-4 text-primary" />
-                  Fights
-                </CardTitle>
-                <CardDescription className="text-xs">Available fights</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 min-h-0 overflow-hidden pt-0">
-                <ScrollArea className="h-full">
-                  {fights.length > 0 ? (
-                    <div className="space-y-2">
-                      {fights.map((fight) => (
-                        <div
-                          key={fight.id}
-                          className="p-2 rounded-md bg-muted/50 space-y-1"
-                          data-testid={`fight-widget-${fight.id}`}
-                        >
-                          <p className="font-medium text-xs truncate">{fight.title}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{fight.questions?.length || 0}Q</span>
-                            <span>{fight.enemies?.length || 0}E</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground text-xs">
-                      No fights
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            {/* Fights Navigation Card */}
+            <Link href={`/student/guilds/${guildId}/fights`}>
+              <Card className="hover-elevate active-elevate-2 cursor-pointer h-full flex flex-col items-center justify-center p-8" data-testid="link-fights">
+                <Swords className="h-12 w-12 text-primary mb-4" />
+                <h3 className="text-xl font-serif font-bold mb-2">Fight Library</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  Browse {fights.length} available {fights.length === 1 ? 'fight' : 'fights'}
+                </p>
+              </Card>
+            </Link>
           </div>
         </div>
 
