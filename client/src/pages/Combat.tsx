@@ -1435,8 +1435,8 @@ export default function Combat() {
                 </div>
               </div>
               
-              {/* Combo Points (only display if combo-related ability is equipped) */}
-              {playerState.crossClassAbility1 === "killshot" && playerState.maxComboPoints > 0 && (
+              {/* Combo Points (display for scouts and anyone with killshot equipped) */}
+              {(playerState.characterClass === "scout" || playerState.characterClass === "ranger" || playerState.crossClassAbility1 === "killshot" || playerState.crossClassAbility2 === "killshot") && playerState.maxComboPoints > 0 && (
                 <ComboPoints current={playerState.comboPoints} max={playerState.maxComboPoints} />
               )}
               
