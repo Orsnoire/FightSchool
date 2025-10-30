@@ -2,9 +2,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
-import { Sparkles, Clock, Heart, Swords } from "lucide-react";
+import { Sparkles, Clock, Heart, Swords, Shield, ShieldCheck, Star, Cloud, Beaker, Plus, Ghost, Flame, Target, Locate } from "lucide-react";
 import type { PlayerState, CharacterClass } from "@shared/schema";
 import { HEALER_CLASSES } from "@shared/schema";
+import { ABILITY_DISPLAYS, JOB_ABILITY_SLOTS, type AbilityDisplay } from "@shared/abilityUI";
+import { ULTIMATE_ABILITIES } from "@shared/ultimateAbilities";
 
 interface HealingModalProps {
   open: boolean;
@@ -14,10 +16,15 @@ interface HealingModalProps {
   healerClass: CharacterClass;
   timeRemaining?: number; // Timer in seconds
   hasChosenToHeal: boolean; // Parent-managed state
-  onChooseToHeal: () => void; // Callback when player chooses to heal
+  onChooseToHeal: (abilityId: string) => void; // Callback when player chooses to heal with specific ability
   onSelectTarget: (targetId: string) => void;
   onDeclineHealing?: () => void; // Callback when player chooses not to heal
 }
+
+// Helper to map icon names to Lucide components
+const ICON_MAP: Record<string, any> = {
+  Heart, Shield, ShieldCheck, Star, Cloud, Beaker, Plus, Ghost, Flame, Target, Locate, Sparkles
+};
 
 export function HealingModal({ 
   open, 
@@ -31,6 +38,85 @@ export function HealingModal({
   onSelectTarget,
   onDeclineHealing
 }: HealingModalProps) {
+  const currentPlayer = players[currentPlayerId];
+  
+  // Get available healing abilities for this player
+  const getAvailableHealingAbilities = (): { ability: AbilityDisplay; available: boolean; reason?: string }[] => {
+    if (!currentPlayer) return [];
+    
+    const results: { ability: AbilityDisplay; available: boolean; reason?: string }[] = [];
+    
+    // Get current job level
+    const currentJobLevel = currentPlayer.jobLevels?.find(jl => jl.jobClass === currentPlayer.characterClass)?.level || 1;
+    
+    // Check job-specific healing abilities
+    const jobAbilities = JOB_ABILITY_SLOTS[currentPlayer.characterClass];
+    if (jobAbilities) {
+      Object.entries(jobAbilities).forEach(([levelKey, abilityId]) => {
+        const ability = ABILITY_DISPLAYS[abilityId];
+        if (ability && ability.abilityClass.includes("healing") && ability.opensHealingWindow) {
+          // Check if player has this ability based on level
+          const levelRequired = parseInt(levelKey.replace("level", ""));
+          const hasAbility = currentJobLevel >= levelRequired;
+          
+          if (hasAbility) {
+            // Check resources
+            let available = true;
+            let reason: string | undefined;
+            
+            if (abilityId === "healing_potion" && currentPlayer.potionCount <= 0) {
+              available = false;
+              reason = "No potions";
+            } else if ((abilityId === "mend" || abilityId === "healing_guard") && currentPlayer.mp < 1) {
+              available = false;
+              reason = "No MP";
+            }
+            
+            results.push({ ability, available, reason });
+          }
+        }
+      });
+    }
+    
+    // Check cross-class healing abilities
+    [currentPlayer.crossClassAbility1, currentPlayer.crossClassAbility2].forEach(abilityId => {
+      if (abilityId) {
+        const ability = ABILITY_DISPLAYS[abilityId];
+        if (ability && ability.abilityClass.includes("healing") && ability.opensHealingWindow) {
+          let available = true;
+          let reason: string | undefined;
+          
+          if (abilityId === "healing_potion_crossclass" && currentPlayer.potionCount <= 0) {
+            available = false;
+            reason = "No potions";
+          } else if ((abilityId === "mend_crossclass" || abilityId === "healing_guard_ally_crossclass") && currentPlayer.mp < 1) {
+            available = false;
+            reason = "No MP";
+          }
+          
+          results.push({ ability, available, reason });
+        }
+      }
+    });
+    
+    // Check ultimate healing abilities (level 15)
+    const ultimateAbility = jobAbilities?.level15;
+    if (ultimateAbility && currentJobLevel >= 15) {
+      const ability = ABILITY_DISPLAYS[ultimateAbility];
+      if (ability && ability.abilityClass.includes("healing") && ability.abilityClass.includes("ultimate")) {
+        // Check if on cooldown
+        const available = !currentPlayer.lastUltimatesUsed?.includes(ultimateAbility);
+        const reason = available ? undefined : "On cooldown";
+        
+        results.push({ ability, available, reason });
+      }
+    }
+    
+    return results;
+  };
+  
+  const availableHealingAbilities = getAvailableHealingAbilities();
+  
   // Filter: Only show players with missing HP
   const filteredPlayers = Object.values(players).filter(p => {
     if (p.isDead) return false;
@@ -55,10 +141,10 @@ export function HealingModal({
   if (!hasChosenToHeal) {
     return (
       <Dialog open={open}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle className="text-3xl font-bold text-center">
-              Choose Your Action
+              Use a Healing Ability?
             </DialogTitle>
             {timeRemaining !== undefined && (
               <div className="flex items-center justify-center gap-2 text-lg font-semibold text-muted-foreground pt-2">
@@ -68,36 +154,64 @@ export function HealingModal({
             )}
           </DialogHeader>
           
-          <div className="flex flex-col gap-4 py-6">
-            <p className="text-center text-muted-foreground">
+          <div className="space-y-6 py-4">
+            <p className="text-center text-muted-foreground text-sm">
               If you choose to heal, you won't deal damage this turn (even if you answer correctly)
             </p>
             
-            <Button
-              size="lg"
-              variant="default"
-              className="h-20 text-lg bg-health hover:bg-health/90 border-health"
-              onClick={onChooseToHeal}
-              data-testid="button-choose-heal"
-            >
-              <Heart className="h-6 w-6 mr-2" />
-              Heal an Ally
-            </Button>
+            {availableHealingAbilities.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {availableHealingAbilities.map(({ ability, available, reason }) => {
+                  const IconComponent = ICON_MAP[ability.icon] || Heart;
+                  
+                  return (
+                    <Button
+                      key={ability.id}
+                      variant={available ? "default" : "outline"}
+                      className={`h-32 flex-col gap-2 ${
+                        available 
+                          ? 'bg-health hover:bg-health/90 border-health text-white' 
+                          : 'opacity-50 cursor-not-allowed'
+                      }`}
+                      onClick={() => {
+                        if (available) {
+                          onChooseToHeal(ability.id);
+                        }
+                      }}
+                      disabled={!available}
+                      data-testid={`button-heal-ability-${ability.id}`}
+                    >
+                      <IconComponent className="h-12 w-12" />
+                      <span className="text-sm font-semibold text-center">{ability.name}</span>
+                      {!available && reason && (
+                        <span className="text-xs opacity-70">{reason}</span>
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground p-8">
+                <p>No healing abilities available</p>
+              </div>
+            )}
             
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-20 text-lg"
-              onClick={() => {
-                if (onDeclineHealing) {
-                  onDeclineHealing();
-                }
-              }}
-              data-testid="button-choose-damage"
-            >
-              <Swords className="h-6 w-6 mr-2" />
-              Deal Damage Instead
-            </Button>
+            <div className="pt-4">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full h-16 text-lg"
+                onClick={() => {
+                  if (onDeclineHealing) {
+                    onDeclineHealing();
+                  }
+                }}
+                data-testid="button-choose-damage"
+              >
+                <Swords className="h-6 w-6 mr-2" />
+                Deal Damage Instead
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

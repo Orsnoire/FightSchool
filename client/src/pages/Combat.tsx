@@ -1456,8 +1456,10 @@ export default function Combat() {
           healerClass={playerState.characterClass}
           timeRemaining={blockHealingTimeRemaining}
           hasChosenToHeal={hasChosenToHeal}
-          onChooseToHeal={() => {
+          onChooseToHeal={(abilityId: string) => {
             setHasChosenToHeal(true);
+            // Store the selected healing ability for later use
+            console.log("Player chose to heal with ability:", abilityId);
           }}
           onSelectTarget={(targetId) => {
             setHealTarget(targetId);
