@@ -9,6 +9,11 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Trust Replit's proxy for secure cookies in deployed environment
+if (process.env.REPLIT_DEPLOYMENT === '1') {
+  app.set('trust proxy', 1);
+}
+
 // Configure PostgreSQL session store
 const PgSession = connectPgSimple(session);
 const sessionStore = new PgSession({
@@ -16,6 +21,9 @@ const sessionStore = new PgSession({
   createTableIfMissing: true,
   tableName: 'teacher_sessions',
 });
+
+// Detect if running in deployed environment
+const isDeployed = process.env.REPLIT_DEPLOYMENT === '1';
 
 // Configure session middleware with 60-minute rolling timeout
 app.use(session({
@@ -27,8 +35,8 @@ app.use(session({
   cookie: {
     maxAge: 60 * 60 * 1000, // 60 minutes
     httpOnly: true, // Prevent XSS attacks
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for production cross-site, 'lax' for dev
+    secure: isDeployed, // HTTPS only in deployed environment
+    sameSite: isDeployed ? 'none' : 'lax', // 'none' for deployed cross-site, 'lax' for dev
   },
 }));
 
