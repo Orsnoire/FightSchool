@@ -1044,9 +1044,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Base HP formula: (# of questions) × (total player levels earned) × 0.1 + 10
+      // Base HP formula: (questions + levels + 10) / 10
       const questionCount = fight.questions.length;
-      const baseHP = (questionCount * totalPlayerLevels * 0.1) + 10;
+      const baseHP = (questionCount + totalPlayerLevels + 10) / 10;
       
       // Apply difficulty multiplier to each enemy and set their HP
       session.enemies = session.enemies.map(enemy => {
