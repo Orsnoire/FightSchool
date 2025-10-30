@@ -2125,7 +2125,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (player.damageDealt || 0) + 
           (player.healingDone || 0) * 2 + 
           (player.damageBlocked || 0) * 2;
-        const xpGained = individualContribution * (player.questionsCorrect || 0);
+        const rawXP = individualContribution * (player.questionsCorrect || 0);
+        
+        // Cap XP based on fight difficulty (20 XP at difficulty 1, 120 XP at difficulty 100)
+        // Use the average difficulty multiplier from all enemies (default to 10 if missing)
+        const avgDifficulty = fight.enemies.length > 0 
+          ? fight.enemies.reduce((sum, e) => sum + (e.difficultyMultiplier || 10), 0) / fight.enemies.length
+          : 10;
+        // Clamp difficulty to valid range [1, 100]
+        const clampedDifficulty = Math.max(1, Math.min(100, avgDifficulty));
+        const xpCap = 20 + ((clampedDifficulty - 1) / 99) * 100;
+        const xpGained = Math.min(rawXP, xpCap);
         
         // Award XP to the player's current class
         const result = await storage.awardXPToJob(
