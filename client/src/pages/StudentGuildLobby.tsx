@@ -154,6 +154,7 @@ export default function StudentGuildLobby() {
         type: "host_solo",
         studentId: studentId,
         fightId: fightId,
+        guildId: guildId,
       }));
     };
 

@@ -2362,9 +2362,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
 
-          // Check if solo mode is enabled for this fight
-          if (!fight.soloModeEnabled) {
-            log(`[WebSocket] Solo mode not enabled for fight ${message.fightId}`, "websocket");
+          // Check if guildId is provided
+          if (!message.guildId) {
+            log(`[WebSocket] Solo mode failed: Guild ID not provided`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "Guild ID required for solo mode" }));
+            return;
+          }
+
+          // Check if solo mode is enabled for this fight in this guild
+          const guildFight = await storage.getGuildFight(message.guildId, message.fightId);
+          if (!guildFight) {
+            log(`[WebSocket] Solo mode failed: Fight ${message.fightId} not assigned to guild ${message.guildId}`, "websocket");
+            ws.send(JSON.stringify({ type: "error", message: "Fight not found in guild" }));
+            return;
+          }
+
+          if (!guildFight.soloModeEnabled) {
+            log(`[WebSocket] Solo mode not enabled for fight ${message.fightId} in guild ${message.guildId}`, "websocket");
             ws.send(JSON.stringify({ type: "error", message: "Solo mode not enabled for this fight" }));
             return;
           }
@@ -2401,6 +2415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             soloModeHostId: message.studentId,
             soloModeAIEnabled: false,
             soloModeJoinersBlocked: false,
+            guildId: message.guildId,
           });
 
           ws.sessionId = session.sessionId;

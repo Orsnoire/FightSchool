@@ -134,7 +134,6 @@ export const fights = pgTable("fights", {
   randomizeQuestions: boolean("randomize_questions").notNull().default(false),
   shuffleOptions: boolean("shuffle_options").notNull().default(true),
   enemyScript: text("enemy_script"), // Future: custom AI behavior script
-  soloModeEnabled: boolean("solo_mode_enabled").notNull().default(false), // Teacher-enabled solo mode
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
@@ -372,7 +371,6 @@ export interface Fight {
   randomizeQuestions: boolean;
   shuffleOptions: boolean;
   enemyScript?: string; // Future: custom AI behavior script
-  soloModeEnabled: boolean; // Teacher-enabled solo mode
   createdAt: number;
 }
 
@@ -388,7 +386,6 @@ export const insertFightSchema = z.object({
   lootTable: z.array(z.object({ itemId: z.string() })).default([]),
   randomizeQuestions: z.boolean().default(false),
   shuffleOptions: z.boolean().default(true),
-  soloModeEnabled: z.boolean().default(false),
 });
 
 export type InsertFight = z.infer<typeof insertFightSchema>;

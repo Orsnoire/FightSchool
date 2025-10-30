@@ -272,6 +272,7 @@ export class DatabaseStorage implements IStorage {
     soloModeHostId?: string;
     soloModeAIEnabled?: boolean;
     soloModeJoinersBlocked?: boolean;
+    guildId?: string;
   }): Promise<CombatState> {
     // Generate unique 6-character session ID
     let sessionId = generateSessionId();
@@ -1141,6 +1142,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Guild fight assignment operations
+  async getGuildFight(guildId: string, fightId: string): Promise<GuildFight | undefined> {
+    const [guildFight] = await db
+      .select()
+      .from(guildFights)
+      .where(
+        and(
+          eq(guildFights.guildId, guildId),
+          eq(guildFights.fightId, fightId)
+        )
+      );
+    return guildFight;
+  }
+
   async assignFightToGuild(guildId: string, fightId: string): Promise<GuildFight> {
     // Check if already assigned
     const existing = await db
@@ -1157,18 +1171,13 @@ export class DatabaseStorage implements IStorage {
       return existing[0];
     }
 
-    // Get fight to copy soloModeEnabled setting
-    const [fight] = await db
-      .select()
-      .from(fights)
-      .where(eq(fights.id, fightId));
-
+    // Create new assignment with solo mode disabled by default
     const [assignment] = await db
       .insert(guildFights)
       .values({ 
         guildId, 
         fightId,
-        soloModeEnabled: fight?.soloModeEnabled || false
+        soloModeEnabled: false // Default to false, teacher can enable later
       })
       .returning();
 
@@ -1226,8 +1235,8 @@ export class DatabaseStorage implements IStorage {
       lootTable: (f.lootTable as any) || [],
       enemyScript: f.enemyScript || undefined,
       createdAt: Number(f.createdAt),
-      // Override with guild-specific solo mode setting
-      soloModeEnabled: soloModeMap.get(f.id) ?? f.soloModeEnabled,
+      // Add guild-specific solo mode setting
+      soloModeEnabled: soloModeMap.get(f.id) ?? false,
     }));
   }
 
