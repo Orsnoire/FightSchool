@@ -338,8 +338,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Guild membership endpoints
-  // Add member to guild
-  app.post("/api/guilds/:guildId/members", requireAuth, async (req, res) => {
+  // Add member to guild (no auth required - students need to join guilds)
+  app.post("/api/guilds/:guildId/members", async (req, res) => {
     try {
       const { studentId } = req.body;
       if (!studentId) {
