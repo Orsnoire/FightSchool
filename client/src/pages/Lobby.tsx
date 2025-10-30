@@ -357,7 +357,7 @@ export default function Lobby() {
                   // Convert job levels array to map
                   const jobLevelMap: Record<CharacterClass, number> = {
                     warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                    knight: 0, paladin: 0, dark_knight: 0, sage: 0, ranger: 0, druid: 0, monk: 0, warlock: 0,
+                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0,
                   };
                   
                   jobLevels.forEach(jl => {
@@ -390,14 +390,17 @@ export default function Lobby() {
                             def: 0, atk: 0, mat: 0, rtk: 0
                           };
                           
-                          // Add equipped item bonuses (using old database fields for now)
-                          // TODO: Migrate equipment database to use new stat system
+                          // Add equipped item bonuses using new stat system
                           equippedItems.forEach(item => {
-                            // Convert old bonuses to new stats temporarily
-                            // hpBonus → vit, attackBonus → atk, defenseBonus → def
-                            equipmentStats.vit += Math.floor((item.hpBonus || 0) / 5); // HP = VIT × 5
-                            equipmentStats.atk += item.attackBonus || 0;
-                            equipmentStats.def += item.defenseBonus || 0;
+                            equipmentStats.str += item.stats.str || 0;
+                            equipmentStats.int += item.stats.int || 0;
+                            equipmentStats.agi += item.stats.agi || 0;
+                            equipmentStats.mnd += item.stats.mnd || 0;
+                            equipmentStats.vit += item.stats.vit || 0;
+                            equipmentStats.def += item.stats.def || 0;
+                            equipmentStats.atk += item.stats.atk || 0;
+                            equipmentStats.mat += item.stats.mat || 0;
+                            equipmentStats.rtk += item.stats.rtk || 0;
                           });
                           
                           const mechanicUpgrades = getTotalMechanicUpgrades(jobLevelMap);
@@ -607,9 +610,15 @@ export default function Lobby() {
                               <p className="font-semibold text-sm">{item.name}</p>
                               <p className="text-xs text-muted-foreground capitalize">{item.quality}</p>
                               <div className="text-xs mt-1 space-y-0.5">
-                                {item.hpBonus > 0 && <div className="text-health">+{item.hpBonus} HP</div>}
-                                {item.attackBonus > 0 && <div className="text-damage">+{item.attackBonus} ATK</div>}
-                                {item.defenseBonus > 0 && <div className="text-primary">+{item.defenseBonus} DEF</div>}
+                                {item.stats.str && item.stats.str > 0 && <div className="text-damage">+{item.stats.str} STR</div>}
+                                {item.stats.int && item.stats.int > 0 && <div className="text-primary">+{item.stats.int} INT</div>}
+                                {item.stats.agi && item.stats.agi > 0 && <div className="text-mana">+{item.stats.agi} AGI</div>}
+                                {item.stats.mnd && item.stats.mnd > 0 && <div className="text-healing">+{item.stats.mnd} MND</div>}
+                                {item.stats.vit && item.stats.vit > 0 && <div className="text-health">+{item.stats.vit} VIT</div>}
+                                {item.stats.atk && item.stats.atk > 0 && <div className="text-damage">+{item.stats.atk} ATK</div>}
+                                {item.stats.def && item.stats.def > 0 && <div className="text-primary">+{item.stats.def} DEF</div>}
+                                {item.stats.mat && item.stats.mat > 0 && <div className="text-primary">+{item.stats.mat} MAT</div>}
+                                {item.stats.rtk && item.stats.rtk > 0 && <div className="text-mana">+{item.stats.rtk} RTK</div>}
                               </div>
                             </CardContent>
                           </Card>
@@ -636,7 +645,7 @@ export default function Lobby() {
                   // Create job level map
                   const jobLevelMap: Record<CharacterClass, number> = {
                     warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0,
+                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0,
                   };
                   jobLevels.forEach(jl => {
                     jobLevelMap[jl.jobClass] = jl.level;
@@ -735,7 +744,7 @@ export default function Lobby() {
               // Convert job levels array to map
               const jobLevelMap: Record<CharacterClass, number> = {
                 warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0,
+                warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0,
               };
               
               jobLevels.forEach(jl => {
@@ -762,7 +771,7 @@ export default function Lobby() {
                       <div className="relative">
                         <PlayerAvatar
                           characterClass={classType}
-                          gender={student.gender}
+                          gender={student.gender || undefined}
                           size="md"
                         />
                         <Badge 
