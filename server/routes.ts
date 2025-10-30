@@ -1311,8 +1311,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (player.isHealing && player.healTarget && player.characterClass === "herbalist" && player.potionCount > 0) {
         const target = session.players[player.healTarget];
         if (target && !target.isDead) {
-          // Heal for MND/2 (rounded up)
-          const healAmount = Math.ceil(player.mnd / 2);
+          // Heal for MND
+          const healAmount = player.mnd;
           const actualHeal = Math.min(healAmount, target.maxHealth - target.health);
           // Update target health in memory
           target.health = Math.min(target.health + healAmount, target.maxHealth);
@@ -1910,10 +1910,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     logPhaseTiming(sessionId, "question_resolution", phaseStart);
 
-    // Auto-advance to enemy AI phase after 3 seconds
+    // Auto-advance to enemy AI phase after 4 seconds (extended for readability)
     setTimeout(async () => {
       await enemyAIPhase(sessionId);
-    }, 3000);
+    }, 4000);
   }
 
   async function enemyAIPhase(sessionId: string) {
@@ -2032,11 +2032,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Timing calculation:
     // - EnemyAIModal animation: 800ms
     // - Each CounterattackModal: 2000ms
-    // - Final cleanup delay: 3000ms
-    // Total: 800 + (attacks * 2000) + 3000 = 3800 + (attacks * 2000)
+    // - Final cleanup delay: 4000ms (extended for readability)
+    // Total: 800 + (attacks * 2000) + 4000 = 4800 + (attacks * 2000)
     const enemyAnimationTime = 800;      // Enemy modal animation
     const counterattackTime = 2000;      // Per attack modal display
-    const cleanupTime = 3000;            // Final delay
+    const cleanupTime = 4000;            // Final delay (extended +1s)
     const totalAnimationTime = enemyAnimationTime + (enemyAttacks.length * counterattackTime) + cleanupTime;
     const delayTime = enemyAttacks.length > 0 ? totalAnimationTime : 1000;
     
