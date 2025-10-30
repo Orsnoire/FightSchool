@@ -8,8 +8,8 @@ import { HealthBar } from "@/components/HealthBar";
 import { MPBar } from "@/components/MPBar";
 import { ComboPoints } from "@/components/ComboPoints";
 import { VictoryModal } from "@/components/VictoryModal";
-import { BlockingModal } from "@/components/BlockingModal";
-import { HealingModal } from "@/components/HealingModal";
+import { AbilitySelectionModal } from "@/components/AbilitySelectionModal";
+import { TargetSelectionModal } from "@/components/TargetSelectionModal";
 import { FloatingNumber } from "@/components/FloatingNumber";
 import { CombatFeedbackModal } from "@/components/CombatFeedbackModal";
 import { PartyDamageModal } from "@/components/PartyDamageModal";
@@ -36,11 +36,11 @@ export default function Combat() {
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string>("");
   const [timeRemaining, setTimeRemaining] = useState(0);
-  const [blockHealingTimeRemaining, setBlockHealingTimeRemaining] = useState<number | undefined>(undefined);
-  const [isHealing, setIsHealing] = useState(false);
-  const [hasDeclinedHealing, setHasDeclinedHealing] = useState(false);
-  const [hasChosenToHeal, setHasChosenToHeal] = useState(false);
-  const [healTarget, setHealTarget] = useState<string | null>(null);
+  const [abilitiesTimeRemaining, setAbilitiesTimeRemaining] = useState<number | undefined>(undefined);
+  const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
+  const [showAbilityModal, setShowAbilityModal] = useState(false);
+  const [showTargetModal, setShowTargetModal] = useState(false);
+  const [targetType, setTargetType] = useState<"enemy" | "ally">("enemy");
   const [mathMode, setMathMode] = useState(false);
   const [usedAbilityInPhase1, setUsedAbilityInPhase1] = useState<string | null>(null);
   const [showVictoryModal, setShowVictoryModal] = useState(false);
@@ -175,8 +175,6 @@ export default function Combat() {
         setCurrentQuestion(message.question);
         setSelectedAnswer("");
         setTimeRemaining(message.question.timeLimit);
-        setIsHealing(false);
-        setHealTarget("");
         setUsedAbilityInPhase1(null); // Reset ability usage
         if (message.shuffleOptions !== undefined) {
           setShuffleOptions(message.shuffleOptions);
@@ -188,9 +186,9 @@ export default function Combat() {
           setShowPhaseChangeModal(true);
         }
       } else if (message.type === "phase_timer") {
-        // Update block_and_healing phase timer
-        if (message.phase === "block_and_healing") {
-          setBlockHealingTimeRemaining(message.timeRemaining);
+        // Update abilities phase timer
+        if (message.phase === "abilities") {
+          setAbilitiesTimeRemaining(message.timeRemaining);
         }
       } else if (message.type === "game_over") {
         gameIsOver.current = true;
@@ -341,8 +339,6 @@ export default function Combat() {
   useEffect(() => {
     if (combatState?.currentPhase === "question") {
       setUsedAbilityInPhase1(null); // Reset when entering question phase
-      setHasDeclinedHealing(false); // Reset healing decline when entering new question phase
-      setHasChosenToHeal(false); // Reset healing choice when entering new question phase
     }
   }, [combatState?.currentPhase]);
 
@@ -361,6 +357,23 @@ export default function Combat() {
     if (!combatState) return;
     setPreviousPhase(combatState.currentPhase);
   }, [combatState?.currentPhase]);
+  
+  // Show ability selection modal when abilities phase starts
+  useEffect(() => {
+    if (!combatState) return;
+    
+    const studentId = localStorage.getItem("studentId");
+    const currentPlayer = studentId ? combatState.players[studentId] : null;
+    
+    if (combatState.currentPhase === "abilities" && currentPlayer && !currentPlayer.isDead) {
+      setShowAbilityModal(true);
+      setSelectedAbility(null);
+      setShowTargetModal(false);
+    } else {
+      setShowAbilityModal(false);
+      setShowTargetModal(false);
+    }
+  }, [combatState?.currentPhase, combatState?.players]);
 
   // Phase transition overlays removed - vision document only specifies modals for feedback
 
@@ -690,22 +703,62 @@ export default function Combat() {
     if (ws && selectedAnswer && currentQuestion) {
       ws.send(JSON.stringify({ 
         type: "answer", 
-        answer: selectedAnswer,
-        isHealing,
-        healTarget
+        answer: selectedAnswer
       }));
     }
   };
 
-  const selectBlockTarget = (targetId: string) => {
-    if (ws) {
-      ws.send(JSON.stringify({ type: "block", targetId }));
+  const handleAbilitySelected = (abilityId: string) => {
+    const ability = ABILITY_DISPLAYS[abilityId];
+    if (!ability) return;
+    
+    setSelectedAbility(abilityId);
+    setShowAbilityModal(false);
+    
+    // Determine if targeting is needed
+    if (ability.requiresTarget || ability.opensHealingWindow) {
+      // Determine target type: allies for healing, enemies for damage
+      if (ability.abilityClass.includes("healing") || abilityId === "warrior_block") {
+        setTargetType("ally");
+      } else {
+        setTargetType("enemy");
+      }
+      setShowTargetModal(true);
+    } else {
+      // No targeting needed, use ability immediately
+      if (ws) {
+        ws.send(JSON.stringify({ type: "use_ability", abilityId }));
+      }
     }
   };
 
-  const selectHealTarget = (targetId: string) => {
-    if (ws) {
-      ws.send(JSON.stringify({ type: "heal", targetId }));
+  const handleBlockSelected = () => {
+    setSelectedAbility("warrior_block");
+    setShowAbilityModal(false);
+    setTargetType("ally");
+    setShowTargetModal(true);
+  };
+
+  const handleBaseDamageSelected = () => {
+    setShowAbilityModal(false);
+    // Just close the modal - no action needed, server will handle default action
+  };
+
+  const handleTargetSelected = (targetId: string) => {
+    setShowTargetModal(false);
+    
+    if (ws && selectedAbility) {
+      ws.send(JSON.stringify({ 
+        type: "use_ability", 
+        abilityId: selectedAbility,
+        targetId 
+      }));
+    } else if (ws && !selectedAbility) {
+      // Generic target selection without ability (e.g., block)
+      ws.send(JSON.stringify({ 
+        type: "select_target", 
+        targetId 
+      }));
     }
   };
 
@@ -1139,8 +1192,6 @@ export default function Combat() {
                           <Check className="mr-2 h-5 w-5" />
                           Answer Submitted
                         </>
-                      ) : isHealing ? (
-                        "Heal Target"
                       ) : (
                         "Submit Answer"
                       )}
@@ -1309,8 +1360,6 @@ export default function Combat() {
                     <Check className="mr-2 h-5 w-5" />
                     Answer Submitted
                   </>
-                ) : isHealing ? (
-                  "Heal Target"
                 ) : (
                   "Submit Answer"
                 )}
@@ -1433,49 +1482,29 @@ export default function Combat() {
         />
       )}
 
-      {/* Tank Blocking Modal */}
-      {combatState && playerState && studentId && (
-        <BlockingModal
-          open={combatState.currentPhase === "block_and_healing" && TANK_CLASSES.includes(playerState.characterClass) && !playerState.isDead}
-          players={combatState.players}
-          currentPlayerId={studentId}
-          currentBlockTarget={playerState.blockTarget || null}
-          threatLeaderId={combatState.threatLeaderId}
-          timeRemaining={blockHealingTimeRemaining}
-          onSelectTarget={selectBlockTarget}
+      {/* Unified Ability Selection Modal - shows during abilities phase for all players */}
+      {combatState && playerState && studentId && showAbilityModal && (
+        <AbilitySelectionModal
+          open={showAbilityModal}
+          player={playerState}
+          timeRemaining={abilitiesTimeRemaining}
+          onSelectAbility={handleAbilitySelected}
+          onSelectBlock={handleBlockSelected}
+          onSelectBaseDamage={handleBaseDamageSelected}
         />
       )}
 
-      {/* Healer Target Selection Modal - automatically shows for healers during block/heal phase */}
-      {combatState && playerState && studentId && (
-        <HealingModal
-          open={!playerState.isDead && HEALER_CLASSES.includes(playerState.characterClass) && combatState.currentPhase === "block_and_healing" && !hasDeclinedHealing}
+      {/* Target Selection Modal - shows after ability selection if targeting is needed */}
+      {combatState && playerState && studentId && showTargetModal && (
+        <TargetSelectionModal
+          open={showTargetModal}
+          targetType={targetType}
+          enemies={combatState.enemies}
           players={combatState.players}
           currentPlayerId={studentId}
-          currentHealTarget={healTarget}
-          healerClass={playerState.characterClass}
-          timeRemaining={blockHealingTimeRemaining}
-          hasChosenToHeal={hasChosenToHeal}
-          onChooseToHeal={(abilityId: string) => {
-            setHasChosenToHeal(true);
-            // Store the selected healing ability for later use
-            console.log("Player chose to heal with ability:", abilityId);
-          }}
-          onSelectTarget={(targetId) => {
-            setHealTarget(targetId);
-            // Also set isHealing to true when they select a target
-            setIsHealing(true);
-            selectHealTarget(targetId);
-          }}
-          onDeclineHealing={() => {
-            // Player chose not to heal - clear healing state and mark as declined
-            setIsHealing(false);
-            setHealTarget(null);
-            setHasDeclinedHealing(true);
-            if (ws) {
-              ws.send(JSON.stringify({ type: "decline_healing" }));
-            }
-          }}
+          threatLeaderId={combatState.threatLeaderId}
+          timeRemaining={abilitiesTimeRemaining}
+          onSelectTarget={handleTargetSelected}
         />
       )}
 
