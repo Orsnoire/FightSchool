@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, BASE_CLASSES, ALL_CHARACTER_CLASSES } from "@shared/schema";
-import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy } from "lucide-react";
+import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, BASE_CLASSES, ALL_CHARACTER_CLASSES, WEAPON_RESTRICTIONS } from "@shared/schema";
+import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy, Lock } from "lucide-react";
+import { JOB_ABILITY_SLOTS, ABILITY_DISPLAYS } from "@shared/abilityUI";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { getTotalPassiveBonuses, getTotalMechanicUpgrades, getCrossClassAbilities, getUnlockedJobs } from "@shared/jobSystem";
@@ -495,6 +496,87 @@ export default function Lobby() {
                 })()}
               </CardContent>
             </Card>
+
+            {/* Abilities Card */}
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Class Abilities
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Abilities unlock as you level up your current class
+                </p>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  if (!student?.characterClass) return null;
+                  
+                  // Convert job levels array to map
+                  const jobLevelMap: Record<CharacterClass, number> = {
+                    warrior: 0, wizard: 0, scout: 0, herbalist: 0,
+                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0,
+                  };
+                  
+                  jobLevels.forEach(jl => {
+                    jobLevelMap[jl.jobClass] = jl.level;
+                  });
+                  
+                  const currentClassLevel = jobLevelMap[student.characterClass] || 0;
+                  const abilitySlots = JOB_ABILITY_SLOTS[student.characterClass];
+                  
+                  if (!abilitySlots || Object.keys(abilitySlots).length === 0) {
+                    return (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No abilities for this class</p>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Object.entries(abilitySlots).map(([levelStr, abilityId]) => {
+                        const unlockLevel = parseInt(levelStr);
+                        const isUnlocked = currentClassLevel >= unlockLevel;
+                        const abilityDisplay = ABILITY_DISPLAYS[abilityId];
+                        
+                        if (!abilityDisplay) return null;
+                        
+                        return (
+                          <Card
+                            key={abilityId}
+                            className={`${!isUnlocked ? "opacity-60" : ""}`}
+                            data-testid={`ability-${abilityId}`}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3">
+                                <div className={`p-2 rounded bg-muted ${!isUnlocked ? "grayscale" : ""}`}>
+                                  <Sparkles className="h-6 w-6 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-semibold text-sm">{abilityDisplay.name}</h4>
+                                    {!isUnlocked && (
+                                      <Lock className="h-3 w-3 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                  {!isUnlocked && (
+                                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                      <Lock className="h-3 w-3" />
+                                      <span>Unlocks at level {unlockLevel}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="lg:col-span-3">
@@ -581,7 +663,18 @@ export default function Lobby() {
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {inventoryItems
-                      .filter((item) => item.slot === selectedSlot)
+                      .filter((item) => {
+                        // Filter by slot
+                        if (item.slot !== selectedSlot) return false;
+                        
+                        // Filter weapons by weapon type restrictions
+                        if (item.slot === "weapon" && item.weaponType && student?.characterClass) {
+                          const allowedWeaponTypes = WEAPON_RESTRICTIONS[student.characterClass];
+                          if (!allowedWeaponTypes.includes(item.weaponType)) return false;
+                        }
+                        
+                        return true;
+                      })
                       .map((item) => {
                         const isEquipped =
                           student[selectedSlot as keyof Pick<Student, "weapon" | "headgear" | "armor">] === item.id;
