@@ -20,6 +20,8 @@ import monkMale from "@assets/generated_images/Monk_male_character_sprite_2ec8e8
 import monkFemale from "@assets/generated_images/Monk_female_character_sprite_2813bcc4.png";
 import warlockMale from "@assets/generated_images/Warlock_male_character_sprite_2481c4c6.png";
 import warlockFemale from "@assets/generated_images/Warlock_female_character_sprite_baea7862.png";
+import rangerMale from "@assets/generated_images/Ranger_male_character_sprite_83d84a5a.png";
+import rangerFemale from "@assets/generated_images/Ranger_female_character_sprite_e862ef10.png";
 
 interface PlayerAvatarProps {
   characterClass: CharacterClass;
@@ -41,6 +43,7 @@ const CHARACTER_IMAGES: Record<CharacterClass, Record<Gender, string>> = {
   dark_knight: { A: darkKnightMale, B: darkKnightFemale },
   blood_knight: { A: bloodKnightMale, B: bloodKnightFemale },
   monk: { A: monkMale, B: monkFemale },
+  ranger: { A: rangerMale, B: rangerFemale },
 };
 
 const SIZE_CLASSES = {

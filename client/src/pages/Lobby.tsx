@@ -842,7 +842,7 @@ export default function Lobby() {
               // Convert job levels array to map
               const jobLevelMap: Record<CharacterClass, number> = {
                 warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0,
+                warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0, ranger: 0,
               };
               
               jobLevels.forEach(jl => {
