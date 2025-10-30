@@ -1,12 +1,15 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
+import { useModalTimer } from "@/hooks/useModalTimer";
 
 interface EnemyAIModalProps {
   open: boolean;
   allEnemies: Array<{ id: string; name: string; image: string }>;
+  onClose?: () => void;
 }
 
-export function EnemyAIModal({ open, allEnemies }: EnemyAIModalProps) {
+export function EnemyAIModal({ open, allEnemies, onClose }: EnemyAIModalProps) {
+  const { canSkip } = useModalTimer(3, open);
   const isSingleEnemy = allEnemies.length === 1;
   
   return (
@@ -64,6 +67,19 @@ export function EnemyAIModal({ open, allEnemies }: EnemyAIModalProps) {
                 </motion.div>
               ))}
             </div>
+          )}
+          
+          {/* Skip button */}
+          {canSkip && onClose && (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-muted-foreground hover:text-foreground underline cursor-pointer"
+              onClick={onClose}
+              data-testid="button-skip-enemy-ai"
+            >
+              Next →
+            </motion.button>
           )}
         </div>
       </DialogContent>

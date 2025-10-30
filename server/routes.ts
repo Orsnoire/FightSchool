@@ -1305,6 +1305,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const sessionHealingFeedback = new Map<string, ResolutionFeedback[]>();
     healingFeedbackMap.set(sessionId, sessionHealingFeedback);
     
+    // AUTO-TARGET LOGIC: Set default targets for players who didn't submit ability selections
+    // Find the enemy with highest HP for default targeting
+    const aliveEnemies = Object.values(session.enemies).filter(e => e.health > 0);
+    const highestHpEnemy = aliveEnemies.reduce((highest, enemy) => 
+      enemy.health > highest.health ? enemy : highest
+    , aliveEnemies[0] || { id: "", health: 0 });
+    
+    // For each alive player without a complete pendingAction, assign a default target
+    for (const [playerId, player] of Object.entries(session.players)) {
+      if (player.isDead) continue;
+      
+      // Check if player has a complete pendingAction (with targetId)
+      const hasCompleteAction = player.pendingAction?.targetId !== undefined && player.pendingAction?.targetId !== null;
+      
+      if (!hasCompleteAction && aliveEnemies.length > 0) {
+        // Determine default target: lastTargetId if valid, otherwise highest HP enemy
+        let defaultTargetId = highestHpEnemy.id;
+        
+        // Check if lastTargetId is still valid (enemy exists and is alive)
+        if (player.lastTargetId) {
+          const lastTarget = Object.values(session.enemies).find(e => e.id === player.lastTargetId);
+          if (lastTarget && lastTarget.health > 0) {
+            defaultTargetId = player.lastTargetId;
+          }
+        }
+        
+        // Set default pendingAction for base damage attack
+        player.pendingAction = {
+          abilityId: "base_attack", // Base damage attack
+          targetId: defaultTargetId,
+          targetType: "enemy",
+        };
+        
+        log(`[Auto-Target] Player ${player.nickname} (${playerId}) auto-targeted ${defaultTargetId}`, "combat");
+      }
+    }
+    
+    // Save auto-target changes
+    await storage.updateCombatSession(sessionId, { players: session.players });
+    
     // PERFORMANCE FIX (B1, B2): Process healing in memory (Herbalist, Priest, Paladin)
     for (const [playerId, player] of Object.entries(session.players)) {
       if (player.isDead) continue;

@@ -2,18 +2,23 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { Check, X, Shield, Heart, Swords, Flame } from "lucide-react";
 import type { ResolutionFeedback } from "@shared/schema";
+import { useModalTimer } from "@/hooks/useModalTimer";
 
 interface CombatFeedbackModalProps {
   open: boolean;
   feedback: ResolutionFeedback;
   shake?: boolean;
+  onClose?: () => void;
 }
 
 export function CombatFeedbackModal({ 
   open, 
   feedback,
-  shake = false
+  shake = false,
+  onClose
 }: CombatFeedbackModalProps) {
+  const { canSkip } = useModalTimer(3, open);
+
   const getIcon = () => {
     switch (feedback.type) {
       case "correct_damage":
@@ -102,6 +107,19 @@ export function CombatFeedbackModal({
             >
               {getMessage()}
             </p>
+            
+            {/* Skip button */}
+            {canSkip && onClose && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-muted-foreground hover:text-foreground underline cursor-pointer"
+                onClick={onClose}
+                data-testid="button-skip-feedback"
+              >
+                Next →
+              </motion.button>
+            )}
           </div>
         </motion.div>
       </DialogContent>

@@ -1,13 +1,17 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { Swords } from "lucide-react";
+import { useModalTimer } from "@/hooks/useModalTimer";
 
 interface NextQuestionModalProps {
   questionNumber: number;
   isOpen: boolean;
+  onClose?: () => void;
 }
 
-export function NextQuestionModal({ questionNumber, isOpen }: NextQuestionModalProps) {
+export function NextQuestionModal({ questionNumber, isOpen, onClose }: NextQuestionModalProps) {
+  const { canSkip } = useModalTimer(3, isOpen);
+  
   return (
     <Dialog open={isOpen}>
       <DialogContent 
@@ -36,6 +40,19 @@ export function NextQuestionModal({ questionNumber, isOpen }: NextQuestionModalP
               >
                 Question #{questionNumber}
               </p>
+              
+              {/* Skip button */}
+              {canSkip && onClose && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm text-muted-foreground hover:text-foreground underline cursor-pointer mt-2"
+                  onClick={onClose}
+                  data-testid="button-skip-next-question"
+                >
+                  Next →
+                </motion.button>
+              )}
             </div>
           </div>
         </motion.div>

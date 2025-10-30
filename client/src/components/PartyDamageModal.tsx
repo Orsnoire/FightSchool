@@ -1,5 +1,6 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
+import { useModalTimer } from "@/hooks/useModalTimer";
 
 interface PartyDamageModalProps {
   open: boolean;
@@ -7,6 +8,7 @@ interface PartyDamageModalProps {
   enemyImage?: string;
   enemyName: string;
   multipleEnemies?: Array<{ id: string; name: string; image?: string; damage: number }>;
+  onClose?: () => void;
 }
 
 export function PartyDamageModal({ 
@@ -14,8 +16,10 @@ export function PartyDamageModal({
   totalDamage,
   enemyImage,
   enemyName,
-  multipleEnemies
+  multipleEnemies,
+  onClose
 }: PartyDamageModalProps) {
+  const { canSkip } = useModalTimer(3, open);
   const showMultiple = multipleEnemies && multipleEnemies.length > 1;
 
   return (
@@ -121,6 +125,19 @@ export function PartyDamageModal({
             >
               Your party dealt {totalDamage} damage to {showMultiple ? 'the enemies' : enemyName}!
             </p>
+            
+            {/* Skip button */}
+            {canSkip && onClose && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-muted-foreground hover:text-foreground underline cursor-pointer mt-4"
+                onClick={onClose}
+                data-testid="button-skip-party-damage"
+              >
+                Next →
+              </motion.button>
+            )}
           </motion.div>
         </motion.div>
       </DialogContent>

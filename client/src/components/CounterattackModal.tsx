@@ -1,13 +1,16 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import type { EnemyAIAttackData } from "@shared/schema";
+import { useModalTimer } from "@/hooks/useModalTimer";
 
 interface CounterattackModalProps {
   open: boolean;
   attack: EnemyAIAttackData;
+  onClose?: () => void;
 }
 
-export function CounterattackModal({ open, attack }: CounterattackModalProps) {
+export function CounterattackModal({ open, attack, onClose }: CounterattackModalProps) {
+  const { canSkip } = useModalTimer(3, open);
   const isBlocked = attack.blocked;
   
   return (
@@ -78,6 +81,19 @@ export function CounterattackModal({ open, attack }: CounterattackModalProps) {
                 </>
               )}
             </p>
+            
+            {/* Skip button */}
+            {canSkip && onClose && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-muted-foreground hover:text-foreground underline cursor-pointer mt-4"
+                onClick={onClose}
+                data-testid="button-skip-counterattack"
+              >
+                Next →
+              </motion.button>
+            )}
           </motion.div>
         </motion.div>
       </DialogContent>
