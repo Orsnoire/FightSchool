@@ -31,6 +31,7 @@ export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
 export type ItemType = "sword" | "wand" | "bow" | "staff" | "herbs" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
 export type ItemQuality = "common" | "rare" | "epic" | "legendary";
+export type WeaponType = "sword" | "staff" | "bow" | "herb" | "two-handed-sword" | "fist" | "claws";
 
 // Teachers table
 export const teachers = pgTable("teachers", {
@@ -102,6 +103,7 @@ export const equipmentItems = pgTable("equipment_items", {
   itemType: text("item_type").notNull().$type<ItemType>(),
   quality: text("quality").notNull().$type<ItemQuality>(),
   slot: text("slot").notNull().$type<EquipmentSlot>(),
+  weaponType: text("weapon_type").$type<WeaponType>(), // Nullable for backwards compatibility
   stats: jsonb("stats").notNull().$type<EquipmentItemStats>().default({}),
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
@@ -503,7 +505,22 @@ export interface EquipmentItem {
     rtk?: number;    // Direct ranged attack bonus
   };
   classRestriction?: CharacterClass[]; // undefined = available to all
+  weaponType?: WeaponType; // Weapon type for class weapon restrictions
 }
+
+// Weapon type restrictions by character class
+export const WEAPON_RESTRICTIONS: Record<CharacterClass, WeaponType[]> = {
+  warrior: ["sword"],
+  wizard: ["staff"],
+  scout: ["bow"],
+  herbalist: ["herb"],
+  warlock: ["staff"],
+  priest: ["staff"],
+  paladin: ["sword", "two-handed-sword"],
+  dark_knight: ["sword", "two-handed-sword"],
+  blood_knight: ["two-handed-sword"],
+  monk: ["fist", "claws"],
+};
 
 // Equipment items database (single source of truth)
 export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
@@ -515,6 +532,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "common",
     stats: { atk: 1 },
     classRestriction: ["warrior"],
+    weaponType: "sword",
   },
   basic_staff: {
     id: "basic_staff",
@@ -523,6 +541,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "common",
     stats: { mat: 1 },
     classRestriction: ["wizard", "warlock"],
+    weaponType: "staff",
   },
   basic_bow: {
     id: "basic_bow",
@@ -531,6 +550,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "common",
     stats: { rtk: 1 },
     classRestriction: ["scout"],
+    weaponType: "bow",
   },
   basic_herbs: {
     id: "basic_herbs",
@@ -539,6 +559,16 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "common",
     stats: { mnd: 1 },
     classRestriction: ["herbalist"],
+    weaponType: "herb",
+  },
+  basic_fist: {
+    id: "basic_fist",
+    name: "Basic Fist Wraps",
+    slot: "weapon",
+    rarity: "common",
+    stats: { atk: 1 },
+    classRestriction: ["monk"],
+    weaponType: "fist",
   },
   basic_helm: {
     id: "basic_helm",
@@ -563,6 +593,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "common",
     stats: { atk: 2, str: 1 },
     classRestriction: ["warrior"],
+    weaponType: "sword",
   },
   steel_bow: {
     id: "steel_bow",
@@ -571,6 +602,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "rare",
     stats: { rtk: 3, agi: 1 },
     classRestriction: ["scout"],
+    weaponType: "bow",
   },
   magic_staff: {
     id: "magic_staff",
@@ -579,6 +611,16 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "rare",
     stats: { mat: 3, int: 1 },
     classRestriction: ["wizard", "warlock"],
+    weaponType: "staff",
+  },
+  basic_claws: {
+    id: "basic_claws",
+    name: "Basic Claws",
+    slot: "weapon",
+    rarity: "common",
+    stats: { atk: 2, agi: 1 },
+    classRestriction: ["monk"],
+    weaponType: "claws",
   },
   leather_helm: {
     id: "leather_helm",
@@ -636,6 +678,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "legendary",
     stats: { atk: 5, str: 2 },
     classRestriction: ["warrior"],
+    weaponType: "sword",
   },
 };
 
@@ -651,7 +694,7 @@ export function getStartingEquipment(characterClass: CharacterClass): { weapon: 
     paladin: "basic_sword",      // ATK-based tank/healer
     dark_knight: "basic_sword",  // ATK-based tank/DPS
     blood_knight: "basic_sword", // ATK-based tank/DPS
-    monk: "basic_sword",         // ATK-based tank/DPS with combo points
+    monk: "basic_fist",          // ATK-based tank/DPS with combo points
   };
 
   return {
