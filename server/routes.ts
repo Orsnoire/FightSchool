@@ -1046,7 +1046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Base HP formula: playerCount × (2.5 + avgJobLevel × 0.4)
       // This makes difficultyMultiplier directly represent ~questions to survive at 70% accuracy
-      const playerCount = players.length;
+      const playerCount = Math.max(1, players.length); // Guard against empty sessions
       const avgJobLevel = totalPlayerLevels / playerCount;
       const baseHP = playerCount * (2.5 + avgJobLevel * 0.4);
       
