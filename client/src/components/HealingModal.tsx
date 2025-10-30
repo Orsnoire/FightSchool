@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { HealthBar } from "@/components/HealthBar";
-import { Sparkles, Clock } from "lucide-react";
+import { Sparkles, Clock, Heart, Swords } from "lucide-react";
 import type { PlayerState, CharacterClass } from "@shared/schema";
 import { HEALER_CLASSES } from "@shared/schema";
 
@@ -13,7 +13,10 @@ interface HealingModalProps {
   currentHealTarget: string | null;
   healerClass: CharacterClass;
   timeRemaining?: number; // Timer in seconds
+  hasChosenToHeal: boolean; // Parent-managed state
+  onChooseToHeal: () => void; // Callback when player chooses to heal
   onSelectTarget: (targetId: string) => void;
+  onDeclineHealing?: () => void; // Callback when player chooses not to heal
 }
 
 export function HealingModal({ 
@@ -23,7 +26,10 @@ export function HealingModal({
   currentHealTarget,
   healerClass,
   timeRemaining,
-  onSelectTarget 
+  hasChosenToHeal,
+  onChooseToHeal,
+  onSelectTarget,
+  onDeclineHealing
 }: HealingModalProps) {
   // Filter: Only show players with missing HP
   const filteredPlayers = Object.values(players).filter(p => {
@@ -44,6 +50,59 @@ export function HealingModal({
     if (characterClass === "paladin") return "Healing Guard";
     return "Healing";
   };
+  
+  // If player hasn't chosen to heal yet, show choice screen
+  if (!hasChosenToHeal) {
+    return (
+      <Dialog open={open}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-3xl font-bold text-center">
+              Choose Your Action
+            </DialogTitle>
+            {timeRemaining !== undefined && (
+              <div className="flex items-center justify-center gap-2 text-lg font-semibold text-muted-foreground pt-2">
+                <Clock className="h-5 w-5" />
+                <span>{timeRemaining}s remaining</span>
+              </div>
+            )}
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-4 py-6">
+            <p className="text-center text-muted-foreground">
+              If you choose to heal, you won't deal damage this turn (even if you answer correctly)
+            </p>
+            
+            <Button
+              size="lg"
+              variant="default"
+              className="h-20 text-lg bg-health hover:bg-health/90 border-health"
+              onClick={onChooseToHeal}
+              data-testid="button-choose-heal"
+            >
+              <Heart className="h-6 w-6 mr-2" />
+              Heal an Ally
+            </Button>
+            
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-20 text-lg"
+              onClick={() => {
+                if (onDeclineHealing) {
+                  onDeclineHealing();
+                }
+              }}
+              data-testid="button-choose-damage"
+            >
+              <Swords className="h-6 w-6 mr-2" />
+              Deal Damage Instead
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open}>

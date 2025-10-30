@@ -38,7 +38,9 @@ export default function Combat() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [blockHealingTimeRemaining, setBlockHealingTimeRemaining] = useState<number | undefined>(undefined);
   const [isHealing, setIsHealing] = useState(false);
-  const [healTarget, setHealTarget] = useState<string>("");
+  const [hasDeclinedHealing, setHasDeclinedHealing] = useState(false);
+  const [hasChosenToHeal, setHasChosenToHeal] = useState(false);
+  const [healTarget, setHealTarget] = useState<string | null>(null);
   const [mathMode, setMathMode] = useState(false);
   const [usedAbilityInPhase1, setUsedAbilityInPhase1] = useState<string | null>(null);
   const [showVictoryModal, setShowVictoryModal] = useState(false);
@@ -339,6 +341,8 @@ export default function Combat() {
   useEffect(() => {
     if (combatState?.currentPhase === "question") {
       setUsedAbilityInPhase1(null); // Reset when entering question phase
+      setHasDeclinedHealing(false); // Reset healing decline when entering new question phase
+      setHasChosenToHeal(false); // Reset healing choice when entering new question phase
     }
   }, [combatState?.currentPhase]);
 
@@ -720,6 +724,15 @@ export default function Combat() {
       return;
     }
     
+    // Check if it's a pure healing ability that opens healing window - these are handled in block/heal phase, not clickable
+    if (abilityConfig.opensHealingWindow) {
+      toast({
+        title: "Healing abilities work differently now",
+        description: "You'll choose to heal during the block & healing phase after answering the question",
+      });
+      return;
+    }
+    
     // Check if it's an ultimate/cross-class ability (from ULTIMATE_ABILITIES)
     const isUltimate = !!ULTIMATE_ABILITIES[abilityId];
     
@@ -743,7 +756,7 @@ export default function Combat() {
         title: "Cannot use ability",
         description: "This ability can only be used during the question phase",
         variant: "destructive",
-      });
+        });
       return;
     }
     
@@ -751,10 +764,7 @@ export default function Combat() {
     setUsedAbilityInPhase1(abilityId);
     
     // Send appropriate message to server based on ability type
-    if (abilityConfig.opensHealingWindow) {
-      // Mark as healing - healing window will open in phase 2
-      setIsHealing(true);
-    } else if (abilityConfig.isToggle) {
+    if (abilityConfig.isToggle) {
       // For toggleable abilities like fireball charging
       if (ws && abilityId === "fireball") {
         ws.send(JSON.stringify({ type: "charge_fireball" }));
@@ -1436,16 +1446,34 @@ export default function Combat() {
         />
       )}
 
-      {/* Healer Target Selection Modal */}
+      {/* Healer Target Selection Modal - automatically shows for healers during block/heal phase */}
       {combatState && playerState && studentId && (
         <HealingModal
-          open={isHealing && !playerState.isDead && HEALER_CLASSES.includes(playerState.characterClass) && combatState.currentPhase === "block_and_healing"}
+          open={!playerState.isDead && HEALER_CLASSES.includes(playerState.characterClass) && combatState.currentPhase === "block_and_healing" && !hasDeclinedHealing}
           players={combatState.players}
           currentPlayerId={studentId}
           currentHealTarget={healTarget}
           healerClass={playerState.characterClass}
           timeRemaining={blockHealingTimeRemaining}
-          onSelectTarget={setHealTarget}
+          hasChosenToHeal={hasChosenToHeal}
+          onChooseToHeal={() => {
+            setHasChosenToHeal(true);
+          }}
+          onSelectTarget={(targetId) => {
+            setHealTarget(targetId);
+            // Also set isHealing to true when they select a target
+            setIsHealing(true);
+            selectHealTarget(targetId);
+          }}
+          onDeclineHealing={() => {
+            // Player chose not to heal - clear healing state and mark as declined
+            setIsHealing(false);
+            setHealTarget(null);
+            setHasDeclinedHealing(true);
+            if (ws) {
+              ws.send(JSON.stringify({ type: "decline_healing" }));
+            }
+          }}
         />
       )}
 

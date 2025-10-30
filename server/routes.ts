@@ -1698,6 +1698,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Other classes: use physical damage as default
             damage = calculatePhysicalDamage(player.atk, player.str);
           }
+          
+          // HEALING MECHANIC: If player chose to heal, they deal no damage this turn
+          // This covers single-target heals, AoE heals, and self-heals
+          if (player.isHealing) {
+            damage = 0;
+            player.lastActionDamage = 0;
+            // Add feedback that they healed instead of dealing damage
+            if (!playerFeedback.has(playerId)) {
+              playerFeedback.set(playerId, []);
+            }
+            playerFeedback.get(playerId)!.push({
+              type: "healing_instead",
+              message: "You chose to heal this turn instead of dealing damage",
+            });
+          }
 
           if (session.enemies.length > 0 && damage > 0) {
             // Update enemy health in memory
@@ -2112,7 +2127,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Check if all enemies dead
     const allEnemiesDead = session.enemies.every((e) => e.health <= 0);
+    log(`[Victory Check] Session ${sessionId}: ${allEnemiesDead ? 'ALL ENEMIES DEFEATED' : 'Enemies still alive'} (Enemies: ${session.enemies.map(e => `${e.name} HP:${e.health}`).join(', ')})`, "combat");
+    
     if (allEnemiesDead) {
+      log(`[Victory] Triggering victory sequence for session ${sessionId} (Solo mode: ${session.soloModeEnabled})`, "combat");
       await saveCombatStats(sessionId);
       await storage.updateCombatSession(sessionId, { currentPhase: "game_over" });
       
@@ -2192,6 +2210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Send individual victory messages to each player with their XP data
+      let victoryMessagesSent = 0;
       wss.clients.forEach((client) => {
         const playerWs = client as ExtendedWebSocket;
         if (playerWs.readyState === WebSocket.OPEN && playerWs.sessionId === sessionId && playerWs.studentId) {
@@ -2206,6 +2225,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currentXP: playerData?.currentXP || 0,
             lootTable: fight.lootTable || [],
           }));
+          victoryMessagesSent++;
+          log(`[Victory] Sent detailed victory message to student ${playerWs.studentId} (XP: ${playerData?.xpGained || 0})`, "combat");
         } else if (playerWs.readyState === WebSocket.OPEN && (playerWs.sessionId === sessionId || playerWs.isHost)) {
           // Send basic victory message to host
           playerWs.send(JSON.stringify({
@@ -2213,8 +2234,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             victory: true,
             message: "Victory! All enemies defeated!",
           }));
+          victoryMessagesSent++;
+          log(`[Victory] Sent basic victory message to ${playerWs.isHost ? 'host' : 'session member'}`, "combat");
         }
       });
+      log(`[Victory] Total victory messages sent: ${victoryMessagesSent}`, "combat");
       
       // Clean up after victory (delayed to ensure messages are received)
       setTimeout(async () => {
@@ -2723,6 +2747,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             isHealing: true,
             healTarget: message.targetId,
+          });
+          
+          const updatedSession = await storage.getCombatSession(ws.sessionId);
+          broadcastToCombat(ws.sessionId, { type: "combat_state", state: updatedSession });
+        } else if (message.type === "decline_healing" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
+          if (!session) return;
+          
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead) {
+            log(`[WebSocket] Ignoring decline_healing from dead/missing player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
+          // Update block_and_healing phase activity tracker
+          if (session.currentPhase === "block_and_healing") {
+            blockHealingLastActivity.set(ws.sessionId, Date.now());
+          }
+          
+          // Clear healing state when player declines to heal
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
+            isHealing: false,
+            healTarget: undefined,
           });
           
           // Batch broadcast to reduce message flood
