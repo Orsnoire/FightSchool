@@ -20,10 +20,10 @@ export function generateGuildCode(): string {
 }
 
 // Character classes and equipment types
-export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock" | "priest" | "paladin" | "dark_knight" | "blood_knight" | "monk";
+export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock" | "priest" | "paladin" | "dark_knight" | "blood_knight" | "monk" | "ranger";
 export type BaseClass = "warrior" | "wizard" | "scout" | "herbalist";
 export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbalist"];
-export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock", "priest", "paladin", "dark_knight", "blood_knight", "monk"];
+export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock", "priest", "paladin", "dark_knight", "blood_knight", "monk", "ranger"];
 export const TANK_CLASSES: CharacterClass[] = ["warrior", "paladin", "dark_knight", "blood_knight", "monk"];
 export const HEALER_CLASSES: CharacterClass[] = ["herbalist", "priest", "paladin"];
 export type Gender = "A" | "B";
@@ -520,6 +520,7 @@ export const WEAPON_RESTRICTIONS: Record<CharacterClass, WeaponType[]> = {
   dark_knight: ["sword", "two-handed-sword"],
   blood_knight: ["two-handed-sword"],
   monk: ["fist", "claws"],
+  ranger: ["bow"],
 };
 
 // Equipment items database (single source of truth)
@@ -695,6 +696,7 @@ export function getStartingEquipment(characterClass: CharacterClass): { weapon: 
     dark_knight: "basic_sword",  // ATK-based tank/DPS
     blood_knight: "basic_sword", // ATK-based tank/DPS
     monk: "basic_fist",          // ATK-based tank/DPS with combo points
+    ranger: "basic_bow",         // RTK-based ranged DPS with combo points
   };
 
   return {
@@ -762,6 +764,7 @@ export const CLASS_STATS: Record<CharacterClass, BaseJobStats> = {
   dark_knight: { baseHP: 14, vit: 1, str: 1, int: 1, role: "Tank/DPS - Dark magic melee" },
   blood_knight: { baseHP: 20, str: 1, int: 2, vit: 1, role: "Tank/DPS - Lifesteal specialist" },
   monk: { baseHP: 11, vit: 1, str: 1, agi: 1, role: "Tank/DPS - Stance-based combo fighter" },
+  ranger: { baseHP: 7, agi: 3, role: "DPS - Ranged damage with enhanced mobility" },
 };
 
 // Complete character stats (all stats combined)
@@ -846,20 +849,20 @@ export function getPlayerCombatStats(playerState: PlayerState, weapon: string, h
 
 // Calculate damage for different attack types
 export function calculatePhysicalDamage(atk: number, str: number): number {
-  return Math.floor((atk + str) / 2);
+  return atk + str;
 }
 
 export function calculateMagicalDamage(mat: number, int: number): number {
-  return Math.floor((mat + int) / 2);
+  return mat + int;
 }
 
 export function calculateRangedDamage(rtk: number, agi: number): number {
-  return Math.floor((rtk + agi) / 2);
+  return rtk + agi;
 }
 
 export function calculateHybridDamage(mat: number, agi: number, mnd: number): number {
   // For Herbalist base damage
-  return Math.floor((mat + agi + mnd) / 2);
+  return mat + agi + mnd;
 }
 
 // Calculate damage reduction

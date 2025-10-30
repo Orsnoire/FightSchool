@@ -12,6 +12,7 @@ export type AbilityIcon =
   | "Axe" | "Droplet" | "UserX" | "Cloud"          // Dark Knight
   | "Syringe" | "Activity" | "Dna" | "CloudRain"   // Blood Knight
   | "CircleDot" | "Waypoints"                      // Monk
+  | "Locate" | "ArrowUpDown" | "Footprints" | "Target" | "CloudHail" // Ranger
   | "Plus";                                         // Cross-class abilities
 
 // Ability display configuration
@@ -90,6 +91,13 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "focused_palm": { id: "focused_palm", icon: "Target", name: "Focused Palm", description: "Precise strike that deals critical damage" },
   "inner_peace": { id: "inner_peace", icon: "Star", name: "Inner Peace", description: "Find balance to restore health and mana" },
   
+  // RANGER
+  "prey": { id: "prey", icon: "Locate", name: "Prey", description: "Mark an enemy as prey - they take 200% damage from all sources", requiresTarget: true },
+  "twin_shot": { id: "twin_shot", icon: "ArrowUpDown", name: "Twin Shot", description: "Fire two arrows dealing massive damage" },
+  "disengage": { id: "disengage", icon: "Footprints", name: "Disengage", description: "Drop all aggro and gain a combo point" },
+  "hunters_volley": { id: "hunters_volley", icon: "Target", name: "Hunter's Volley", description: "Unleash 5 waves of arrows at all enemies" },
+  "arrowstorm": { id: "arrowstorm", icon: "CloudHail", name: "Arrowstorm", description: "Ultimate barrage - rain arrows on all enemies" },
+  
   // ULTIMATE/CROSS-CLASS ABILITIES (Level 15)
   "unbreakable": { id: "unbreakable", icon: "Shield", name: "Unbreakable", description: "Ultimate defensive stance - become invincible for a turn" },
   "manabomb": { id: "manabomb", icon: "Bomb", name: "Manabomb", description: "Ultimate spell - massive explosion dealing devastating damage" },
@@ -112,6 +120,7 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "ruin_strike_crossclass": { id: "ruin_strike_crossclass", icon: "Zap", name: "Ruin Strike", description: "Devastating attack using dark power" },
   "crimson_slash_crossclass": { id: "crimson_slash_crossclass", icon: "Swords", name: "Crimson Slash", description: "Vampiric attack that steals enemy health" },
   "fortify_crossclass": { id: "fortify_crossclass", icon: "Shield", name: "Fortify", description: "Channel inner strength to boost defense", isToggle: true },
+  "prey_crossclass": { id: "prey_crossclass", icon: "Locate", name: "Prey", description: "Mark an enemy as prey - they take 200% damage from all sources", requiresTarget: true },
 };
 
 // Job ability progression (levels 1, 4, 10, 12, 15)
@@ -191,6 +200,13 @@ export const JOB_ABILITY_SLOTS: Record<CharacterClass, {
     level10: "deflect",
     level12: "focused_palm",
     level15: "inner_peace",
+  },
+  ranger: {
+    level1: "prey",
+    level4: "twin_shot",
+    level10: "disengage",
+    level12: "hunters_volley",
+    level15: "arrowstorm",
   },
 };
 

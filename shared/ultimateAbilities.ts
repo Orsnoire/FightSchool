@@ -132,6 +132,19 @@ export const ULTIMATE_ABILITIES: Record<string, UltimateAbility> = {
       value: "ATK × (STR+VIT+INT) + 50% party heal",
     },
   },
+
+  arrowstorm: {
+    id: "arrowstorm",
+    name: "Arrowstorm",
+    description: "The ranger deals 10 waves of damage to all targets, and 1 final hit to the marked target. Each wave deals base damage, final hit deals base damage × 2. Once per encounter.",
+    jobClass: "ranger",
+    animationType: "nature",
+    cooldown: 1,
+    effect: {
+      type: "damage",
+      value: "10 waves of base damage + final hit × 2",
+    },
+  },
 };
 
 // Calculate ultimate damage/healing based on player stats
@@ -177,6 +190,9 @@ export function calculateUltimateEffect(
     
     case "raining_blood":
       return playerStats.atk * (playerStats.str + playerStats.vit + playerStats.int);
+    
+    case "arrowstorm":
+      return playerStats.rtk + (2 * playerStats.agi); // Base damage per wave
     
     default:
       return 0;

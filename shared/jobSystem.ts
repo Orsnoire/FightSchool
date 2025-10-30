@@ -789,6 +789,73 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
       },
     }
   },
+
+  ranger: {
+    id: "ranger",
+    name: "Ranger",
+    description: "DPS - Advanced ranged damage with combo points and mobility",
+    maxLevel: 15,
+    unlockRequirements: { scout: 8 },
+    levelRewards: {
+      1: { 
+        abilities: [{
+          id: "prey",
+          name: "Prey",
+          description: "The Ranger marks one target enemy as his prey. Debuff. Until canceled or removed. Marked enemy takes 200% damage from all sources. Costs 2 combo points.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { agi: 1 } },
+      3: { mechanicUpgrades: { maxComboPoints: 1 } },
+      4: { 
+        abilities: [{
+          id: "twin_shot",
+          name: "Twin Shot",
+          description: "The ranger attacks with two arrows. On simultaneous mode, the extra hit always goes to the Prey target. Each arrow deals (RTK + AGI)*4 damage. Costs 2 combo points.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { agi: 1 } },
+      6: { passives: { agi: 1 } },
+      7: { mechanicUpgrades: { maxComboPoints: 1 } },
+      8: { 
+        abilities: [{
+          id: "prey_crossclass",
+          name: "Prey",
+          description: "Cross-class unlock. The Ranger marks one target enemy as his prey. Debuff. Until canceled or removed. Marked enemy takes 200% damage from all sources. Costs 2 combo points.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { agi: 1 } },
+      10: { 
+        abilities: [{
+          id: "disengage",
+          name: "Disengage",
+          description: "The ranger drops all aggro. Gains 1 combo point.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { agi: 1 } },
+      12: { 
+        abilities: [{
+          id: "hunters_volley",
+          name: "Hunter's Volley",
+          description: "The ranger deals 5 waves of damage to all targets. Each wave deals (RTK + AGI)*2 damage to each target. Costs 5 combo points.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { agi: 1 } },
+      14: { mechanicUpgrades: { maxComboPoints: 1 } },
+      15: { 
+        abilities: [{
+          id: "arrowstorm",
+          name: "Arrowstorm",
+          description: "Cross-class unlock. The ranger deals 10 waves of damage to all targets, and 1 final hit to the marked target. Each wave deals base damage, final hit deals base damage × 2. Once per encounter.",
+          isCrossClass: true,
+        }]
+      },
+    }
+  },
 };
 
 // Get all abilities a player has unlocked across all jobs
