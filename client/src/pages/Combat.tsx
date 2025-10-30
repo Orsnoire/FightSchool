@@ -24,7 +24,6 @@ import type { CombatState, Question, LootItem, CharacterClass, Gender, Resolutio
 import { TANK_CLASSES, HEALER_CLASSES } from "@shared/schema";
 import { type AnimationType, ULTIMATE_ABILITIES } from "@shared/ultimateAbilities";
 import { UltimateAnimation } from "@/components/UltimateAnimation";
-import { AbilityBar } from "@/components/AbilityBar";
 import { ABILITY_DISPLAYS } from "@shared/abilityUI";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -657,10 +656,9 @@ export default function Combat() {
         // If not in a scroll container, check window scroll
         const submitRect = primarySubmitRef.current.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
-        const abilityBarHeight = window.innerHeight * 0.1; // 10vh for ability bar
-        // Button is out of view if scrolled above viewport or below the visible area (minus ability bar)
+        // Button is out of view if scrolled above viewport or below the visible area
         const isScrolledAbove = submitRect.top < 0;
-        const isScrolledBelow = submitRect.bottom > (viewportHeight - abilityBarHeight);
+        const isScrolledBelow = submitRect.bottom > viewportHeight;
         const isOutOfView = isScrolledAbove || isScrolledBelow;
         setShowFixedSubmit(isOutOfView);
         return;
@@ -976,7 +974,7 @@ export default function Combat() {
       )}
 
       {/* B4 FIX: Main combat area with fixed viewport sizing and bottom padding for fixed player footer */}
-      <div className="flex-1 flex gap-2 px-2 overflow-hidden pb-2" style={{ height: 'calc(100vh - 12.5vh)', paddingBottom: 'calc(10vh + 0.5rem)' }}>
+      <div className="flex-1 flex gap-2 px-2 overflow-hidden pb-2" style={{ height: 'calc(100vh - 12.5vh)' }}>
         {/* B4 FIX: Left column - 2-column grid, tiny avatars, no names */}
         <div className="flex-shrink-0 hidden lg:block overflow-y-auto" style={{ width: '10vw' }} data-testid="players-left-column">
           <div className="grid grid-cols-2 gap-1">
@@ -1336,7 +1334,7 @@ export default function Combat() {
 
       {/* Phase transition overlay removed - vision document specifies modals only */}
 
-      {/* FIXED SUBMIT BUTTON: Appears above ability bar when primary button is scrolled out of view */}
+      {/* FIXED SUBMIT BUTTON: Appears at bottom of screen when primary button is scrolled out of view */}
       <AnimatePresence>
         {showFixedSubmit && combatState.currentPhase === "question" && currentQuestion && (
           <motion.div
@@ -1344,8 +1342,7 @@ export default function Combat() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-[10vh] left-0 right-0 z-40 px-4 pb-2"
-            style={{ paddingBottom: '0.5rem' }}
+            className="fixed bottom-4 left-0 right-0 z-40 px-4"
           >
             <div className="max-w-7xl mx-auto">
               <Button
@@ -1368,19 +1365,6 @@ export default function Combat() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* NEW ABILITY BAR: 7 slots for job abilities + cross-class */}
-      {playerState && combatState.currentPhase !== "waiting" && combatState.currentPhase !== "game_over" && (
-        <AbilityBar
-          currentJob={playerState.characterClass}
-          currentJobLevel={playerState.jobLevels?.[playerState.characterClass] || 1}
-          crossClassAbility1={playerState.crossClassAbility1 || undefined}
-          crossClassAbility2={playerState.crossClassAbility2 || undefined}
-          onAbilityClick={handleAbilityClick}
-          isDead={playerState.isDead}
-          isWaitingPhase={false}
-        />
-      )}
 
       {/* FIXED PLAYER FOOTER: Always visible at bottom of screen */}
       {playerState && (
