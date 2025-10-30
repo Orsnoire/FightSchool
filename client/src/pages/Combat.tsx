@@ -849,6 +849,16 @@ export default function Combat() {
               <span className="text-xs text-warning">Reconnecting...</span>
             </>
           )}
+          {/* Solo Mode Host - Session Code Display */}
+          {combatState?.soloModeEnabled && combatState?.soloModeHostId === studentId && (
+            <>
+              <span className="text-xs text-muted-foreground mx-2">|</span>
+              <span className="text-xs text-muted-foreground">Session:</span>
+              <span className="text-xs font-mono font-bold text-primary" data-testid="text-session-code-solo">
+                {combatState.sessionId}
+              </span>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* Solo Mode Host - End Fight Button (during active combat) */}

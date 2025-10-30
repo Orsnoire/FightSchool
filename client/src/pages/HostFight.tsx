@@ -294,6 +294,12 @@ export default function HostFight() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
+                  <p className="text-sm text-muted-foreground">Session Code</p>
+                  <p className="font-bold text-xl font-mono text-primary tracking-wider" data-testid="text-session-code">
+                    {sessionId || "---"}
+                  </p>
+                </div>
+                <div>
                   <p className="text-sm text-muted-foreground">Phase</p>
                   <p className="font-semibold capitalize" data-testid="text-phase">
                     {combatState?.currentPhase || "Waiting"}
