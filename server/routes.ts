@@ -2774,6 +2774,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Batch broadcast to reduce message flood
           scheduleBroadcastUpdate(ws.sessionId);
+        } else if (message.type === "use_ability" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
+          if (!session) return;
+          
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead) {
+            log(`[WebSocket] Ignoring use_ability from dead/missing player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
+          // Update abilities phase activity tracker
+          if (session.currentPhase === "abilities") {
+            abilitiesLastActivity.set(ws.sessionId, Date.now());
+          }
+          
+          // Store pending action (ability selection, awaiting target)
+          const abilityId = message.abilityId;
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
+            pendingAction: {
+              abilityId,
+              targetId: undefined,
+              targetType: undefined,
+            },
+          });
+          
+          const updatedSession = await storage.getCombatSession(ws.sessionId);
+          broadcastToCombat(ws.sessionId, { type: "combat_state", state: updatedSession });
+        } else if (message.type === "select_target" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
+          if (!session) return;
+          
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead || !player.pendingAction) {
+            log(`[WebSocket] Ignoring select_target from invalid state ${ws.studentId}`, "websocket");
+            return;
+          }
+          
+          // Update abilities phase activity tracker
+          if (session.currentPhase === "abilities") {
+            abilitiesLastActivity.set(ws.sessionId, Date.now());
+          }
+          
+          // Complete the pending action with target
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
+            pendingAction: {
+              ...player.pendingAction,
+              targetId: message.targetId,
+              targetType: message.targetType,
+            },
+            lastTargetId: message.targetId, // Remember for auto-selection
+          });
+          
+          const updatedSession = await storage.getCombatSession(ws.sessionId);
+          broadcastToCombat(ws.sessionId, { type: "combat_state", state: updatedSession });
         } else if (message.type === "create_potion" && ws.studentId && ws.sessionId) {
           const session = await storage.getCombatSession(ws.sessionId);
           if (!session) return;
