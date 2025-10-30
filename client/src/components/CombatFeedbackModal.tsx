@@ -1,4 +1,5 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { motion } from "framer-motion";
 import { Check, X, Shield, Heart, Swords, Flame } from "lucide-react";
 import type { ResolutionFeedback } from "@shared/schema";
@@ -85,6 +86,9 @@ export function CombatFeedbackModal({
         className="max-w-2xl border-0 bg-transparent shadow-none p-0 [&>button]:hidden"
         data-testid={`modal-feedback-${feedback.type}`}
       >
+        <VisuallyHidden.Root>
+          <DialogTitle>Combat Feedback</DialogTitle>
+        </VisuallyHidden.Root>
         <motion.div
           initial={{ scale: 0.8, opacity: 0, y: 20 }}
           animate={{ 

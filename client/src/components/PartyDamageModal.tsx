@@ -1,4 +1,5 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { motion } from "framer-motion";
 import { useModalTimer } from "@/hooks/useModalTimer";
 
@@ -28,6 +29,9 @@ export function PartyDamageModal({
         className="max-w-4xl border-0 bg-transparent shadow-none p-0 [&>button]:hidden"
         data-testid="modal-party-damage"
       >
+        <VisuallyHidden.Root>
+          <DialogTitle>Party Damage</DialogTitle>
+        </VisuallyHidden.Root>
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

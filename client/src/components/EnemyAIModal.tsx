@@ -1,4 +1,5 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { motion } from "framer-motion";
 import { useModalTimer } from "@/hooks/useModalTimer";
 
@@ -18,6 +19,9 @@ export function EnemyAIModal({ open, allEnemies, onClose }: EnemyAIModalProps) {
         className="max-w-[90vw] max-h-[90vh] border-0 bg-black/70 backdrop-blur-md shadow-none p-0 [&>button]:hidden"
         data-testid="modal-enemy-ai"
       >
+        <VisuallyHidden.Root>
+          <DialogTitle>Enemy Attack</DialogTitle>
+        </VisuallyHidden.Root>
         <div className="flex items-center justify-center min-h-[70vh] p-8">
           {isSingleEnemy ? (
             // Single enemy - fills center at ~70% viewport height

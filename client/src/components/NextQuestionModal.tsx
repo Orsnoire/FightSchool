@@ -1,4 +1,5 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { motion } from "framer-motion";
 import { Swords } from "lucide-react";
 import { useModalTimer } from "@/hooks/useModalTimer";
@@ -18,6 +19,9 @@ export function NextQuestionModal({ questionNumber, isOpen, onClose }: NextQuest
         className="max-w-md border-0 bg-transparent shadow-none p-0 [&>button]:hidden"
         data-testid="modal-next-question"
       >
+        <VisuallyHidden.Root>
+          <DialogTitle>Next Question</DialogTitle>
+        </VisuallyHidden.Root>
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

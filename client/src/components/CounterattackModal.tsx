@@ -1,4 +1,5 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { motion } from "framer-motion";
 import type { EnemyAIAttackData } from "@shared/schema";
 import { useModalTimer } from "@/hooks/useModalTimer";
@@ -19,6 +20,9 @@ export function CounterattackModal({ open, attack, onClose }: CounterattackModal
         className="max-w-md border-0 bg-transparent shadow-none p-0 [&>button]:hidden"
         data-testid="modal-counterattack"
       >
+        <VisuallyHidden.Root>
+          <DialogTitle>Enemy Counterattack</DialogTitle>
+        </VisuallyHidden.Root>
         <motion.div
           initial={{ scale: 0.5, opacity: 0, y: -20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
