@@ -1128,18 +1128,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Auto-advance after time limit
     const timer = setTimeout(async () => {
-      await blockAndHealingPhase(sessionId);
+      await abilitiesPhase(sessionId);
     }, question.timeLimit * 1000);
     combatTimers.set(sessionId, timer);
   }
 
-  // Track last activity time for block_and_healing phase
-  const blockHealingLastActivity: Map<string, number> = new Map();
+  // Track last activity time for abilities phase
+  const abilitiesLastActivity: Map<string, number> = new Map();
   
   // Store healing feedback for question resolution phase
   const healingFeedbackMap: Map<string, Map<string, ResolutionFeedback[]>> = new Map();
 
-  async function blockAndHealingPhase(sessionId: string) {
+  async function abilitiesPhase(sessionId: string) {
     const phaseStart = Date.now();
     const session = await storage.getCombatSession(sessionId);
     if (!session) return;
@@ -1156,7 +1156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     await storage.updateCombatSession(sessionId, { 
-      currentPhase: "block_and_healing",
+      currentPhase: "abilities",
       threatLeaderId: threatLeaderId
     });
     
@@ -1164,23 +1164,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const sessionWithThreatLeader = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: sessionWithThreatLeader });
     
-    broadcastToCombat(sessionId, { type: "phase_change", phase: "Block and Healing Phase" });
-    broadcastCombatLogEvent(sessionId, "phase_change", "Block and Healing Phase");
+    broadcastToCombat(sessionId, { type: "phase_change", phase: "Abilities Phase" });
+    broadcastCombatLogEvent(sessionId, "phase_change", "Abilities Phase");
     
     // Initialize last activity time for this phase
-    blockHealingLastActivity.set(sessionId, Date.now());
+    abilitiesLastActivity.set(sessionId, Date.now());
     
     // Broadcast timer updates every second
-    const TOTAL_TIME = 10; // 10 seconds total
+    const TOTAL_TIME = 5; // 5 seconds total
     const INACTIVITY_TIMEOUT = 5000; // 5 seconds of inactivity
     let timeRemaining = TOTAL_TIME;
     let phaseEnded = false; // Guard against duplicate processing
     let isCheckingSelections = false; // Guard against concurrent async checks
     
-    // Broadcast initial timer immediately (showing 10 seconds)
+    // Broadcast initial timer immediately (showing 5 seconds)
     broadcastToCombat(sessionId, { 
       type: "phase_timer", 
-      phase: "block_and_healing",
+      phase: "abilities",
       timeRemaining 
     });
     
@@ -1192,7 +1192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Broadcast time remaining to all clients
       broadcastToCombat(sessionId, { 
         type: "phase_timer", 
-        phase: "block_and_healing",
+        phase: "abilities",
         timeRemaining 
       });
       
@@ -1205,15 +1205,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clearTimeout(mainTimer);
           combatTimers.delete(sessionId);
         }
-        blockHealingLastActivity.delete(sessionId); // Clean up activity tracker
-        log(`[Block&Healing] Session ${sessionId} ending - timer expired`, "combat");
-        processBlockAndHealingSelections(sessionId); // Fire and forget, but phase is locked
+        abilitiesLastActivity.delete(sessionId); // Clean up activity tracker
+        log(`[Abilities] Session ${sessionId} ending - timer expired`, "combat");
+        processAbilitySelections(sessionId); // Fire and forget, but phase is locked
         return;
       }
       
       // Check for early end conditions
       const currentTime = Date.now();
-      const lastActivity = blockHealingLastActivity.get(sessionId) || phaseStart;
+      const lastActivity = abilitiesLastActivity.get(sessionId) || phaseStart;
       const timeSinceActivity = currentTime - lastActivity;
       
       // End early if 5 seconds of inactivity
@@ -1225,9 +1225,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clearTimeout(mainTimer);
           combatTimers.delete(sessionId);
         }
-        blockHealingLastActivity.delete(sessionId); // Clean up activity tracker
-        log(`[Block&Healing] Session ${sessionId} ending early - 5 seconds of inactivity`, "combat");
-        processBlockAndHealingSelections(sessionId); // Fire and forget, but phase is locked
+        abilitiesLastActivity.delete(sessionId); // Clean up activity tracker
+        log(`[Abilities] Session ${sessionId} ending early - 5 seconds of inactivity`, "combat");
+        processAbilitySelections(sessionId); // Fire and forget, but phase is locked
         return;
       }
       
@@ -1251,9 +1251,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             clearTimeout(mainTimer);
             combatTimers.delete(sessionId);
           }
-          blockHealingLastActivity.delete(sessionId); // Clean up activity tracker
-          log(`[Block&Healing] Session ${sessionId} ending early - all selections complete`, "combat");
-          processBlockAndHealingSelections(sessionId); // Fire and forget, but phase is locked
+          abilitiesLastActivity.delete(sessionId); // Clean up activity tracker
+          log(`[Abilities] Session ${sessionId} ending early - all selections complete`, "combat");
+          processAbilitySelections(sessionId); // Fire and forget, but phase is locked
         } else {
           isCheckingSelections = false; // Reset guard if selections not complete
         }
@@ -1262,15 +1262,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }, 1000);
     
-    // Main timer - end after 10 seconds (guard against duplicate processing)
+    // Main timer - end after 5 seconds (guard against duplicate processing)
     const mainTimer = setTimeout(() => {
       if (phaseEnded) return; // Already processed by interval
       phaseEnded = true;
       clearInterval(timerInterval);
       combatTimers.delete(sessionId);
-      blockHealingLastActivity.delete(sessionId); // Clean up activity tracker
-      log(`[Block&Healing] Session ${sessionId} ending - main timer fired`, "combat");
-      processBlockAndHealingSelections(sessionId); // Fire and forget, but phase is locked
+      abilitiesLastActivity.delete(sessionId); // Clean up activity tracker
+      log(`[Abilities] Session ${sessionId} ending - main timer fired`, "combat");
+      processAbilitySelections(sessionId); // Fire and forget, but phase is locked
     }, TOTAL_TIME * 1000);
     
     combatTimers.set(sessionId, mainTimer);
@@ -1297,7 +1297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return tanksComplete && healersComplete;
   }
   
-  async function processBlockAndHealingSelections(sessionId: string) {
+  async function processAbilitySelections(sessionId: string) {
     const session = await storage.getCombatSession(sessionId);
     if (!session) return;
     
@@ -1419,8 +1419,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const updatedSession = await storage.getCombatSession(sessionId);
     broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
     
-    // Clean up block/healing activity tracking
-    blockHealingLastActivity.delete(sessionId);
+    // Clean up abilities activity tracking
+    abilitiesLastActivity.delete(sessionId);
     
     // Advance to next phase
     await questionResolutionPhase(sessionId);
@@ -1462,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const playerFeedback = new Map<string, ResolutionFeedback[]>();
     const enemyDamageMap = new Map<string, number>();
     
-    // Merge healing feedback from block_and_healing phase
+    // Merge healing feedback from abilities phase
     const healingFeedback = healingFeedbackMap.get(sessionId);
     if (healingFeedback) {
       for (const [playerId, feedbackList] of Array.from(healingFeedback.entries())) {
@@ -2703,8 +2703,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               combatTimers.delete(ws.sessionId);
             }
             
-            // Immediately proceed to block and healing phase
-            await blockAndHealingPhase(ws.sessionId);
+            // Immediately proceed to abilities phase
+            await abilitiesPhase(ws.sessionId);
           }
         } else if (message.type === "block" && ws.studentId && ws.sessionId) {
           const session = await storage.getCombatSession(ws.sessionId);
@@ -2717,9 +2717,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          // Update block_and_healing phase activity tracker
-          if (session.currentPhase === "block_and_healing") {
-            blockHealingLastActivity.set(ws.sessionId, Date.now());
+          // Update abilities phase activity tracker
+          if (session.currentPhase === "abilities") {
+            abilitiesLastActivity.set(ws.sessionId, Date.now());
           }
           
           await storage.updatePlayerState(ws.sessionId, ws.studentId, {
@@ -2739,9 +2739,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          // Update block_and_healing phase activity tracker
-          if (session.currentPhase === "block_and_healing") {
-            blockHealingLastActivity.set(ws.sessionId, Date.now());
+          // Update abilities phase activity tracker
+          if (session.currentPhase === "abilities") {
+            abilitiesLastActivity.set(ws.sessionId, Date.now());
           }
           
           await storage.updatePlayerState(ws.sessionId, ws.studentId, {
@@ -2761,9 +2761,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          // Update block_and_healing phase activity tracker
-          if (session.currentPhase === "block_and_healing") {
-            blockHealingLastActivity.set(ws.sessionId, Date.now());
+          // Update abilities phase activity tracker
+          if (session.currentPhase === "abilities") {
+            abilitiesLastActivity.set(ws.sessionId, Date.now());
           }
           
           // Clear healing state when player declines to heal

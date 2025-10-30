@@ -164,7 +164,7 @@ export const combatSessions = pgTable("combat_sessions", {
   sessionId: varchar("session_id", { length: 6 }).primaryKey(), // 6-character alphanumeric code
   fightId: varchar("fight_id").notNull(), // References fights table
   currentQuestionIndex: integer("current_question_index").notNull().default(0),
-  currentPhase: text("current_phase").notNull().$type<"waiting" | "question" | "block_and_healing" | "question_resolution" | "enemy_ai" | "state_check" | "game_over">(),
+  currentPhase: text("current_phase").notNull().$type<"waiting" | "question" | "abilities" | "question_resolution" | "enemy_ai" | "state_check" | "game_over">(),
   players: jsonb("players").notNull().$type<Record<string, PlayerState>>(),
   enemies: jsonb("enemies").notNull(),
   questionStartTime: bigint("question_start_time", { mode: "number" }),
@@ -464,13 +464,21 @@ export interface PlayerState {
   // Ultimate abilities (level 15+ job abilities)
   fightCount: number; // Total fights completed (for ultimate cooldown tracking)
   lastUltimatesUsed: Record<string, number>; // Maps ultimate ID to fight number when last used
+  
+  // Unified abilities phase action tracking
+  pendingAction?: {
+    abilityId: string; // "base_attack", "block", or actual ability ID
+    targetId?: string; // Enemy ID or student ID
+    targetType?: "enemy" | "ally"; // Target category
+  };
+  lastTargetId?: string; // Last target for auto-selection on timeout
 }
 
 export interface CombatState {
   sessionId: string; // 6-character code for this session
   fightId: string; // Reference to fight template
   currentQuestionIndex: number;
-  currentPhase: "waiting" | "question" | "block_and_healing" | "question_resolution" | "enemy_ai" | "state_check" | "game_over";
+  currentPhase: "waiting" | "question" | "abilities" | "question_resolution" | "enemy_ai" | "state_check" | "game_over";
   players: Record<string, PlayerState>;
   enemies: Array<{ id: string; name: string; image: string; health: number; maxHealth: number }>;
   questionStartTime?: number;
