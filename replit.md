@@ -35,6 +35,7 @@ Preferred communication style: Simple, everyday language.
 - **Dynamic Enemy HP Scaling**: Enemy HP scales based on party size, player progression, and a teacher-set difficulty multiplier, ensuring balanced fights for 2-30 players.
 - **XP System**: Awards XP based on individual contribution (damage dealt, healing, damage blocked, questions correct) to the active job class.
 - **Ultimate Ability System**: Each job class unlocks a cross-class ability at level 15, equipable by any job, with unique effects, animations, and a 3-fight cooldown.
+  - **Cross-Class Ability Interface**: Drag-and-drop UI using @dnd-kit library with two equipment slots (slot 2 unlocks at level 30), filterable ability grid (Healing, Spell, Physical, Ultimate), tooltips, context menus, and remove buttons.
 
 ## External Dependencies
 
@@ -46,6 +47,7 @@ Preferred communication style: Simple, everyday language.
 - **Radix UI**: Accessible component primitives.
 - **Shadcn/ui**: Pre-configured component library.
 - **Lucide React**: Icon system.
+- **@dnd-kit**: Drag-and-drop library for cross-class ability management.
 
 ### Real-Time & Forms
 - **ws**: WebSocket library for real-time communication.
