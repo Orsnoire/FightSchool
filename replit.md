@@ -31,6 +31,8 @@ Preferred communication style: Simple, everyday language.
   - **Block & Healing Phase**: A 10-second phase after each question for strategic selections (e.g., tanks blocking, healers healing). Uses modal-based UI with intelligent filtering/sorting.
 - **Question Types**: Supports multiple choice, true/false, and short answer with configurable time limits and randomization.
 - **Guild System**: Teachers create and manage guilds; students can join, view leaderboards, and earn XP.
+  - **Guild Shop**: Students can purchase equipment using gold currency. Shop items are scoped to guild's teacher and filtered by unlocked tiers from completed guild quests. Features tier-based progression gates (Tier 1-3) and secure server-side validation.
+  - **Gold Currency**: Students earn gold from victories (logistic reward scaling) and can spend it in the Guild Shop. Gold balance is tracked per-student.
 - **Solo Mode**: Students can practice alone or with friends, with options to enable AI for absent players and block new joiners.
 - **Dynamic Enemy HP Scaling**: Enemy HP scales based on party size, player progression, and a teacher-set difficulty multiplier, ensuring balanced fights for 2-30 players.
 - **XP System**: Awards XP based on individual contribution (damage dealt, healing, damage blocked, questions correct) to the active job class.

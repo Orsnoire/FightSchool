@@ -935,19 +935,19 @@ export function calculateCharacterStats(
   const baseJob = CLASS_STATS[characterClass];
   
   // Calculate base stats (job + equipment + passives)
-  const str = (baseJob.str || 0) + equipmentStats.str + (passiveBonuses.str || 0);
-  const int = (baseJob.int || 0) + equipmentStats.int + (passiveBonuses.int || 0);
-  const agi = (baseJob.agi || 0) + equipmentStats.agi + (passiveBonuses.agi || 0);
-  const mnd = (baseJob.mnd || 0) + equipmentStats.mnd + (passiveBonuses.mnd || 0);
-  const vit = (baseJob.vit || 0) + equipmentStats.vit + (passiveBonuses.vit || 0);
+  const str = (baseJob.str || 0) + (equipmentStats?.str || 0) + (passiveBonuses?.str || 0);
+  const int = (baseJob.int || 0) + (equipmentStats?.int || 0) + (passiveBonuses?.int || 0);
+  const agi = (baseJob.agi || 0) + (equipmentStats?.agi || 0) + (passiveBonuses?.agi || 0);
+  const mnd = (baseJob.mnd || 0) + (equipmentStats?.mnd || 0) + (passiveBonuses?.mnd || 0);
+  const vit = (baseJob.vit || 0) + (equipmentStats?.vit || 0) + (passiveBonuses?.vit || 0);
   
   // Calculate derived stats
   const maxHp = baseJob.baseHP + vit;
   const maxMp = (int + mnd) * 3;
-  const def = equipmentStats.def + Math.floor(vit / 2);
-  const atk = equipmentStats.atk + str;
-  const mat = equipmentStats.mat + int;
-  const rtk = equipmentStats.rtk + agi;
+  const def = (equipmentStats?.def || 0) + Math.floor(vit / 2);
+  const atk = (equipmentStats?.atk || 0) + str;
+  const mat = (equipmentStats?.mat || 0) + int;
+  const rtk = (equipmentStats?.rtk || 0) + agi;
   const maxComboPoints = (agi * 2) + (mechanicUpgrades.maxComboPoints || 0);
   
   return {

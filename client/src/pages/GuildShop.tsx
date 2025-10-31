@@ -70,13 +70,14 @@ export default function GuildShop() {
     queryFn: async () => {
       if (!studentId) return [];
       const response = await fetch(`/api/equipment-items/shop?studentId=${studentId}`);
+      if (!response.ok) return [];
       return response.json();
     },
     enabled: !!studentId,
   });
 
   // Filter items by unlocked tier and selected slot
-  const availableItems = shopItems.filter(
+  const availableItems = (shopItems || []).filter(
     (item) =>
       item.isPurchasable &&
       item.shopPrice !== null &&
