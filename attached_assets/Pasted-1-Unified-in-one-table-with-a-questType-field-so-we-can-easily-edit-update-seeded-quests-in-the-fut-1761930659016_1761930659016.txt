@@ -1,0 +1,24 @@
+1. Unified in one table with a questType field so we can easily edit/update seeded quests in the future.
+
+2. I want both possible. Let's just give custom quests 3 fields, that can be edited at will. In each of those fields, a teacher can put whatever they want. Link to an existing guild fight (if all 3 fights are linked, or no accuracy criteria is added, the default should assume that the fight simply has to be completed), solo mode vs teacher mode, accuracy criteria (50% & up by 10s), individual vs class performance. I think quests can be created with UP TO 3. Or do you think we should have it an expandable field where teachers can add criteria at will? Thoughts?
+
+3. Yeah, let's have a separate student_currencies table for future-proofing.
+
+the gold calculation should be logistical, with the center of the steep curve around level 40 or so, and start increasing dramatically around level 20 or so.
+
+4. We need a new category, for tier. example: tier 1 can have common, rare, epic, legendary (it has to do with item budget - I think the only legendary tier 1 will be the bard's spoon).
+
+Yes, equipment should have a new tier: number field in addition to quality. 
+
+5. I think the teacher should be able to expose those variables, yes. Let's just default to the base tier cost and purchasable.
+
+6. Yes. With the caveat for advanced classes that each advanced class will have a quest. These are their rewards: Paladin will have a quest that awards a tier 1 Epic Crusader's Cap (helm, armor) (+1DEF +1VIT +1 STR); Warlock rewards tier 1 epic Necrohol (Staff weapon) (+1 VIT +1 INT +1 MAT); Bard rewards tier 1 legendary Bardy Spoon (spoon weapon) (+1 to all stats, -3 RTK); Priest rewards tier 1 epic Holy Miter (helm, light armor) (+2 MND +1 DEF +1 MAT); Dark Knight rewards tier 1 epic Deathbringer (2 hand sword weapon) (+3 ATK +2 STR +1VIT); Blood Knight rewards tier 1 epic Blood Blade (sword weapon) (+3 VIT, heals 1HP for damage from any source - unique trait); Monk rewards tier 1 epic Cat Claws (claw weapon) (+1ATK +1 STR +1AGI); Ranger rewards tier 1 epic Hunter’s Bow (bow weapon) (+2 RTK +3 AGI)
+All of the personal progress quests should be stored per player.
+
+7. Weekly quest reset should reset at 00:00 GMT on Monday Morning each week. Quests will be considered started at that time each week (cleared from the previous week, for possible weekly rotation in the future). That quests stays as “completed” until the new week’s reset/rotation.
+
+8. If a given player chooses gold, that player gets gold. Treat all item drops the way they are currently being handled (just replace the “return to lobby/take XP” button with “Get x Gold” button).
+
+9. I want the xp curve to be exponential. Let’s make them 1000, 2000, 4000, 8000, 16000
+
+10. tier unlocks should be per player (they can equip gear based on their level alone, but guild shop tiers will unlock by guild progress/teacher quests/teacher panel.
