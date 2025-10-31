@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, calculateDamageReduction, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData, type EnemyAIAttackData } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, calculateDamageReduction, calculatePlayerBaseDamage, calculateSoloModeEnemyScaling, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData, type EnemyAIAttackData } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
@@ -1035,41 +1035,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Calculate dynamic enemy HP on first question only
     if (session.currentQuestionIndex === 0) {
       const players = Object.values(session.players);
+      const playerCount = Math.max(1, players.length);
       
-      // Calculate total player levels earned across all jobs
-      let totalPlayerLevels = 0;
-      for (const player of players) {
-        // Sum all job levels for this player
-        for (const jobClass in player.jobLevels) {
-          totalPlayerLevels += player.jobLevels[jobClass as CharacterClass] || 0;
-        }
-      }
-      
-      // Base HP formula: playerCount × (2.5 + avgJobLevel × 0.4)
-      // This makes difficultyMultiplier directly represent ~questions to survive at 70% accuracy
-      const playerCount = Math.max(1, players.length); // Guard against empty sessions
-      const avgJobLevel = totalPlayerLevels / playerCount;
-      const baseHP = playerCount * (2.5 + avgJobLevel * 0.4);
-      
-      // Apply difficulty multiplier to each enemy and set their HP
-      session.enemies = session.enemies.map(enemy => {
-        // Get the enemy template from the fight to access difficultyMultiplier
-        const enemyTemplate = fight.enemies.find(e => e.id === enemy.id);
-        const difficultyMultiplier = enemyTemplate?.difficultyMultiplier || 10;
+      // Check if this is solo mode with a single player
+      if (session.soloModeEnabled && playerCount === 1) {
+        const soloPlayer = players[0];
         
-        // Calculate final HP: baseHP × difficultyMultiplier
-        const calculatedHP = baseHP * difficultyMultiplier;
-        
-        return {
-          ...enemy,
-          health: calculatedHP,
-          maxHealth: calculatedHP
+        // Use PlayerState's cached stats to construct CharacterStats
+        const playerStats = {
+          str: soloPlayer.str,
+          int: soloPlayer.int,
+          agi: soloPlayer.agi,
+          mnd: soloPlayer.mnd,
+          vit: soloPlayer.vit,
+          hp: soloPlayer.health,
+          maxHp: soloPlayer.maxHealth,
+          mp: soloPlayer.mp,
+          maxMp: soloPlayer.maxMp,
+          def: soloPlayer.def,
+          atk: soloPlayer.atk,
+          mat: soloPlayer.mat,
+          rtk: soloPlayer.rtk,
+          comboPoints: soloPlayer.comboPoints,
+          maxComboPoints: soloPlayer.maxComboPoints
         };
-      });
-      
-      // Save the calculated enemy HP
-      await storage.updateCombatSession(sessionId, { enemies: session.enemies });
-      log(`[Combat] Calculated enemy HP: ${playerCount} players × (2.5 + ${avgJobLevel.toFixed(1)} avg level × 0.4) = ${baseHP.toFixed(1)} base HP`, "combat");
+        
+        // Calculate solo mode scaling
+        const questionCount = fight.questions.length;
+        const scaling = calculateSoloModeEnemyScaling(
+          playerStats,
+          soloPlayer.characterClass,
+          questionCount
+        );
+        
+        // Apply solo mode scaling to enemies
+        session.enemies = session.enemies.map(enemy => ({
+          ...enemy,
+          health: scaling.enemyHP,
+          maxHealth: scaling.enemyHP
+        }));
+        
+        // Store the damage cap for enemy AI phase (we'll use this later)
+        session.soloModeStartHP = scaling.enemyDamageCap;
+        
+        await storage.updateCombatSession(sessionId, { 
+          enemies: session.enemies,
+          soloModeStartHP: scaling.enemyDamageCap
+        });
+        
+        log(`[Combat] Solo mode scaling: Player ${soloPlayer.nickname} (${soloPlayer.characterClass}) with ${playerStats.hp} HP dealing ${calculatePlayerBaseDamage(playerStats, soloPlayer.characterClass)} base damage. Enemy HP: ${scaling.enemyHP}, AI damage cap: ${scaling.enemyDamageCap}`, "combat");
+      } else {
+        // Standard multiplayer scaling
+        // Calculate total player levels earned across all jobs
+        let totalPlayerLevels = 0;
+        for (const player of players) {
+          // Sum all job levels for this player
+          for (const jobClass in player.jobLevels) {
+            totalPlayerLevels += player.jobLevels[jobClass as CharacterClass] || 0;
+          }
+        }
+        
+        // Base HP formula: playerCount × (2.5 + avgJobLevel × 0.4)
+        // This makes difficultyMultiplier directly represent ~questions to survive at 70% accuracy
+        const avgJobLevel = totalPlayerLevels / playerCount;
+        const baseHP = playerCount * (2.5 + avgJobLevel * 0.4);
+        
+        // Apply difficulty multiplier to each enemy and set their HP
+        session.enemies = session.enemies.map(enemy => {
+          // Get the enemy template from the fight to access difficultyMultiplier
+          const enemyTemplate = fight.enemies.find(e => e.id === enemy.id);
+          const difficultyMultiplier = enemyTemplate?.difficultyMultiplier || 10;
+          
+          // Calculate final HP: baseHP × difficultyMultiplier
+          const calculatedHP = baseHP * difficultyMultiplier;
+          
+          return {
+            ...enemy,
+            health: calculatedHP,
+            maxHealth: calculatedHP
+          };
+        });
+        
+        // Save the calculated enemy HP
+        await storage.updateCombatSession(sessionId, { enemies: session.enemies });
+        log(`[Combat] Calculated enemy HP: ${playerCount} players × (2.5 + ${avgJobLevel.toFixed(1)} avg level × 0.4) = ${baseHP.toFixed(1)} base HP`, "combat");
+      }
     }
     
     // Loop questions: if we've reached the end, go back to the start
@@ -2187,7 +2237,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (targetId) {
         const target = session.players[targetId];
-        const damageAmount = (fight.baseEnemyDamage || 1) + 1;
+        
+        // Apply solo mode damage cap if enabled
+        let baseDamage = (fight.baseEnemyDamage || 1) + 1;
+        if (session.soloModeEnabled && session.soloModeStartHP) {
+          baseDamage = Math.min(baseDamage, session.soloModeStartHP);
+        }
+        const damageAmount = baseDamage;
         
         // Check if target is being blocked by an alive tank
         let blocked = false;
@@ -2202,7 +2258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!blocked) {
           // Calculate damage with defense reduction
-          const rawDamage = (fight.baseEnemyDamage || 1) + 1;
+          const rawDamage = baseDamage;
           const damageReduction = calculateDamageReduction(target.def, target.vit);
           const actualDamage = Math.max(1, rawDamage - damageReduction); // Minimum 1 damage
           const defendedAmount = rawDamage - actualDamage;

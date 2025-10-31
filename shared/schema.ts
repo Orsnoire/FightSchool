@@ -916,6 +916,61 @@ export function calculateDamageReduction(def: number, vit: number): number {
   return def + Math.floor(vit / 2);
 }
 
+// Calculate base damage for a player (without critical hit variance)
+export function calculatePlayerBaseDamage(stats: CharacterStats, characterClass: CharacterClass): number {
+  // Calculate base damage based on class type (no crit multiplier)
+  if (characterClass === "wizard" || characterClass === "warlock" || characterClass === "priest") {
+    // Magical damage classes
+    return calculateMagicalDamage(stats.mat, stats.int);
+  } else if (characterClass === "scout" || characterClass === "ranger") {
+    // Ranged damage classes (base without crit)
+    return stats.rtk + stats.agi;
+  } else if (characterClass === "herbalist") {
+    // Hybrid damage
+    return calculateHybridDamage(stats.mat, stats.agi, stats.mnd);
+  } else {
+    // Physical damage classes (warrior, paladin, dark_knight, blood_knight, monk)
+    return stats.atk + stats.str;
+  }
+}
+
+// Calculate solo mode enemy scaling
+export function calculateSoloModeEnemyScaling(
+  playerStats: CharacterStats,
+  characterClass: CharacterClass,
+  questionCount: number
+): { enemyHP: number; enemyDamageCap: number } {
+  // Step 1: Calculate base damage per round
+  const baseDamage = calculatePlayerBaseDamage(playerStats, characterClass);
+  
+  // Step 2: Initial enemy HP = base damage × question count
+  let enemyHP = baseDamage * questionCount;
+  
+  // Step 3: Enemy AI damage cap = player HP ÷ question count (min 1)
+  const enemyDamageCap = Math.max(1, Math.floor(playerStats.hp / questionCount));
+  
+  // Step 4: Survivability check
+  // Player survives for Math.floor(playerHP / enemyDamageCap) rounds
+  const roundsToSurvive = Math.floor(playerStats.hp / enemyDamageCap);
+  
+  // At 100% accuracy, player deals baseDamage per round for roundsToSurvive rounds
+  const damageAt100Percent = baseDamage * roundsToSurvive;
+  
+  // If player can't win at 100% accuracy, scale down
+  if (damageAt100Percent < enemyHP) {
+    // Reduce to 70% accuracy scenario: player wins with 1 round to spare
+    // At 70% accuracy with N questions, player gets ~0.7N correct
+    // They survive roundsToSurvive rounds, so can answer that many questions
+    // Damage = baseDamage × (roundsToSurvive - 1) to ensure victory before death
+    enemyHP = baseDamage * Math.max(1, roundsToSurvive - 1);
+  }
+  
+  return {
+    enemyHP: Math.ceil(enemyHP),
+    enemyDamageCap: enemyDamageCap
+  };
+}
+
 // Guild level system (uses same curve as player jobs, extends to 99)
 export function getGuildXPForLevel(level: number): number {
   if (level <= 1) return 0;
