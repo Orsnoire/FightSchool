@@ -82,6 +82,11 @@ export function CounterattackModal({ open, attack, onClose }: CounterattackModal
                   <span className="text-red-300">{attack.enemyName}</span> counterattacks{" "}
                   <span className="text-red-300">{attack.targetPlayer}</span> for{" "}
                   <span className="text-red-400 text-2xl">{attack.damage}</span> damage!
+                  {attack.defendedAmount && attack.defendedAmount > 0 && (
+                    <span className="block text-sm text-red-200 mt-1">
+                      ({attack.defendedAmount} damage defended)
+                    </span>
+                  )}
                 </>
               )}
             </p>

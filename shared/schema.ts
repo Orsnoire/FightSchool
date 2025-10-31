@@ -929,6 +929,7 @@ export type ResolutionFeedbackType =
 export interface ResolutionFeedback {
   type: ResolutionFeedbackType;
   damage?: number;              // Damage dealt or taken
+  defendedAmount?: number;      // Amount of damage defended (for incoming damage)
   enemyName?: string;           // Enemy that was damaged or that attacked
   abilityName?: string;         // Name of ability used
   blockedPlayer?: string;       // Player who was blocked (for blocked_for_player)
@@ -944,6 +945,7 @@ export interface EnemyAIAttackData {
   enemyId: string;
   targetPlayer: string;      // Threat leader nickname
   damage: number;
+  defendedAmount?: number;   // Amount of damage defended (for unblocked attacks)
   blocked: boolean;
   blockerName?: string;      // If blocked, who blocked it
 }

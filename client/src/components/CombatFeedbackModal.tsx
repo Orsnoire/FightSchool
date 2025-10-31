@@ -64,6 +64,9 @@ export function CombatFeedbackModal({
       case "correct_damage":
         return `You dealt ${feedback.damage} damage to ${feedback.enemyName}!`;
       case "incorrect_damage":
+        if (feedback.defendedAmount && feedback.defendedAmount > 0) {
+          return `You took ${feedback.damage} damage from ${feedback.enemyName}, but defended ${feedback.defendedAmount} damage!`;
+        }
         return `You took ${feedback.damage} damage from ${feedback.enemyName}!`;
       case "correct_ability":
         return `You dealt ${feedback.damage} damage to ${feedback.enemyName} with ${feedback.abilityName}!`;

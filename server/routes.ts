@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData, type EnemyAIAttackData } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, calculateDamageReduction, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData, type EnemyAIAttackData } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
@@ -1867,7 +1867,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         if (!blocked) {
-          const damageAmount = fight.baseEnemyDamage || 1;
+          // Calculate damage with defense reduction
+          const rawDamage = fight.baseEnemyDamage || 1;
+          const damageReduction = calculateDamageReduction(player.def, player.vit);
+          const damageAmount = Math.max(1, rawDamage - damageReduction); // Minimum 1 damage
+          const defendedAmount = rawDamage - damageAmount;
+          
           const newHealth = Math.max(0, player.health - damageAmount);
           const wasAlive = !player.isDead;
           const nowDead = newHealth === 0;
@@ -1885,6 +1890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           playerFeedback.get(playerId)!.push({
             type: "incorrect_damage",
             damage: damageAmount,
+            defendedAmount: defendedAmount,
             enemyName: enemyName,
           });
           
@@ -2054,15 +2060,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (!blocked) {
-          // No block - damage the target normally
-          const newHealth = Math.max(0, target.health - damageAmount);
+          // Calculate damage with defense reduction
+          const rawDamage = (fight.baseEnemyDamage || 1) + 1;
+          const damageReduction = calculateDamageReduction(target.def, target.vit);
+          const actualDamage = Math.max(1, rawDamage - damageReduction); // Minimum 1 damage
+          const defendedAmount = rawDamage - actualDamage;
+          
+          const newHealth = Math.max(0, target.health - actualDamage);
           const wasAlive = !target.isDead;
           const nowDead = newHealth === 0;
           
           // Update player state in memory
           target.health = newHealth;
           target.isDead = nowDead;
-          target.damageTaken += damageAmount;
+          target.damageTaken += actualDamage;
           if (wasAlive && nowDead) {
             target.deaths += 1;
           }
@@ -2073,7 +2084,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             enemyImage: enemy.image,
             enemyId: enemy.id,
             targetPlayer: target.nickname,
-            damage: damageAmount,
+            damage: actualDamage,
+            defendedAmount: defendedAmount,
             blocked: false,
           });
         } else if (blockerPlayer) {
