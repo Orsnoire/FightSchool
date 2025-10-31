@@ -530,22 +530,22 @@ export default function Combat() {
     // Clean up any existing timer
     if (counterattackModalTimer.current) clearTimeout(counterattackModalTimer.current);
     
-    // Show current attack for 2 seconds
+    // Show current attack for 3 seconds (matching backend timing)
     counterattackModalTimer.current = setTimeout(() => {
       if (currentAttackIndex < enemyAIData.attacks.length - 1) {
         // More attacks to show - advance to next
         setCurrentAttackIndex(prev => prev + 1);
       } else {
-        // All attacks shown - hide modal and clean up after 3 seconds total
+        // All attacks shown - hide modal and clean up
         setShowCounterattackModal(false);
         
         if (enemyAICleanupTimer.current) clearTimeout(enemyAICleanupTimer.current);
         enemyAICleanupTimer.current = setTimeout(() => {
           setEnemyAIData(null);
           setCurrentAttackIndex(0);
-        }, 3000);
+        }, 1000);
       }
-    }, 2000);
+    }, 3000);
     
     return () => {
       if (counterattackModalTimer.current) clearTimeout(counterattackModalTimer.current);

@@ -2002,10 +2002,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     logPhaseTiming(sessionId, "question_resolution", phaseStart);
 
-    // Auto-advance to enemy AI phase after 4 seconds (extended for readability)
+    // Calculate dynamic phase duration based on modal count
+    // Each modal needs 3 seconds for students to read and process
+    let maxModalCount = 0;
+    for (const feedbackList of Array.from(playerFeedback.values())) {
+      maxModalCount = Math.max(maxModalCount, feedbackList.length);
+    }
+    
+    // Add 1 modal for party damage summary if applicable
+    if (totalDamage > 0) {
+      maxModalCount += 1;
+    }
+    
+    // Ensure at least 3 seconds, then 3 seconds per modal
+    const resolutionDuration = Math.max(3000, maxModalCount * 3000);
+    
+    log(`[Combat] Question resolution phase will last ${resolutionDuration}ms (${maxModalCount} modals × 3s each)`, "combat");
+    
+    // Auto-advance to enemy AI phase after all modals have displayed
     setTimeout(async () => {
       await enemyAIPhase(sessionId);
-    }, 4000);
+    }, resolutionDuration);
   }
 
   async function enemyAIPhase(sessionId: string) {
@@ -2129,14 +2146,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Auto-advance to state check after all animations complete
     // Timing calculation:
     // - EnemyAIModal animation: 800ms
-    // - Each CounterattackModal: 2000ms
-    // - Final cleanup delay: 4000ms (extended for readability)
-    // Total: 800 + (attacks * 2000) + 4000 = 4800 + (attacks * 2000)
+    // - Each CounterattackModal: 3000ms (3 seconds for students to read and process)
+    // - Final cleanup delay: 1000ms
+    // Total: 800 + (attacks * 3000) + 1000 = 1800 + (attacks * 3000)
     const enemyAnimationTime = 800;      // Enemy modal animation
-    const counterattackTime = 2000;      // Per attack modal display
-    const cleanupTime = 4000;            // Final delay (extended +1s)
+    const counterattackTime = 3000;      // Per attack modal display (3 seconds each)
+    const cleanupTime = 1000;            // Final delay
     const totalAnimationTime = enemyAnimationTime + (enemyAttacks.length * counterattackTime) + cleanupTime;
     const delayTime = enemyAttacks.length > 0 ? totalAnimationTime : 1000;
+    
+    log(`[Combat] Enemy AI phase will last ${delayTime}ms (800ms intro + ${enemyAttacks.length} attacks × 3s each + 1s cleanup)`, "combat");
     
     setTimeout(async () => {
       await stateCheckPhase(sessionId);
