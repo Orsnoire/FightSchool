@@ -516,6 +516,7 @@ export interface EquipmentItem {
   };
   classRestriction?: CharacterClass[]; // undefined = available to all
   weaponType?: WeaponType; // Weapon type for class weapon restrictions
+  armorCategory?: "heavy_armor" | "light_armor"; // Armor category (optional)
 }
 
 // Weapon type restrictions by character class
@@ -587,6 +588,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "headgear",
     rarity: "common",
     stats: { def: 1 },
+    armorCategory: "heavy_armor",
   },
   basic_armor: {
     id: "basic_armor",
@@ -594,6 +596,25 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     slot: "armor",
     rarity: "common",
     stats: { def: 1 },
+    armorCategory: "heavy_armor",
+  },
+  basic_claymore: {
+    id: "basic_claymore",
+    name: "Basic Claymore",
+    slot: "weapon",
+    rarity: "common",
+    stats: { atk: 2 },
+    classRestriction: ["paladin", "dark_knight", "blood_knight"],
+    weaponType: "two-handed-sword",
+  },
+  basic_knuckles: {
+    id: "basic_knuckles",
+    name: "Basic Knuckles",
+    slot: "weapon",
+    rarity: "common",
+    stats: { agi: 1, str: 1 },
+    classRestriction: ["monk"],
+    weaponType: "fist",
   },
   
   // Common drops
@@ -782,7 +803,7 @@ export interface CharacterStats {
   // Base stats (from job + equipment + passives)
   str: number;  // Strength - Adds damage to physical attacks
   int: number;  // Intelligence - Adds MP and damage to magical attacks
-  agi: number;  // Agility - Adds damage to ranged attacks, reduces damage agro
+  agi: number;  // Agility - Adds damage to ranged attacks, grants critical hit chance (2 AGI = 1% crit, 2x damage)
   mnd: number;  // Mind - Adds MP and healing to spells
   vit: number;  // Vitality - Reduces damage by VIT/2 and adds VIT HP
   
@@ -857,9 +878,22 @@ export function getPlayerCombatStats(playerState: PlayerState, weapon: string, h
   );
 }
 
+// Calculate critical hit chance and apply multiplier
+export function calculateCriticalHit(agi: number): { isCritical: boolean; multiplier: number } {
+  // 2 AGI = 1% critical hit chance
+  const critChance = (agi / 2) / 100;
+  const isCritical = Math.random() < critChance;
+  return {
+    isCritical,
+    multiplier: isCritical ? 2 : 1
+  };
+}
+
 // Calculate damage for different attack types
-export function calculatePhysicalDamage(atk: number, str: number): number {
-  return atk + str;
+export function calculatePhysicalDamage(atk: number, str: number, agi: number): number {
+  const baseDamage = atk + str;
+  const { multiplier } = calculateCriticalHit(agi);
+  return Math.floor(baseDamage * multiplier);
 }
 
 export function calculateMagicalDamage(mat: number, int: number): number {
@@ -867,22 +901,19 @@ export function calculateMagicalDamage(mat: number, int: number): number {
 }
 
 export function calculateRangedDamage(rtk: number, agi: number): number {
-  return rtk + agi;
+  const baseDamage = rtk + agi;
+  const { multiplier } = calculateCriticalHit(agi);
+  return Math.floor(baseDamage * multiplier);
 }
 
 export function calculateHybridDamage(mat: number, agi: number, mnd: number): number {
-  // For Herbalist base damage
+  // For Herbalist base damage (no critical hits on hybrid damage)
   return mat + agi + mnd;
 }
 
 // Calculate damage reduction
 export function calculateDamageReduction(def: number, vit: number): number {
   return def + Math.floor(vit / 2);
-}
-
-// Calculate agro reduction from AGI
-export function calculateAgroReduction(agi: number): number {
-  return agi;
 }
 
 // Guild level system (uses same curve as player jobs, extends to 99)

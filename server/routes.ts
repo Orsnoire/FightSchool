@@ -1769,7 +1769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Combo points are gained below, outside the ability check
           } else if (player.characterClass === "warrior") {
             // Warrior: Physical damage using ATK + STR
-            damage = calculatePhysicalDamage(player.atk, player.str);
+            damage = calculatePhysicalDamage(player.atk, player.str, player.agi);
           } else if (player.characterClass === "herbalist") {
             // Herbalist: Hybrid damage using MAT + AGI + MND
             damage = calculateHybridDamage(player.mat, player.agi, player.mnd);
@@ -1835,7 +1835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               damage = 0;
             } else {
               // Deal physical damage using ATK + STR
-              damage = calculatePhysicalDamage(player.atk, player.str);
+              damage = calculatePhysicalDamage(player.atk, player.str, player.agi);
               mpCost = 1;
               
               // Consume MP (if player has enough)
@@ -1857,7 +1857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               player.mp = Math.max(0, player.mp - mpCost);
             } else {
               // Not enough MP - use physical damage fallback
-              damage = calculatePhysicalDamage(player.atk, player.str);
+              damage = calculatePhysicalDamage(player.atk, player.str, player.agi);
             }
           } else if (player.characterClass === "blood_knight") {
             // Blood Knight: Crimson Slash - ATK * (VIT + STR)/2 melee damage with 50% lifesteal
@@ -1876,11 +1876,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               player.healingDone += healAmount;
             } else {
               // Not enough MP - use physical damage fallback without lifesteal
-              damage = calculatePhysicalDamage(player.atk, player.str);
+              damage = calculatePhysicalDamage(player.atk, player.str, player.agi);
             }
           } else {
             // Other classes: use physical damage as default
-            damage = calculatePhysicalDamage(player.atk, player.str);
+            damage = calculatePhysicalDamage(player.atk, player.str, player.agi);
           }
           } // End of if (!usedAbility) block
           
