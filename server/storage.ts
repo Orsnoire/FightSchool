@@ -1020,7 +1020,7 @@ export class DatabaseStorage implements IStorage {
         return;
       }
 
-      // Create a test combat session in "waiting" phase (students can join, teacher can start)
+      // Create a test combat session with solo mode enabled for self-service testing
       await db.insert(combatSessions).values({
         sessionId: 'ABC123',
         fightId: testFight.id.toString(),
@@ -1030,10 +1030,10 @@ export class DatabaseStorage implements IStorage {
         players: {},
         jobLocked: false,
         isFirstQuestionOfSession: true,
-        soloModeEnabled: false,
+        soloModeEnabled: true, // Enable solo mode for easy testing
       });
 
-      console.log('Test combat session ABC123 created successfully');
+      console.log('Test combat session ABC123 created with solo mode enabled');
     } catch (error) {
       console.error('Failed to seed test combat session:', error);
     }
