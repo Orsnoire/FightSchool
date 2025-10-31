@@ -738,6 +738,7 @@ export function getStartingEquipment(characterClass: CharacterClass): { weapon: 
     blood_knight: "basic_sword", // ATK-based tank/DPS
     monk: "basic_fist",          // ATK-based tank/DPS with combo points
     ranger: "basic_bow",         // RTK-based ranged DPS with combo points
+    bard: "basic_harp",          // RTK-based support/DPS with songs
   };
 
   return {
