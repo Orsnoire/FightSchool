@@ -552,7 +552,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async claimLootAtomically(fightId: string, studentId: string, itemId: string): Promise<boolean> {
-    // Atomically update the loot claim only if it hasn't been claimed yet
+    // Atomically claim any reward (item OR gold) - prevents double-claiming
+    // The rewardId is stored for tracking but the guard prevents ANY second claim
     const [updatedStat] = await db
       .update(combatStats)
       .set({ lootItemClaimed: itemId })
@@ -566,6 +567,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     // Return true if update succeeded (row was found and updated), false otherwise
+    // If lootItemClaimed was already set (to ANY value), this returns false
     return !!updatedStat;
   }
 

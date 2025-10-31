@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
-import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, calculateDamageReduction, calculatePlayerBaseDamage, calculateSoloModeEnemyScaling, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData, type EnemyAIAttackData } from "@shared/schema";
+import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, calculateDamageReduction, calculatePlayerBaseDamage, calculateSoloModeEnemyScaling, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData, type EnemyAIAttackData, calculateGoldReward } from "@shared/schema";
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
@@ -731,6 +731,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const { password: _, ...studentWithoutPassword } = updatedStudent;
     res.json(studentWithoutPassword);
+  });
+
+  // Claim gold reward from fight victory (server-authoritative gold calculation)
+  app.post("/api/student/:id/claim-gold", async (req, res) => {
+    const { fightId } = req.body;
+    const studentId = req.params.id;
+    
+    if (!fightId || !studentId) {
+      return res.status(400).json({ error: "Student ID and Fight ID are required" });
+    }
+    
+    // Validate student exists
+    const student = await storage.getStudent(studentId);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+    
+    // Validate fight exists
+    const fight = await storage.getFight(fightId);
+    if (!fight) {
+      return res.status(404).json({ error: "Fight not found" });
+    }
+    
+    // Use the same atomic claiming mechanism as item loot (prevents double-claiming)
+    const claimed = await storage.claimLootAtomically(fightId, studentId, "GOLD_REWARD");
+    if (!claimed) {
+      return res.status(409).json({ 
+        error: "Reward has already been claimed for this fight or you did not participate" 
+      });
+    }
+    
+    // Calculate gold reward server-side (prevent client manipulation)
+    const fightDifficulty = Math.round(((fight.baseEnemyDamage - 1) / 9) * 99 + 1);
+    const goldAmount = calculateGoldReward(fightDifficulty);
+    
+    // Award gold to student
+    await storage.addGoldToStudent(studentId, goldAmount);
+    
+    res.json({ success: true, goldAwarded: goldAmount });
   });
 
   // Combat stats endpoints
@@ -2494,6 +2533,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Send individual victory messages to each player with their XP data
       let victoryMessagesSent = 0;
+      // Convert baseEnemyDamage (1-10) to difficulty scale (1-100) for gold calculation
+      const fightDifficulty = Math.round(((fight.baseEnemyDamage - 1) / 9) * 99 + 1);
+      // Calculate gold reward using logistic curve (server-authoritative)
+      const goldReward = calculateGoldReward(fightDifficulty);
+      
       wss.clients.forEach((client) => {
         const playerWs = client as ExtendedWebSocket;
         if (playerWs.readyState === WebSocket.OPEN && playerWs.sessionId === sessionId && playerWs.studentId) {
@@ -2507,9 +2551,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             newLevel: playerData?.newLevel || 1,
             currentXP: playerData?.currentXP || 0,
             lootTable: fight.lootTable || [],
+            goldReward: goldReward,
           }));
           victoryMessagesSent++;
-          log(`[Victory] Sent detailed victory message to student ${playerWs.studentId} (XP: ${playerData?.xpGained || 0})`, "combat");
+          log(`[Victory] Sent detailed victory message to student ${playerWs.studentId} (XP: ${playerData?.xpGained || 0}, Gold: ${goldReward})`, "combat");
         } else if (playerWs.readyState === WebSocket.OPEN && (playerWs.sessionId === sessionId || playerWs.isHost)) {
           // Send basic victory message to host
           playerWs.send(JSON.stringify({

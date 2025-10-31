@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Trophy, Sparkles, Sword, Shield, Crown } from "lucide-react";
+import { Trophy, Sparkles, Sword, Shield, Crown, Coins } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import type { CharacterClass, Gender, LootItem } from "@shared/schema";
@@ -19,6 +19,7 @@ interface VictoryModalProps {
   newLevel: number;
   currentXP: number;
   lootTable: LootItem[];
+  goldReward: number;
   onClose: () => void;
 }
 
@@ -31,13 +32,15 @@ export function VictoryModal({
   newLevel,
   currentXP,
   lootTable,
+  goldReward,
   onClose,
 }: VictoryModalProps) {
   const { toast } = useToast();
   const [xpProgress, setXpProgress] = useState(0);
   const [animatedLevel, setAnimatedLevel] = useState(newLevel);
   const [selectedLoot, setSelectedLoot] = useState<string | null>(null);
-  const [lootClaimed, setLootClaimed] = useState(false);
+  const [selectedRewardType, setSelectedRewardType] = useState<"item" | "gold" | null>(null);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
   
   const studentId = localStorage.getItem("studentId");
   
@@ -109,23 +112,30 @@ export function VictoryModal({
     return () => clearInterval(interval);
   }, [xpGained, currentXP, leveledUp, newLevel, startLevel, startTotalXP, toast]);
   
-  const handleClaimLoot = async () => {
-    if (!selectedLoot || !studentId) return;
+  const handleClaimReward = async () => {
+    if (!studentId) return;
     
     try {
-      await apiRequest("POST", `/api/student/${studentId}/claim-loot`, { itemId: selectedLoot, fightId });
+      if (selectedRewardType === "item" && selectedLoot) {
+        await apiRequest("POST", `/api/student/${studentId}/claim-loot`, { itemId: selectedLoot, fightId });
+        toast({
+          title: "Item Claimed!",
+          description: "Item added to your inventory",
+        });
+        queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}`] });
+      } else if (selectedRewardType === "gold") {
+        const response = await apiRequest("POST", `/api/student/${studentId}/claim-gold`, { fightId });
+        const data = await response.json();
+        toast({
+          title: "Gold Claimed!",
+          description: `+${data.goldAwarded} gold added to your balance`,
+        });
+        queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}/currency`] });
+      }
       
-      setLootClaimed(true);
-      toast({
-        title: "Loot Claimed!",
-        description: "Item added to your inventory",
-      });
-      
-      // Invalidate student query to refresh inventory
-      queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}`] });
+      setRewardClaimed(true);
     } catch (error: any) {
-      // B3 FIX: Show more specific error messages based on the error response
-      const errorMessage = error?.message || "Failed to claim loot";
+      const errorMessage = error?.message || "Failed to claim reward";
       toast({
         title: "Error",
         description: errorMessage,
@@ -171,23 +181,43 @@ export function VictoryModal({
           </div>
         </div>
         
-        {lootTable.length > 0 && !lootClaimed && (
+        {lootTable.length > 0 && !rewardClaimed && (
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-center">Select Your Reward</h3>
             {itemsLoading ? (
               <p className="text-center text-muted-foreground">Loading items...</p>
             ) : (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
+                {/* Gold Option */}
+                <Button
+                  variant={selectedRewardType === "gold" ? "default" : "outline"}
+                  className="h-auto p-4 flex flex-col gap-2"
+                  onClick={() => {
+                    setSelectedRewardType("gold");
+                    setSelectedLoot(null);
+                  }}
+                  data-testid="button-reward-gold"
+                >
+                  <div className="h-12 w-12 flex items-center justify-center">
+                    <Coins className="h-10 w-10 text-yellow-500" />
+                  </div>
+                  <div className="text-sm font-semibold">{goldReward} Gold</div>
+                  <div className="text-xs text-muted-foreground">Currency</div>
+                </Button>
+                
+                {/* Item Options */}
                 {lootTable.map((loot) => {
-                  // B3 FIX: Find the actual equipment item data
                   const equipmentItem = equipmentItems.find((item: any) => item.id === loot.itemId);
                   
                   return (
                     <Button
                       key={loot.itemId}
-                      variant={selectedLoot === loot.itemId ? "default" : "outline"}
+                      variant={selectedRewardType === "item" && selectedLoot === loot.itemId ? "default" : "outline"}
                       className="h-auto p-4 flex flex-col gap-2"
-                      onClick={() => setSelectedLoot(loot.itemId)}
+                      onClick={() => {
+                        setSelectedRewardType("item");
+                        setSelectedLoot(loot.itemId);
+                      }}
                       data-testid={`button-loot-${loot.itemId}`}
                     >
                       {equipmentItem ? (
@@ -226,16 +256,16 @@ export function VictoryModal({
                 variant="outline"
                 className="flex-1"
                 size="lg"
-                data-testid="button-skip-loot"
+                data-testid="button-skip-reward"
               >
                 Skip & Return to Lobby
               </Button>
               <Button
-                onClick={handleClaimLoot}
-                disabled={!selectedLoot}
+                onClick={handleClaimReward}
+                disabled={!selectedRewardType}
                 className="flex-1"
                 size="lg"
-                data-testid="button-claim-loot"
+                data-testid="button-claim-reward"
               >
                 Claim Reward
               </Button>
@@ -243,7 +273,7 @@ export function VictoryModal({
           </div>
         )}
         
-        {(lootTable.length === 0 || lootClaimed) && (
+        {(lootTable.length === 0 || rewardClaimed) && (
           <Button
             onClick={onClose}
             className="w-full"

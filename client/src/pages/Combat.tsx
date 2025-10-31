@@ -51,6 +51,7 @@ export default function Combat() {
     newLevel: number;
     currentXP: number;
     lootTable: LootItem[];
+    goldReward: number;
   } | null>(null);
   // B5 FIX: Add phase change modal state
   const [showPhaseChangeModal, setShowPhaseChangeModal] = useState(false);
@@ -204,6 +205,7 @@ export default function Combat() {
             newLevel: message.newLevel,
             currentXP: message.currentXP,
             lootTable: message.lootTable || [],
+            goldReward: message.goldReward || 10,
           });
           setShowVictoryModal(true);
         } else {
@@ -1547,6 +1549,7 @@ export default function Combat() {
           newLevel={victoryData.newLevel}
           currentXP={victoryData.currentXP}
           lootTable={victoryData.lootTable}
+          goldReward={victoryData.goldReward}
           onClose={() => navigate("/student/lobby")}
         />
       )}
