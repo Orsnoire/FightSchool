@@ -392,6 +392,9 @@ export class DatabaseStorage implements IStorage {
       paladin: 0,
       dark_knight: 0,
       blood_knight: 0,
+      monk: 0,
+      ranger: 0,
+      bard: 0,
     };
     
     for (const record of jobLevelRecords) {
@@ -706,6 +709,7 @@ export class DatabaseStorage implements IStorage {
       itemType: item.itemType as ItemType,
       quality: item.quality as ItemQuality,
       slot: item.slot as EquipmentSlot,
+      weaponType: item.weaponType as WeaponType | null,
     }]).returning();
     return created;
   }
@@ -726,57 +730,61 @@ export class DatabaseStorage implements IStorage {
 
   async seedDefaultEquipment(): Promise<void> {
     try {
-      // Check if system items already exist
-      const existingSystemItems = await db
-        .select()
-        .from(equipmentItems)
-        .where(eq(equipmentItems.teacherId, 'SYSTEM'));
-      
-      if (existingSystemItems.length > 0) {
-        return; // Already seeded
-      }
-
-      // Define default equipment items from EQUIPMENT_ITEMS constant
+      // Define default equipment items using new stats system
       const defaultItems = [
-      // Basic starting gear
-      { id: 'basic_sword', name: 'Basic Sword', slot: 'weapon' as const, quality: 'common' as const, itemType: 'sword' as const, attackBonus: 1, hpBonus: 0, defenseBonus: 0 },
-      { id: 'basic_staff', name: 'Basic Staff', slot: 'weapon' as const, quality: 'common' as const, itemType: 'staff' as const, attackBonus: 1, hpBonus: 0, defenseBonus: 0 },
-      { id: 'basic_bow', name: 'Basic Bow', slot: 'weapon' as const, quality: 'common' as const, itemType: 'bow' as const, attackBonus: 1, hpBonus: 0, defenseBonus: 0 },
-      { id: 'basic_herbs', name: 'Basic Herbs', slot: 'weapon' as const, quality: 'common' as const, itemType: 'herbs' as const, attackBonus: 0, hpBonus: 1, defenseBonus: 0 },
-      { id: 'basic_helm', name: 'Basic Helm', slot: 'headgear' as const, quality: 'common' as const, itemType: 'helmet' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 1 },
-      { id: 'basic_armor', name: 'Basic Armor', slot: 'armor' as const, quality: 'common' as const, itemType: 'armor' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 1 },
-      
-      // Common drops
-      { id: 'iron_sword', name: 'Iron Sword', slot: 'weapon' as const, quality: 'common' as const, itemType: 'sword' as const, attackBonus: 2, hpBonus: 0, defenseBonus: 0 },
-      { id: 'steel_bow', name: 'Steel Bow', slot: 'weapon' as const, quality: 'rare' as const, itemType: 'bow' as const, attackBonus: 3, hpBonus: 0, defenseBonus: 0 },
-      { id: 'magic_staff', name: 'Magic Staff', slot: 'weapon' as const, quality: 'rare' as const, itemType: 'staff' as const, attackBonus: 3, hpBonus: 0, defenseBonus: 0 },
-      { id: 'leather_helm', name: 'Leather Helm', slot: 'headgear' as const, quality: 'common' as const, itemType: 'helmet' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 2 },
-      { id: 'steel_helmet', name: 'Steel Helmet', slot: 'headgear' as const, quality: 'rare' as const, itemType: 'helmet' as const, attackBonus: 0, hpBonus: 2, defenseBonus: 3 },
-      { id: 'arcane_crown', name: 'Arcane Crown', slot: 'headgear' as const, quality: 'epic' as const, itemType: 'helmet' as const, attackBonus: 2, hpBonus: 3, defenseBonus: 0 },
-      { id: 'leather_armor', name: 'Leather Armor', slot: 'armor' as const, quality: 'common' as const, itemType: 'armor' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 2 },
-      { id: 'chainmail', name: 'Chainmail', slot: 'armor' as const, quality: 'rare' as const, itemType: 'armor' as const, attackBonus: 0, hpBonus: 0, defenseBonus: 4 },
-      { id: 'plate_armor', name: 'Plate Armor', slot: 'armor' as const, quality: 'epic' as const, itemType: 'armor' as const, attackBonus: 0, hpBonus: 5, defenseBonus: 5 },
-      { id: 'dragon_scale', name: 'Dragon Scale Armor', slot: 'armor' as const, quality: 'legendary' as const, itemType: 'armor' as const, attackBonus: 2, hpBonus: 10, defenseBonus: 7 },
-      { id: 'legendary_blade', name: 'Legendary Blade', slot: 'weapon' as const, quality: 'legendary' as const, itemType: 'sword' as const, attackBonus: 5, hpBonus: 5, defenseBonus: 0 },
-    ];
+        // Basic starting gear
+        { id: 'basic_sword', name: 'Basic Sword', slot: 'weapon' as const, quality: 'common' as const, itemType: 'sword' as const, weaponType: 'sword' as const, stats: { str: 2, atk: 3 } },
+        { id: 'basic_staff', name: 'Basic Staff', slot: 'weapon' as const, quality: 'common' as const, itemType: 'staff' as const, weaponType: 'staff' as const, stats: { int: 2, mat: 3 } },
+        { id: 'basic_bow', name: 'Basic Bow', slot: 'weapon' as const, quality: 'common' as const, itemType: 'bow' as const, weaponType: 'bow' as const, stats: { agi: 2, rtk: 3 } },
+        { id: 'basic_herbs', name: 'Basic Herbs', slot: 'weapon' as const, quality: 'common' as const, itemType: 'herbs' as const, weaponType: 'herbs' as const, stats: { mnd: 2, vit: 1 } },
+        { id: 'basic_claymore', name: 'Basic Claymore', slot: 'weapon' as const, quality: 'common' as const, itemType: 'two-handed-sword' as const, weaponType: 'two-handed-sword' as const, stats: { str: 3, atk: 5, vit: 1 } },
+        { id: 'basic_knuckles', name: 'Basic Knuckles', slot: 'weapon' as const, quality: 'common' as const, itemType: 'fist' as const, weaponType: 'fist' as const, stats: { str: 2, agi: 1, atk: 3 } },
+        { id: 'basic_lyre', name: 'Basic Lyre', slot: 'weapon' as const, quality: 'common' as const, itemType: 'harp' as const, weaponType: 'harp' as const, stats: { int: 1, mnd: 1, mat: 2, rtk: 2 } },
+        { id: 'basic_helm', name: 'Basic Helm', slot: 'headgear' as const, quality: 'common' as const, itemType: 'helmet' as const, weaponType: null, stats: { vit: 1, def: 2 } },
+        { id: 'basic_armor', name: 'Basic Armor', slot: 'armor' as const, quality: 'common' as const, itemType: 'armor' as const, weaponType: null, stats: { vit: 2, def: 3 } },
+        
+        // Common drops
+        { id: 'iron_sword', name: 'Iron Sword', slot: 'weapon' as const, quality: 'common' as const, itemType: 'sword' as const, weaponType: 'sword' as const, stats: { str: 4, atk: 6 } },
+        { id: 'steel_bow', name: 'Steel Bow', slot: 'weapon' as const, quality: 'rare' as const, itemType: 'bow' as const, weaponType: 'bow' as const, stats: { agi: 5, rtk: 8 } },
+        { id: 'magic_staff', name: 'Magic Staff', slot: 'weapon' as const, quality: 'rare' as const, itemType: 'staff' as const, weaponType: 'staff' as const, stats: { int: 5, mat: 8 } },
+        { id: 'leather_helm', name: 'Leather Helm', slot: 'headgear' as const, quality: 'common' as const, itemType: 'helmet' as const, weaponType: null, stats: { vit: 2, def: 4 } },
+        { id: 'steel_helmet', name: 'Steel Helmet', slot: 'headgear' as const, quality: 'rare' as const, itemType: 'helmet' as const, weaponType: null, stats: { vit: 4, def: 6 } },
+        { id: 'arcane_crown', name: 'Arcane Crown', slot: 'headgear' as const, quality: 'epic' as const, itemType: 'helmet' as const, weaponType: null, stats: { int: 3, mnd: 2, mat: 4 } },
+        { id: 'leather_armor', name: 'Leather Armor', slot: 'armor' as const, quality: 'common' as const, itemType: 'leather_armor' as const, weaponType: null, stats: { agi: 2, def: 4 } },
+        { id: 'chainmail', name: 'Chainmail', slot: 'armor' as const, quality: 'rare' as const, itemType: 'armor' as const, weaponType: null, stats: { vit: 3, def: 8 } },
+        { id: 'plate_armor', name: 'Plate Armor', slot: 'armor' as const, quality: 'epic' as const, itemType: 'armor' as const, weaponType: null, stats: { str: 2, vit: 5, def: 10 } },
+        { id: 'dragon_scale', name: 'Dragon Scale Armor', slot: 'armor' as const, quality: 'legendary' as const, itemType: 'armor' as const, weaponType: null, stats: { str: 3, vit: 10, def: 14 } },
+        { id: 'legendary_blade', name: 'Legendary Blade', slot: 'weapon' as const, quality: 'legendary' as const, itemType: 'sword' as const, weaponType: 'sword' as const, stats: { str: 8, atk: 12, vit: 3 } },
+      ];
 
-    // Insert all default items with teacherId='SYSTEM'
-    const itemsToInsert = defaultItems.map(item => ({
-      id: item.id,
-      teacherId: 'SYSTEM' as string,
-      name: item.name,
-      slot: item.slot,
-      quality: item.quality,
-      itemType: item.itemType,
-      iconUrl: null as string | null,
-      hpBonus: item.hpBonus,
-      attackBonus: item.attackBonus,
-      defenseBonus: item.defenseBonus,
-    }));
-
-      // Use a transaction to insert all items
-      await db.insert(equipmentItems).values(itemsToInsert);
-      console.log('Default equipment items created successfully');
+      // Upsert logic: Insert or update each item
+      for (const item of defaultItems) {
+        await db
+          .insert(equipmentItems)
+          .values({
+            id: item.id,
+            teacherId: 'SYSTEM',
+            name: item.name,
+            slot: item.slot,
+            quality: item.quality,
+            itemType: item.itemType,
+            weaponType: item.weaponType,
+            iconUrl: null,
+            stats: item.stats,
+          })
+          .onConflictDoUpdate({
+            target: equipmentItems.id,
+            set: {
+              name: item.name,
+              slot: item.slot,
+              quality: item.quality,
+              itemType: item.itemType,
+              weaponType: item.weaponType,
+              stats: item.stats,
+            },
+          });
+      }
+      console.log('Default equipment items seeded/updated successfully');
     } catch (error) {
       console.error('Failed to seed default equipment:', error);
       // Don't throw - allow app to start even if seeding fails

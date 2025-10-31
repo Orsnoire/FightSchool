@@ -33,7 +33,7 @@ const itemFormSchema = insertEquipmentItemSchema.extend({
 
 type ItemFormData = z.infer<typeof itemFormSchema>;
 
-const ITEM_TYPES: ItemType[] = ["sword", "wand", "bow", "staff", "light_armor", "leather_armor", "helmet", "cap", "hat", "consumable"];
+const ITEM_TYPES: ItemType[] = ["sword", "wand", "bow", "staff", "herbs", "two-handed-sword", "fist", "claws", "harp", "spoon", "light_armor", "leather_armor", "armor", "helmet", "cap", "hat", "consumable"];
 const ITEM_QUALITIES: ItemQuality[] = ["common", "rare", "epic", "legendary"];
 const EQUIPMENT_SLOTS: EquipmentSlot[] = ["weapon", "headgear", "armor"];
 
@@ -44,17 +44,29 @@ const QUALITY_COLORS = {
   legendary: "bg-amber-500",
 };
 
+type FilterType = 'all' | ItemType | EquipmentSlot;
+
 export default function ItemManagement() {
   const { toast } = useToast();
   const { isAuthenticated, isChecking } = useTeacherAuth();
   const teacherId = localStorage.getItem("teacherId");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<EquipmentItemDb | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   const { data: items, isLoading } = useQuery<EquipmentItemDb[]>({
     queryKey: [`/api/teacher/${teacherId}/equipment-items`],
     enabled: !!teacherId,
   });
+
+  // Filter items based on active filter
+  const filteredItems = items?.filter(item => {
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'weapon' || activeFilter === 'headgear' || activeFilter === 'armor') {
+      return item.slot === activeFilter;
+    }
+    return item.itemType === activeFilter;
+  }) || [];
 
   const form = useForm<ItemFormData>({
     resolver: zodResolver(itemFormSchema),
@@ -463,6 +475,81 @@ export default function ItemManagement() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Filter Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Filter Items</CardTitle>
+            <CardDescription>Show items by type or category</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={activeFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveFilter('all')}
+                data-testid="filter-all"
+              >
+                All
+              </Button>
+              
+              {/* Slot filters */}
+              <div className="w-px h-8 bg-border mx-2" />
+              <Button
+                variant={activeFilter === 'weapon' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveFilter('weapon')}
+                data-testid="filter-weapon-slot"
+              >
+                Weapons
+              </Button>
+              <Button
+                variant={activeFilter === 'headgear' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveFilter('headgear')}
+                data-testid="filter-headgear-slot"
+              >
+                Headgear
+              </Button>
+              <Button
+                variant={activeFilter === 'armor' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveFilter('armor')}
+                data-testid="filter-armor-slot"
+              >
+                Body Armor
+              </Button>
+              
+              {/* Weapon type filters */}
+              <div className="w-px h-8 bg-border mx-2" />
+              {(['sword', 'staff', 'bow', 'herbs', 'two-handed-sword', 'fist', 'claws', 'harp', 'spoon'] as const).map((type) => (
+                <Button
+                  key={type}
+                  variant={activeFilter === type ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveFilter(type)}
+                  data-testid={`filter-${type}`}
+                >
+                  {type === 'two-handed-sword' ? '2H Sword' : type.charAt(0).toUpperCase() + type.slice(1)}
+                </Button>
+              ))}
+              
+              {/* Armor type filters */}
+              <div className="w-px h-8 bg-border mx-2" />
+              {(['light_armor', 'leather_armor', 'helmet'] as const).map((type) => (
+                <Button
+                  key={type}
+                  variant={activeFilter === type ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveFilter(type)}
+                  data-testid={`filter-${type}`}
+                >
+                  {type.replace('_', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
@@ -473,9 +560,9 @@ export default function ItemManagement() {
               </Card>
             ))}
           </div>
-        ) : items && items.length > 0 ? (
+        ) : filteredItems && filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((item) => (
+            {filteredItems.map((item) => (
               <Card key={item.id} className="hover-elevate" data-testid={`item-card-${item.id}`}>
                 <CardHeader>
                   <div className="flex items-start justify-between">

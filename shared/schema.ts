@@ -29,9 +29,9 @@ export const HEALER_CLASSES: CharacterClass[] = ["herbalist", "priest", "paladin
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
-export type ItemType = "sword" | "wand" | "bow" | "staff" | "herbs" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
+export type ItemType = "sword" | "wand" | "bow" | "staff" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
 export type ItemQuality = "common" | "rare" | "epic" | "legendary";
-export type WeaponType = "sword" | "staff" | "bow" | "herb" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon";
+export type WeaponType = "sword" | "staff" | "bow" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon";
 
 // Teachers table
 export const teachers = pgTable("teachers", {
@@ -524,7 +524,7 @@ export const WEAPON_RESTRICTIONS: Record<CharacterClass, WeaponType[]> = {
   warrior: ["sword"],
   wizard: ["staff"],
   scout: ["bow"],
-  herbalist: ["herb"],
+  herbalist: ["herbs"],
   warlock: ["staff"],
   priest: ["staff"],
   paladin: ["sword", "two-handed-sword"],
@@ -572,7 +572,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     rarity: "common",
     stats: { mnd: 1 },
     classRestriction: ["herbalist"],
-    weaponType: "herb",
+    weaponType: "herbs",
   },
   basic_fist: {
     id: "basic_fist",
