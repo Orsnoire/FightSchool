@@ -1,5 +1,5 @@
-import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot, Guild, InsertGuild, GuildMembership, InsertGuildMembership, GuildFight, InsertGuildFight, GuildSettings, InsertGuildSettings, GuildQuest, InsertGuildQuest } from "@shared/schema";
-import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, guilds, guildMemberships, guildFights, guildSettings, guildQuests, CLASS_STATS, generateSessionId, generateGuildCode, calculateEquipmentStats, calculateCharacterStats, getGuildLevelFromXP } from "@shared/schema";
+import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot, WeaponType, Guild, InsertGuild, GuildMembership, InsertGuildMembership, GuildFight, InsertGuildFight, GuildSettings, InsertGuildSettings, GuildQuest, InsertGuildQuest, StudentCurrency, InsertStudentCurrency, Quest, InsertQuest, QuestType } from "@shared/schema";
+import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, guilds, guildMemberships, guildFights, guildSettings, guildQuests, studentCurrencies, quests, CLASS_STATS, generateSessionId, generateGuildCode, calculateEquipmentStats, calculateCharacterStats, getGuildLevelFromXP } from "@shared/schema";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, and, or, inArray, sql } from "drizzle-orm";
@@ -108,7 +108,7 @@ export interface IStorage {
   getGuildSettings(guildId: string): Promise<GuildSettings | undefined>;
   updateGuildSettings(guildId: string, updates: Partial<GuildSettings>): Promise<GuildSettings>;
   
-  // Guild quest operations
+  // Guild quest operations (legacy - use quest operations instead)
   getGuildQuests(guildId: string): Promise<GuildQuest[]>;
   createGuildQuest(quest: InsertGuildQuest): Promise<GuildQuest>;
   updateGuildQuest(id: string, updates: Partial<GuildQuest>): Promise<GuildQuest | undefined>;
@@ -116,6 +116,23 @@ export interface IStorage {
   
   // Guild leaderboard operations
   getGuildLeaderboard(guildId: string, metric: string): Promise<any[]>;
+  
+  // Student currency operations
+  getStudentCurrency(studentId: string): Promise<StudentCurrency | undefined>;
+  createStudentCurrency(studentId: string): Promise<StudentCurrency>;
+  updateStudentGold(studentId: string, goldAmount: number): Promise<StudentCurrency>;
+  addGoldToStudent(studentId: string, amount: number): Promise<StudentCurrency>;
+  deductGoldFromStudent(studentId: string, amount: number): Promise<StudentCurrency | null>;
+  
+  // Quest operations
+  getQuest(id: string): Promise<Quest | undefined>;
+  getQuestsByGuild(guildId: string): Promise<Quest[]>;
+  getQuestsByStudent(studentId: string): Promise<Quest[]>;
+  getQuestsByType(guildId: string | null, questType: QuestType): Promise<Quest[]>;
+  createQuest(quest: InsertQuest): Promise<Quest>;
+  updateQuest(id: string, updates: Partial<Quest>): Promise<Quest | undefined>;
+  completeQuest(id: string): Promise<Quest | undefined>;
+  resetWeeklyQuests(): Promise<void>;
 }
 
 // Integration: blueprint:javascript_database
@@ -1486,6 +1503,163 @@ export class DatabaseStorage implements IStorage {
     }
 
     return leaderboard;
+  }
+  
+  // Student currency operations
+  async getStudentCurrency(studentId: string): Promise<StudentCurrency | undefined> {
+    const [currency] = await db.select().from(studentCurrencies).where(eq(studentCurrencies.studentId, studentId));
+    return currency || undefined;
+  }
+
+  async createStudentCurrency(studentId: string): Promise<StudentCurrency> {
+    const [currency] = await db
+      .insert(studentCurrencies)
+      .values({ studentId, gold: 0 })
+      .returning();
+    return currency;
+  }
+
+  async updateStudentGold(studentId: string, goldAmount: number): Promise<StudentCurrency> {
+    // Get or create currency record
+    let currency = await this.getStudentCurrency(studentId);
+    if (!currency) {
+      currency = await this.createStudentCurrency(studentId);
+    }
+
+    const [updated] = await db
+      .update(studentCurrencies)
+      .set({ 
+        gold: goldAmount,
+        updatedAt: Date.now()
+      })
+      .where(eq(studentCurrencies.studentId, studentId))
+      .returning();
+    return updated;
+  }
+
+  async addGoldToStudent(studentId: string, amount: number): Promise<StudentCurrency> {
+    // Get or create currency record
+    let currency = await this.getStudentCurrency(studentId);
+    if (!currency) {
+      currency = await this.createStudentCurrency(studentId);
+    }
+
+    const [updated] = await db
+      .update(studentCurrencies)
+      .set({ 
+        gold: currency.gold + amount,
+        updatedAt: Date.now()
+      })
+      .where(eq(studentCurrencies.studentId, studentId))
+      .returning();
+    return updated;
+  }
+
+  async deductGoldFromStudent(studentId: string, amount: number): Promise<StudentCurrency | null> {
+    // Get or create currency record
+    let currency = await this.getStudentCurrency(studentId);
+    if (!currency) {
+      return null; // No currency record
+    }
+
+    // Use atomic update with SQL-level guard to prevent negative balance
+    const [updated] = await db
+      .update(studentCurrencies)
+      .set({ 
+        gold: sql`GREATEST(${studentCurrencies.gold} - ${amount}, 0)`,
+        updatedAt: Date.now()
+      })
+      .where(
+        and(
+          eq(studentCurrencies.studentId, studentId),
+          sql`${studentCurrencies.gold} >= ${amount}` // Only update if enough gold
+        )
+      )
+      .returning();
+    
+    return updated || null; // Returns null if balance was insufficient
+  }
+  
+  // Quest operations
+  async getQuest(id: string): Promise<Quest | undefined> {
+    const [quest] = await db.select().from(quests).where(eq(quests.id, id));
+    return quest || undefined;
+  }
+
+  async getQuestsByGuild(guildId: string): Promise<Quest[]> {
+    return await db.select().from(quests).where(eq(quests.guildId, guildId));
+  }
+
+  async getQuestsByStudent(studentId: string): Promise<Quest[]> {
+    return await db.select().from(quests).where(eq(quests.studentId, studentId));
+  }
+
+  async getQuestsByType(guildId: string | null, questType: QuestType): Promise<Quest[]> {
+    if (guildId) {
+      return await db.select().from(quests).where(
+        and(
+          eq(quests.guildId, guildId),
+          eq(quests.questType, questType)
+        )
+      );
+    } else {
+      return await db.select().from(quests).where(eq(quests.questType, questType));
+    }
+  }
+
+  async createQuest(quest: InsertQuest): Promise<Quest> {
+    const [created] = await db.insert(quests).values([quest]).returning();
+    return created;
+  }
+
+  async updateQuest(id: string, updates: Partial<Quest>): Promise<Quest | undefined> {
+    const [updated] = await db
+      .update(quests)
+      .set(updates)
+      .where(eq(quests.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async completeQuest(id: string): Promise<Quest | undefined> {
+    const now = Date.now();
+    const currentDate = new Date(now);
+    // Calculate ISO week number
+    const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
+    const weekNumber = Math.ceil(((currentDate.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+    
+    const [updated] = await db
+      .update(quests)
+      .set({ 
+        isCompleted: true,
+        completedAt: now,
+        completedWeek: weekNumber
+      })
+      .where(eq(quests.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async resetWeeklyQuests(): Promise<void> {
+    const currentDate = new Date();
+    const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
+    const currentWeek = Math.ceil(((currentDate.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+    
+    // Reset all weekly quests that were completed in a previous week
+    await db
+      .update(quests)
+      .set({ 
+        isCompleted: false,
+        completedAt: null,
+        completedWeek: null
+      })
+      .where(
+        and(
+          eq(quests.questType, 'weekly' as QuestType),
+          eq(quests.isCompleted, true),
+          sql`${quests.completedWeek} != ${currentWeek}`
+        )
+      );
   }
 }
 

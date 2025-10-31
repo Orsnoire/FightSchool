@@ -102,9 +102,12 @@ export const equipmentItems = pgTable("equipment_items", {
   iconUrl: text("icon_url"),
   itemType: text("item_type").notNull().$type<ItemType>(),
   quality: text("quality").notNull().$type<ItemQuality>(),
+  tier: integer("tier").notNull().default(1), // Equipment tier (1-10)
   slot: text("slot").notNull().$type<EquipmentSlot>(),
   weaponType: text("weapon_type").$type<WeaponType>(), // Nullable for backwards compatibility
   stats: jsonb("stats").notNull().$type<EquipmentItemStats>().default({}),
+  shopPrice: integer("shop_price"), // Gold price in guild shop (null = not available for purchase)
+  isPurchasable: boolean("is_purchasable").notNull().default(true), // Whether item appears in shop when tier is unlocked
   createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
 });
 
@@ -294,15 +297,103 @@ export const insertGuildSettingsSchema = createInsertSchema(guildSettings).omit(
 export type InsertGuildSettings = z.infer<typeof insertGuildSettingsSchema>;
 export type GuildSettings = typeof guildSettings.$inferSelect;
 
-// Guild quests (achievements and group goals)
-export interface QuestCriteria {
-  type: "all_members_play_class" | "member_unlocks_job" | "total_damage" | "total_healing" | "complete_fight_count" | "custom";
-  targetClass?: CharacterClass; // For "all_members_play_class"
-  targetJob?: CharacterClass; // For "member_unlocks_job"
-  targetAmount?: number; // For "total_damage", "total_healing", "complete_fight_count"
-  customDescription?: string; // For "custom" quests
+// Student currencies table (for guild shop and economy)
+export const studentCurrencies = pgTable("student_currencies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id").notNull().unique(),
+  gold: integer("gold").notNull().default(0),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertStudentCurrencySchema = createInsertSchema(studentCurrencies).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertStudentCurrency = z.infer<typeof insertStudentCurrencySchema>;
+export type StudentCurrency = typeof studentCurrencies.$inferSelect;
+
+// Quest types
+export type QuestType = "personal" | "guild" | "weekly" | "teacher_custom";
+
+// Quest criteria for custom teacher quests
+export interface CustomQuestCriterion {
+  fightId?: string; // Reference to specific fight
+  mode?: "solo" | "teacher" | "any"; // Combat mode requirement
+  accuracy?: number; // Minimum accuracy percentage (50-100 in steps of 10)
+  performanceType?: "individual" | "class_average"; // Individual or class-wide performance
 }
 
+// Quest criteria types for different quest goals
+export type QuestCriteriaType = 
+  | "reach_job_level"           // Personal: Reach specific level in a job
+  | "unlock_cross_class"        // Personal: Unlock an advanced class
+  | "unlock_ultimate"           // Personal: Unlock ultimate ability
+  | "guild_level"               // Guild: Reach specific guild level
+  | "total_correct_answers"     // Guild: Total correct answers across guild
+  | "total_damage"              // Guild: Total damage dealt
+  | "total_healing"             // Guild: Total healing done
+  | "custom";                   // Teacher custom quest
+
+// Guild quests (achievements and group goals)
+export interface QuestCriteria {
+  type: QuestCriteriaType;
+  
+  // For reach_job_level quests
+  targetJob?: CharacterClass;
+  targetLevel?: number;
+  
+  // For unlock_cross_class quests
+  targetClass?: CharacterClass;
+  
+  // For guild progression quests (guild_level, total_correct_answers, etc.)
+  targetAmount?: number;
+  
+  // For custom quests
+  customDescription?: string;
+  
+  // Teacher custom quest criteria (up to 3)
+  criteria1?: CustomQuestCriterion;
+  criteria2?: CustomQuestCriterion;
+  criteria3?: CustomQuestCriterion;
+}
+
+// Quest rewards
+export interface QuestReward {
+  gold?: number;
+  equipmentItemId?: string; // Reference to equipment_items table
+  guildXP?: number;
+  unlockTier?: number; // Unlock shop tier
+}
+
+export const quests = pgTable("quests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  guildId: varchar("guild_id"), // Null for personal quests
+  studentId: varchar("student_id"), // Null for guild quests, set for personal quests
+  questType: text("quest_type").notNull().$type<QuestType>(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  criteria: jsonb("criteria").notNull().$type<QuestCriteria>(),
+  rewards: jsonb("rewards").$type<QuestReward>().default({}),
+  isSeeded: boolean("is_seeded").notNull().default(false), // True for auto-generated quests
+  isCompleted: boolean("is_completed").notNull().default(false),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  completedWeek: integer("completed_week"), // ISO week number when completed (for weekly reset)
+  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
+});
+
+export const insertQuestSchema = createInsertSchema(quests).omit({
+  id: true,
+  isCompleted: true,
+  completedAt: true,
+  completedWeek: true,
+  createdAt: true,
+});
+
+export type InsertQuest = z.infer<typeof insertQuestSchema>;
+export type Quest = typeof quests.$inferSelect;
+
+// Legacy guild quests table - kept for backwards compatibility but will be migrated to quests table
 export const guildQuests = pgTable("guild_quests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   guildId: varchar("guild_id").notNull(),
@@ -983,11 +1074,19 @@ export function calculateSoloModeEnemyScaling(
   };
 }
 
-// Guild level system (uses same curve as player jobs, extends to 99)
+// Guild level system (exponential curve for quest progression)
+// Levels 1-5 use fixed values: 1000, 2000, 4000, 8000, 16000
+const GUILD_XP_REQUIREMENTS: Record<number, number> = {
+  2: 1000,   // Level 1 → 2: 1000 XP
+  3: 2000,   // Level 2 → 3: 2000 XP
+  4: 4000,   // Level 3 → 4: 4000 XP
+  5: 8000,   // Level 4 → 5: 8000 XP
+  6: 16000,  // Level 5 → 6: 16000 XP (if extending beyond 5)
+};
+
 export function getGuildXPForLevel(level: number): number {
   if (level <= 1) return 0;
-  // Same formula as player jobs: 6 * (level - 1)
-  return 6 * (level - 1);
+  return GUILD_XP_REQUIREMENTS[level] || 0;
 }
 
 export function getTotalGuildXPForLevel(level: number): number {
@@ -1002,9 +1101,9 @@ export function getGuildLevelFromXP(xp: number): number {
   let level = 1;
   let cumulativeXP = 0;
   
-  while (level < 99) {
+  while (level < 6) { // Max level 5 for now
     const xpNeededForNext = getGuildXPForLevel(level + 1);
-    if (cumulativeXP + xpNeededForNext > xp) {
+    if (xpNeededForNext === 0 || cumulativeXP + xpNeededForNext > xp) {
       break;
     }
     cumulativeXP += xpNeededForNext;
@@ -1012,6 +1111,57 @@ export function getGuildLevelFromXP(xp: number): number {
   }
   
   return level;
+}
+
+// Gold calculation based on difficulty using logistic curve
+// Center of steep curve around level 40, starts increasing dramatically around level 20
+export function calculateGoldReward(difficultySlider: number): number {
+  // difficultySlider ranges from 1 to 100
+  // Logistic function: gold = L / (1 + e^(-k(x - x0))) + offset
+  // Where:
+  //   L = max value (asymptote)
+  //   k = steepness
+  //   x0 = midpoint (center of curve)
+  //   x = difficultySlider
+  
+  const L = 10000;      // Maximum gold at difficulty 100
+  const k = 0.15;       // Steepness (higher = steeper curve)
+  const x0 = 40;        // Center of curve at difficulty 40
+  const offset = 10;    // Minimum gold at difficulty 1
+  
+  const exponential = Math.exp(-k * (difficultySlider - x0));
+  const gold = L / (1 + exponential) + offset;
+  
+  return Math.floor(gold);
+}
+
+// Calculate base tier price for equipment in guild shop
+export function calculateTierPrice(tier: number, quality: ItemQuality): number {
+  // Base prices for each tier (common quality)
+  const tierBasePrices: Record<number, number> = {
+    1: 150,
+    2: 500,
+    3: 1200,
+    4: 2000,
+    5: 3500,
+    6: 5500,
+    7: 8000,
+    8: 11000,
+    9: 15000,
+    10: 20000,
+  };
+  
+  const basePrice = tierBasePrices[tier] || 100;
+  
+  // Quality multipliers
+  const qualityMultipliers: Record<ItemQuality, number> = {
+    common: 1.0,
+    rare: 1.5,
+    epic: 2.0,
+    legendary: 3.0,
+  };
+  
+  return Math.floor(basePrice * qualityMultipliers[quality]);
 }
 
 // Question Resolution Feedback Types
