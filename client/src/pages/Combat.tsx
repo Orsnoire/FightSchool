@@ -10,6 +10,7 @@ import { ComboPoints } from "@/components/ComboPoints";
 import { VictoryModal } from "@/components/VictoryModal";
 import { AbilitySelectionModal } from "@/components/AbilitySelectionModal";
 import { TargetSelectionModal } from "@/components/TargetSelectionModal";
+import { BlockTargetSelectionModal } from "@/components/BlockTargetSelectionModal";
 import { FloatingNumber } from "@/components/FloatingNumber";
 import { CombatFeedbackModal } from "@/components/CombatFeedbackModal";
 import { PartyDamageModal } from "@/components/PartyDamageModal";
@@ -20,11 +21,11 @@ import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Swords, Calculator, Sparkles } from "lucide-react";
-import type { CombatState, Question, LootItem, CharacterClass, Gender, ResolutionFeedback, PartyDamageData, EnemyAIAttackData } from "@shared/schema";
+import type { CombatState, Question, LootItem, CharacterClass, Gender, ResolutionFeedback, PartyDamageData, EnemyAIAttackData, PlayerState } from "@shared/schema";
 import { TANK_CLASSES, HEALER_CLASSES } from "@shared/schema";
 import { type AnimationType, ULTIMATE_ABILITIES } from "@shared/ultimateAbilities";
 import { UltimateAnimation } from "@/components/UltimateAnimation";
-import { ABILITY_DISPLAYS } from "@shared/abilityUI";
+import { ABILITY_DISPLAYS, JOB_ABILITY_SLOTS } from "@shared/abilityUI";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Combat() {
@@ -39,6 +40,7 @@ export default function Combat() {
   const [selectedAbility, setSelectedAbility] = useState<string | null>(null);
   const [showAbilityModal, setShowAbilityModal] = useState(false);
   const [showTargetModal, setShowTargetModal] = useState(false);
+  const [showBlockTargetModal, setShowBlockTargetModal] = useState(false);
   const [targetType, setTargetType] = useState<"enemy" | "ally">("enemy");
   const [mathMode, setMathMode] = useState(false);
   const [usedAbilityInPhase1, setUsedAbilityInPhase1] = useState<string | null>(null);
@@ -357,6 +359,26 @@ export default function Combat() {
     setPreviousPhase(combatState.currentPhase);
   }, [combatState?.currentPhase]);
   
+  // Helper function to check if player has block passive unlocked
+  const hasBlockPassive = (player: PlayerState): boolean => {
+    if (!player) return false;
+    
+    const currentJobLevel = player.jobLevels?.[player.characterClass] || 1;
+    const jobAbilities = JOB_ABILITY_SLOTS[player.characterClass as CharacterClass];
+    
+    // Check if warrior_block is unlocked (level 1 for warriors)
+    if (jobAbilities?.level1 === "warrior_block" && currentJobLevel >= 1) {
+      return true;
+    }
+    
+    // Check cross-class abilities
+    if (player.crossClassAbility1 === "block_crossclass" || player.crossClassAbility2 === "block_crossclass") {
+      return true;
+    }
+    
+    return false;
+  };
+  
   // Show ability selection modal when abilities phase starts
   useEffect(() => {
     if (!combatState) return;
@@ -368,9 +390,11 @@ export default function Combat() {
       setShowAbilityModal(true);
       setSelectedAbility(null);
       setShowTargetModal(false);
+      // Don't show block target modal yet - wait until ability modal is handled
     } else {
       setShowAbilityModal(false);
       setShowTargetModal(false);
+      setShowBlockTargetModal(false);
     }
   }, [combatState?.currentPhase, combatState?.players]);
 
@@ -727,19 +751,37 @@ export default function Combat() {
       if (ws) {
         ws.send(JSON.stringify({ type: "use_ability", abilityId }));
       }
+      
+      // Check if player has block passive and show block target modal
+      const studentId = localStorage.getItem("studentId");
+      const currentPlayer = studentId && combatState ? combatState.players[studentId] : null;
+      if (currentPlayer && hasBlockPassive(currentPlayer)) {
+        setShowBlockTargetModal(true);
+      }
     }
-  };
-
-  const handleBlockSelected = () => {
-    setSelectedAbility("warrior_block");
-    setShowAbilityModal(false);
-    setTargetType("ally");
-    setShowTargetModal(true);
   };
 
   const handleBaseDamageSelected = () => {
     setShowAbilityModal(false);
-    // Just close the modal - no action needed, server will handle default action
+    
+    // Check if player has block passive and show block target modal
+    const studentId = localStorage.getItem("studentId");
+    const currentPlayer = studentId && combatState ? combatState.players[studentId] : null;
+    if (currentPlayer && hasBlockPassive(currentPlayer)) {
+      setShowBlockTargetModal(true);
+    }
+  };
+  
+  const handleBlockTargetSelected = (targetId: string) => {
+    setShowBlockTargetModal(false);
+    
+    if (ws) {
+      ws.send(JSON.stringify({ 
+        type: "ability_selection", 
+        abilityId: "warrior_block",
+        targetId 
+      }));
+    }
   };
 
   const handleTargetSelected = (targetId: string) => {
@@ -757,6 +799,15 @@ export default function Combat() {
         type: "select_target", 
         targetId 
       }));
+    }
+    
+    setSelectedAbility(null);
+    
+    // Check if player has block passive and show block target modal
+    const studentId = localStorage.getItem("studentId");
+    const currentPlayer = studentId && combatState ? combatState.players[studentId] : null;
+    if (currentPlayer && hasBlockPassive(currentPlayer)) {
+      setShowBlockTargetModal(true);
     }
   };
 
@@ -1473,7 +1524,6 @@ export default function Combat() {
           player={playerState}
           timeRemaining={abilitiesTimeRemaining}
           onSelectAbility={handleAbilitySelected}
-          onSelectBlock={handleBlockSelected}
           onSelectBaseDamage={handleBaseDamageSelected}
         />
       )}
@@ -1489,6 +1539,18 @@ export default function Combat() {
           threatLeaderId={combatState.threatLeaderId}
           timeRemaining={abilitiesTimeRemaining}
           onSelectTarget={handleTargetSelected}
+        />
+      )}
+
+      {/* Block Target Selection Modal - shows during abilities phase if player has block passive */}
+      {combatState && playerState && studentId && showBlockTargetModal && (
+        <BlockTargetSelectionModal
+          open={showBlockTargetModal}
+          players={combatState.players}
+          currentPlayerId={studentId}
+          threatLeaderId={combatState.threatLeaderId}
+          timeRemaining={abilitiesTimeRemaining}
+          onSelectTarget={handleBlockTargetSelected}
         />
       )}
 

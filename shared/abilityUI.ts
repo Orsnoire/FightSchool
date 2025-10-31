@@ -41,7 +41,7 @@ export interface AbilityDisplay {
 // Maps ability ID to display configuration
 export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   // WARRIOR
-  "warrior_block": { id: "warrior_block", icon: "Shield", name: "Block", description: "Absorb incoming damage for an ally", abilityClass: ["physical", "support"], requiresTarget: true },
+  "warrior_block": { id: "warrior_block", icon: "Shield", name: "Block", description: "Absorb incoming damage for an ally", abilityClass: ["physical", "support"], requiresTarget: true, isPassive: true },
   "shield_bash": { id: "shield_bash", icon: "Swords", name: "Shield Bash", description: "Deal bonus damage based on defense", abilityClass: ["physical"], isPassive: true },
   "provoke": { id: "provoke", icon: "Target", name: "Provoke", description: "Force enemies to target you", abilityClass: ["physical", "support"] },
   "crushing_blow": { id: "crushing_blow", icon: "Zap", name: "Crushing Blow", description: "Deal massive damage that ignores defense", abilityClass: ["physical"] },
@@ -121,7 +121,7 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "raining_blood": { id: "raining_blood", icon: "CloudRain", name: "Raining Blood", description: "Ultimate blood magic - sacrifice health for overwhelming power", abilityClass: ["physical", "spell", "ultimate"] },
   
   // CROSS-CLASS UNLOCK ABILITIES (Level 8)
-  "block_crossclass": { id: "block_crossclass", icon: "Shield", name: "Block", description: "Absorb incoming damage for an ally", abilityClass: ["physical", "support", "cross_class"], requiresTarget: true },
+  "block_crossclass": { id: "block_crossclass", icon: "Shield", name: "Block", description: "Absorb incoming damage for an ally", abilityClass: ["physical", "support", "cross_class"], requiresTarget: true, isPassive: true },
   "fireball_crossclass": { id: "fireball_crossclass", icon: "Flame", name: "Fireball", description: "Charge up powerful fire attacks", abilityClass: ["spell", "cross_class"], isToggle: true },
   "headshot_crossclass": { id: "headshot_crossclass", icon: "Target", name: "Headshot", description: "Precise shot that deals critical damage", abilityClass: ["physical", "cross_class"] },
   "healing_potion_crossclass": { id: "healing_potion_crossclass", icon: "Beaker", name: "Healing Potion", description: "Restore health to an ally", abilityClass: ["healing", "consumable", "cross_class"], opensHealingWindow: true },

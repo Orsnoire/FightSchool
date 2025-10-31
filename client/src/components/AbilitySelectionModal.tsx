@@ -1,8 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Clock, Shield, Swords } from "lucide-react";
+import { Clock, Swords } from "lucide-react";
 import type { PlayerState, CharacterClass } from "@shared/schema";
-import { TANK_CLASSES } from "@shared/schema";
 import { ABILITY_DISPLAYS, JOB_ABILITY_SLOTS, type AbilityDisplay } from "@shared/abilityUI";
 import { ULTIMATE_ABILITIES } from "@shared/ultimateAbilities";
 import { useModalTimer } from "@/hooks/useModalTimer";
@@ -13,7 +12,6 @@ interface AbilitySelectionModalProps {
   player: PlayerState;
   timeRemaining?: number; // Phase timer in seconds
   onSelectAbility: (abilityId: string) => void;
-  onSelectBlock: () => void;
   onSelectBaseDamage: () => void;
 }
 
@@ -27,7 +25,6 @@ export function AbilitySelectionModal({
   player,
   timeRemaining,
   onSelectAbility,
-  onSelectBlock,
   onSelectBaseDamage,
 }: AbilitySelectionModalProps) {
   const { canSkip, remainingTime } = useModalTimer(5, open);
@@ -128,7 +125,6 @@ export function AbilitySelectionModal({
   };
   
   const availableAbilities = getAvailableAbilities();
-  const isTank = TANK_CLASSES.includes(player.characterClass);
 
   return (
     <Dialog open={open}>
@@ -182,19 +178,6 @@ export function AbilitySelectionModal({
           {/* Special Actions */}
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">Basic Actions</h3>
-            
-            {/* Block button (tanks only) */}
-            {isTank && (
-              <Button
-                variant="outline"
-                className="w-full h-16 text-lg font-semibold hover-elevate"
-                onClick={onSelectBlock}
-                data-testid="button-block"
-              >
-                <Shield className="h-6 w-6 mr-2" />
-                Block for an Ally
-              </Button>
-            )}
             
             {/* Base Damage button (everyone) */}
             <Button
