@@ -80,7 +80,8 @@ app.use((req, res, next) => {
   await storage.seedTestStudent();
   await storage.seedTestFight();
   await storage.seedTestGuild();
-  log("Test student, fight, and guild seeded for feature testing");
+  await storage.seedTestCombatSession();
+  log("Test student, fight, guild, and combat session seeded for feature testing");
 
   const server = await registerRoutes(app);
 

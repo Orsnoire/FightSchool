@@ -1005,6 +1005,40 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async seedTestCombatSession(): Promise<void> {
+    try {
+      // Check if session already exists
+      const existing = await this.getCombatSession('ABC123');
+      if (existing) {
+        return; // Already seeded
+      }
+
+      // Get the test fight
+      const [testFight] = await db.select().from(fights).where(eq(fights.title, 'Ultimate Test Fight'));
+      if (!testFight) {
+        console.error('Cannot create test session: test fight not found');
+        return;
+      }
+
+      // Create a test combat session in "waiting" phase (students can join, teacher can start)
+      await db.insert(combatSessions).values({
+        sessionId: 'ABC123',
+        fightId: testFight.id.toString(),
+        currentPhase: 'waiting' as const,
+        currentQuestionIndex: 0,
+        enemies: testFight.enemies,
+        players: {},
+        jobLocked: false,
+        isFirstQuestionOfSession: true,
+        soloModeEnabled: false,
+      });
+
+      console.log('Test combat session ABC123 created successfully');
+    } catch (error) {
+      console.error('Failed to seed test combat session:', error);
+    }
+  }
+
   // Guild operations
   async getGuild(id: string): Promise<Guild | undefined> {
     const [guild] = await db.select().from(guilds).where(eq(guilds.id, id));
