@@ -243,7 +243,8 @@ export default function Combat() {
           clearTimeout(resolutionTimeoutTimer.current);
           resolutionTimeoutTimer.current = null;
         }
-        setFeedbackQueue(prev => [...prev, message.feedback]);
+        // Server sends array of feedback, spread it into queue
+        setFeedbackQueue(prev => [...prev, ...message.feedback]);
       } else if (message.type === "party_damage_summary") {
         // Party damage summary - store for display after individual modals
         // Clear the 4-second timeout since we received valid data
