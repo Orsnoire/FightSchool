@@ -238,18 +238,13 @@ export default function Combat() {
         // Students don't display the log but still receive events to keep WebSocket healthy
       } else if (message.type === "resolution_feedback") {
         // Individual resolution feedback - add to queue
-        console.log("[FEEDBACK] Received resolution_feedback:", message.feedback);
         // Clear the 4-second timeout since we received valid feedback
         if (resolutionTimeoutTimer.current) {
           clearTimeout(resolutionTimeoutTimer.current);
           resolutionTimeoutTimer.current = null;
         }
         // Server sends array of feedback, spread it into queue
-        setFeedbackQueue(prev => {
-          const newQueue = [...prev, ...message.feedback];
-          console.log("[FEEDBACK] Queue updated:", newQueue);
-          return newQueue;
-        });
+        setFeedbackQueue(prev => [...prev, ...message.feedback]);
       } else if (message.type === "party_damage_summary") {
         // Party damage summary - store for display after individual modals
         // Clear the 4-second timeout since we received valid data
@@ -437,12 +432,11 @@ export default function Combat() {
     
     const currentPhase = combatState.currentPhase;
     
-    // Reset everything when entering question_resolution phase
+    // Setup when entering question_resolution phase
     if (currentPhase === "question_resolution" && previousPhase !== "question_resolution") {
-      console.log("[FEEDBACK] Entering question_resolution phase - resetting feedback system");
       setResolutionPhaseStartTime(Date.now());
-      setFeedbackQueue([]);
-      setPartyDamageData(null);
+      // DON'T clear feedbackQueue here - it may have already been populated by WebSocket message
+      // Only reset modal index and visibility states
       setCurrentModalIndex(0);
       setShowPartyDamageModal(false);
       
@@ -450,7 +444,6 @@ export default function Combat() {
       if (resolutionTimeoutTimer.current) clearTimeout(resolutionTimeoutTimer.current);
       resolutionTimeoutTimer.current = setTimeout(() => {
         // Timeout reached - clear any pending feedback
-        console.log("[FEEDBACK] 4-second timeout reached - clearing feedback");
         setFeedbackQueue([]);
         setPartyDamageData(null);
         setCurrentModalIndex(0);
@@ -461,7 +454,6 @@ export default function Combat() {
     
     // Clean up when leaving question_resolution phase
     if (previousPhase === "question_resolution" && currentPhase !== "question_resolution") {
-      console.log("[FEEDBACK] Leaving question_resolution phase - clearing feedback");
       if (resolutionTimeoutTimer.current) clearTimeout(resolutionTimeoutTimer.current);
       if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
       setFeedbackQueue([]);
@@ -472,29 +464,23 @@ export default function Combat() {
     }
   }, [combatState?.currentPhase, previousPhase]);
 
-  // Modal sequencing system - show modals one by one every 2 seconds
+  // Modal sequencing system - show modals one by one every 3 seconds
   useEffect(() => {
     if (feedbackQueue.length === 0) {
-      console.log("[FEEDBACK] Modal sequencing: queue is empty");
       return;
     }
     
-    console.log("[FEEDBACK] Modal sequencing: queue length =", feedbackQueue.length, "currentIndex =", currentModalIndex);
-    
     // Start showing modals from the queue
     if (currentModalIndex < feedbackQueue.length) {
-      console.log("[FEEDBACK] Showing modal", currentModalIndex, "of", feedbackQueue.length, ":", feedbackQueue[currentModalIndex]);
       // Clear any existing timer
       if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
       
       // Show current modal for 3 seconds (matching minimum display time), then advance to next
       modalSequenceTimer.current = setTimeout(() => {
-        console.log("[FEEDBACK] Advancing to next modal");
         setCurrentModalIndex(prev => prev + 1);
       }, 3000);
     } else if (currentModalIndex === feedbackQueue.length && partyDamageData && !showPartyDamageModal) {
       // All individual modals shown, now show party damage modal
-      console.log("[FEEDBACK] All individual modals shown, showing party damage modal");
       setShowPartyDamageModal(true);
       
       // Auto-hide party damage modal after 3 seconds
