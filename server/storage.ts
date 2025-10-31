@@ -1,5 +1,6 @@
 import type { Student, InsertStudent, Teacher, InsertTeacher, Fight, InsertFight, CombatState, PlayerState, CombatStat, InsertCombatStat, StudentJobLevel, InsertStudentJobLevel, CharacterClass, EquipmentItemDb, InsertEquipmentItem, Gender, ItemType, ItemQuality, EquipmentSlot, WeaponType, Guild, InsertGuild, GuildMembership, InsertGuildMembership, GuildFight, InsertGuildFight, GuildSettings, InsertGuildSettings, GuildQuest, InsertGuildQuest, StudentCurrency, InsertStudentCurrency, Quest, InsertQuest, QuestType } from "@shared/schema";
 import { students, teachers, fights, combatSessions, combatStats, studentJobLevels, equipmentItems, guilds, guildMemberships, guildFights, guildSettings, guildQuests, studentCurrencies, quests, CLASS_STATS, generateSessionId, generateGuildCode, calculateEquipmentStats, calculateCharacterStats, getGuildLevelFromXP } from "@shared/schema";
+import { generatePersonalMilestoneQuests, ADVANCED_CLASS_UNLOCK_QUESTS } from "@shared/questSeeds";
 import { randomUUID, scryptSync, randomBytes } from "crypto";
 import { db } from "./db";
 import { eq, and, or, inArray, sql } from "drizzle-orm";
@@ -1157,6 +1158,27 @@ export class DatabaseStorage implements IStorage {
       .insert(guildMemberships)
       .values({ guildId, studentId })
       .returning();
+
+    // Auto-generate personal milestone quests for new member
+    const milestoneQuests = generatePersonalMilestoneQuests(studentId, guildId);
+    if (milestoneQuests.length > 0) {
+      await db.insert(quests).values(milestoneQuests);
+    }
+
+    // Generate advanced class unlock quests
+    const advancedClassQuests: InsertQuest[] = [];
+    for (const [jobClass, questData] of Object.entries(ADVANCED_CLASS_UNLOCK_QUESTS)) {
+      if (questData.title) {
+        advancedClassQuests.push({
+          studentId,
+          guildId,
+          ...questData
+        } as InsertQuest);
+      }
+    }
+    if (advancedClassQuests.length > 0) {
+      await db.insert(quests).values(advancedClassQuests);
+    }
 
     return membership;
   }

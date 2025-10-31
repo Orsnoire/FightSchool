@@ -220,9 +220,7 @@ export function generateGuildProgressionQuests(guildId: string): InsertQuest[] {
       rewards: {
         unlockTier: 1
       },
-      isSeeded: true,
-      isCompleted: true, // Auto-completed
-      completedAt: Date.now()
+      isSeeded: true
     },
     
     // Tier 2 unlock
