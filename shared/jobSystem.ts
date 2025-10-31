@@ -856,6 +856,73 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
       },
     }
   },
+
+  bard: {
+    id: "bard",
+    name: "Bard",
+    description: "Support/DPS - Song-based buffs and damage",
+    maxLevel: 15,
+    unlockRequirements: { warrior: 2, wizard: 2, scout: 2, herbalist: 2 },
+    levelRewards: {
+      1: { 
+        abilities: [{
+          id: "inspire",
+          name: "Inspire",
+          description: "Support/Song. 3 round buff. Increase HP and MP for all players by 1 per STR, INT, AGI or MND of the caster (whichever is lowest). Costs 4 MP.",
+          isCrossClass: false,
+        }]
+      },
+      2: { passives: { str: 1 } },
+      3: { passives: { mnd: 1 } },
+      4: { 
+        abilities: [{
+          id: "cleansing_chorus",
+          name: "Cleansing Chorus",
+          description: "Heal/Support/Song. Heals all players for (Bard Level)/2 HP (minimum 1) and removes all Debuffs.",
+          isCrossClass: false,
+        }]
+      },
+      5: { passives: { int: 1 } },
+      6: { passives: { vit: 1 } },
+      7: { passives: { agi: 1 } },
+      8: { 
+        abilities: [{
+          id: "inspire_crossclass",
+          name: "Inspire",
+          description: "Cross-class unlock. Support/Song. 3 round buff. Increase HP and MP for all players by 1 per STR, INT, AGI or MND of the caster (whichever is lowest). Costs 4 MP.",
+          isCrossClass: true,
+        }]
+      },
+      9: { passives: { int: 1 } },
+      10: { 
+        abilities: [{
+          id: "finale",
+          name: "Finale",
+          description: "Spell/Song. Deals (INT+MND)*STR damage to all enemies. Costs 10 MP.",
+          isCrossClass: false,
+        }]
+      },
+      11: { passives: { mnd: 1 } },
+      12: { 
+        abilities: [{
+          id: "battle_hymn",
+          name: "Battle Hymn",
+          description: "Support/Song. 3 round buff. Increase STR, INT, MND and AGI for all players by 1 per STR, INT, AGI or MND of the caster (whichever is lowest). Costs 8 MP.",
+          isCrossClass: false,
+        }]
+      },
+      13: { passives: { int: 1 } },
+      14: { passives: { mnd: 1 } },
+      15: { 
+        abilities: [{
+          id: "crescendo",
+          name: "Crescendo",
+          description: "Cross-class unlock. Heal/Spell/Support/Song: Raise all KOed players with 1 HP, deal (INT+MND)*STR damage to all enemies, and heal all players for (Bard Level)/2 HP (minimum 1), remove all debuffs, and double the caster's damage from all sources this turn. Limit once per battle. 10 MP.",
+          isCrossClass: true,
+        }]
+      },
+    }
+  },
 };
 
 // Get all abilities a player has unlocked across all jobs
