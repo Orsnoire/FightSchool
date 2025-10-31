@@ -1363,14 +1363,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Set default pendingAction for base damage attack
-        player.pendingAction = {
-          abilityId: "base_attack", // Base damage attack
-          targetId: defaultTargetId,
-          targetType: "enemy",
-        };
-        
-        log(`[Auto-Target] Player ${player.nickname} (${playerId}) auto-targeted ${defaultTargetId}`, "combat");
+        // CRITICAL: If player has already selected an ability, preserve it and just add targetId
+        // Otherwise, default to base_attack for players who didn't select anything
+        if (player.pendingAction && player.pendingAction.abilityId) {
+          // Preserve the existing ability selection, just add target
+          // Only set targetType to "enemy" if it wasn't already set (to preserve healing/utility targetTypes)
+          player.pendingAction = {
+            ...player.pendingAction,
+            targetId: defaultTargetId,
+            targetType: player.pendingAction.targetType || "enemy",
+          };
+          log(`[Auto-Target] Player ${player.nickname} (${playerId}) auto-targeted ${defaultTargetId} for ability ${player.pendingAction.abilityId}`, "combat");
+        } else {
+          // No ability selected - use base attack
+          player.pendingAction = {
+            abilityId: "base_attack",
+            targetId: defaultTargetId,
+            targetType: "enemy",
+          };
+          log(`[Auto-Target] Player ${player.nickname} (${playerId}) auto-targeted ${defaultTargetId} for base attack`, "combat");
+        }
       }
     }
     
@@ -1611,6 +1623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (player.pendingAction && player.pendingAction.abilityId && player.pendingAction.abilityId !== "base_attack") {
             usedAbility = true;
             const abilityId = player.pendingAction.abilityId;
+            log(`[Abilities] Player ${player.nickname} using ability: ${abilityId}`, "combat");
             
             // Calculate damage based on specific ability
             switch (abilityId) {
@@ -1868,6 +1881,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!playerFeedback.has(playerId)) {
               playerFeedback.set(playerId, []);
             }
+            
+            if (usedAbility) {
+              log(`[Abilities] Player ${player.nickname} dealt ${damage} damage with ${abilityName} (feedback type: correct_ability)`, "combat");
+            }
+            
             playerFeedback.get(playerId)!.push({
               type: usedAbility ? "correct_ability" : "correct_damage",
               damage: damage,
@@ -2964,6 +2982,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Store pending action (ability selection, awaiting target)
           const abilityId = message.abilityId;
+          log(`[Abilities] Player ${player.nickname} selected ability: ${abilityId}`, "combat");
+          
           await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             pendingAction: {
               abilityId,
