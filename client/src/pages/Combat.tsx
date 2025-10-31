@@ -397,7 +397,8 @@ export default function Combat() {
     return false;
   };
   
-  // Show ability selection modal when abilities phase starts (ONLY for correct answers)
+  // Show ability selection modal when abilities phase starts
+  // In the unified abilities phase design, abilities are selected BEFORE questions
   useEffect(() => {
     if (!combatState) return;
     
@@ -405,16 +406,15 @@ export default function Combat() {
     const currentPlayer = studentId ? combatState.players[studentId] : null;
     
     if (combatState.currentPhase === "abilities" && currentPlayer && !currentPlayer.isDead) {
-      // Only show modal if:
-      // 1. Player answered the current question correctly
-      // 2. Player hasn't already selected an ability this phase
-      if (currentPlayer.answeredCurrentQuestionCorrectly && !currentPlayer.hasSelectedAbility) {
+      // Show modal if player hasn't already selected an ability this phase
+      // No need to check answeredCurrentQuestionCorrectly because abilities phase comes BEFORE question phase
+      if (!currentPlayer.hasSelectedAbility) {
         setShowAbilityModal(true);
         setSelectedAbility(null);
         setShowTargetModal(false);
         // Don't show block target modal yet - wait until ability modal is handled
       } else {
-        // Either answered incorrectly or already selected - don't show modal
+        // Already selected - don't show modal
         setShowAbilityModal(false);
       }
     } else {
