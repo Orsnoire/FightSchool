@@ -13,6 +13,7 @@ export type AbilityIcon =
   | "Syringe" | "Activity" | "Dna" | "CloudRain"   // Blood Knight
   | "CircleDot" | "Waypoints"                      // Monk
   | "Locate" | "ArrowUpDown" | "Footprints" | "Target" | "CloudHail" // Ranger
+  | "Music" | "Volume2" | "Radio" | "Mic2" | "Lightbulb" // Bard
   | "Plus";                                         // Cross-class abilities
 
 // Ability classification types
@@ -23,7 +24,8 @@ export type AbilityClass =
   | "support"      // Buffs, debuffs, utility
   | "consumable"   // Potion/item-based abilities
   | "cross_class"  // Can be equipped by other classes
-  | "ultimate";    // Level 15 ultimate abilities
+  | "ultimate"     // Level 15 ultimate abilities
+  | "song";        // Bard song abilities (treated as spell damage)
 
 // Ability display configuration
 export interface AbilityDisplay {
@@ -109,6 +111,13 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "hunters_volley": { id: "hunters_volley", icon: "Target", name: "Hunter's Volley", description: "Unleash 5 waves of arrows at all enemies", abilityClass: ["physical"] },
   "arrowstorm": { id: "arrowstorm", icon: "CloudHail", name: "Arrowstorm", description: "Ultimate barrage - rain arrows on all enemies", abilityClass: ["physical", "ultimate"] },
   
+  // BARD
+  "inspire": { id: "inspire", icon: "Lightbulb", name: "Inspire", description: "3 round buff - increase HP and MP for all players", abilityClass: ["support", "song"] },
+  "cleansing_chorus": { id: "cleansing_chorus", icon: "Music", name: "Cleansing Chorus", description: "Heal all players and remove all debuffs", abilityClass: ["healing", "support", "song"] },
+  "finale": { id: "finale", icon: "Volume2", name: "Finale", description: "Powerful song that damages all enemies", abilityClass: ["spell", "song"] },
+  "battle_hymn": { id: "battle_hymn", icon: "Mic2", name: "Battle Hymn", description: "3 round buff - increase all stats for all players", abilityClass: ["support", "song"] },
+  "crescendo": { id: "crescendo", icon: "Radio", name: "Crescendo", description: "Ultimate performance - raise KO'd allies, damage all enemies, heal and cleanse party", abilityClass: ["healing", "spell", "support", "song", "ultimate"] },
+  
   // ULTIMATE/CROSS-CLASS ABILITIES (Level 15)
   "unbreakable": { id: "unbreakable", icon: "Shield", name: "Unbreakable", description: "Ultimate defensive stance - become invincible for a turn", abilityClass: ["physical", "support", "ultimate"] },
   "manabomb": { id: "manabomb", icon: "Bomb", name: "Manabomb", description: "Ultimate spell - massive explosion dealing devastating damage", abilityClass: ["spell", "ultimate"] },
@@ -132,6 +141,7 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "crimson_slash_crossclass": { id: "crimson_slash_crossclass", icon: "Swords", name: "Crimson Slash", description: "Vampiric attack that steals enemy health", abilityClass: ["physical", "healing", "cross_class"] },
   "fortify_crossclass": { id: "fortify_crossclass", icon: "Shield", name: "Fortify", description: "Channel inner strength to boost defense", abilityClass: ["physical", "support", "cross_class"], isToggle: true },
   "prey_crossclass": { id: "prey_crossclass", icon: "Locate", name: "Prey", description: "Mark an enemy as prey - they take 200% damage from all sources", abilityClass: ["physical", "support", "cross_class"], requiresTarget: true },
+  "inspire_crossclass": { id: "inspire_crossclass", icon: "Lightbulb", name: "Inspire", description: "3 round buff - increase HP and MP for all players", abilityClass: ["support", "song", "cross_class"] },
 };
 
 // Job ability progression (levels 1, 4, 10, 12, 15)
@@ -218,6 +228,13 @@ export const JOB_ABILITY_SLOTS: Record<CharacterClass, {
     level10: "disengage",
     level12: "hunters_volley",
     level15: "arrowstorm",
+  },
+  bard: {
+    level1: "inspire",
+    level4: "cleansing_chorus",
+    level10: "finale",
+    level12: "battle_hymn",
+    level15: "crescendo",
   },
 };
 
