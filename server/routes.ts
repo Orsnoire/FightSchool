@@ -6,6 +6,7 @@ import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, t
 import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
+import { ABILITY_DISPLAYS } from "@shared/abilityUI";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -1311,22 +1312,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function checkAllSelectionsComplete(session: CombatState): boolean {
     const alivePlayers = Object.values(session.players).filter(p => !p.isDead);
     
-    // Check if all tanks have made their block selection
+    // Check each player type separately
     const tanks = alivePlayers.filter(p => TANK_CLASSES.includes(p.characterClass));
+    const healers = alivePlayers.filter(p => HEALER_CLASSES.includes(p.characterClass));
+    const offensivePlayers = alivePlayers.filter(p => !TANK_CLASSES.includes(p.characterClass) && !HEALER_CLASSES.includes(p.characterClass));
+    
+    // Check if all tanks have made their block selection
     const tanksComplete = tanks.every(p => p.blockTarget !== undefined && p.blockTarget !== null);
     
-    // Check if all healers have made their heal selection
-    const healers = alivePlayers.filter(p => HEALER_CLASSES.includes(p.characterClass));
+    // Helper to check if a player's ability selection is complete
+    const isAbilityComplete = (p: PlayerState): boolean => {
+      if (!p.hasSelectedAbility) return false;
+      if (!p.pendingAction) return false;
+      
+      const abilityDetails = ABILITY_DISPLAYS[p.pendingAction.abilityId];
+      const requiresTarget = abilityDetails?.requiresTarget || abilityDetails?.opensHealingWindow;
+      
+      // If ability doesn't require a target, it's complete as soon as it's selected
+      if (!requiresTarget) return true;
+      
+      // If it requires a target, check if target is provided
+      return p.pendingAction.targetId !== undefined && p.pendingAction.targetId !== null;
+    };
+    
+    // Check if all healers have made their heal selection or declined
     const healersComplete = healers.every(p => {
-      // If they're healing, they must have a target
+      // If they're healing, they must have a heal target
       if (p.isHealing) {
         return p.healTarget !== undefined && p.healTarget !== null;
       }
-      // If not healing, that's also a complete selection (they chose not to heal)
-      return true;
+      // If not healing, check their ability selection
+      return isAbilityComplete(p);
     });
     
-    return tanksComplete && healersComplete;
+    // Check if all offensive players have completed their ability selections
+    const offensiveComplete = offensivePlayers.every(p => isAbilityComplete(p));
+    
+    // Log the completion status for debugging
+    const totalPlayers = alivePlayers.length;
+    const completedCount = alivePlayers.filter(p => {
+      if (TANK_CLASSES.includes(p.characterClass)) {
+        return p.blockTarget !== undefined && p.blockTarget !== null;
+      } else if (HEALER_CLASSES.includes(p.characterClass)) {
+        return p.isHealing ? (p.healTarget !== undefined && p.healTarget !== null) : isAbilityComplete(p);
+      } else {
+        return isAbilityComplete(p);
+      }
+    }).length;
+    
+    log(`[Abilities] Selection check: ${completedCount}/${totalPlayers} players complete (Tanks: ${tanksComplete}, Healers: ${healersComplete}, Offensive: ${offensiveComplete})`, "combat");
+    
+    return tanksComplete && healersComplete && offensiveComplete;
   }
   
   async function processAbilitySelections(sessionId: string) {
@@ -2980,18 +3016,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
             abilitiesLastActivity.set(ws.sessionId, Date.now());
           }
           
-          // Store pending action (ability selection, awaiting target)
+          // Store pending action - preserve targetId if provided in message
           const abilityId = message.abilityId;
-          log(`[Abilities] Player ${player.nickname} selected ability: ${abilityId}`, "combat");
+          const targetId = message.targetId;
           
-          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
+          // Get ability details to determine type
+          const abilityDetails = ABILITY_DISPLAYS[abilityId];
+          const isHealingAbility = abilityDetails?.abilityClass?.includes("healing");
+          
+          // List of ally-targeted abilities (healing, blocking, buffs, shields)
+          const ALLY_TARGETED_ABILITIES = [
+            "warrior_block", "block_crossclass",
+            "purify", "bless", "aegis",
+            "shield_potion", "lay_on_hands",
+            "healing_guard_ally_crossclass"
+          ];
+          
+          // Determine targetType based on ability class and ID
+          let targetType: "enemy" | "ally" | undefined = undefined;
+          if (targetId !== undefined) {
+            if (isHealingAbility || ALLY_TARGETED_ABILITIES.includes(abilityId)) {
+              targetType = "ally";
+            } else {
+              targetType = "enemy";
+            }
+          }
+          
+          log(`[Abilities] Player ${player.nickname} selected ability: ${abilityId}${targetId ? ` with target ${targetId}` : ''}`, "combat");
+          
+          // Prepare update object
+          const updateData: any = {
             pendingAction: {
               abilityId,
-              targetId: undefined,
-              targetType: undefined,
+              targetId,
+              targetType,
             },
-            hasSelectedAbility: true, // Mark that player has selected an ability
-          });
+            hasSelectedAbility: true,
+          };
+          
+          // For healing abilities with a target, also set isHealing and healTarget
+          if (isHealingAbility && targetId) {
+            updateData.isHealing = true;
+            updateData.healTarget = targetId;
+            log(`[Abilities] Player ${player.nickname} set to heal target ${targetId}`, "combat");
+          }
+          
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, updateData);
           
           const updatedSession = await storage.getCombatSession(ws.sessionId);
           broadcastToCombat(ws.sessionId, { type: "combat_state", state: updatedSession });
