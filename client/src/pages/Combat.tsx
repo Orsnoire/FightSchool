@@ -1437,13 +1437,13 @@ export default function Combat() {
 
       {/* FIXED PLAYER FOOTER: Always visible at bottom of screen */}
       {playerState && (
-        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border p-2 z-50" style={{ height: '10vh' }}>
-          <div className="flex items-center gap-3 h-full max-w-7xl mx-auto">
-            <div className="relative" style={{ width: '48px', height: '48px' }}>
+        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border py-1 px-2 z-50" style={{ maxHeight: '12.5vh' }}>
+          <div className="flex items-center gap-2 max-w-7xl mx-auto">
+            <div className="relative flex-shrink-0" style={{ width: '40px', height: '40px' }}>
               <PlayerAvatar 
                 characterClass={playerState.characterClass} 
                 gender={playerState.gender} 
-                size="md"
+                size="sm"
                 isThreatLeader={combatState?.threatLeaderId === studentId}
               />
               {/* Shield pulse animation */}
@@ -1456,7 +1456,7 @@ export default function Combat() {
                     transition={{ duration: 1.5, repeat: Infinity }}
                     className="absolute inset-0 flex items-center justify-center pointer-events-none"
                   >
-                    <Shield className="h-10 w-10 text-warrior drop-shadow-lg" />
+                    <Shield className="h-8 w-8 text-warrior drop-shadow-lg" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1470,7 +1470,7 @@ export default function Combat() {
                     transition={{ duration: 1.5, repeat: Infinity }}
                     className="absolute inset-0 flex items-center justify-center pointer-events-none"
                   >
-                    <Sparkles className="h-10 w-10 text-herbalist drop-shadow-lg" />
+                    <Sparkles className="h-8 w-8 text-herbalist drop-shadow-lg" />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1484,9 +1484,9 @@ export default function Combat() {
                 />
               ))}
             </div>
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold truncate" data-testid="text-player-nickname">{playerState.nickname}</span>
+            <div className="flex-1 min-w-0 space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold truncate" data-testid="text-player-nickname">{playerState.nickname}</span>
                 <div className="flex gap-2 text-xs">
                   {playerState.characterClass === "wizard" && (
                     <>
