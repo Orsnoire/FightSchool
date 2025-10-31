@@ -1,0 +1,74 @@
+🏰 Core Design: Guild-Locked Quest Framework
+1. Guild Prerequisite
+•	Players must belong to a guild to access any quests.
+•	Joining a guild automatically unlocks a small set of common guild quests (persistent across all guilds):
+o	Guild Progress Questline – “Level up the guild.” Completing these unlocks new shop tiers and guild cosmetics.
+o	Personal Progress Questline – Milestone quests like “Reach Job Lv. 4,” “Unlock an Advanced Class,” or “Defeat a Boss in a Guild Raid.” Each class should have a milestone quest automatically generated, with quests for each ability tier (i.e. reach level 4, cross class (level 8), reach level 10, etc).
+o	Guild Feature Quests – Unlock special structures (Guild Hall, Crafting Bench, Guild Arena, etc.). These are going to be add ons for later.
+________________________________________
+2. Guild Quests and Progression
+•	Guild XP is earned when members complete guild quests or weekly objectives (e.g., “Guild averaged 70% accuracy this week”or a weekly repeatable quest “Guild achieved 100% accuracy on a group session (initiated by the teacher)”).
+•	Each guild level unlocks:
+Guild Level	Unlocks
+1	Guild Store (Tier 1 items)
+2	Guild Icon Choices (To be added later)
+3	Guild Store upgrades to tier 5
+4	Unlock Daily Guild Quests
+5	Ultimate Tier equipment in the Guild Store
+	
+•	These can integrate naturally with your teacher’s server console — XP can be distributed through combat results or quest completions without storing PII.
+•	Experience should be designed to require a full year. Therefore, each round of weekly quests should be approximately 1/3 of a level, where 1 & 2 take ~4 weeks total and 5 takes ~3 months total.
+________________________________________
+3. Personal Quests
+•	Personal quests act as guided milestones and content unlocks.
+•	They replace passive menu options for new systems — e.g.:
+o	“Unlock an Advanced Class” → reveals class unlock requirements dynamically (eg: Priest unlocks with Herbalist level 2).
+o	“Discover Ultimate Abilities” → Once a player reveals their level 8 cross-class ability, show the player the level 15 quest entitled “Ultimate x Ability” which hints at that class’s ultimate. This quest should reward a Tier 10 Unique weapon for their class.
+o	“Explore Cross-Class Paths X” → One quest for each class, the quest appears when the class reaches level 4. Awards a Tier 4
+•	Rewards can include:
+o	Gold (new base reward type)
+o	Equipment (tier-appropriate)
+o	Unlock Tokens (for abilities or class access)
+________________________________________
+4. Equipment Tiers & Level Gates
+•	Equipment tier = minimum job level requirement.
+o	Tier 1 → Lv. 1
+o	Tier 2 → Lv. 2
+o	Tier 3 → Lv. 4
+o	Tier 4 → Lv. 6
+o	Tier 5 →Lv. 8
+o	Tier 6 →Lv. 10
+o	Tier 7 →Lv. 11
+o	Tier 8 →Lv. 12
+o	Tier 9 →Lv. 13
+o	Tier 10 →Lv. 15
+•	The guild shop shows only the highest unlocked tier.
+•	Each tier has a guild quest that unlocks it, e.g.:
+“Forge Ahead – Earn 100 total correct answers as a guild to unlock Tier 2 equipment.”
+________________________________________
+5. Guild Shop Mechanics
+•	The Guild Shop becomes the economy hub:
+o	Students can purchase gear using gold.
+o	Gold is awarded at the Victory Screen:
+	If no loot drops, gold is automatically awarded.
+	If loot is offered, the player can choose between the item or gold.
+o	Prices scale by tier and rarity, encouraging long-term savings.
+o	Gold is awarded based on the difficulty slider: 10g for 1 and 10000g for 100
+o	Have all equipment designed in the teacher’s panel accessible to buy in the guild shop, based on the general store design and the item’s tier (whether it’s available to buy based on the guild’s progress).
+Example:
+o	Tier 1 items → 100–200 g
+o	Tier 2 items → 400–600 g
+o	Tier 3 items → 1000+ g
+________________________________________
+6. Victory Screen Update
+•	After battle resolution (following the modal flow in your combat telemetry doc):
+o	If no item is dropped → “You earned x g!” (based on the difficulty slider)
+o	If item is dropped → “You found Bronze Shield! Take Item / Take Gold (x g)”
+o	Selecting gold sends a “currency gain” toast and credits gold immediately.
+________________________________________
+7. Teacher/Admin Hooks
+•	The teacher console can grant quest completion manually (useful for narrative or event quests).
+•	Admin options:
+o	“Award Guild XP”
+o	“Mark Quest Complete”
+o	“Grant Tier Unlock”
