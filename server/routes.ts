@@ -2436,7 +2436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Clamp difficulty to valid range [1, 100]
         const clampedDifficulty = Math.max(1, Math.min(100, avgDifficulty));
         const xpCap = 20 + ((clampedDifficulty - 1) / 99) * 100;
-        const xpGained = Math.min(rawXP, xpCap);
+        const xpGained = Math.round(Math.min(rawXP, xpCap));
         
         // Award XP to the player's current class
         const result = await storage.awardXPToJob(
