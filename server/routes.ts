@@ -1576,14 +1576,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     for (const [playerId, player] of Object.entries(session.players)) {
       if (player.isDead) continue;
 
-      // Only process if player actually answered
-      if (!player.hasAnswered || !player.currentAnswer) continue;
-
-      // Track question answered (in memory)
-      player.questionsAnswered += 1;
-
-      const isCorrect = player.currentAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
-      log(`[Combat] Player ${player.nickname} answered "${player.currentAnswer}" vs correct "${question.correctAnswer}" - ${isCorrect ? "CORRECT" : "INCORRECT"}`, "combat");
+      // Determine if player answered correctly
+      const hasAnswered = player.hasAnswered && player.currentAnswer;
+      const isCorrect = hasAnswered && player.currentAnswer!.toLowerCase() === question.correctAnswer.toLowerCase();
+      
+      if (hasAnswered) {
+        // Track question answered (in memory)
+        player.questionsAnswered += 1;
+        log(`[Combat] Player ${player.nickname} answered "${player.currentAnswer}" vs correct "${question.correctAnswer}" - ${isCorrect ? "CORRECT" : "INCORRECT"}`, "combat");
+      } else {
+        // Player didn't answer - treat as incorrect
+        log(`[Combat] Player ${player.nickname} did not answer - treating as INCORRECT`, "combat");
+      }
 
       if (isCorrect) {
         // Track correct answer (in memory)
@@ -1773,17 +1777,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // HEALING MECHANIC: If player chose to heal, they deal no damage this turn
           // This covers single-target heals, AoE heals, and self-heals
+          // Healing feedback will be shown when healing actually happens in the abilities phase
           if (player.isHealing) {
             damage = 0;
             player.lastActionDamage = 0;
-            // Add feedback that they healed instead of dealing damage
-            if (!playerFeedback.has(playerId)) {
-              playerFeedback.set(playerId, []);
-            }
-            playerFeedback.get(playerId)!.push({
-              type: "healing_instead",
-              message: "You chose to heal this turn instead of dealing damage",
-            });
           }
 
           if (session.enemies.length > 0 && damage > 0) {
@@ -1834,16 +1831,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } else {
-        // Wrong answer - track incorrect answer (in memory)
+        // Wrong answer or no answer - track incorrect answer (in memory)
         player.questionsIncorrect += 1;
         
-        // AGGRO SYSTEM: Wrong answer reduces threat by 3
+        // AGGRO SYSTEM: Wrong/no answer reduces threat by 3
         player.threat = Math.max(0, player.threat - 3);
         
-        // Reset ability states on wrong answer (in memory)
+        // Reset ability states on wrong/no answer (in memory)
         player.comboPoints = 0; // Reset scout combo points to 0
         player.streakCounter = 0; // Reset for backward compat
-        player.lastActionDamage = 0; // No damage dealt on wrong answer
+        player.lastActionDamage = 0; // No damage dealt on wrong/no answer
         
         // Reset wizard fireball charge and decrement cooldown (in memory)
         if (player.characterClass === "wizard") {
@@ -1854,7 +1851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Wrong answer - take damage (unless blocked by alive tank)
+        // Wrong/no answer - take damage (unless blocked by alive tank)
         let blocked = false;
         let blockerPlayer = null;
         for (const [blockerId, blocker] of Object.entries(session.players)) {
