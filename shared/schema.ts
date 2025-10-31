@@ -20,10 +20,10 @@ export function generateGuildCode(): string {
 }
 
 // Character classes and equipment types
-export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock" | "priest" | "paladin" | "dark_knight" | "blood_knight" | "monk" | "ranger";
+export type CharacterClass = "warrior" | "wizard" | "scout" | "herbalist" | "warlock" | "priest" | "paladin" | "dark_knight" | "blood_knight" | "monk" | "ranger" | "bard";
 export type BaseClass = "warrior" | "wizard" | "scout" | "herbalist";
 export const BASE_CLASSES: BaseClass[] = ["warrior", "wizard", "scout", "herbalist"];
-export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock", "priest", "paladin", "dark_knight", "blood_knight", "monk", "ranger"];
+export const ALL_CHARACTER_CLASSES: CharacterClass[] = ["warrior", "wizard", "scout", "herbalist", "warlock", "priest", "paladin", "dark_knight", "blood_knight", "monk", "ranger", "bard"];
 export const TANK_CLASSES: CharacterClass[] = ["warrior", "paladin", "dark_knight", "blood_knight", "monk"];
 export const HEALER_CLASSES: CharacterClass[] = ["herbalist", "priest", "paladin"];
 export type Gender = "A" | "B";
@@ -31,7 +31,7 @@ export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type EquipmentSlot = "weapon" | "headgear" | "armor";
 export type ItemType = "sword" | "wand" | "bow" | "staff" | "herbs" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
 export type ItemQuality = "common" | "rare" | "epic" | "legendary";
-export type WeaponType = "sword" | "staff" | "bow" | "herb" | "two-handed-sword" | "fist" | "claws";
+export type WeaponType = "sword" | "staff" | "bow" | "herb" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon";
 
 // Teachers table
 export const teachers = pgTable("teachers", {
@@ -532,6 +532,7 @@ export const WEAPON_RESTRICTIONS: Record<CharacterClass, WeaponType[]> = {
   blood_knight: ["two-handed-sword"],
   monk: ["fist", "claws"],
   ranger: ["bow"],
+  bard: ["harp", "spoon"],
 };
 
 // Equipment items database (single source of truth)
@@ -615,6 +616,15 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     stats: { agi: 1, str: 1 },
     classRestriction: ["monk"],
     weaponType: "fist",
+  },
+  basic_harp: {
+    id: "basic_harp",
+    name: "Basic Harp",
+    slot: "weapon",
+    rarity: "common",
+    stats: { rtk: 1 },
+    classRestriction: ["bard"],
+    weaponType: "harp",
   },
   
   // Common drops
@@ -796,6 +806,7 @@ export const CLASS_STATS: Record<CharacterClass, BaseJobStats> = {
   blood_knight: { baseHP: 20, str: 1, int: 2, vit: 1, role: "Tank/DPS - Lifesteal specialist" },
   monk: { baseHP: 11, vit: 1, str: 1, agi: 1, role: "Tank/DPS - Stance-based combo fighter" },
   ranger: { baseHP: 7, agi: 3, role: "DPS - Ranged damage with enhanced mobility" },
+  bard: { baseHP: 7, int: 1, mnd: 1, role: "Support/DPS - Song-based buffs and damage" },
 };
 
 // Complete character stats (all stats combined)
