@@ -64,56 +64,68 @@ export function BlockTargetSelectionModal({
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {protectablePlayers.map((player) => {
-              const isThreatLeader = player.studentId === threatLeaderId;
-              
-              return (
-                <Button
-                  key={player.studentId}
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-center gap-3 hover-elevate"
-                  onClick={() => onSelectTarget(player.studentId)}
-                  data-testid={`block-target-${player.studentId}`}
-                >
-                  <div className="relative">
-                    <PlayerAvatar
-                      characterClass={player.characterClass}
-                      gender={player.gender}
-                      size="md"
-                    />
-                    {isThreatLeader && (
-                      <Crown className="absolute -top-2 -right-2 h-6 w-6 text-yellow-500" />
-                    )}
-                  </div>
-                  
-                  <span className="font-semibold text-center">
-                    {player.nickname}
-                  </span>
-                  
-                  <span className="text-sm text-muted-foreground">
-                    {player.characterClass.charAt(0).toUpperCase() + player.characterClass.slice(1)}
-                  </span>
-                  
-                  <HealthBar
-                    current={player.health}
-                    max={player.maxHealth}
-                    className="w-full"
-                  />
-                  
-                  <span className="text-sm text-muted-foreground">
-                    {Math.round(player.health)} / {Math.round(player.maxHealth)} HP
-                  </span>
-                  
-                  {isThreatLeader && (
-                    <span className="text-xs font-semibold text-yellow-600">
-                      ⚠️ Threat Leader
+          {protectablePlayers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-12">
+              <Shield className="h-16 w-16 text-muted-foreground opacity-50" />
+              <p className="text-lg text-muted-foreground text-center">
+                No allies available to protect
+              </p>
+              <p className="text-sm text-muted-foreground text-center">
+                All other players may be unconscious or you're the only one left
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {protectablePlayers.map((player) => {
+                const isThreatLeader = player.studentId === threatLeaderId;
+                
+                return (
+                  <Button
+                    key={player.studentId}
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-3 hover-elevate"
+                    onClick={() => onSelectTarget(player.studentId)}
+                    data-testid={`block-target-${player.studentId}`}
+                  >
+                    <div className="relative">
+                      <PlayerAvatar
+                        characterClass={player.characterClass}
+                        gender={player.gender}
+                        size="md"
+                      />
+                      {isThreatLeader && (
+                        <Crown className="absolute -top-2 -right-2 h-6 w-6 text-yellow-500" />
+                      )}
+                    </div>
+                    
+                    <span className="font-semibold text-center">
+                      {player.nickname}
                     </span>
-                  )}
-                </Button>
-              );
-            })}
-          </div>
+                    
+                    <span className="text-sm text-muted-foreground">
+                      {player.characterClass.charAt(0).toUpperCase() + player.characterClass.slice(1)}
+                    </span>
+                    
+                    <HealthBar
+                      current={player.health}
+                      max={player.maxHealth}
+                      className="w-full"
+                    />
+                    
+                    <span className="text-sm text-muted-foreground">
+                      {Math.round(player.health)} / {Math.round(player.maxHealth)} HP
+                    </span>
+                    
+                    {isThreatLeader && (
+                      <span className="text-xs font-semibold text-yellow-600">
+                        ⚠️ Threat Leader
+                      </span>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
         </div>
         
         {/* Skip button (appears after minimum display time) */}

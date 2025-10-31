@@ -117,6 +117,9 @@ export default function Combat() {
   const [showNextQuestionModal, setShowNextQuestionModal] = useState(false);
   const [nextQuestionNumber, setNextQuestionNumber] = useState(0);
   const nextQuestionTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track if answer has been submitted to prevent double submissions
+  const hasSubmitted = useRef(false);
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
@@ -177,6 +180,7 @@ export default function Combat() {
         setSelectedAnswer("");
         setTimeRemaining(message.question.timeLimit);
         setUsedAbilityInPhase1(null); // Reset ability usage
+        hasSubmitted.current = false; // Reset submission flag for new question
         if (message.shuffleOptions !== undefined) {
           setShuffleOptions(message.shuffleOptions);
         }
@@ -330,11 +334,24 @@ export default function Combat() {
   }, [reconnectAttempts, connectWebSocket]);
 
   useEffect(() => {
-    if (timeRemaining > 0 && combatState?.currentPhase === "question") {
-      const timer = setTimeout(() => setTimeRemaining(timeRemaining - 1), 1000);
-      return () => clearTimeout(timer);
+    if (combatState?.currentPhase === "question") {
+      if (timeRemaining > 0) {
+        const timer = setTimeout(() => setTimeRemaining(timeRemaining - 1), 1000);
+        return () => clearTimeout(timer);
+      } else if (timeRemaining === 0 && !hasSubmitted.current) {
+        // Timer expired - auto-submit if not already submitted
+        hasSubmitted.current = true; // Mark as submitted to prevent duplicate
+        
+        if (ws) {
+          // Submit selected answer or empty string (counts as wrong)
+          ws.send(JSON.stringify({ 
+            type: "answer", 
+            answer: selectedAnswer || "" 
+          }));
+        }
+      }
     }
-  }, [timeRemaining, combatState?.currentPhase]);
+  }, [timeRemaining, combatState?.currentPhase, ws, selectedAnswer]);
 
   // Track ability usage and reset on phase changes
   useEffect(() => {
@@ -449,19 +466,19 @@ export default function Combat() {
       // Clear any existing timer
       if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
       
-      // Show current modal for 2 seconds, then advance to next
+      // Show current modal for 3 seconds (matching minimum display time), then advance to next
       modalSequenceTimer.current = setTimeout(() => {
         setCurrentModalIndex(prev => prev + 1);
-      }, 2000);
+      }, 3000);
     } else if (currentModalIndex === feedbackQueue.length && partyDamageData && !showPartyDamageModal) {
       // All individual modals shown, now show party damage modal
       setShowPartyDamageModal(true);
       
-      // Auto-hide party damage modal after 2 seconds
+      // Auto-hide party damage modal after 3 seconds
       if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
       modalSequenceTimer.current = setTimeout(() => {
         setShowPartyDamageModal(false);
-      }, 2000);
+      }, 3000);
     }
     
     return () => {
@@ -722,7 +739,8 @@ export default function Combat() {
   }, [currentQuestion]);
 
   const submitAnswer = () => {
-    if (ws && selectedAnswer && currentQuestion) {
+    if (ws && selectedAnswer && currentQuestion && !hasSubmitted.current) {
+      hasSubmitted.current = true; // Mark as submitted to prevent duplicate
       ws.send(JSON.stringify({ 
         type: "answer", 
         answer: selectedAnswer
