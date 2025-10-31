@@ -1203,13 +1203,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     abilitiesLastActivity.set(sessionId, Date.now());
     
     // Broadcast timer updates every second
-    const TOTAL_TIME = 5; // 5 seconds total
-    const INACTIVITY_TIMEOUT = 5000; // 5 seconds of inactivity
+    const TOTAL_TIME = 12; // 12 seconds total - gives time for both ability selection and target selection
+    const INACTIVITY_TIMEOUT = 12000; // 12 seconds of inactivity
     let timeRemaining = TOTAL_TIME;
     let phaseEnded = false; // Guard against duplicate processing
     let isCheckingSelections = false; // Guard against concurrent async checks
     
-    // Broadcast initial timer immediately (showing 5 seconds)
+    // Broadcast initial timer immediately (showing 12 seconds)
     broadcastToCombat(sessionId, { 
       type: "phase_timer", 
       phase: "abilities",
@@ -1248,7 +1248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lastActivity = abilitiesLastActivity.get(sessionId) || phaseStart;
       const timeSinceActivity = currentTime - lastActivity;
       
-      // End early if 5 seconds of inactivity
+      // End early if 12 seconds of inactivity
       if (timeSinceActivity >= INACTIVITY_TIMEOUT) {
         phaseEnded = true; // Set flag first to prevent concurrent execution
         clearInterval(timerInterval);
@@ -1258,7 +1258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           combatTimers.delete(sessionId);
         }
         abilitiesLastActivity.delete(sessionId); // Clean up activity tracker
-        log(`[Abilities] Session ${sessionId} ending early - 5 seconds of inactivity`, "combat");
+        log(`[Abilities] Session ${sessionId} ending early - 12 seconds of inactivity`, "combat");
         processAbilitySelections(sessionId); // Fire and forget, but phase is locked
         return;
       }
