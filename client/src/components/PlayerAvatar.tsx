@@ -22,6 +22,8 @@ import warlockMale from "@assets/generated_images/Warlock_male_character_sprite_
 import warlockFemale from "@assets/generated_images/Warlock_female_character_sprite_baea7862.png";
 import rangerMale from "@assets/generated_images/Ranger_male_character_sprite_83d84a5a.png";
 import rangerFemale from "@assets/generated_images/Ranger_female_character_sprite_e862ef10.png";
+import bardMale from "@assets/generated_images/Bard_male_character_sprite_eb6469bc.png";
+import bardFemale from "@assets/generated_images/Bard_female_character_sprite_14b09f07.png";
 
 interface PlayerAvatarProps {
   characterClass: CharacterClass;
