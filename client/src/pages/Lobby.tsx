@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, BASE_CLASSES, ALL_CHARACTER_CLASSES, WEAPON_RESTRICTIONS } from "@shared/schema";
-import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy, Lock, X, Filter } from "lucide-react";
+import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy, Lock, X, Filter, ShoppingBag } from "lucide-react";
 import { JOB_ABILITY_SLOTS, ABILITY_DISPLAYS, type AbilityClass } from "@shared/abilityUI";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -449,6 +449,12 @@ export default function Lobby() {
               <Button variant="outline" data-testid="button-my-guilds">
                 <Users className="mr-2 h-4 w-4" />
                 My Guilds
+              </Button>
+            </Link>
+            <Link href="/student/shop">
+              <Button variant="outline" data-testid="button-guild-shop">
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                Guild Shop
               </Button>
             </Link>
             <Link href={`/student/${studentId}/stats`}>

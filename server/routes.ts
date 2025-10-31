@@ -268,6 +268,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(items);
   });
 
+  // Get all purchasable items for guild shop (scoped to student's guild/teacher)
+  app.get("/api/equipment-items/shop", async (req, res) => {
+    const studentId = req.query.studentId as string;
+    
+    if (!studentId) {
+      return res.status(400).json({ error: "Student ID is required" });
+    }
+
+    // Get student's guild to determine teacher ownership
+    const student = await storage.getStudent(studentId);
+    if (!student || !student.guildId) {
+      return res.json([]); // Return empty if not in guild
+    }
+
+    const guild = await storage.getGuild(student.guildId);
+    if (!guild) {
+      return res.json([]);
+    }
+
+    // Only return items owned by the guild's teacher
+    const allPurchasableItems = await storage.getAllPurchasableEquipment();
+    const guildItems = allPurchasableItems.filter(
+      item => item.teacherId === guild.teacherId
+    );
+
+    res.json(guildItems);
+  });
+
+  // Purchase item from guild shop (with tier restriction validation)
+  app.post("/api/student/:id/purchase-item", async (req, res) => {
+    const { itemId, price } = req.body;
+    const studentId = req.params.id;
+
+    if (!itemId || !price || !studentId) {
+      return res.status(400).json({ error: "Student ID, item ID, and price are required" });
+    }
+
+    try {
+      // Validate student exists and has enough gold
+      const student = await storage.getStudent(studentId);
+      if (!student) {
+        return res.status(404).json({ error: "Student not found" });
+      }
+
+      // Validate student is in a guild
+      if (!student.guildId) {
+        return res.status(403).json({ error: "Must be in a guild to purchase items" });
+      }
+
+      if ((student.gold || 0) < price) {
+        return res.status(400).json({ error: "Not enough gold" });
+      }
+
+      // Validate item exists and is purchasable
+      const item = await storage.getEquipmentItem(itemId);
+      if (!item || !item.isPurchasable || item.shopPrice === null) {
+        return res.status(404).json({ error: "Item not available for purchase" });
+      }
+
+      // Validate price matches (prevent price manipulation)
+      if (item.shopPrice !== price) {
+        return res.status(400).json({ error: "Invalid price" });
+      }
+
+      // Validate guild ownership (prevent cross-guild purchases)
+      const guild = await storage.getGuild(student.guildId);
+      if (!guild || item.teacherId !== guild.teacherId) {
+        return res.status(403).json({ error: "Item not available in your guild shop" });
+      }
+
+      // Calculate unlocked tier from completed guild quests
+      const guildQuests = await storage.getQuestsByGuild(student.guildId);
+      const unlockedTier = guildQuests
+        .filter((q) => q.questType === "guild" && q.completedAt && q.rewards?.unlockTier)
+        .reduce((max, q) => Math.max(max, q.rewards?.unlockTier || 0), 1);
+
+      // Validate tier restriction (prevent purchasing locked tier items)
+      if (item.tier > unlockedTier) {
+        return res.status(403).json({ 
+          error: `This item requires Guild Tier ${item.tier}. Your guild has unlocked Tier ${unlockedTier}.` 
+        });
+      }
+
+      // Deduct gold
+      await storage.addGoldToStudent(studentId, -price);
+
+      // Add item to inventory
+      const currentInventory = student.inventory || [];
+      if (!currentInventory.includes(itemId)) {
+        await storage.updateStudent(studentId, {
+          inventory: [...currentInventory, itemId],
+        });
+      }
+
+      res.json({ success: true, goldRemaining: (student.gold || 0) - price });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to purchase item" });
+    }
+  });
+
   // Guild endpoints
   // Get all guilds for a teacher
   app.get("/api/teacher/:teacherId/guilds", async (req, res) => {

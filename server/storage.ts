@@ -73,6 +73,7 @@ export interface IStorage {
   getEquipmentItem(id: string): Promise<EquipmentItemDb | undefined>;
   getEquipmentItemsByIds(ids: string[]): Promise<EquipmentItemDb[]>;
   getEquipmentItemsByTeacher(teacherId: string): Promise<EquipmentItemDb[]>;
+  getAllPurchasableEquipment(): Promise<EquipmentItemDb[]>;
   createEquipmentItem(item: InsertEquipmentItem): Promise<EquipmentItemDb>;
   updateEquipmentItem(id: string, updates: Partial<EquipmentItemDb>): Promise<EquipmentItemDb | undefined>;
   deleteEquipmentItem(id: string): Promise<boolean>;
@@ -719,6 +720,18 @@ export class DatabaseStorage implements IStorage {
         or(
           eq(equipmentItems.teacherId, teacherId),
           eq(equipmentItems.teacherId, 'SYSTEM')
+        )
+      );
+  }
+
+  async getAllPurchasableEquipment(): Promise<EquipmentItemDb[]> {
+    return await db
+      .select()
+      .from(equipmentItems)
+      .where(
+        and(
+          eq(equipmentItems.isPurchasable, true),
+          sql`${equipmentItems.shopPrice} IS NOT NULL`
         )
       );
   }

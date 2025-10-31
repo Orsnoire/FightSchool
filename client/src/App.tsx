@@ -24,6 +24,7 @@ import StudentGuildLobby from "@/pages/StudentGuildLobby";
 import GuildRoster from "@/pages/GuildRoster";
 import GuildLeaderboard from "@/pages/GuildLeaderboard";
 import GuildFights from "@/pages/GuildFights";
+import GuildShop from "@/pages/GuildShop";
 
 function Router() {
   return (
@@ -44,6 +45,7 @@ function Router() {
       </Route>
       <Route path="/student/character-select" component={CharacterSelect} />
       <Route path="/student/equipment" component={StudentEquipment} />
+      <Route path="/student/shop" component={GuildShop} />
       <Route path="/student/lobby" component={Lobby} />
       <Route path="/student/guilds" component={StudentGuilds} />
       <Route path="/student/guild/:id" component={StudentGuildDetail} />

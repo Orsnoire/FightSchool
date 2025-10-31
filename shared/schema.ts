@@ -64,6 +64,7 @@ export const students = pgTable("students", {
   nickname: text("nickname").notNull(),
   password: text("password").notNull(),
   guildCode: text("guild_code"), // Future: student's assigned guild/class
+  guildId: text("guild_id"), // References guilds table
   characterClass: text("character_class").$type<CharacterClass>(),
   gender: text("gender").$type<Gender>(),
   weapon: text("weapon"),
@@ -72,6 +73,7 @@ export const students = pgTable("students", {
   crossClassAbility1: text("cross_class_ability_1"),
   crossClassAbility2: text("cross_class_ability_2"),
   inventory: jsonb("inventory").$type<string[]>(), // Array of equipment item IDs, starts null
+  gold: integer("gold").notNull().default(0), // Guild shop currency
 });
 
 export const insertStudentSchema = createInsertSchema(students).omit({
