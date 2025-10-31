@@ -8,13 +8,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, BASE_CLASSES, ALL_CHARACTER_CLASSES, WEAPON_RESTRICTIONS } from "@shared/schema";
-import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy, Lock } from "lucide-react";
-import { JOB_ABILITY_SLOTS, ABILITY_DISPLAYS } from "@shared/abilityUI";
+import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy, Lock, X, Filter } from "lucide-react";
+import { JOB_ABILITY_SLOTS, ABILITY_DISPLAYS, type AbilityClass } from "@shared/abilityUI";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { getTotalPassiveBonuses, getTotalMechanicUpgrades, getCrossClassAbilities, getUnlockedJobs } from "@shared/jobSystem";
+import { getTotalPassiveBonuses, getTotalMechanicUpgrades, getCrossClassAbilities, getUnlockedJobs, type Ability } from "@shared/jobSystem";
 import { calculateCharacterStats } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
+import { DndContext, DragEndEvent, DragStartEvent, useDraggable, useDroppable, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 const RARITY_COLORS = {
   common: "border-gray-400",
@@ -22,6 +25,132 @@ const RARITY_COLORS = {
   epic: "border-purple-500",
   legendary: "border-yellow-500",
 };
+
+// Ability icon components for drag-and-drop
+function AbilityIcon({ ability, isDragging = false }: { ability: Ability; isDragging?: boolean }) {
+  const abilityDisplay = ABILITY_DISPLAYS[ability.id];
+  if (!abilityDisplay) return null;
+
+  const Icon = abilityDisplay.icon === "Sparkles" ? Sparkles :
+    abilityDisplay.icon === "Shield" ? Shield :
+    abilityDisplay.icon === "Heart" ? Heart :
+    abilityDisplay.icon === "Flame" ? Sparkles : // Placeholder
+    Sparkles; // Default
+
+  return (
+    <div className={`p-2 rounded-md bg-primary/20 flex items-center justify-center ${isDragging ? "opacity-50" : ""}`}>
+      <Icon className="h-8 w-8 text-primary" />
+    </div>
+  );
+}
+
+function DraggableAbility({ ability }: { ability: Ability }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `ability-${ability.id}`,
+    data: { ability },
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                ref={setNodeRef}
+                style={style}
+                {...listeners}
+                {...attributes}
+                className="cursor-grab active:cursor-grabbing"
+                data-testid={`draggable-ability-${ability.id}`}
+              >
+                <AbilityIcon ability={ability} isDragging={isDragging} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p className="font-semibold">{ability.name}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={() => {}} disabled>
+          <div className="max-w-xs">
+            <p className="font-semibold">{ability.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">{ability.description}</p>
+          </div>
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
+function AbilitySlot({
+  slotNumber,
+  equippedAbility,
+  isLocked,
+  onRemove,
+  onEquipFromMenu,
+}: {
+  slotNumber: 1 | 2;
+  equippedAbility?: Ability;
+  isLocked: boolean;
+  onRemove: () => void;
+  onEquipFromMenu: (ability: Ability) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `slot-${slotNumber}`,
+  });
+
+  const abilityDisplay = equippedAbility ? ABILITY_DISPLAYS[equippedAbility.id] : null;
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 border-2 rounded-md p-3 min-h-[120px] transition-all ${
+        isOver ? "border-primary bg-primary/10 shadow-lg" : "border-border bg-card"
+      }`}
+      data-testid={`ability-slot-${slotNumber}`}
+    >
+      {isLocked ? (
+        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+          <Lock className="h-8 w-8 mb-2" />
+          <p className="text-xs text-center">Locked</p>
+        </div>
+      ) : equippedAbility && abilityDisplay ? (
+        <div className="relative h-full flex flex-col">
+          <button
+            onClick={onRemove}
+            className="absolute -top-2 -left-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover-elevate active-elevate-2 z-10"
+            data-testid={`button-remove-ability-${slotNumber}`}
+          >
+            <X className="h-3 w-3" />
+          </button>
+          <div className="flex items-start gap-2">
+            <AbilityIcon ability={equippedAbility} />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm">{equippedAbility.name}</p>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {equippedAbility.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+          <div className="p-2 rounded-md border-2 border-dashed border-muted-foreground/30 mb-2">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <p className="text-xs text-center">Drag ability here</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Lobby() {
   const [, navigate] = useLocation();
@@ -34,7 +163,24 @@ export default function Lobby() {
   const [showGuildDialog, setShowGuildDialog] = useState(false);
   const [soloFightId, setSoloFightId] = useState("");
   const [isHostingSolo, setIsHostingSolo] = useState(false);
+  const [draggedAbility, setDraggedAbility] = useState<Ability | null>(null);
+  const [abilityFilter, setAbilityFilter] = useState<"all" | "healing" | "spell" | "physical" | "ultimate">("all");
   const studentId = localStorage.getItem("studentId");
+  
+  // Drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
 
   useEffect(() => {
     const loadStudent = async () => {
@@ -189,18 +335,19 @@ export default function Lobby() {
     }
   };
 
-  const updateCrossClassAbility = async (abilityId: string | null) => {
+  const updateCrossClassAbility = async (slotNumber: 1 | 2, abilityId: string | null) => {
     try {
       const studentId = localStorage.getItem("studentId");
+      const field = slotNumber === 1 ? "crossClassAbility1" : "crossClassAbility2";
       const response = await fetch(`/api/student/${studentId}/equipment`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ crossClassAbility1: abilityId }),
+        body: JSON.stringify({ [field]: abilityId }),
       });
 
       if (response.ok) {
         setStudent(await response.json());
-        toast({ title: abilityId ? "Cross-class ability equipped!" : "Cross-class ability removed!" });
+        toast({ title: abilityId ? `Cross-class ability equipped to slot ${slotNumber}!` : "Cross-class ability removed!" });
       } else {
         let errorMessage = "Please try again";
         try {
@@ -221,6 +368,28 @@ export default function Lobby() {
         description: "Failed to connect to server",
         variant: "destructive" 
       });
+    }
+  };
+
+  // Drag-and-drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const ability = event.active.data.current?.ability as Ability;
+    setDraggedAbility(ability);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggedAbility(null);
+
+    if (!over) return;
+
+    const ability = active.data.current?.ability as Ability;
+    const slotId = over.id as string;
+
+    if (slotId === "slot-1") {
+      updateCrossClassAbility(1, ability.id);
+    } else if (slotId === "slot-2") {
+      updateCrossClassAbility(2, ability.id);
     }
   };
 
@@ -727,15 +896,15 @@ export default function Lobby() {
               </CardContent>
             </Card>
 
-            {/* Cross-Class Ability */}
+            {/* Cross-Class Abilities */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" />
-                  Cross-Class Ability
+                  Cross-Class Abilities
                 </CardTitle>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Equip one ability from another class you've leveled up
+                  Equip up to 2 abilities from other classes you've leveled up
                 </p>
               </CardHeader>
               <CardContent>
@@ -743,7 +912,7 @@ export default function Lobby() {
                   // Create job level map
                   const jobLevelMap: Record<CharacterClass, number> = {
                     warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0,
+                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0, ranger: 0,
                   };
                   jobLevels.forEach(jl => {
                     jobLevelMap[jl.jobClass] = jl.level;
@@ -762,63 +931,138 @@ export default function Lobby() {
                     );
                   }
 
-                  const equippedAbility = availableAbilities.find(a => a.id === student?.crossClassAbility1);
+                  const equippedAbility1 = availableAbilities.find(a => a.id === student?.crossClassAbility1);
+                  const equippedAbility2 = availableAbilities.find(a => a.id === student?.crossClassAbility2);
+                  
+                  // Slot 2 is locked until level 30
+                  const currentLevel = jobLevels.find(jl => jl.jobClass === student?.characterClass)?.level || 0;
+                  const slot2Locked = currentLevel < 30;
+
+                  // Filter abilities based on selected filter
+                  const filteredAbilities = abilityFilter === "all" 
+                    ? availableAbilities
+                    : availableAbilities.filter(ability => {
+                        const display = ABILITY_DISPLAYS[ability.id];
+                        if (!display || !display.abilityClass) return false;
+                        // Check if the ability has the selected filter in its abilityClass array
+                        return display.abilityClass.includes(abilityFilter);
+                      });
 
                   return (
-                    <div className="space-y-4">
-                      {/* Currently Equipped */}
-                      {equippedAbility && (
-                        <div className="p-3 border-2 border-primary rounded-md bg-primary/5">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="font-semibold text-sm flex items-center gap-1">
-                                <Sparkles className="h-3 w-3" />
-                                {equippedAbility.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {equippedAbility.description}
-                              </p>
-                            </div>
+                    <DndContext
+                      sensors={sensors}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <div className="space-y-4">
+                        {/* Equipment Slots */}
+                        <div className="flex gap-3">
+                          <AbilitySlot
+                            slotNumber={1}
+                            equippedAbility={equippedAbility1}
+                            isLocked={false}
+                            onRemove={() => updateCrossClassAbility(1, null)}
+                            onEquipFromMenu={(ability) => updateCrossClassAbility(1, ability.id)}
+                          />
+                          <AbilitySlot
+                            slotNumber={2}
+                            equippedAbility={equippedAbility2}
+                            isLocked={slot2Locked}
+                            onRemove={() => updateCrossClassAbility(2, null)}
+                            onEquipFromMenu={(ability) => updateCrossClassAbility(2, ability.id)}
+                          />
+                        </div>
+
+                        {/* Filter */}
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex flex-wrap gap-2">
                             <Button
                               size="sm"
-                              variant="ghost"
-                              onClick={() => updateCrossClassAbility(null)}
-                              data-testid="button-unequip-ability"
+                              variant={abilityFilter === "all" ? "default" : "outline"}
+                              onClick={() => setAbilityFilter("all")}
+                              data-testid="filter-all"
                             >
-                              Remove
+                              All
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={abilityFilter === "healing" ? "default" : "outline"}
+                              onClick={() => setAbilityFilter("healing")}
+                              data-testid="filter-healing"
+                            >
+                              Healing
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={abilityFilter === "spell" ? "default" : "outline"}
+                              onClick={() => setAbilityFilter("spell")}
+                              data-testid="filter-spell"
+                            >
+                              Spell
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={abilityFilter === "physical" ? "default" : "outline"}
+                              onClick={() => setAbilityFilter("physical")}
+                              data-testid="filter-physical"
+                            >
+                              Physical
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={abilityFilter === "ultimate" ? "default" : "outline"}
+                              onClick={() => setAbilityFilter("ultimate")}
+                              data-testid="filter-ultimate"
+                            >
+                              Ultimate
                             </Button>
                           </div>
                         </div>
-                      )}
 
-                      {/* Available Abilities */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">Available Abilities:</p>
-                        <div className="grid gap-2">
-                          {availableAbilities.map((ability) => {
-                            const isEquipped = ability.id === student?.crossClassAbility1;
-                            
-                            return (
-                              <Card
-                                key={ability.id}
-                                className={`cursor-pointer hover-elevate ${
-                                  isEquipped ? "ring-2 ring-primary opacity-50" : ""
-                                }`}
-                                onClick={() => !isEquipped && updateCrossClassAbility(ability.id)}
-                                data-testid={`ability-${ability.id}`}
-                              >
-                                <CardContent className="p-3">
-                                  <p className="font-semibold text-sm">{ability.name}</p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {ability.description}
-                                  </p>
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
+                        {/* Ability Grid */}
+                        <div className="border-2 border-border rounded-md p-4 bg-muted/20 min-h-[200px]">
+                          {filteredAbilities.length === 0 ? (
+                            <div className="flex items-center justify-center h-[150px] text-muted-foreground">
+                              <p className="text-sm">No abilities in this category</p>
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                              {filteredAbilities.map((ability) => (
+                                <DraggableAbility key={ability.id} ability={ability} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Instructions */}
+                        <div className="text-xs text-muted-foreground space-y-1 p-3 bg-muted/20 rounded-md">
+                          <p className="flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            <strong>Drag & Drop:</strong> Drag ability icons to equipment slots
+                          </p>
+                          <p className="flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            <strong>Hover:</strong> See ability name on hover
+                          </p>
+                          <p className="flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" />
+                            <strong>Right-click/Long-press:</strong> View full ability description
+                          </p>
+                          {slot2Locked && (
+                            <p className="flex items-center gap-1 text-primary">
+                              <Lock className="h-3 w-3" />
+                              <strong>Slot 2 unlocks at level 30</strong>
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </div>
+
+                      {/* Drag Overlay */}
+                      <DragOverlay>
+                        {draggedAbility && <AbilityIcon ability={draggedAbility} isDragging={true} />}
+                      </DragOverlay>
+                    </DndContext>
                   );
                 })()}
               </CardContent>
