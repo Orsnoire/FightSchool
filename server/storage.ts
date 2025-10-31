@@ -1007,10 +1007,11 @@ export class DatabaseStorage implements IStorage {
 
   async seedTestCombatSession(): Promise<void> {
     try {
-      // Check if session already exists
+      // Delete existing session if it exists to ensure fresh test session with latest config
       const existing = await this.getCombatSession('ABC123');
       if (existing) {
-        return; // Already seeded
+        await db.delete(combatSessions).where(eq(combatSessions.sessionId, 'ABC123'));
+        console.log('Deleted old test combat session ABC123');
       }
 
       // Get the test fight
