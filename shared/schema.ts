@@ -420,6 +420,8 @@ export interface PlayerState {
   isDead: boolean;
   currentAnswer?: string;
   hasAnswered: boolean;
+  answeredCurrentQuestionCorrectly: boolean; // Track if the current question was answered correctly (for abilities phase eligibility)
+  hasSelectedAbility: boolean; // Track if student has already selected an ability this phase (prevents modal from reopening)
   isHealing: boolean;
   healTarget?: string; // Student ID to heal
   blockTarget?: string; // Student ID to block (for tanks)

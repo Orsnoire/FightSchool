@@ -1103,6 +1103,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       player.hasAnswered = false;
       player.currentAnswer = undefined;
+      player.answeredCurrentQuestionCorrectly = false; // Reset for new question
+      player.hasSelectedAbility = false; // Reset ability selection for new question
       player.isHealing = false;
       player.healTarget = undefined;
       player.blockTarget = undefined;
@@ -1143,6 +1145,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const phaseStart = Date.now();
     const session = await storage.getCombatSession(sessionId);
     if (!session) return;
+
+    // Validate answers BEFORE starting abilities phase to determine eligibility
+    const fight = await storage.getFight(session.fightId);
+    if (fight) {
+      const actualQuestionIndex = session.questionOrder 
+        ? session.questionOrder[session.currentQuestionIndex] 
+        : session.currentQuestionIndex;
+      const question = fight.questions[actualQuestionIndex];
+      
+      if (question) {
+        // Check each player's answer and mark correctness
+        for (const [playerId, player] of Object.entries(session.players)) {
+          if (player.isDead) continue;
+          
+          // Only validate if they actually answered
+          if (player.hasAnswered && player.currentAnswer) {
+            const isCorrect = player.currentAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
+            player.answeredCurrentQuestionCorrectly = isCorrect;
+            log(`[Abilities] Player ${player.nickname} answer validation: ${isCorrect ? "CORRECT" : "INCORRECT"}`, "combat");
+          } else {
+            // Didn't answer - not eligible for abilities
+            player.answeredCurrentQuestionCorrectly = false;
+            log(`[Abilities] Player ${player.nickname} did not answer - no abilities modal`, "combat");
+          }
+        }
+        
+        // Save answer validation results
+        await storage.updateCombatSession(sessionId, { players: session.players });
+      }
+    }
 
     // Calculate threat leader (happens at end of Question Phase, before abilities)
     let highestThreat = 0;
@@ -2837,6 +2869,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
               targetId: undefined,
               targetType: undefined,
             },
+            hasSelectedAbility: true, // Mark that player has selected an ability
+          });
+          
+          const updatedSession = await storage.getCombatSession(ws.sessionId);
+          broadcastToCombat(ws.sessionId, { type: "combat_state", state: updatedSession });
+        } else if (message.type === "base_damage_selected" && ws.studentId && ws.sessionId) {
+          const session = await storage.getCombatSession(ws.sessionId);
+          if (!session) return;
+          
+          const player = session.players[ws.studentId];
+          if (!player || player.isDead) {
+            log(`[WebSocket] Ignoring base_damage_selected from dead/missing player ${ws.studentId}`, "websocket");
+            return;
+          }
+          
+          // Update abilities phase activity tracker
+          if (session.currentPhase === "abilities") {
+            abilitiesLastActivity.set(ws.sessionId, Date.now());
+          }
+          
+          // Mark that player has made their selection (choosing base damage)
+          await storage.updatePlayerState(ws.sessionId, ws.studentId, {
+            hasSelectedAbility: true,
           });
           
           const updatedSession = await storage.getCombatSession(ws.sessionId);

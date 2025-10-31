@@ -438,6 +438,8 @@ export class DatabaseStorage implements IStorage {
       
       isDead: false,
       hasAnswered: false,
+      answeredCurrentQuestionCorrectly: false,
+      hasSelectedAbility: false,
       isHealing: false,
       potionCount: student.characterClass === 'herbalist' ? 5 : 0,
       isCreatingPotion: false,

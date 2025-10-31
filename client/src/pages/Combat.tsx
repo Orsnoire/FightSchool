@@ -396,7 +396,7 @@ export default function Combat() {
     return false;
   };
   
-  // Show ability selection modal when abilities phase starts
+  // Show ability selection modal when abilities phase starts (ONLY for correct answers)
   useEffect(() => {
     if (!combatState) return;
     
@@ -404,10 +404,18 @@ export default function Combat() {
     const currentPlayer = studentId ? combatState.players[studentId] : null;
     
     if (combatState.currentPhase === "abilities" && currentPlayer && !currentPlayer.isDead) {
-      setShowAbilityModal(true);
-      setSelectedAbility(null);
-      setShowTargetModal(false);
-      // Don't show block target modal yet - wait until ability modal is handled
+      // Only show modal if:
+      // 1. Player answered the current question correctly
+      // 2. Player hasn't already selected an ability this phase
+      if (currentPlayer.answeredCurrentQuestionCorrectly && !currentPlayer.hasSelectedAbility) {
+        setShowAbilityModal(true);
+        setSelectedAbility(null);
+        setShowTargetModal(false);
+        // Don't show block target modal yet - wait until ability modal is handled
+      } else {
+        // Either answered incorrectly or already selected - don't show modal
+        setShowAbilityModal(false);
+      }
     } else {
       setShowAbilityModal(false);
       setShowTargetModal(false);
@@ -781,6 +789,13 @@ export default function Combat() {
 
   const handleBaseDamageSelected = () => {
     setShowAbilityModal(false);
+    
+    // Send message to server marking that base damage was selected
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: "base_damage_selected",
+      }));
+    }
     
     // Check if player has block passive and show block target modal
     const studentId = localStorage.getItem("studentId");
