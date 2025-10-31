@@ -1604,8 +1604,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Deal damage to enemy using new stat-based calculations
           let damage = 0;
           let mpCost = 0;
+          let usedAbility = false;
+          let abilityName = "";
           
-          if (player.characterClass === "wizard") {
+          // CHECK FOR PENDING ABILITY FIRST - abilities selected during abilities phase
+          if (player.pendingAction && player.pendingAction.abilityId && player.pendingAction.abilityId !== "base_attack") {
+            usedAbility = true;
+            const abilityId = player.pendingAction.abilityId;
+            
+            // Calculate damage based on specific ability
+            switch (abilityId) {
+              case "crushing_blow":
+                // Warrior: Crushing Blow - Deals (ATK+STR)*1.5 massive damage, adds threat
+                damage = Math.floor((player.atk + player.str) * 1.5);
+                abilityName = "Crushing Blow";
+                // +1 threat from all enemies (simplified: add extra threat)
+                player.threat += session.enemies.length;
+                break;
+                
+              case "aim":
+                // Scout: Aim - (RTK+AGI)*2, costs 1 combo point
+                if (player.comboPoints >= 1 && player.characterClass === "scout") {
+                  damage = (player.rtk + player.agi) * 2;
+                  player.comboPoints -= 1; // Consume 1 combo point
+                  abilityName = "Aim";
+                  // Scouts gain 1 combo point on correct answer (handled below after damage calc)
+                } else {
+                  // Not enough combo points - fall back to base damage
+                  usedAbility = false;
+                }
+                break;
+                
+              case "headshot":
+                // Scout: Headshot - RTK*ComboPoints*AGI, costs 3 combo points
+                if (player.comboPoints >= 3 && player.characterClass === "scout") {
+                  damage = player.rtk * player.comboPoints * player.agi;
+                  player.comboPoints -= 3; // Consume 3 combo points
+                  abilityName = "Headshot";
+                  // Scouts gain 1 combo point on correct answer (handled below after damage calc)
+                } else {
+                  // Not enough combo points - fall back to base damage
+                  usedAbility = false;
+                }
+                break;
+                
+              case "fireblast":
+                // Wizard: Fireblast - INT*(MP spent)*3, costs all MP
+                if (player.mp > 0) {
+                  const mpSpent = player.mp;
+                  damage = player.int * mpSpent * 3;
+                  player.mp = 0;
+                  abilityName = "Fireblast";
+                } else {
+                  // No MP - fall back to base damage
+                  usedAbility = false;
+                }
+                break;
+                
+              default:
+                // Unknown ability or not implemented yet - fall back to base damage
+                usedAbility = false;
+                break;
+            }
+          }
+          
+          // If no ability was used or ability failed, use class-based damage calculation
+          if (!usedAbility) {
+            if (player.characterClass === "wizard") {
             // Wizard: Magical damage using MAT + INT
             const wizardLevel = player.jobLevels.wizard || 0;
             const maxChargeRounds = getFireballMaxChargeRounds(wizardLevel);
@@ -1650,15 +1715,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               damage = 0;
             }
           } else if (player.characterClass === "scout") {
-            // Scout: Ranged damage using RTK + AGI, with combo point system
+            // Scout: Ranged damage using RTK + AGI
             damage = calculateRangedDamage(player.rtk, player.agi);
-            
-            // Fill combo points on correct answer (up to max)
-            const newComboPoints = Math.min(player.maxComboPoints, player.comboPoints + 1);
-            player.comboPoints = newComboPoints;
-            
-            // Keep streakCounter in sync for backward compat
-            player.streakCounter = newComboPoints;
+            // Combo points are gained below, outside the ability check
           } else if (player.characterClass === "warrior") {
             // Warrior: Physical damage using ATK + STR
             damage = calculatePhysicalDamage(player.atk, player.str);
@@ -1774,6 +1833,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Other classes: use physical damage as default
             damage = calculatePhysicalDamage(player.atk, player.str);
           }
+          } // End of if (!usedAbility) block
+          
+          // SCOUT COMBO POINT SYSTEM: Always gain 1 combo point on correct answer (even if ability was used)
+          if (player.characterClass === "scout") {
+            const newComboPoints = Math.min(player.maxComboPoints, player.comboPoints + 1);
+            player.comboPoints = newComboPoints;
+            player.streakCounter = newComboPoints; // Keep in sync for backward compat
+          }
           
           // HEALING MECHANIC: If player chose to heal, they deal no damage this turn
           // This covers single-target heals, AoE heals, and self-heals
@@ -1797,14 +1864,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const currentDamage = enemyDamageMap.get(enemy.id) || 0;
             enemyDamageMap.set(enemy.id, currentDamage + damage);
             
-            // Add feedback for correct answer with base damage
+            // Add feedback for correct answer - use "correct_ability" if ability was used
             if (!playerFeedback.has(playerId)) {
               playerFeedback.set(playerId, []);
             }
             playerFeedback.get(playerId)!.push({
-              type: "correct_damage",
+              type: usedAbility ? "correct_ability" : "correct_damage",
               damage: damage,
               enemyName: enemyName,
+              abilityName: usedAbility ? abilityName : undefined,
             });
             
             // AGGRO SYSTEM: Add threat based on damage dealt
@@ -1828,6 +1896,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 targetName: enemyName,
               });
             }
+          }
+          
+          // Clear pending action after processing (whether ability succeeded or fell back to base damage)
+          if (player.pendingAction && player.pendingAction.abilityId && player.pendingAction.abilityId !== "base_attack") {
+            player.pendingAction = undefined;
           }
         }
       } else {
