@@ -465,7 +465,7 @@ export default function Combat() {
 
   // Modal sequencing system - show modals one by one every 2 seconds
   useEffect(() => {
-    if (feedbackQueue.length === 0 || combatState?.currentPhase !== "question_resolution") {
+    if (feedbackQueue.length === 0) {
       return;
     }
     
@@ -492,7 +492,7 @@ export default function Combat() {
     return () => {
       if (modalSequenceTimer.current) clearTimeout(modalSequenceTimer.current);
     };
-  }, [feedbackQueue, currentModalIndex, partyDamageData, showPartyDamageModal, combatState?.currentPhase]);
+  }, [feedbackQueue, currentModalIndex, partyDamageData, showPartyDamageModal]);
 
   // Enemy AI attack modal sequencing
   useEffect(() => {
@@ -1588,7 +1588,7 @@ export default function Combat() {
       )}
 
       {/* Resolution Feedback Modal - individual player feedback */}
-      {feedbackQueue.length > 0 && currentModalIndex < feedbackQueue.length && combatState?.currentPhase === "question_resolution" && (
+      {feedbackQueue.length > 0 && currentModalIndex < feedbackQueue.length && (
         <CombatFeedbackModal
           open={true}
           feedback={feedbackQueue[currentModalIndex]}
