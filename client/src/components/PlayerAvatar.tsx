@@ -46,6 +46,7 @@ const CHARACTER_IMAGES: Record<CharacterClass, Record<Gender, string>> = {
   blood_knight: { A: bloodKnightMale, B: bloodKnightFemale },
   monk: { A: monkMale, B: monkFemale },
   ranger: { A: rangerMale, B: rangerFemale },
+  bard: { A: bardMale, B: bardFemale },
 };
 
 const SIZE_CLASSES = {
