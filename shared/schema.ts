@@ -1071,7 +1071,7 @@ export function calculateSoloModeEnemyScaling(
   }
   
   return {
-    enemyHP: Math.ceil(enemyHP),
+    enemyHP: Math.floor(enemyHP),
     enemyDamageCap: enemyDamageCap
   };
 }

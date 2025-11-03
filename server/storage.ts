@@ -681,8 +681,8 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    // Add XP
-    const newTotalXP = jobLevel.experience + xpAmount;
+    // Add XP and cap at 999 to prevent overflow on victory screen
+    const newTotalXP = Math.min(jobLevel.experience + xpAmount, 999);
     const oldLevel = jobLevel.level;
     const newLevel = calculateNewLevel(oldLevel, newTotalXP);
     const leveledUp = newLevel > oldLevel;

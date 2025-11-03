@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
 import { insertFightSchema, insertCombatStatSchema, insertEquipmentItemSchema, type Question, getStartingEquipment, type CharacterClass, type PlayerState, type LootItem, getPlayerCombatStats, calculatePhysicalDamage, calculateMagicalDamage, calculateRangedDamage, calculateHybridDamage, calculateDamageReduction, calculatePlayerBaseDamage, calculateSoloModeEnemyScaling, TANK_CLASSES, HEALER_CLASSES, type CombatState, type ResolutionFeedback, type PartyDamageData, type EnemyAIAttackData, calculateGoldReward } from "@shared/schema";
 import { log } from "./vite";
-import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower } from "@shared/jobSystem";
+import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower, getUnlockedJobs } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
 import { ABILITY_DISPLAYS } from "@shared/abilityUI";
 
@@ -705,6 +705,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/student/:id/character", async (req, res) => {
     const { characterClass, gender } = req.body;
+    
+    // Get student's job levels to check if they have unlocked this job
+    const jobLevels = await storage.getStudentJobLevels(req.params.id);
+    const jobLevelMap = jobLevels.reduce((acc, jl) => {
+      acc[jl.jobClass] = jl.level;
+      return acc;
+    }, {} as Record<CharacterClass, number>);
+    
+    // Check if the requested job is unlocked
+    const unlockedJobs = getUnlockedJobs(jobLevelMap);
+    if (!unlockedJobs.includes(characterClass)) {
+      return res.status(400).json({ error: "This job is not yet unlocked. You need to level up prerequisite jobs first." });
+    }
+    
     const student = await storage.updateStudent(req.params.id, { characterClass, gender });
     if (!student) return res.status(404).json({ error: "Student not found" });
     
@@ -1393,8 +1407,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     abilitiesLastActivity.set(sessionId, Date.now());
     
     // Broadcast timer updates every second
-    const TOTAL_TIME = 12; // 12 seconds total - gives time for both ability selection and target selection
-    const INACTIVITY_TIMEOUT = 12000; // 12 seconds of inactivity
+    const TOTAL_TIME = 15; // 15 seconds total - gives time for both ability selection and target selection (increased for lag with many students)
+    const INACTIVITY_TIMEOUT = 15000; // 15 seconds of inactivity
     let timeRemaining = TOTAL_TIME;
     let phaseEnded = false; // Guard against duplicate processing
     let isCheckingSelections = false; // Guard against concurrent async checks
