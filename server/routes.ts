@@ -3061,6 +3061,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const updatedSession = await storage.getCombatSession(sessionId);
           broadcastToCombat(sessionId, { type: "combat_state", state: updatedSession });
           log(`[WebSocket] Student ${student.nickname} successfully joined session ${sessionId}`, "websocket");
+          
+          // Auto-start solo mode sessions when first player joins
+          if (updatedSession.soloModeEnabled && updatedSession.currentPhase === "waiting" && Object.keys(updatedSession.players).length === 1) {
+            log(`[WebSocket] Auto-starting solo mode session ${sessionId} for first player ${student.nickname}`, "websocket");
+            await startQuestion(sessionId);
+          }
         } else if (message.type === "start_fight" && ws.isHost) {
           // Accept sessionId from either WebSocket object or message payload
           const sessionId = ws.sessionId || message.sessionId;
