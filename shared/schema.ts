@@ -1175,6 +1175,7 @@ export type ResolutionFeedbackType =
   | "got_blocked"                // Student got their damage blocked by a tank
   | "healed_player"              // Healer successfully healed another player
   | "ability_damage_phase2"      // Student used a block/healing phase ability that dealt damage
+  | "ability_missed"             // Student used an ability but answered incorrectly, ability missed
 
 export interface ResolutionFeedback {
   type: ResolutionFeedbackType;

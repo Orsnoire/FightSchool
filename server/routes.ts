@@ -2167,6 +2167,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // AGGRO SYSTEM: Wrong/no answer reduces threat by 3
         player.threat = Math.max(0, player.threat - 3);
         
+        // MISSED ABILITY TRACKING: If player had a pending ability, it misses
+        if (player.pendingAction && player.pendingAction.abilityId && player.pendingAction.abilityId !== "base_attack") {
+          const missedAbilityId = player.pendingAction.abilityId;
+          const missedAbility = ABILITY_DISPLAYS[missedAbilityId];
+          const abilityName = missedAbility?.name || "Ability";
+          
+          // Add private feedback for missed ability (only visible to this player)
+          if (!playerFeedback.has(playerId)) {
+            playerFeedback.set(playerId, []);
+          }
+          playerFeedback.get(playerId)!.push({
+            type: "ability_missed",
+            abilityName: abilityName,
+          });
+          
+          log(`[Abilities] ${player.nickname}'s ${abilityName} missed due to wrong answer`, "combat");
+          
+          // Clear pending action
+          player.pendingAction = undefined;
+        }
+        
         // Reset ability states on wrong/no answer (in memory)
         player.comboPoints = 0; // Reset scout combo points to 0
         player.streakCounter = 0; // Reset for backward compat
@@ -3274,6 +3295,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updateData.isHealing = true;
             updateData.healTarget = targetId;
             log(`[Abilities] Player ${player.nickname} set to heal target ${targetId}`, "combat");
+          }
+          
+          // FIREBALL MP DEDUCTION: Deduct MP immediately when fireball is used with a target
+          // This ensures MP is consumed even if the question is answered incorrectly
+          if ((abilityId === "fireball" || abilityId === "fireball_crossclass") && targetId) {
+            const fireballMPCost = 3;
+            if (player.mp >= fireballMPCost) {
+              updateData.mp = Math.max(0, player.mp - fireballMPCost);
+              log(`[Abilities] Deducted ${fireballMPCost} MP from ${player.nickname} for Fireball (${player.mp} → ${updateData.mp})`, "combat");
+            } else {
+              log(`[Abilities] ${player.nickname} tried to use Fireball but has insufficient MP (${player.mp}/${fireballMPCost})`, "combat");
+              // Don't allow the ability to be used if insufficient MP
+              return;
+            }
           }
           
           await storage.updatePlayerState(ws.sessionId, ws.studentId, updateData);

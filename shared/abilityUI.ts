@@ -38,6 +38,8 @@ export interface AbilityDisplay {
   opensHealingWindow?: boolean; // Opens healing window in phase 2
   isToggle?: boolean;        // Toggle on/off (like fireball charging)
   isPassive?: boolean;       // Passive abilities (always active, no button click)
+  mpCost?: number;           // MP required to use this ability
+  cooldown?: number;         // Number of turns for cooldown (if applicable)
 }
 
 // Maps ability ID to display configuration
@@ -49,10 +51,10 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "crushing_blow": { id: "crushing_blow", icon: "Zap", name: "Crushing Blow", description: "Deal massive damage that ignores defense", abilityClass: ["physical"] },
   
   // WIZARD
-  "fireball": { id: "fireball", icon: "Flame", name: "Fireball", description: "Charge up powerful fire attacks", abilityClass: ["spell"], isToggle: true },
-  "frostbolt": { id: "frostbolt", icon: "Snowflake", name: "Frost Bolt", description: "Deal magic damage with a chance to slow enemies", abilityClass: ["spell"] },
-  "manashield": { id: "manashield", icon: "ShieldHalf", name: "Manashield", description: "Convert mana into a protective shield", abilityClass: ["spell", "support"] },
-  "fireblast": { id: "fireblast", icon: "Bomb", name: "Fireblast", description: "Unleash explosive magic damage to all enemies", abilityClass: ["spell"] },
+  "fireball": { id: "fireball", icon: "Flame", name: "Fireball", description: "Charge up powerful fire attacks", abilityClass: ["spell"], isToggle: true, mpCost: 3 },
+  "frostbolt": { id: "frostbolt", icon: "Snowflake", name: "Frost Bolt", description: "Deal magic damage with a chance to slow enemies", abilityClass: ["spell"], mpCost: 1 },
+  "manashield": { id: "manashield", icon: "ShieldHalf", name: "Manashield", description: "Convert mana into a protective shield", abilityClass: ["spell", "support"], mpCost: 3 },
+  "fireblast": { id: "fireblast", icon: "Bomb", name: "Fireblast", description: "Unleash explosive magic damage to all enemies", abilityClass: ["spell"], mpCost: 999 },
   
   // SCOUT
   "headshot": { id: "headshot", icon: "Crosshair", name: "Headshot", description: "Precise shot that deals critical damage", abilityClass: ["physical"] },
@@ -74,10 +76,10 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "abyssal_drain": { id: "abyssal_drain", icon: "Waves", name: "Abyssal Drain", description: "Unleash void energy to drain all enemies", abilityClass: ["spell", "healing"] },
   
   // PRIEST
-  "mend": { id: "mend", icon: "Sparkles", name: "Mend", description: "Heal an ally with holy magic", abilityClass: ["healing", "spell"], opensHealingWindow: true },
-  "purify": { id: "purify", icon: "Wind", name: "Purify", description: "Remove negative effects from an ally", abilityClass: ["spell", "support"], requiresTarget: true },
+  "mend": { id: "mend", icon: "Sparkles", name: "Mend", description: "Heal an ally with holy magic", abilityClass: ["healing", "spell"], opensHealingWindow: true, mpCost: 1 },
+  "purify": { id: "purify", icon: "Wind", name: "Purify", description: "Remove negative effects from an ally", abilityClass: ["spell", "support"], requiresTarget: true, mpCost: 1 },
   "bless": { id: "bless", icon: "Sun", name: "Bless", description: "Grant divine protection to an ally", abilityClass: ["spell", "support"], requiresTarget: true },
-  "holy_light": { id: "holy_light", icon: "Star", name: "Holy Light", description: "Radiate healing light to all allies", abilityClass: ["healing", "spell"] },
+  "holy_light": { id: "holy_light", icon: "Star", name: "Holy Light", description: "Radiate healing light to all allies", abilityClass: ["healing", "spell"], mpCost: 5 },
   
   // PALADIN
   "healing_guard": { id: "healing_guard", icon: "HeartPulse", name: "Healing Guard", description: "Block damage while healing allies", abilityClass: ["healing", "spell", "physical"], opensHealingWindow: true },
@@ -131,14 +133,14 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   
   // CROSS-CLASS UNLOCK ABILITIES (Level 8)
   "block_crossclass": { id: "block_crossclass", icon: "Shield", name: "Block", description: "Absorb incoming damage for an ally", abilityClass: ["physical", "support", "cross_class"], requiresTarget: true, isPassive: true },
-  "fireball_crossclass": { id: "fireball_crossclass", icon: "Flame", name: "Fireball", description: "Charge up powerful fire attacks", abilityClass: ["spell", "cross_class"], isToggle: true },
+  "fireball_crossclass": { id: "fireball_crossclass", icon: "Flame", name: "Fireball", description: "Charge up powerful fire attacks", abilityClass: ["spell", "cross_class"], isToggle: true, mpCost: 3 },
   "headshot_crossclass": { id: "headshot_crossclass", icon: "Target", name: "Headshot", description: "Precise shot that deals critical damage", abilityClass: ["physical", "cross_class"] },
   "healing_potion_crossclass": { id: "healing_potion_crossclass", icon: "Beaker", name: "Healing Potion", description: "Restore health to an ally", abilityClass: ["healing", "consumable", "cross_class"], opensHealingWindow: true },
   "hex_crossclass": { id: "hex_crossclass", icon: "Skull", name: "Hex", description: "Curse an enemy to reduce their power", abilityClass: ["spell", "support", "cross_class"], requiresTarget: true },
-  "mend_crossclass": { id: "mend_crossclass", icon: "Plus", name: "Mend", description: "Heal an ally with holy magic", abilityClass: ["healing", "spell", "cross_class"], opensHealingWindow: true },
+  "mend_crossclass": { id: "mend_crossclass", icon: "Plus", name: "Mend", description: "Heal an ally with holy magic", abilityClass: ["healing", "spell", "cross_class"], opensHealingWindow: true, mpCost: 1 },
   "healing_guard_ally_crossclass": { id: "healing_guard_ally_crossclass", icon: "ShieldCheck", name: "Healing Guard", description: "Block damage while healing allies", abilityClass: ["healing", "spell", "physical", "cross_class"], requiresTarget: true, opensHealingWindow: true },
-  "ruin_strike_crossclass": { id: "ruin_strike_crossclass", icon: "Zap", name: "Ruin Strike", description: "Devastating attack using dark power", abilityClass: ["physical", "spell", "cross_class"] },
-  "crimson_slash_crossclass": { id: "crimson_slash_crossclass", icon: "Swords", name: "Crimson Slash", description: "Vampiric attack that steals enemy health", abilityClass: ["physical", "healing", "cross_class"] },
+  "ruin_strike_crossclass": { id: "ruin_strike_crossclass", icon: "Zap", name: "Ruin Strike", description: "Devastating attack using dark power", abilityClass: ["physical", "spell", "cross_class"], mpCost: 1 },
+  "crimson_slash_crossclass": { id: "crimson_slash_crossclass", icon: "Swords", name: "Crimson Slash", description: "Vampiric attack that steals enemy health", abilityClass: ["physical", "healing", "cross_class"], mpCost: 1 },
   "fortify_crossclass": { id: "fortify_crossclass", icon: "Shield", name: "Fortify", description: "Channel inner strength to boost defense", abilityClass: ["physical", "support", "cross_class"], isToggle: true },
   "prey_crossclass": { id: "prey_crossclass", icon: "Locate", name: "Prey", description: "Mark an enemy as prey - they take 200% damage from all sources", abilityClass: ["physical", "support", "cross_class"], requiresTarget: true },
   "inspire_crossclass": { id: "inspire_crossclass", icon: "Lightbulb", name: "Inspire", description: "3 round buff - increase HP and MP for all players", abilityClass: ["support", "song", "cross_class"] },

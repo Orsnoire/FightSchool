@@ -35,6 +35,8 @@ export function CombatFeedbackModal({
         return <Shield className="w-16 h-16 text-accent" />;
       case "healed_player":
         return <Heart className="w-16 h-16 text-health" />;
+      case "ability_missed":
+        return <X className="w-16 h-16 text-muted-foreground" />;
       default:
         return <Swords className="w-16 h-16" />;
     }
@@ -54,6 +56,8 @@ export function CombatFeedbackModal({
         return "border-accent";
       case "healed_player":
         return "border-health";
+      case "ability_missed":
+        return "border-muted-foreground";
       default:
         return "border-foreground";
     }
@@ -78,6 +82,8 @@ export function CombatFeedbackModal({
         return `You healed ${feedback.healedPlayer} for ${feedback.healedAmount} HP!`;
       case "ability_damage_phase2":
         return `You dealt ${feedback.damage} damage to ${feedback.enemyName} with ${feedback.abilityName}!`;
+      case "ability_missed":
+        return `Your ${feedback.abilityName} missed!`;
       default:
         return "Action completed!";
     }

@@ -1,10 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Clock, Swords } from "lucide-react";
 import type { PlayerState, CharacterClass } from "@shared/schema";
 import { ABILITY_DISPLAYS, JOB_ABILITY_SLOTS, type AbilityDisplay } from "@shared/abilityUI";
 import { ULTIMATE_ABILITIES } from "@shared/ultimateAbilities";
 import { useModalTimer } from "@/hooks/useModalTimer";
+import { CooldownCircle } from "./CooldownCircle";
 import * as LucideIcons from "lucide-react";
 
 interface AbilitySelectionModalProps {
@@ -30,8 +32,8 @@ export function AbilitySelectionModal({
   const { canSkip, remainingTime } = useModalTimer(5, open);
 
   // Get all available abilities for this player
-  const getAvailableAbilities = (): { ability: AbilityDisplay; available: boolean; reason?: string }[] => {
-    const results: { ability: AbilityDisplay; available: boolean; reason?: string }[] = [];
+  const getAvailableAbilities = (): { ability: AbilityDisplay; available: boolean; reason?: string; mpLocked?: boolean; cooldownTurns?: number; totalCooldown?: number }[] => {
+    const results: { ability: AbilityDisplay; available: boolean; reason?: string; mpLocked?: boolean; cooldownTurns?: number; totalCooldown?: number }[] = [];
     
     // Get current job level
     const currentJobLevel = player.jobLevels?.[player.characterClass] || 1;
@@ -51,11 +53,21 @@ export function AbilitySelectionModal({
           // Check resources
           let available = true;
           let reason: string | undefined;
+          let mpLocked = false;
+          let cooldownTurns: number | undefined;
+          let totalCooldown: number | undefined;
           
-          // Check MP for spells
-          if (ability.abilityClass.includes("spell") && player.mp < 1) {
+          // Check MP for abilities with specific MP costs
+          if (ability.mpCost && player.mp < ability.mpCost) {
+            available = false;
+            reason = `${ability.mpCost} MP`;
+            mpLocked = true;
+          }
+          // Fallback: Check MP for spells without specific MP cost defined
+          else if (!ability.mpCost && ability.abilityClass.includes("spell") && player.mp < 1) {
             available = false;
             reason = "No MP";
+            mpLocked = true;
           }
           
           // Check combo points for scout abilities
@@ -70,10 +82,15 @@ export function AbilitySelectionModal({
             reason = "No potions";
           }
           
-          // Check cooldowns (example for abilities with cooldowns)
-          // TODO: Add cooldown tracking to player state
+          // Check fireball cooldown (wizard class only)
+          if ((abilityId === "fireball" || abilityId === "fireball_crossclass") && player.fireballCooldown > 0) {
+            available = false;
+            cooldownTurns = player.fireballCooldown;
+            totalCooldown = 5; // Base cooldown (could be dynamic based on level)
+            reason = `${player.fireballCooldown} turn${player.fireballCooldown > 1 ? 's' : ''}`;
+          }
           
-          results.push({ ability, available, reason });
+          results.push({ ability, available, reason, mpLocked, cooldownTurns, totalCooldown });
         }
       });
     }
@@ -86,11 +103,21 @@ export function AbilitySelectionModal({
         
         let available = true;
         let reason: string | undefined;
+        let mpLocked = false;
+        let cooldownTurns: number | undefined;
+        let totalCooldown: number | undefined;
         
-        // Check resources
-        if (ability.abilityClass.includes("spell") && player.mp < 1) {
+        // Check MP with specific MP costs
+        if (ability.mpCost && player.mp < ability.mpCost) {
+          available = false;
+          reason = `${ability.mpCost} MP`;
+          mpLocked = true;
+        }
+        // Fallback: Check MP for spells without specific MP cost
+        else if (!ability.mpCost && ability.abilityClass.includes("spell") && player.mp < 1) {
           available = false;
           reason = "No MP";
+          mpLocked = true;
         }
         
         if (abilityId === "healing_potion_crossclass" && player.potionCount <= 0) {
@@ -98,7 +125,15 @@ export function AbilitySelectionModal({
           reason = "No potions";
         }
         
-        results.push({ ability, available, reason });
+        // Check fireball cooldown for cross-class fireball
+        if (abilityId === "fireball_crossclass" && player.fireballCooldown > 0) {
+          available = false;
+          cooldownTurns = player.fireballCooldown;
+          totalCooldown = 5;
+          reason = `${player.fireballCooldown} turn${player.fireballCooldown > 1 ? 's' : ''}`;
+        }
+        
+        results.push({ ability, available, reason, mpLocked, cooldownTurns, totalCooldown });
       }
     });
     
@@ -112,10 +147,13 @@ export function AbilitySelectionModal({
           if (ability) {
             // Check if on cooldown (3-fight cooldown)
             const lastUsed = player.lastUltimatesUsed?.[ultimateId] || 0;
-            const available = (player.fightCount - lastUsed) >= 3;
-            const reason = available ? undefined : `Cooldown (${3 - (player.fightCount - lastUsed)} fights)`;
+            const fightsRemaining = 3 - (player.fightCount - lastUsed);
+            const available = fightsRemaining <= 0;
+            const reason = available ? undefined : `${fightsRemaining} fight${fightsRemaining > 1 ? 's' : ''}`;
+            const cooldownTurns = available ? undefined : fightsRemaining;
+            const totalCooldown = 3;
             
-            results.push({ ability, available, reason });
+            results.push({ ability, available, reason, cooldownTurns, totalCooldown });
           }
         }
       }
@@ -147,28 +185,50 @@ export function AbilitySelectionModal({
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-3">Your Abilities</h3>
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {availableAbilities.map(({ ability, available, reason }) => {
+                {availableAbilities.map(({ ability, available, reason, mpLocked, cooldownTurns, totalCooldown }) => {
                   const IconComponent = getIconComponent(ability.icon);
                   
                   return (
-                    <Button
-                      key={ability.id}
-                      variant={available ? "default" : "outline"}
-                      disabled={!available}
-                      className="h-auto p-4 flex flex-col items-center gap-2"
-                      onClick={() => onSelectAbility(ability.id)}
-                      data-testid={`ability-${ability.id}`}
-                    >
-                      <IconComponent className="h-8 w-8" />
-                      <span className="text-xs font-semibold text-center leading-tight">
-                        {ability.name}
-                      </span>
-                      {!available && reason && (
-                        <span className="text-xs text-destructive font-medium">
-                          {reason}
+                    <div key={ability.id} className="relative">
+                      <Button
+                        variant={available ? "default" : "outline"}
+                        disabled={!available}
+                        className={`h-auto p-4 flex flex-col items-center gap-2 w-full ${!available ? 'opacity-50' : ''}`}
+                        onClick={() => onSelectAbility(ability.id)}
+                        data-testid={`ability-${ability.id}`}
+                      >
+                        <IconComponent className="h-8 w-8" />
+                        <span className="text-xs font-semibold text-center leading-tight">
+                          {ability.name}
                         </span>
+                        {!available && reason && !mpLocked && (
+                          <span className="text-xs text-muted-foreground font-medium">
+                            {reason}
+                          </span>
+                        )}
+                      </Button>
+                      
+                      {/* Cooldown Circle Overlay */}
+                      {cooldownTurns !== undefined && totalCooldown !== undefined && cooldownTurns > 0 && (
+                        <CooldownCircle 
+                          turnsRemaining={cooldownTurns} 
+                          totalCooldown={totalCooldown}
+                          className="z-10"
+                        />
                       )}
-                    </Button>
+                      
+                      {/* MP Badge Overlay */}
+                      {mpLocked && reason && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                          <Badge 
+                            variant="destructive" 
+                            className="text-xs font-bold px-2 py-1"
+                          >
+                            {reason}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
