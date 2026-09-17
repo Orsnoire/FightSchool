@@ -1,0 +1,37 @@
+name: Verify migration changes
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "cloudflare-migration/**"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run check
+
+      - name: Run Phase 0 characterization tests
+        run: npm run test:phase0
+
+      - name: Run Cloudflare routing tests
+        run: npm run test:cloudflare
+
+      - name: Build and validate the Worker bundle
+        run: npm run build:cloudflare
