@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ShoppingBag, Coins, ArrowLeft, Sword, Shield, Crown, Lock } from "lucide-react";
 import type { Student, Guild, Quest } from "@shared/schema";
+import { appFetch } from "@/lib/appUrls";
 
 interface EquipmentItemStats {
   str?: number;
@@ -69,7 +70,7 @@ export default function GuildShop() {
     queryKey: ["/api/equipment-items/shop", studentId],
     queryFn: async () => {
       if (!studentId) return [];
-      const response = await fetch(`/api/equipment-items/shop?studentId=${studentId}`);
+      const response = await appFetch(`/api/equipment-items/shop?studentId=${studentId}`);
       if (!response.ok) return [];
       return response.json();
     },

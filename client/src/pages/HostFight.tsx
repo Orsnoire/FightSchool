@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { CombatLog, type CombatLogEvent } from "@/components/CombatLog";
 import { apiRequest } from "@/lib/queryClient";
+import { webSocketUrl } from "@/lib/appUrls";
 
 export default function HostFight() {
   const [, params] = useRoute("/teacher/host/:id");
@@ -37,9 +38,7 @@ export default function HostFight() {
   const connectWebSocket = () => {
     if (!fightId) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    const socket = new WebSocket(webSocketUrl());
 
     socket.onopen = () => {
       setConnectionStatus("connected");

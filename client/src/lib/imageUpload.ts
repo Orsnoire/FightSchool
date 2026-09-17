@@ -1,5 +1,7 @@
+import { appFetch, objectUrl } from "@/lib/appUrls";
+
 export async function uploadImageToStorage(file: File): Promise<string> {
-  const uploadResponse = await fetch('/api/objects/upload', {
+  const uploadResponse = await appFetch('/api/objects/upload', {
     method: 'POST',
   });
 
@@ -9,7 +11,7 @@ export async function uploadImageToStorage(file: File): Promise<string> {
 
   const { uploadURL } = await uploadResponse.json();
 
-  const putResponse = await fetch(uploadURL, {
+  const putResponse = await appFetch(uploadURL, {
     method: 'PUT',
     body: file,
     headers: {
@@ -25,5 +27,5 @@ export async function uploadImageToStorage(file: File): Promise<string> {
   const objectPath = url.pathname;
   const entityId = objectPath.split('/').slice(-2).join('/');
   
-  return `/objects/${entityId}`;
+  return objectUrl(entityId);
 }

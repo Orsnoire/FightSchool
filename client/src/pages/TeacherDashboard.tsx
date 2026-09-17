@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Fight } from "@shared/schema";
+import { appFetch } from "@/lib/appUrls";
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
@@ -44,7 +45,7 @@ export default function TeacherDashboard() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/teacher/logout", { method: "POST", credentials: "include" });
+      await appFetch("/api/teacher/logout", { method: "POST", credentials: "include" });
     } catch (error) {
       console.error("Logout error:", error);
     }

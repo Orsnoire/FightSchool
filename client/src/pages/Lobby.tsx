@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DndContext, DragEndEvent, DragStartEvent, useDraggable, useDroppable, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { appFetch, webSocketUrl } from "@/lib/appUrls";
 
 const RARITY_COLORS = {
   common: "border-gray-400",
@@ -184,7 +185,7 @@ export default function Lobby() {
 
   useEffect(() => {
     const loadStudent = async () => {
-      const response = await fetch(`/api/student/${studentId}`);
+      const response = await appFetch(`/api/student/${studentId}`);
       if (response.ok) {
         const data = await response.json();
         // Redirect to character selection if not completed
@@ -197,7 +198,7 @@ export default function Lobby() {
     };
     
     const loadJobLevels = async () => {
-      const response = await fetch(`/api/student/${studentId}/job-levels`);
+      const response = await appFetch(`/api/student/${studentId}/job-levels`);
       if (response.ok) {
         setJobLevels(await response.json());
       }
@@ -213,7 +214,7 @@ export default function Lobby() {
     queryKey: ['equipment-items', { ids: equippedItemIds.sort() }],
     queryFn: async () => {
       if (equippedItemIds.length === 0) return [];
-      const response = await fetch(`/api/equipment-items?ids=${equippedItemIds.join(',')}`);
+      const response = await appFetch(`/api/equipment-items?ids=${equippedItemIds.join(',')}`);
       return response.json();
     },
     enabled: equippedItemIds.length > 0,
@@ -225,7 +226,7 @@ export default function Lobby() {
     queryKey: ['equipment-items', { ids: inventoryIds.sort() }],
     queryFn: async () => {
       if (inventoryIds.length === 0) return [];
-      const response = await fetch(`/api/equipment-items?ids=${inventoryIds.join(',')}`);
+      const response = await appFetch(`/api/equipment-items?ids=${inventoryIds.join(',')}`);
       return response.json();
     },
     enabled: inventoryIds.length > 0,
@@ -250,7 +251,7 @@ export default function Lobby() {
     }
 
     // Validate session exists and is active
-    const response = await fetch(`/api/sessions/${sessionCode.trim().toUpperCase()}`);
+    const response = await appFetch(`/api/sessions/${sessionCode.trim().toUpperCase()}`);
     if (!response.ok) {
       const errorData = await response.json();
       toast({ 
@@ -275,9 +276,7 @@ export default function Lobby() {
     setIsHostingSolo(true);
 
     // Create WebSocket connection to host solo mode
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    const socket = new WebSocket(webSocketUrl());
 
     socket.onopen = () => {
       // Send host_solo message
@@ -323,7 +322,7 @@ export default function Lobby() {
 
   const updateEquipment = async (slot: EquipmentSlot, itemId: string) => {
     const studentId = localStorage.getItem("studentId");
-    const response = await fetch(`/api/student/${studentId}/equipment`, {
+    const response = await appFetch(`/api/student/${studentId}/equipment`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [slot]: itemId }),
@@ -339,7 +338,7 @@ export default function Lobby() {
     try {
       const studentId = localStorage.getItem("studentId");
       const field = slotNumber === 1 ? "crossClassAbility1" : "crossClassAbility2";
-      const response = await fetch(`/api/student/${studentId}/equipment`, {
+      const response = await appFetch(`/api/student/${studentId}/equipment`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [field]: abilityId }),
@@ -405,7 +404,7 @@ export default function Lobby() {
       return;
     }
     
-    const response = await fetch(`/api/student/${studentId}/character`, {
+    const response = await appFetch(`/api/student/${studentId}/character`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ characterClass: newClass, gender: student.gender }),
@@ -421,7 +420,7 @@ export default function Lobby() {
       });
       
       // Reload job levels to reflect new current class
-      const jobResponse = await fetch(`/api/student/${studentId}/job-levels`);
+      const jobResponse = await appFetch(`/api/student/${studentId}/job-levels`);
       if (jobResponse.ok) {
         setJobLevels(await jobResponse.json());
       }

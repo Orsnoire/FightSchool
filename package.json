@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build:cloudflare": "APP_BASE_PATH=/QuestAcademy/ vite build && npx --yes wrangler@4.20.0 deploy --dry-run --outdir dist/worker",
+    "cloudflare:dev": "APP_BASE_PATH=/QuestAcademy/ vite build && npx --yes wrangler@4.20.0 dev",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "test:phase0": "node --test tests/phase0/*.test.mjs",
+    "test:cloudflare": "node --test tests/cloudflare/*.test.mjs",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

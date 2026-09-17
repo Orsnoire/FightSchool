@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Swords, Target, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { type Guild } from "@shared/schema";
+import { webSocketUrl } from "@/lib/appUrls";
 
 interface Fight {
   id: string;
@@ -47,9 +48,7 @@ export default function GuildFights() {
 
     setHostingFightId(fightId);
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    const socket = new WebSocket(webSocketUrl());
 
     socket.onopen = () => {
       socket.send(JSON.stringify({

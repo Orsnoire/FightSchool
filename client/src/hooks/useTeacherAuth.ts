@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "./use-toast";
+import { appFetch } from "@/lib/appUrls";
 
 export function useTeacherAuth() {
   const [, navigate] = useLocation();
@@ -14,7 +15,7 @@ export function useTeacherAuth() {
 
   async function checkSession() {
     try {
-      const response = await fetch("/api/teacher/check-session", {
+      const response = await appFetch("/api/teacher/check-session", {
         credentials: "include"
       });
       

@@ -20,6 +20,7 @@ import { NextQuestionModal } from "@/components/NextQuestionModal";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { useToast } from "@/hooks/use-toast";
+import { webSocketUrl } from "@/lib/appUrls";
 import { Check, Clock, Shield, Wifi, WifiOff, RefreshCw, Swords, Calculator, Sparkles } from "lucide-react";
 import type { CombatState, Question, LootItem, CharacterClass, Gender, ResolutionFeedback, PartyDamageData, EnemyAIAttackData, PlayerState } from "@shared/schema";
 import { TANK_CLASSES, HEALER_CLASSES } from "@shared/schema";
@@ -124,9 +125,7 @@ export default function Combat() {
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    const socket = new WebSocket(webSocketUrl());
     
     let hasReceivedState = false;
     let connectionTimeout: NodeJS.Timeout | null = null;

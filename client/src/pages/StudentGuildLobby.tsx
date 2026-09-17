@@ -10,6 +10,7 @@ import { ArrowLeft, Users, Trophy, Scroll, Swords, Target, Clock } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { type Guild, type Student, type StudentJobLevel, type CharacterClass, ALL_CHARACTER_CLASSES, type CombatState } from "@shared/schema";
+import { appFetch, webSocketUrl } from "@/lib/appUrls";
 
 interface GuildMemberWithStudent {
   id: string;
@@ -117,7 +118,7 @@ export default function StudentGuildLobby() {
       return;
     }
     
-    const response = await fetch(`/api/student/${studentId}/character`, {
+    const response = await appFetch(`/api/student/${studentId}/character`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ characterClass: newClass, gender: student.gender }),
@@ -133,7 +134,7 @@ export default function StudentGuildLobby() {
       });
       
       // Reload job levels to reflect new current class
-      const jobResponse = await fetch(`/api/student/${studentId}/job-levels`);
+      const jobResponse = await appFetch(`/api/student/${studentId}/job-levels`);
       if (jobResponse.ok) {
         setJobLevels(await jobResponse.json());
       }
@@ -159,9 +160,7 @@ export default function StudentGuildLobby() {
     setHostingFightId(fightId);
 
     // Create WebSocket connection to host solo mode
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    const socket = new WebSocket(webSocketUrl());
 
     socket.onopen = () => {
       // Send host_solo message
