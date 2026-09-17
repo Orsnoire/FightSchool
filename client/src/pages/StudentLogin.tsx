@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Swords } from "lucide-react";
+import { appFetch } from "@/lib/appUrls";
 
 const loginSchema = z.object({
   nickname: z.string().min(1, "Nickname is required"),
@@ -25,7 +26,7 @@ export default function StudentLogin() {
   });
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
-    const response = await fetch("/api/student/login", {
+    const response = await appFetch("/api/student/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

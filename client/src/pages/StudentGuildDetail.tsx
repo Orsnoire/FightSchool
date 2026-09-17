@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { type Guild, type GuildMembership } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
+import { webSocketUrl } from "@/lib/appUrls";
 
 export default function StudentGuildDetail() {
   const [, params] = useRoute("/student/guild/:id");
@@ -66,9 +67,7 @@ export default function StudentGuildDetail() {
     setIsHostingSolo(fightId);
 
     // Create WebSocket connection to host solo mode
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    const socket = new WebSocket(webSocketUrl());
 
     socket.onopen = () => {
       // Send host_solo message

@@ -11,6 +11,7 @@ import { ArrowLeft, Users, Trophy, Shield, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { type Guild } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { appFetch } from "@/lib/appUrls";
 
 export default function StudentGuilds() {
   const { toast } = useToast();
@@ -25,7 +26,7 @@ export default function StudentGuilds() {
 
   const joinGuildMutation = useMutation({
     mutationFn: async (code: string) => {
-      const response = await fetch(`/api/guilds/code/${code.toUpperCase()}`);
+      const response = await appFetch(`/api/guilds/code/${code.toUpperCase()}`);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Guild not found");

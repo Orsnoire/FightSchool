@@ -10,6 +10,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getCrossClassAbilities } from "@shared/jobSystem";
 import { type Student, type StudentJobLevel, type CharacterClass, type EquipmentItemDb } from "@shared/schema";
 import type { Ability } from "@shared/jobSystem";
+import { appFetch } from "@/lib/appUrls";
 
 export default function StudentEquipment() {
   const { toast } = useToast();
@@ -30,7 +31,7 @@ export default function StudentEquipment() {
     queryKey: ['equipment-items', { ids: equippedItemIds.sort() }],
     queryFn: async () => {
       if (equippedItemIds.length === 0) return [];
-      const response = await fetch(`/api/equipment-items?ids=${equippedItemIds.join(',')}`);
+      const response = await appFetch(`/api/equipment-items?ids=${equippedItemIds.join(',')}`);
       return response.json();
     },
     enabled: equippedItemIds.length > 0,
@@ -42,7 +43,7 @@ export default function StudentEquipment() {
     queryKey: ['equipment-items', { ids: inventoryIds.sort() }],
     queryFn: async () => {
       if (inventoryIds.length === 0) return [];
-      const response = await fetch(`/api/equipment-items?ids=${inventoryIds.join(',')}`);
+      const response = await appFetch(`/api/equipment-items?ids=${inventoryIds.join(',')}`);
       return response.json();
     },
     enabled: inventoryIds.length > 0,

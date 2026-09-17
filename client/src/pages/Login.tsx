@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Swords, Shield } from "lucide-react";
+import { appFetch } from "@/lib/appUrls";
 
 export default function Login() {
   const [, navigate] = useLocation();
@@ -19,7 +20,7 @@ export default function Login() {
 
   const handleTeacherLogin = async () => {
     try {
-      const response = await fetch("/api/teacher/login", {
+      const response = await appFetch("/api/teacher/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -54,7 +55,7 @@ export default function Login() {
 
   const handleStudentLogin = async () => {
     try {
-      const response = await fetch("/api/student/login", {
+      const response = await appFetch("/api/student/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

@@ -1,0 +1,63 @@
+name: Verify migration changes
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "cloudflare-migration/**"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Reject new TypeScript errors
+        shell: bash
+        run: |
+          set +e
+          npm run check -- --pretty false > /tmp/current-typecheck.log 2>&1
+          git checkout --detach origin/main
+          npm run check -- --pretty false > /tmp/baseline-typecheck.log 2>&1
+          git checkout --detach "$GITHUB_SHA"
+          set -e
+
+          normalize_diagnostics() {
+            sed -nE 's/^([^(]+)\([0-9]+,[0-9]+\): (error TS[0-9]+: .*)$/\1: \2/p' "$1" | sort -u
+          }
+
+          normalize_diagnostics /tmp/current-typecheck.log > /tmp/current-typecheck.norm
+          normalize_diagnostics /tmp/baseline-typecheck.log > /tmp/baseline-typecheck.norm
+          comm -13 /tmp/baseline-typecheck.norm /tmp/current-typecheck.norm > /tmp/new-typecheck-errors.log
+
+          if [[ -s /tmp/new-typecheck-errors.log ]]; then
+            echo "New TypeScript diagnostics were introduced:"
+            cat /tmp/new-typecheck-errors.log
+            exit 1
+          fi
+
+          echo "No new TypeScript diagnostics relative to main."
+          echo "Existing baseline diagnostics: $(wc -l < /tmp/baseline-typecheck.norm)"
+
+      - name: Run Phase 0 characterization tests
+        run: npm run test:phase0
+
+      - name: Run Cloudflare routing tests
+        run: npm run test:cloudflare
+
+      - name: Build and validate the Worker bundle
+        run: npm run build:cloudflare

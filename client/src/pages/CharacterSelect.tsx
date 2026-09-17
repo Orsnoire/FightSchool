@@ -6,6 +6,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { CLASS_STATS, BASE_CLASSES, type BaseClass, type Gender } from "@shared/schema";
 import { Shield, Sparkles, Target, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { appFetch } from "@/lib/appUrls";
 
 const CLASS_INFO: Record<BaseClass, { icon: any; color: string }> = {
   warrior: { icon: Shield, color: "text-warrior" },
@@ -27,7 +28,7 @@ export default function CharacterSelect() {
     }
 
     const studentId = localStorage.getItem("studentId");
-    const response = await fetch(`/api/student/${studentId}/character`, {
+    const response = await appFetch(`/api/student/${studentId}/character`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ characterClass: selectedClass, gender: selectedGender }),
