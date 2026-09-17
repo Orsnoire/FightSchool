@@ -1,0 +1,69 @@
+{
+  "baselineCommit": "2d3d07053f6be854f99cb81ac8bfce3fce56969f",
+  "selectedAction": "answer",
+  "isMeaningfulGameplayAction": true,
+  "legacy": {
+    "apiPrefix": "/api",
+    "webSocketPath": "/ws",
+    "teacherLogin": {
+      "method": "POST",
+      "path": "/api/teacher/login"
+    },
+    "studentLogin": {
+      "method": "POST",
+      "path": "/api/student/login"
+    },
+    "sessionLookup": {
+      "method": "GET",
+      "pathTemplate": "/api/sessions/:sessionId"
+    },
+    "messages": [
+      "host",
+      "session_created",
+      "join",
+      "start_fight",
+      "phase_change",
+      "question",
+      "answer",
+      "combat_state"
+    ]
+  },
+  "target": {
+    "appBasePath": "/QuestAcademy",
+    "apiPrefix": "/QuestAcademy/api",
+    "webSocketPath": "/QuestAcademy/ws",
+    "identity": {
+      "teacher": "server-verifiable session",
+      "student": "server-verifiable session",
+      "clientSuppliedIdentityIsAuthoritative": false
+    },
+    "requiresSessionIsolation": true,
+    "requiresIdempotentCommands": true
+  },
+  "precondition": {
+    "phase": "question",
+    "studentIsPresent": true,
+    "studentIsAlive": true
+  },
+  "command": {
+    "type": "answer",
+    "answer": "4"
+  },
+  "expectedMutation": {
+    "currentAnswer": "4",
+    "hasAnswered": true
+  },
+  "expectedBroadcast": {
+    "type": "combat_state",
+    "audience": "same session only",
+    "visibleTo": [
+      "teacher",
+      "student"
+    ]
+  },
+  "objectStorage": {
+    "requiredForSelectedAction": false,
+    "fixtureUsesTextOnlyQuestion": true,
+    "decision": "defer R2 implementation and existing-object movement"
+  }
+}
