@@ -63,4 +63,7 @@ test("staging deployment requires approval-scoped secrets and never configures p
   assert.doesNotMatch(deployWorkflow, /push:/);
   assert.match(stagingSmoke, /fetchUntilReady\("\/api\/health\/live", 200\)/);
   assert.match(stagingSmoke, /attempts = 20/);
+  assert.match(stagingSmoke, /pingWebSocketAfterRollout/);
+  assert.match(stagingSmoke, /Unexpected server response: \(401\|404\|429\|5\\d\\d\)/);
+  assert.match(stagingSmoke, /Waiting for WebSocket rollout/);
 });

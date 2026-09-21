@@ -44,6 +44,8 @@ GitHub environment secrets:
 
 STAGING_AUTH_TOKEN is generated for each manual deployment inside GitHub Actions, masked immediately, uploaded as a Worker secret, used for the WebSocket smoke test, and discarded with the job.
 
+Cloudflare may briefly route requests to the preceding Worker version while a deployment propagates. The smoke test therefore retries the initial liveness request and rollout-like WebSocket handshake responses for up to one minute. Once connected, the ping/pong protocol assertions remain strict.
+
 ## Deploy
 
 1. Open the Deploy Cloudflare Staging workflow in GitHub Actions.
