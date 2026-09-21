@@ -1,5 +1,5 @@
-const PASSWORD_ALGORITHM = "pbkdf2_sha256";
-const PASSWORD_ITERATIONS = 600_000;
+const PASSWORD_ALGORITHM = "pbkdf2_sha256_peppered";
+const PASSWORD_ITERATIONS = 100_000;
 const encoder = new TextEncoder();
 
 function randomBytes(length: number): Uint8Array {
@@ -33,8 +33,19 @@ function constantTimeEqual(left: Uint8Array, right: Uint8Array): boolean {
   return difference === 0;
 }
 
-async function derivePassword(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
+async function pepperPassword(password: string, pepper: string): Promise<Uint8Array> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(pepper),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(password)));
+}
+
+async function derivePassword(password: string, pepper: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
+  const key = await crypto.subtle.importKey("raw", await pepperPassword(password, pepper), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits({
     name: "PBKDF2",
     hash: "SHA-256",
@@ -44,13 +55,13 @@ async function derivePassword(password: string, salt: Uint8Array, iterations: nu
   return new Uint8Array(bits);
 }
 
-export async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string, pepper: string): Promise<string> {
   const salt = randomBytes(16);
-  const hash = await derivePassword(password, salt, PASSWORD_ITERATIONS);
+  const hash = await derivePassword(password, pepper, salt, PASSWORD_ITERATIONS);
   return [PASSWORD_ALGORITHM, PASSWORD_ITERATIONS, encodeBase64Url(salt), encodeBase64Url(hash)].join("$");
 }
 
-export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+export async function verifyPassword(password: string, storedHash: string, pepper: string): Promise<boolean> {
   const [algorithm, rawIterations, rawSalt, rawHash] = storedHash.split("$");
   const iterations = Number(rawIterations);
   if (
@@ -63,7 +74,7 @@ export async function verifyPassword(password: string, storedHash: string): Prom
 
   try {
     const expected = decodeBase64Url(rawHash);
-    const actual = await derivePassword(password, decodeBase64Url(rawSalt), iterations);
+    const actual = await derivePassword(password, pepper, decodeBase64Url(rawSalt), iterations);
     return constantTimeEqual(actual, expected);
   } catch {
     return false;

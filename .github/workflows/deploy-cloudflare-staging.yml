@@ -29,15 +29,17 @@ jobs:
         shell: bash
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PASSWORD_PEPPER: ${{ secrets.PASSWORD_PEPPER }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
         run: |
           test -n "$DATABASE_URL"
+          test -n "$PASSWORD_PEPPER"
           test -n "$SESSION_SECRET"
           token="$(openssl rand -hex 32)"
           echo "::add-mask::$token"
           echo "STAGING_AUTH_TOKEN=$token" >> "$GITHUB_ENV"
           export STAGING_AUTH_TOKEN="$token"
-          node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP + "/questacademy-secrets.json", JSON.stringify({ DATABASE_URL: process.env.DATABASE_URL, SESSION_SECRET: process.env.SESSION_SECRET, STAGING_AUTH_TOKEN: process.env.STAGING_AUTH_TOKEN }))'
+          node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP + "/questacademy-secrets.json", JSON.stringify({ DATABASE_URL: process.env.DATABASE_URL, PASSWORD_PEPPER: process.env.PASSWORD_PEPPER, SESSION_SECRET: process.env.SESSION_SECRET, STAGING_AUTH_TOKEN: process.env.STAGING_AUTH_TOKEN }))'
       - name: Deploy staging Worker
         uses: cloudflare/wrangler-action@v4
         with:

@@ -8,7 +8,7 @@ This increment creates the first clean Cloudflare database boundary. It intentio
 
 - Neon HTTP and Drizzle run inside the Worker without a Node TCP server.
 - Committed migrations create `teachers` and `app_sessions`; they do not seed prototype data.
-- Passwords use salted PBKDF2-HMAC-SHA256 hashes with a versioned 600,000-iteration format.
+- Passwords use a versioned, salted PBKDF2-HMAC-SHA256 format at the Cloudflare-enforced 100,000-iteration ceiling, with an independent HMAC pepper kept outside Neon.
 - The browser receives a signed, high-entropy opaque cookie. Only its SHA-256 digest is stored in Neon.
 - Sessions are server-side, expiring, and immediately revocable on logout.
 - Teacher signup, login, logout, session check, and same-teacher profile read run through the Worker.
@@ -22,6 +22,7 @@ Student identity, fights, guilds, combat persistence, login throttling, password
 Store these only in the GitHub `cloudflare-staging` environment:
 
 - `DATABASE_URL`: pooled Neon connection string for an isolated staging branch or project.
+- `PASSWORD_PEPPER`: at least 32 bytes of cryptographically random data used only for password pre-hashing.
 - `SESSION_SECRET`: at least 32 bytes of cryptographically random data, used only for session-cookie HMAC.
 
 The existing `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` remain required. No secret belongs in source control or a `VITE_*` variable.
