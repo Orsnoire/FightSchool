@@ -51,7 +51,7 @@ STAGING_AUTH_TOKEN is generated for each manual deployment inside GitHub Actions
 3. Approve the cloudflare-staging environment request.
 4. Wait for build, deployment, and smoke verification.
 
-The workflow verifies dependency installation, the TypeScript diagnostic ratchet, all repository tests, the client and Worker builds, liveness, readiness, API 404 behavior, object-route isolation, nested SPA refresh, and Durable Object WebSocket echo.
+The workflow verifies dependency installation, the TypeScript diagnostic ratchet, all repository tests, the client and Worker builds, liveness, readiness, API 404 behavior, object-route isolation, nested SPA refresh, and Durable Object WebSocket echo. The first liveness check retries for up to one minute because a newly created workers.dev route can take several seconds to become visible to the GitHub runner.
 
 ## Manual Cloudflare actions
 

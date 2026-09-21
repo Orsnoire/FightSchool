@@ -8,8 +8,45 @@ if (!origin || !token) {
   throw new Error("STAGING_ORIGIN and STAGING_AUTH_TOKEN are required");
 }
 
-const live = await fetch(origin + "/api/health/live");
-assert.equal(live.status, 200);
+const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function fetchUntilReady(path, expectedStatus, attempts = 20) {
+  let lastStatus = "no response";
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetch(origin + path);
+      lastStatus = response.status;
+      if (response.status === expectedStatus) return response;
+    } catch (error) {
+      lastStatus = error instanceof Error ? error.message : String(error);
+    }
+
+    if (attempt < attempts) {
+      console.log(
+        "Waiting for staging propagation: attempt "
+          + attempt
+          + "/"
+          + attempts
+          + " returned "
+          + lastStatus,
+      );
+      await sleep(3_000);
+    }
+  }
+
+  throw new Error(
+    "Staging did not return "
+      + expectedStatus
+      + " for "
+      + path
+      + " after "
+      + attempts
+      + " attempts; last result: "
+      + lastStatus,
+  );
+}
+
+const live = await fetchUntilReady("/api/health/live", 200);
 assert.equal((await live.json()).status, "ok");
 
 const ready = await fetch(origin + "/api/health/ready");
