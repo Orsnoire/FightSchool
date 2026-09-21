@@ -1,0 +1,885 @@
+CLOUDFLARE MIGRATION PLAN
+
+QuestAcademy - architecture, implementation phases, validation, cutover, and rollback
+
+Repository: Orsnoire/FightSchool, default branch main
+
+Recommended production URL: https://questacademy.bookwyrminteractive.studio
+
+Platform: Cloudflare Pages + Workers + Durable Objects; Neon retained
+
+Assessment mode: Read-only; no repository or Cloudflare account changes made
+
+Planning date: 17 September 2026
+
+Decision: Change the canonical address now to https://questacademy.bookwyrminteractive.studio (not .studo). A dedicated hostname materially lowers migration risk and leaves the apex domain free for other content. Do not introduce the former /QuestAcademy path as a production dependency; add it only as an optional redirect after the new deployment passes acceptance.
+
+1. Executive Recommendation
+
+Adopt a staged migration with the frontend and backend isolated behind one same-origin subdomain. Keep Neon PostgreSQL during the first migration. Move live combat coordination to a Durable Object per combat session. Replace the Replit-only object-storage signing path before leaving Replit. Preserve the current host until the Cloudflare release has passed functional, load, security, and rollback tests.
+
+Layer
+
+Recommended target
+
+Why this is the smallest safe move
+
+Public entry
+
+questacademy.bookwyrminteractive.studio
+
+The subdomain can be owned end to end without touching unrelated apex paths.
+
+Frontend
+
+Cloudflare Pages, Vite output in dist/public
+
+Matches the requested Pages/Workers split; preview deployments support acceptance testing.
+
+Same-origin gateway
+
+Pages Functions for /api/*, /ws, /objects/*
+
+Keeps browser traffic same-origin and forwards internally to the backend Worker through a Service binding.
+
+REST backend
+
+Dedicated Worker service
+
+Ports server behavior away from a long-lived Node process while keeping a clear deployment boundary.
+
+Live combat
+
+Durable Object keyed by combat session ID
+
+Provides single-owner coordination for sockets, host authority, timers, broadcasts, reconnects, and state.
+
+Database
+
+Existing Neon PostgreSQL via Worker-supported driver; Hyperdrive is optional
+
+Avoids a database migration. Auth/session reads must not use stale query caching.
+
+Teacher sessions
+
+Opaque signed cookie + session row in Neon
+
+Preserves immediate logout and 60-minute rolling expiry without relying on isolate memory.
+
+Object storage
+
+Decision gate: Worker-compatible GCS adapter or R2
+
+The current code depends on a Replit localhost sidecar, so it cannot move unchanged.
+
+Platform note: Cloudflare now recommends Workers Static Assets for new full-stack projects. A single Worker serving Vite assets, REST, and Durable Objects is a credible simplification. This plan keeps Pages as the primary frontend because the dedicated subdomain makes it clean and it matches the project baseline; approve a switch to Workers Static Assets before implementation if one deployment surface is preferred.
+
+2. Why the Subdomain Is the Right Change
+
+Concern
+
+Former /QuestAcademy path
+
+Dedicated subdomain
+
+Frontend base
+
+Requires Vite base and Wouter basename changes everywhere.
+
+Current root-relative Vite and Wouter behavior can remain.
+
+API and WebSocket URLs
+
+Every /api, /ws, and /objects reference must be prefixed.
+
+Existing same-origin /api, /ws, and /objects contracts can remain.
+
+Cookies
+
+Requires Path=/QuestAcademy and matching logout semantics.
+
+Path=/ is isolated to the QuestAcademy hostname when Domain is omitted.
+
+SPA fallback
+
+Must avoid capturing other apex paths.
+
+May safely own the full QuestAcademy hostname.
+
+Cloudflare ownership
+
+Pages cannot naturally own only one path without a front-door proxy.
+
+Pages custom domain can own the entire hostname.
+
+Rollback
+
+Route precedence and origin pass-through are delicate.
+
+DNS/custom-domain rollback is isolated from apex content.
+
+The address change should be recorded as an architecture decision before code work begins. Confirm that the intended spelling is bookwyrminteractive.studio and reserve the subdomain in Cloudflare. Do not create the optional old-path redirect until the new URL is stable and any existing production links are inventoried.
+
+3. Verified Current Architecture
+
+Repository inspection confirms a Vite/React SPA and a single Express/TypeScript process that serves REST, WebSockets, static assets, sessions, data access, seed logic, and object-storage operations. The production build targets Node, not Workers.
+
+Evidence
+
+Current behavior
+
+Migration implication
+
+package.json
+
+vite build plus esbuild server/index.ts --platform=node; Node start script; no test script.
+
+Add separate frontend and Worker builds plus focused automated tests.
+
+vite.config.ts
+
+Client root, dist/public output, no base, Replit runtime plugin.
+
+The new subdomain lets base remain /. Remove or isolate Replit tooling from production.
+
+server/index.ts
+
+Express, connect-pg-simple, unconditional default and test seeding, Vite/static server, server.listen.
+
+Do not run startup logic in an isolate. Make seeding explicit and deploy backend as request handlers.
+
+server/routes.ts
+
+About 3,400 lines of REST and WebSocket logic; process-local clients, maps, intervals, and timeouts.
+
+Extract route contracts and combat engine; use a Durable Object for live sessions.
+
+server/db.ts
+
+Neon serverless Pool with Node ws constructor and Drizzle neon-serverless.
+
+Retain Neon but use a Worker-supported driver/configuration and concurrency tests.
+
+server/objectStorage.ts
+
+Google client obtains credentials and signatures from 127.0.0.1:1106 Replit sidecar.
+
+Hard blocker. Implement a Worker-compatible storage adapter or migrate objects to R2.
+
+client/src/App.tsx and pages
+
+Absolute app routes, /api fetches, /ws sockets, and /objects URLs.
+
+These contracts fit the dedicated subdomain and no longer need an app-path prefix.
+
+.replit and replit.md
+
+Node 20 autoscale, port 5000, database/WebSocket/object-storage integrations.
+
+Keep for rollback during transition; remove assumptions from Cloudflare production code.
+
+4. Critical Findings Before Porting
+
+Critical: The current WebSocket design is a stateful multiplayer server. A stateless Worker port would be behaviorally incorrect even if it compiles.
+
+Live connections, session ownership, heartbeat, pending broadcasts, and combat timers are process-local. Map each combat session ID to one Durable Object and persist resumable state deliberately.
+
+Host authority is granted by client message shape and student identity is trusted from the client. Authenticate the WebSocket upgrade and bind host/student roles to verified principals before cutover.
+
+Teacher authorization checks only for the presence of a teacher session in multiple places; ownership checks are incomplete. Fix authorization as a migration gate so the port does not preserve cross-tenant access flaws.
+
+Test teacher, student, fight, guild, and combat-session records are seeded at every server start. Disable production test seeding immediately and move approved seeds to an explicit job.
+
+API logging captures serialized response bodies. Replace it with structured, redacted logs before enabling Cloudflare observability.
+
+The repository has no automated test script and no dedicated health endpoints. Create route-contract, session, WebSocket, storage, and smoke tests before behavior is split across services.
+
+5. Target Architecture
+
+Browser at questacademy.bookwyrminteractive.studio
+  -> Cloudflare Pages: Vite SPA and immutable assets
+  -> Pages Functions gateway: /api/*, /ws, /objects/*
+       -> Service binding: QuestAcademy API Worker
+            -> Neon PostgreSQL (optionally through cache-disabled Hyperdrive)
+            -> Durable Object per combat session for WebSockets and timers
+            -> GCS adapter or R2 binding for private objects
+
+Request ownership
+
+Pages owns static files and SPA navigation on the QuestAcademy hostname.
+
+Pages Functions matches dynamic paths before fallback and forwards the original request over a Service binding. Unknown API paths return JSON 404, not index.html.
+
+The API Worker owns REST, authentication, session persistence, database access, object policy, and health endpoints.
+
+The Worker routes /ws upgrades to a Durable Object chosen from the verified combat session ID. The object owns the room; it is not a global singleton.
+
+Neon remains the system of record for teachers, students, fights, guilds, completed combat results, and session records. Durable Object storage holds only state required for reliable live-session recovery.
+
+Cookie and origin policy
+
+Cookie name: replace the generic connect.sid with a product-specific name such as qa_session.
+
+Attributes: Secure; HttpOnly; SameSite=Lax unless a proven cross-site flow requires otherwise; Path=/; no Domain attribute.
+
+Use a 60-minute rolling expiry only if product owners confirm that current behavior. Logout must delete the same server row and clear the cookie using identical path/security attributes.
+
+Use same-origin requests and WebSockets. Do not add permissive CORS. Preview origins should use separate staging sessions and data.
+
+6. Compatibility Matrix
+
+Subsystem
+
+Cloudflare fit
+
+Required change
+
+Risk
+
+Validation
+
+Vite SPA
+
+Supported on Pages
+
+Split client build; remove Replit production plugin; SPA fallback.
+
+Medium
+
+Build inspection; deep-link refresh; asset cache headers.
+
+Wouter routing
+
+Supported unchanged on subdomain
+
+Keep logical root routes; fix existing /lobby -> /student/lobby mismatch.
+
+Low
+
+Click and refresh every route; client 404 behavior.
+
+Express REST
+
+Worker compatible only after validation
+
+Use Fetch-native router or tested Express adapter; remove listen/startup assumptions.
+
+High
+
+Golden route-contract tests against legacy and Worker.
+
+Teacher auth
+
+Custom code; portable
+
+Harden password verification, ownership checks, CSRF/rate limits, and error behavior.
+
+High
+
+Positive/negative tenant tests; brute-force and CSRF checks.
+
+Sessions
+
+Current middleware is Node-oriented
+
+Worker-native signed opaque cookie and Neon session table; cache disabled.
+
+High
+
+Login, rolling renewal, logout, revocation, concurrent tabs.
+
+Neon + Drizzle
+
+Supported
+
+Use Worker-supported connection; evaluate Hyperdrive; keep migrations external.
+
+Medium
+
+CRUD, transaction, concurrency, latency, failure tests.
+
+WebSockets
+
+Supported with Durable Objects
+
+One object per combat session; Hibernation API; alarms for durable timers.
+
+Critical
+
+Host/join/reconnect, two rooms, eviction, timer drift, load.
+
+Combat state
+
+Partially persisted today
+
+Define source of truth and checkpoint/recovery rules; avoid dual writers.
+
+Critical
+
+Recovery after object restart; idempotent result commit.
+
+Google storage
+
+Current adapter is not portable
+
+Replace Replit sidecar auth/signing; choose GCS adapter or R2 migration.
+
+High
+
+Upload, read, range, CORS, auth, legacy URLs, checksums.
+
+Startup seeds
+
+Not valid in Workers
+
+Explicit, idempotent admin/deploy job; production test seeds forbidden.
+
+High
+
+Blank and populated database rehearsals.
+
+Static serving
+
+Pages-native
+
+Pages output dist/public; API/WS/object exclusions before SPA fallback.
+
+Medium
+
+API 404 stays JSON; nested SPA route returns HTML.
+
+Observability
+
+Cloudflare-supported
+
+Structured redacted logs, traces, request IDs, metrics and alerts.
+
+Medium
+
+Synthetic failure appears in logs/alert channel.
+
+7. Phased Migration Plan
+
+The estimates below are planning ranges for one experienced engineer with timely product and account decisions. They are not release commitments. The security, live-combat, and storage findings are the schedule drivers.
+
+Phase 0 - Decisions and inventory
+
+Indicative effort: 1-2 engineering days
+
+Approve the .studio subdomain as canonical and identify the owner of the apex DNS zone.
+
+Inventory current production host, DNS records, Neon connection limits, object count/size/URLs, and active authentication flows.
+
+Choose Pages + Worker (this plan) versus one Worker with Static Assets. Choose GCS adapter versus R2 migration.
+
+Record acceptance owners, release window, traffic expectations, retention/compliance needs, and rollback authority.
+
+Exit gate: Architecture decision record approved; unknowns have owners and due dates.
+
+Phase 1 - Stabilize and secure the current Node app
+
+Indicative effort: 3-6 days
+
+Add route-contract tests for REST and WebSocket messages before refactoring.
+
+Disable unconditional production test seeding; make approved seeds explicit and idempotent.
+
+Add teacher resource-ownership checks, WebSocket authentication/role binding, rate limits, CSRF posture, and safer password comparison.
+
+Add /api/health/live and /api/health/ready, request IDs, structured logs, and response-body redaction.
+
+Introduce configuration and object-storage interfaces while keeping Replit behavior available for rollback.
+
+Exit gate: Legacy deployment is safer, observable, testable, and still releasable.
+
+Phase 2 - Cloudflare project foundation
+
+Indicative effort: 2-4 days
+
+Add build:client, build:worker, check, test, dev:cloudflare, and deploy scripts without replacing the legacy start script.
+
+Create Pages configuration for dist/public and preview environments.
+
+Create the API Worker configuration, compatibility date, secret declarations, Service binding contract, Durable Object migration stanza, and staging environment.
+
+Add Pages Functions gateway routes for /api/*, /ws, and /objects/*; prove WebSocket upgrade forwarding in staging.
+
+Add static headers: immutable caching for fingerprinted assets; revalidation/no-cache for HTML.
+
+Exit gate: A hello-world SPA, API health route, and WebSocket echo pass on preview URLs.
+
+Phase 3 - REST, Neon, and sessions
+
+Indicative effort: 5-10 days
+
+Port HTTP routes in vertical slices: health, read-only public routes, teacher auth/session, then authenticated mutations.
+
+Use a Worker-supported Neon/Drizzle setup. If Hyperdrive is used, disable query caching for auth, sessions, permissions, and read-after-write flows.
+
+Replace connect-pg-simple middleware with an explicit session repository and signed opaque cookie.
+
+Run the same contract suite against legacy and staging; compare status, JSON shape, validation, and errors.
+
+Keep database schema changes expand/contract and compatible with both hosts.
+
+Exit gate: All REST and session acceptance tests pass against a staging Neon branch or isolated schema.
+
+Phase 4 - Real-time combat on Durable Objects
+
+Indicative effort: 8-15 days
+
+Extract deterministic combat rules from Express/socket transport code.
+
+Implement one Durable Object per session ID using Hibernation WebSockets; authenticate upgrade before joining.
+
+Move room membership, host authority, heartbeat, broadcasts, reconnect dedupe, and timers to the object. Use alarms for durable deadlines.
+
+Define checkpoints to Durable Object storage and Neon; ensure final result writes are idempotent.
+
+Run multi-room, reconnect, eviction/restart, latency, timer-drift, and 2-30-player load tests. Avoid dual-active game writers during cutover.
+
+Exit gate: A full teacher-hosted fight completes after forced object restart, with correct persisted results.
+
+Phase 5 - Object storage
+
+Indicative effort: 3-8 days plus copy time if R2
+
+Inventory object operations, visibility, metadata, signed URL lifetime, CORS, range requests, and legacy /objects references.
+
+For GCS retention: replace the Replit sidecar with Worker-compatible authentication/signing and fetch streaming.
+
+For R2: provision staging/production buckets, implement an adapter, dual-read old/new, write-new, backfill, checksum, and sampled visual verification.
+
+Persist object keys rather than host-specific URLs where practical; normalize legacy references at read time until migrated.
+
+Exit gate: Uploads and existing images work from the canonical host; inventory and checksum reports reconcile.
+
+Phase 6 - Staging acceptance and operational readiness
+
+Indicative effort: 3-5 days
+
+Run the complete acceptance matrix on Pages preview, staging custom hostname, desktop, and mobile.
+
+Enable Workers logs/traces, dashboards, alert thresholds, and a release-day tailing procedure.
+
+Rehearse Worker rollback, Pages rollback, Neon compatibility, Durable Object constraints, and storage fallbacks.
+
+Perform security review of tenant boundaries, cookies, CSRF, WebSockets, uploads, caches, and secret handling.
+
+Exit gate: Named acceptance owners sign off; rollback rehearsal is timed and documented.
+
+Phase 7 - Controlled cutover
+
+Indicative effort: 1-2 days plus observation window
+
+Deploy immutable versions and smoke-test them before changing the custom domain.
+
+Attach questacademy.bookwyrminteractive.studio only after DNS conflict review and certificate readiness.
+
+Run immediate synthetic, teacher, student, combat, upload, and database smoke tests.
+
+Observe errors, latency, WebSocket churn, Neon connections, and object failures. Keep the legacy deployment available.
+
+After the acceptance window, optionally redirect the old /QuestAcademy address to the subdomain if that address exists and apex ownership permits it.
+
+Exit gate: Production acceptance is complete; rollback window and legacy-retirement date are explicitly approved.
+
+8. Repository Change Set
+
+Implementation should occur on a branch named cloudflare-migration/<short-purpose> and end in a review-ready pull request into main. Preserve legacy deployment files until production acceptance.
+
+Area
+
+Planned repository work
+
+package.json / lockfile
+
+Add split build, Worker dev/deploy, test, and contract-test scripts; add only proven runtime dependencies.
+
+vite.config.ts
+
+Keep base=/ for the subdomain; conditionally remove Replit-only production plugins; preserve dist/public.
+
+functions/
+
+Create same-origin Pages gateway routes for API, WebSocket, and object requests, backed by a Service binding.
+
+worker/
+
+Add Worker entry, environment types, REST router, session repository, Neon adapter, storage adapter, error handling, and health endpoints.
+
+worker/combat/
+
+Add Durable Object class, protocol validation, authenticated roles, alarms, state checkpoints, and idempotent completion.
+
+shared/
+
+Extract pure route schemas, auth/session types, WebSocket message schemas, and deterministic combat logic usable in tests.
+
+server/
+
+Retain legacy entry for rollback; remove production seed behavior and share hardened domain logic with Worker where safe.
+
+Cloudflare config
+
+Add separate Pages and Worker Wrangler configs for staging/production; declare binding and secret names only.
+
+client/
+
+Centralize public origin/API/WS/object URL construction; fix /lobby redirect bug; keep same-origin defaults.
+
+tests/
+
+Add route contracts, sessions, authorization, Neon integration, Durable Object/WebSocket, storage, and end-to-end smoke tests.
+
+docs/
+
+Add setup, bindings, secrets, deploy, DNS/custom-domain, acceptance, cutover, incident, and rollback runbooks.
+
+9. Configuration and Secret Inventory
+
+Commit variable names and non-secret examples only. Use distinct staging and production values. Never expose runtime secrets through VITE_* variables.
+
+Name or binding
+
+Type
+
+Purpose / disposition
+
+PUBLIC_ORIGIN
+
+Non-secret var
+
+https://questacademy.bookwyrminteractive.studio in production.
+
+ENVIRONMENT
+
+Non-secret var
+
+staging or production; replaces Replit deployment detection.
+
+SESSION_COOKIE_NAME
+
+Non-secret var
+
+Product-specific cookie name, for example qa_session.
+
+SESSION_TTL_SECONDS
+
+Non-secret var
+
+Default 3600 only after current behavior is confirmed.
+
+SESSION_SECRET
+
+Secret
+
+Signing/verification key; rotate through a dual-key window if needed.
+
+DATABASE_URL
+
+Secret, direct option
+
+Neon connection if not using Hyperdrive.
+
+HYPERDRIVE
+
+Binding, optional
+
+Neon connection proxy. Use cache-disabled behavior for sensitive/read-after-write paths.
+
+COMBAT_SESSIONS
+
+Durable Object binding
+
+Namespace for per-session live combat objects.
+
+API_SERVICE
+
+Pages Service binding
+
+Internal gateway from Pages Functions to backend Worker.
+
+OBJECTS
+
+R2 binding, optional
+
+Production object bucket if R2 is selected.
+
+GCS_BUCKET
+
+Non-secret var, optional
+
+Bucket name if GCS is retained.
+
+GCP_PROJECT_ID
+
+Non-secret var, optional
+
+GCP project identifier if required by chosen adapter.
+
+GCP_SERVICE_ACCOUNT_JSON
+
+Secret, optional
+
+Only if the approved Worker-compatible GCS authentication design requires it.
+
+PRIVATE_OBJECT_DIR
+
+Legacy only
+
+Current Replit bucket/prefix input; retire or map through the adapter.
+
+REPLIT_DEPLOYMENT / PORT
+
+Legacy only
+
+Do not use for Cloudflare runtime behavior.
+
+10. Manual Cloudflare Account Actions
+
+No Cloudflare account connector is configured, so these actions remain manual and must be completed by an authorized account owner.
+
+Confirm BookwyrmInteractive.studio is an active Cloudflare zone and inventory all DNS records before changing anything.
+
+Create the staging and production API Worker services. Deploy the Durable Object class in a backward-compatible migration before routing sockets to it.
+
+If Hyperdrive is selected, create staging and production configurations pointed at Neon; use conservative pool settings and cache-disabled behavior for sensitive data.
+
+Create the Pages project from the GitHub repository with the approved build command and dist/public output. Configure separate preview and production variables.
+
+Bind the Pages project to the API Worker through API_SERVICE. Bind the backend Worker to COMBAT_SESSIONS and the chosen database/object services.
+
+Upload required secrets with Wrangler or the dashboard. Verify the deploy fails when declared secrets are absent.
+
+Add questacademy.bookwyrminteractive.studio as the Pages custom domain. Resolve any existing DNS record conflict only after ownership review.
+
+Set SSL/TLS to Full (strict), verify certificate issuance, enable production logs/traces, and record rollback operators.
+
+After acceptance, add an optional permanent redirect from the former /QuestAcademy URL to the subdomain. Do not let the redirect capture unrelated paths.
+
+11. Acceptance Test Matrix
+
+Area
+
+Pass criteria
+
+DNS/TLS
+
+Hostname resolves through Cloudflare; valid certificate; Full (strict); no change to unrelated records.
+
+SPA
+
+Home and every nested teacher/student route load by click and direct refresh; unknown route shows app 404.
+
+Assets
+
+JS/CSS/images load from the subdomain; hashed assets immutable; HTML revalidates; no mixed content.
+
+Routing
+
+/api unknown returns JSON 404; /ws requires upgrade; /objects policy applies; no SPA HTML on dynamic paths.
+
+Teacher auth
+
+Signup/login/session check/logout; secure cookie attributes; rolling expiry; immediate revocation; wrong tenant denied.
+
+Student flows
+
+Join/login, guild membership, inventory, equipment, quests, stats, and existing-student redirect.
+
+REST mutations
+
+Validation, authorization, idempotency, concurrency, and read-after-write visibility match contract.
+
+WebSockets
+
+Authenticated host; verified student; host/join/reconnect; duplicate connection; disconnect; protocol errors.
+
+Combat
+
+Two simultaneous sessions; 2-30 players; phase timers; answers; blocks/heals; game over; result persistence.
+
+Durability
+
+Forced object restart/hibernation; restored attachments/state; alarm fires once; completion writes once.
+
+Database
+
+Cold/warm latency; connection cap; transaction failure; Neon interruption; schema compatibility.
+
+Objects
+
+Upload, signed authorization, read, range, content type, 404, cache policy, legacy image, checksum.
+
+Security
+
+Tenant isolation; CSRF posture; brute-force limit; malformed JSON; oversized payload; upload abuse; cache leaks.
+
+Observability
+
+Request IDs, redaction, error trace, WebSocket counters, storage failures, and alert delivery.
+
+Rollback
+
+Pages and Worker versions restored; legacy endpoint usable; no schema/object data loss.
+
+12. Cutover Runbook
+
+T-7 days: freeze destructive schema/storage changes; confirm acceptance owners and rollback operator; publish maintenance/launch communication if needed.
+
+T-2 days: deploy final candidate versions without production traffic; run full staging acceptance and load tests; verify secrets/bindings and certificate readiness.
+
+T-30 minutes: confirm legacy health, Neon backups/restore point, object fallback, dashboards, and a clean rollback target.
+
+T0: attach or activate the QuestAcademy Pages custom domain. Do not modify apex records beyond the reviewed subdomain change.
+
+T+5 minutes: test home, nested route, teacher login, student join, API mutation, WebSocket upgrade, one short combat, upload/read, and logout.
+
+T+60 minutes: review HTTP errors, tail latency, Worker CPU/duration, WebSocket disconnects, Durable Object alarms, Neon connections/errors, and object failures.
+
+T+24 hours: repeat representative teacher/student sessions and confirm no data divergence. Keep legacy host intact.
+
+After the agreed observation window: enable the optional old-path redirect, document the stable Worker/Page versions, and schedule legacy retirement separately.
+
+13. Rollback Plan
+
+Rollback principle: Code can roll back quickly; database, Durable Object, and storage changes cannot. All state changes must remain backward compatible until the rollback window closes.
+
+Trigger
+
+Immediate action
+
+State protection
+
+Frontend failure
+
+Roll back Pages deployment or detach custom domain to the approved prior destination.
+
+No database change; invalidate only if a bad HTML shell is cached.
+
+REST/auth failure
+
+Roll back Worker version; keep Pages gateway binding stable; route users to legacy host if needed.
+
+Both versions must understand current session/schema formats.
+
+Combat failure
+
+Stop new sessions on Cloudflare; let active legacy sessions finish or direct all new sessions to one system.
+
+Never run two authoritative writers for one combat session.
+
+Neon overload/error
+
+Disable cutover or reduce traffic; restore legacy application path; investigate pool/cache settings.
+
+Avoid emergency schema reversal; use expand/contract migrations.
+
+Object failure
+
+Switch adapter to GCS/legacy dual-read; pause uploads if integrity is uncertain.
+
+Keep source objects and reconciliation manifest until acceptance closes.
+
+Security incident
+
+Disable affected route/custom domain, revoke/rotate secrets, invalidate sessions, preserve logs.
+
+Follow incident process; do not conceal or overwrite evidence.
+
+Cloudflare Worker rollback creates a new deployment from an earlier version, but it does not roll back Neon, R2, KV, or Durable Object data. Durable Object class lifecycle changes can also constrain rollback. Introduce the namespace/class before traffic cutover and avoid destructive migrations during the release window.
+
+14. Open Decisions and Blockers
+
+Confirm the canonical hostname spelling and whether the former /QuestAcademy address has ever been public.
+
+Identify the current production host, its rollback URL, and the owner authorized to change the subdomain record/custom domain.
+
+Approve Pages + Worker versus unified Workers Static Assets. Pages is the plan baseline; Workers Static Assets is Cloudflare current new-project recommendation.
+
+Decide GCS retention versus R2 using the object inventory, egress cost, auth compatibility, operational ownership, and rollback needs.
+
+Confirm whether teacher sessions must remain 60-minute rolling sessions and whether any cross-site callback requires SameSite=None.
+
+Define real production use of WebSockets, expected concurrent sessions/players, latency target, and reconnect tolerance.
+
+Choose acceptance-test owners, release window, monitoring thresholds, and legacy-host retirement criteria.
+
+Confirm compliance/data-residency requirements for student data, logs, database, Durable Objects, and object storage.
+
+15. Pull Request Completion Standard
+
+An implementation request should end with a dedicated cloudflare-migration/ branch and a review-ready pull request into main. The pull request should include:
+
+Architecture decision and diagram, including the canonical subdomain and service boundaries.
+
+Repository changes and dependency rationale, with no unrelated refactors.
+
+Local/staging setup, variable and binding names, and exact manual Cloudflare dashboard/Wrangler actions.
+
+Test evidence for build, type check, route contracts, sessions, Neon, WebSockets/Durable Objects, storage, SPA routes, and rollback.
+
+Known limitations, security decisions, observability plan, data/schema compatibility, cutover steps, and rollback triggers.
+
+Explicit statement that DNS, secrets, account bindings, and production deployment remain manual until authorized Cloudflare access exists.
+
+16. Evidence and Official Sources
+
+Repository evidence
+
+Build scripts and dependencies
+
+Vite configuration
+
+Express entry and sessions
+
+REST and WebSockets
+
+Database connection
+
+Storage and seed behavior
+
+Object storage integration
+
+Frontend routes
+
+Replit deployment
+
+Cloudflare documentation
+
+Workers Static Assets recommendation
+
+Pages and Workers comparison
+
+Pages Functions and bindings
+
+SPA routing
+
+Node.js compatibility
+
+Express on Workers
+
+Neon integration
+
+Drizzle with Hyperdrive
+
+Hyperdrive query caching
+
+Durable Object WebSockets
+
+Durable Object migrations
+
+Workers secrets
+
+Workers observability
+
+Versions and deployments
+
+Rollbacks
+
+R2 API options
+
+R2 migration strategies
+
+Assessment boundary: This plan is based on the repository main branch and official documentation available on 17 September 2026. No Cloudflare project, DNS record, secret, database, object bucket, branch, commit, or pull request was created or changed.
