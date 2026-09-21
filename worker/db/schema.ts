@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const teachers = pgTable("teachers", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -32,6 +32,43 @@ export const appSessions = pgTable("app_sessions", {
   expiryIndex: index("app_sessions_expiry_idx").on(table.expiresAt),
 }));
 
+export interface FightQuestion {
+  id: string;
+  type: "multiple_choice" | "true_false" | "short_answer";
+  question: string;
+  options?: string[];
+  correctAnswer: string;
+  timeLimit: number;
+}
+
+export interface FightEnemy {
+  id: string;
+  name: string;
+  image: string;
+  difficultyMultiplier: number;
+}
+
+export const fights = pgTable("fights", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teacherId: uuid("teacher_id").notNull().references(() => teachers.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  guildCode: text("guild_code"),
+  questions: jsonb("questions").notNull().$type<FightQuestion[]>(),
+  enemies: jsonb("enemies").notNull().$type<FightEnemy[]>(),
+  baseXP: integer("base_xp").notNull().default(10),
+  baseEnemyDamage: integer("base_enemy_damage").notNull().default(1),
+  enemyDisplayMode: text("enemy_display_mode").notNull().default("consecutive"),
+  lootTable: jsonb("loot_table").notNull().$type<Array<{ itemId: string }>>().default([]),
+  randomizeQuestions: boolean("randomize_questions").notNull().default(false),
+  shuffleOptions: boolean("shuffle_options").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  teacherIndex: index("fights_teacher_idx").on(table.teacherId),
+}));
+
 export type TeacherRecord = typeof teachers.$inferSelect;
 export type NewTeacherRecord = typeof teachers.$inferInsert;
 export type AppSessionRecord = typeof appSessions.$inferSelect;
+export type FightRecord = typeof fights.$inferSelect;
+export type NewFightRecord = typeof fights.$inferInsert;
