@@ -54,8 +54,9 @@ test("answer mutates authoritative player state and is broadcast", () => {
 });
 
 test("the migration boundary rejects client-authoritative identity", () => {
-  assert.equal(fixture.target.appBasePath, "/QuestAcademy");
-  assert.equal(fixture.target.webSocketPath, "/QuestAcademy/ws");
+  assert.equal(fixture.target.appBasePath, "/");
+  assert.equal(fixture.target.apiPrefix, "/api");
+  assert.equal(fixture.target.webSocketPath, "/ws");
   assert.equal(fixture.target.identity.clientSuppliedIdentityIsAuthoritative, false);
   assert.equal(fixture.target.identity.teacher, "server-verifiable session");
   assert.equal(fixture.target.identity.student, "server-verifiable session");

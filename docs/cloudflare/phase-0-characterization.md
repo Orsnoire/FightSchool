@@ -4,6 +4,8 @@ Status: complete for repository-level characterization
 
 Baseline: `main` at `2d3d07053f6be854f99cb81ac8bfce3fce56969f`
 
+Routing authority: the canonical production origin is `https://questacademy.bookwyrminteractive.studio`, and the application owns that hostname root. Target API, WebSocket, object, cookie, and browser routes are root-relative. The apex `/QuestAcademy` path is not an application basename.
+
 ## Scope and exit gate
 
 This phase characterizes the smallest classroom gameplay slice that must survive the Cloudflare transport rewrite. It does not add Worker, Durable Object, authentication, routing, or storage implementation. The exit gate is met when the flow and state transitions are explicit, sanitized fixtures describe the contract, and focused tests detect accidental drift in the legacy implementation.
@@ -27,12 +29,12 @@ The selected synchronized action is a student answer submission. It is the small
 
 | Step | Legacy request | Success contract | Migration implication |
 |---|---|---|---|
-| Teacher login | `POST /api/teacher/login` with email and password | Teacher without password plus `sessionActive: true`; Express session cookie | Move to `/QuestAcademy/api/teacher/login`; retain server-verifiable identity and revocation. |
-| Student login | `POST /api/student/login` with nickname and password | Student without password; missing nickname is auto-created | Move to `/QuestAcademy/api/student/login`; issue a server-verifiable student session rather than trusting local storage. |
+| Teacher login | `POST /api/teacher/login` with email and password | Teacher without password plus `sessionActive: true`; Express session cookie | Keep `/api/teacher/login` at the canonical origin; retain server-verifiable identity and revocation. |
+| Student login | `POST /api/student/login` with nickname and password | Student without password; missing nickname is auto-created | Keep `/api/student/login` at the canonical origin; issue a server-verifiable student session rather than trusting local storage. |
 | Session lookup | `GET /api/sessions/:sessionId` | `sessionId`, `fightId`, title, and `isActive` | Keep the response minimal; authorization and enumeration controls must be decided in the authentication increment. |
 | Fight read | `GET /api/fights/:id` | Fight configuration | The Worker slice needs only the reads required by the host flow. |
 
-All target routes remain beneath `/QuestAcademy/api`. The legacy root-level paths above are evidence, not the target routing contract.
+Target HTTP routes keep the existing `/api` prefix at the canonical origin. The legacy handlers above characterize behavior to preserve or deliberately harden.
 
 ## Observed WebSocket contract
 
@@ -47,7 +49,7 @@ All target routes remain beneath `/QuestAcademy/api`. The legacy root-level path
 | Server to session | `combat_state { state }` | Teacher and student display the same state, including `hasAnswered`. |
 | Server to client | `error { message }` | Fail invalid join/start requests without falling back to static HTML. |
 
-The target endpoint is `/QuestAcademy/ws`. The entry Worker must authenticate the upgrade, derive role and identity from the authenticated session, authorize access to the requested combat session, and pass trusted identity metadata to the Durable Object. The Durable Object must not accept `studentId`, teacher identity, or authorization solely from message payloads.
+The target endpoint is `/ws`. The entry Worker must authenticate the upgrade, derive role and identity from the authenticated session, authorize access to the requested combat session, and pass trusted identity metadata to the Durable Object. The Durable Object must not accept `studentId`, teacher identity, or authorization solely from message payloads.
 
 ## State transition contract
 
@@ -73,7 +75,7 @@ The Cloudflare implementation must add command IDs or an equivalent idempotency 
 | Sensitive answer content is logged | The server logs the student ID and submitted answer. | Remove answer-body logging from the target runtime and use minimal structured events. |
 | Production startup mutates data | `server/index.ts` seeds default and test data at every startup. | Do not port startup seeding; use explicit administrative fixtures for staging. |
 | Production secret has a fallback | Express uses `dev-secret-change-in-production` when `SESSION_SECRET` is absent. | Fail closed when production session key material is missing. |
-| Cookie scope is implicit | The Express cookie omits `Path`; logout clears the default cookie without migration-path attributes. | Set cookie `Path=/QuestAcademy` and explicit production attributes in the Worker session service. |
+| Cookie scope is implicit | The Express cookie omits `Path`; logout clears the default cookie without migration-path attributes. | Set cookie `Path=/` and explicit production attributes in the Worker session service. |
 
 These findings are recorded rather than patched into the legacy Express transport. Fixing them in Express would not create the Worker authentication boundary and would increase throwaway work. They are hard entry requirements for the authentication and Durable Object increments.
 
