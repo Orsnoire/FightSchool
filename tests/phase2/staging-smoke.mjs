@@ -65,26 +65,68 @@ assert.equal(nestedRoute.status, 200);
 assert.match(nestedRoute.headers.get("content-type") || "", /text\/html/);
 
 const socketUrl = origin.replace(/^http/, "ws") + "/ws?sessionId=staging-smoke";
-const socket = new WebSocket(socketUrl, { headers: { Authorization: "Bearer " + token } });
-const commandId = randomUUID();
 
-await new Promise((resolve, reject) => {
-  const timeout = setTimeout(() => reject(new Error("WebSocket smoke timed out")), 10_000);
-  socket.once("open", () => {
-    socket.send(JSON.stringify({ type: "ping", commandId }));
-  });
-  socket.once("message", (data) => {
+async function pingWebSocket() {
+  const socket = new WebSocket(socketUrl, { headers: { Authorization: "Bearer " + token } });
+  const commandId = randomUUID();
+
+  try {
+    await new Promise((resolve, reject) => {
+      const finish = (error) => {
+        clearTimeout(timeout);
+        if (error) reject(error);
+        else resolve();
+      };
+      const timeout = setTimeout(() => finish(new Error("WebSocket smoke timed out")), 10_000);
+      socket.once("open", () => {
+        socket.send(JSON.stringify({ type: "ping", commandId }));
+      });
+      socket.once("message", (data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          assert.deepEqual(message, { type: "pong", commandId, role: "staging-smoke" });
+          finish();
+        } catch (error) {
+          finish(error);
+        }
+      });
+      socket.once("error", finish);
+    });
+  } finally {
+    socket.terminate();
+  }
+}
+
+function isRolloutHandshakeError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Unexpected server response: (401|404|429|5\d\d)/.test(message);
+}
+
+async function pingWebSocketAfterRollout(attempts = 20) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-      const message = JSON.parse(data.toString());
-      assert.deepEqual(message, { type: "pong", commandId, role: "staging-smoke" });
-      clearTimeout(timeout);
-      socket.close();
-      resolve();
+      await pingWebSocket();
+      return;
     } catch (error) {
-      reject(error);
+      if (!isRolloutHandshakeError(error)) throw error;
+      lastError = error;
     }
-  });
-  socket.once("error", reject);
-});
+
+    if (attempt < attempts) {
+      console.log("Waiting for WebSocket rollout: attempt " + attempt + "/" + attempts);
+      await sleep(3_000);
+    }
+  }
+
+  throw new Error(
+    "WebSocket staging rollout did not stabilize after "
+      + attempts
+      + " attempts; last result: "
+      + (lastError instanceof Error ? lastError.message : String(lastError)),
+  );
+}
+
+await pingWebSocketAfterRollout();
 
 console.log("Cloudflare staging smoke checks passed.");
