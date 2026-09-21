@@ -1,0 +1,46 @@
+name: Deploy Cloudflare Staging
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check:baseline
+      - run: npm test
+      - run: npm run build:cloudflare
+      - name: Generate staging-only smoke credential
+        shell: bash
+        run: |
+          token="$(openssl rand -hex 32)"
+          echo "::add-mask::$token"
+          echo "STAGING_AUTH_TOKEN=$token" >> "$GITHUB_ENV"
+          export STAGING_AUTH_TOKEN="$token"
+          node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP + "/questacademy-secrets.json", JSON.stringify({ STAGING_AUTH_TOKEN: process.env.STAGING_AUTH_TOKEN }))'
+      - name: Deploy staging Worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.jsonc --secrets-file ${{ runner.temp }}/questacademy-secrets.json
+      - name: Verify staging
+        run: node tests/phase2/staging-smoke.mjs
+        env:
+          STAGING_ORIGIN: https://questacademy-staging.coxsonator.workers.dev
+          STAGING_AUTH_TOKEN: ${{ env.STAGING_AUTH_TOKEN }}

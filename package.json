@@ -6,12 +6,19 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build:legacy": "npm run build",
+    "build:client": "vite build",
+    "build:worker": "esbuild worker/index.ts --platform=browser --conditions=worker,browser --bundle --format=esm --outfile=dist/worker/index.js",
+    "build:cloudflare": "npm run build:client && npm run build:worker",
+    "dev:cloudflare": "npm run build:client && npx --yes wrangler@4 dev --config wrangler.jsonc",
+    "deploy:staging": "npm run build:client && npx --yes wrangler@4 deploy --config wrangler.jsonc",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "check:baseline": "node tests/phase1/typecheck-baseline.mjs",
     "test:phase0": "node --test tests/phase0/*.test.mjs",
     "test:phase1": "tsx --test tests/phase1/*.test.ts",
-    "test": "npm run test:phase0 && npm run test:phase1",
+    "test:phase2": "node --test tests/phase2/*.test.mjs",
+    "test": "npm run test:phase0 && npm run test:phase1 && npm run test:phase2",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
