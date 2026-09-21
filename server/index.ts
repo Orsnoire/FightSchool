@@ -1,126 +1,135 @@
-import express, { type Request, Response, NextFunction } from "express";
+import { randomUUID } from "node:crypto";
+import express, { type NextFunction, type Request, type Response } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import { loadRuntimeConfig } from "./config";
+import { pool } from "./db";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
+import { log, serveStatic, setupVite } from "./vite";
 
+const config = loadRuntimeConfig();
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Trust Replit's proxy for secure cookies in deployed environment
-if (process.env.REPLIT_DEPLOYMENT === '1') {
-  app.set('trust proxy', 1);
+if (config.isDeployed) {
+  app.set("trust proxy", 1);
 }
 
-// Configure PostgreSQL session store
-const PgSession = connectPgSimple(session);
-const sessionStore = new PgSession({
-  conString: process.env.DATABASE_URL,
-  createTableIfMissing: true,
-  tableName: 'teacher_sessions',
+app.use((req, res, next) => {
+  const incomingRequestId = req.get("x-request-id");
+  const requestId = incomingRequestId && /^[A-Za-z0-9._:-]{1,128}$/.test(incomingRequestId)
+    ? incomingRequestId
+    : randomUUID();
+  res.locals.requestId = requestId;
+  res.setHeader("X-Request-Id", requestId);
+  next();
 });
 
-// Detect if running in deployed environment
-const isDeployed = process.env.REPLIT_DEPLOYMENT === '1';
+app.get("/api/health/live", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
-// Configure session middleware with 60-minute rolling timeout
+app.get("/api/health/ready", async (_req, res) => {
+  try {
+    await pool.query("select 1");
+    res.json({ status: "ready" });
+  } catch {
+    res.status(503).json({ status: "not_ready" });
+  }
+});
+
+const PgSession = connectPgSimple(session);
+const sessionStore = new PgSession({
+  conString: config.databaseUrl,
+  createTableIfMissing: true,
+  tableName: "teacher_sessions",
+});
+
 app.use(session({
   store: sessionStore,
-  secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+  secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false,
-  rolling: true, // Reset maxAge on every request
+  rolling: true,
   cookie: {
-    maxAge: 60 * 60 * 1000, // 60 minutes
-    httpOnly: true, // Prevent XSS attacks
-    secure: isDeployed, // HTTPS only in deployed environment
-    sameSite: isDeployed ? 'none' : 'lax', // 'none' for deployed cross-site, 'lax' for dev
+    maxAge: 60 * 60 * 1000,
+    httpOnly: true,
+    secure: config.isDeployed || config.isProduction,
+    sameSite: "lax",
+    path: "/",
   },
 }));
 
 app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
+  const startedAt = Date.now();
   res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+    if (req.path.startsWith("/api")) {
+      log(JSON.stringify({
+        event: "http_request",
+        requestId: res.locals.requestId,
+        method: req.method,
+        path: req.path,
+        status: res.statusCode,
+        durationMs: Date.now() - startedAt,
+      }));
     }
   });
-
   next();
 });
 
-(async () => {
-  // Seed default data on server startup
+async function seedDevelopmentData() {
   await storage.seedDefaultEquipment();
   await storage.seedDefaultTeacher();
-  log("Default equipment items and teacher account seeded");
-
-  // Seed test data for quick feature testing
   await storage.seedTestStudent();
   await storage.seedTestFight();
   await storage.seedTestGuild();
   await storage.seedTestCombatSession();
-  log("Test student, fight, guild, and combat session seeded for feature testing");
+  log("Development seed data created");
+}
+
+async function start() {
+  if (config.seedDevelopmentData) {
+    await seedDevelopmentData();
+  }
 
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    // Log the full error with stack trace for debugging
-    console.error("[Express Error Handler]", {
-      status,
-      message,
-      stack: err.stack,
-      path: _req.path,
-      method: _req.method
-    });
-
-    res.status(status).json({ message });
-    // Do NOT throw - let the process continue serving requests
+  app.use("/api", (_req, res) => {
+    res.status(404).json({ error: "API route not found" });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+    const error = err as { message?: string; stack?: string; status?: number; statusCode?: number };
+    const status = error.status || error.statusCode || 500;
+    console.error("[Express Error Handler]", {
+      requestId: res.locals.requestId,
+      status,
+      message: error.message || "Internal Server Error",
+      stack: error.stack,
+      path: req.path,
+      method: req.method,
+    });
+    const message = status >= 500 && config.isProduction
+      ? "Internal Server Error"
+      : error.message || "Internal Server Error";
+    res.status(status).json({ message, requestId: res.locals.requestId });
+  });
+
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  server.listen({ port: config.port, host: "0.0.0.0", reusePort: true }, () => {
+    log("serving on port " + config.port);
   });
-})();
+}
+
+start().catch((error) => {
+  console.error("Fatal startup error", error);
+  process.exit(1);
+});
