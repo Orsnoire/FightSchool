@@ -9,6 +9,8 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "test:phase0": "node --test tests/phase0/*.test.mjs",
+    "test:phase1": "tsx --test tests/phase1/*.test.ts",
+    "test": "npm run test:phase0 && npm run test:phase1",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

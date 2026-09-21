@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, verifyPassword } from "./storage";
@@ -7,6 +7,7 @@ import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower, getUnlockedJobs } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
 import { ABILITY_DISPLAYS } from "@shared/abilityUI";
+import { isTeacherAuthorized, requireAuth, requireTeacherParamOwnership } from "./auth";
 
 interface ExtendedWebSocket extends WebSocket {
   studentId?: string;
@@ -79,7 +80,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ error: "Failed to logout" });
       }
-      res.clearCookie('connect.sid'); // Clear the session cookie
+      res.clearCookie("connect.sid", {
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production",
+      });
       res.json({ success: true, message: "Logged out successfully" });
     });
   });
@@ -103,15 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Session authentication middleware
-  const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.session.teacherId) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    next();
-  };
-
-  app.get("/api/teacher/:id", requireAuth, async (req, res) => {
+  app.get("/api/teacher/:id", requireAuth, requireTeacherParamOwnership("id"), async (req, res) => {
     const teacher = await storage.getTeacher(req.params.id);
     if (!teacher) return res.status(404).json({ error: "Teacher not found" });
     const { password: _, ...teacherWithoutPassword } = teacher;
@@ -124,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(fights);
   });
 
-  app.get("/api/teacher/:teacherId/fights", requireAuth, async (req, res) => {
+  app.get("/api/teacher/:teacherId/fights", requireAuth, requireTeacherParamOwnership("teacherId"), async (req, res) => {
     const fights = await storage.getFightsByTeacherId(req.params.teacherId);
     res.json(fights);
   });
@@ -138,6 +136,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/fights", requireAuth, async (req, res) => {
     try {
       const data = insertFightSchema.parse(req.body);
+      if (!isTeacherAuthorized(req.session.teacherId, data.teacherId)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       const fight = await storage.createFight(data);
       res.json(fight);
     } catch (error: any) {
@@ -147,7 +148,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/fights/:id", requireAuth, async (req, res) => {
     try {
+      const existingFight = await storage.getFight(req.params.id);
+      if (!existingFight) return res.status(404).json({ error: "Fight not found" });
+      if (!isTeacherAuthorized(req.session.teacherId, existingFight.teacherId)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       const data = insertFightSchema.parse(req.body);
+      if (!isTeacherAuthorized(req.session.teacherId, data.teacherId)) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
       const fight = await storage.updateFight(req.params.id, data);
       if (!fight) return res.status(404).json({ error: "Fight not found" });
       res.json(fight);
@@ -157,6 +166,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete("/api/fights/:id", requireAuth, async (req, res) => {
+    const existingFight = await storage.getFight(req.params.id);
+    if (!existingFight) return res.status(404).json({ error: "Fight not found" });
+    if (!isTeacherAuthorized(req.session.teacherId, existingFight.teacherId)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
     const deleted = await storage.deleteFight(req.params.id);
     if (!deleted) return res.status(404).json({ error: "Fight not found" });
     res.json({ success: true });
@@ -215,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Equipment items endpoints
-  app.get("/api/teacher/:teacherId/equipment-items", async (req, res) => {
+  app.get("/api/teacher/:teacherId/equipment-items", requireAuth, requireTeacherParamOwnership("teacherId"), async (req, res) => {
     const items = await storage.getEquipmentItemsByTeacher(req.params.teacherId);
     res.json(items);
   });
@@ -370,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Guild endpoints
   // Get all guilds for a teacher
-  app.get("/api/teacher/:teacherId/guilds", async (req, res) => {
+  app.get("/api/teacher/:teacherId/guilds", requireAuth, requireTeacherParamOwnership("teacherId"), async (req, res) => {
     try {
       const guilds = await storage.getGuildsByTeacher(req.params.teacherId);
       res.json(guilds);
@@ -3144,7 +3158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return;
           }
           
-          log(`[WebSocket] Student ${ws.studentId} submitted answer: "${message.answer}"`, "websocket");
+          log("[WebSocket] Student answer submitted", "websocket");
           
           await storage.updatePlayerState(ws.sessionId, ws.studentId, {
             currentAnswer: message.answer,
