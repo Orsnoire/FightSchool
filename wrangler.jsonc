@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "questacademy-staging",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-21",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./dist/public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api", "/api/*", "/ws", "/objects", "/objects/*"]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COMBAT_SESSIONS",
+        "class_name": "CombatSession"
+      }
+    ]
+  },
+  "exports": {
+    "CombatSession": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "vars": {
+    "ENVIRONMENT": "staging",
+    "PUBLIC_ORIGIN": "https://questacademy-staging.coxsonator.workers.dev"
+  },
+  "secrets": {
+    "required": ["STAGING_AUTH_TOKEN"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
