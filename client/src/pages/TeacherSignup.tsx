@@ -16,7 +16,7 @@ const signupSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(12, "Password must be at least 12 characters"),
   confirmPassword: z.string(),
   billingAddress: z.string().min(1, "Billing address is required"),
   schoolDistrict: z.string().min(1, "School district is required"),
@@ -270,3 +270,4 @@ export default function TeacherSignup() {
     </div>
   );
 }
+

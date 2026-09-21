@@ -1,8 +1,15 @@
+import { createIdentityRepository, verifyDatabase } from "./db/repository.ts";
+import { handleTeacherAuth } from "./routes/teacher-auth.ts";
+
 interface Env {
   ASSETS: Fetcher;
   COMBAT_SESSIONS: DurableObjectNamespace;
   ENVIRONMENT: string;
   PUBLIC_ORIGIN: string;
+  DATABASE_URL: string;
+  SESSION_SECRET: string;
+  SESSION_COOKIE_NAME: string;
+  SESSION_TTL_SECONDS: string;
   STAGING_AUTH_TOKEN: string;
 }
 
@@ -50,11 +57,17 @@ function validSessionId(sessionId: string | null): sessionId is string {
 
 async function handleReady(env: Env, currentRequestId: string): Promise<Response> {
   try {
+    if (!env.DATABASE_URL || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+      throw new Error("Identity configuration is unavailable");
+    }
     const id = env.COMBAT_SESSIONS.idFromName("__readiness__");
     const stub = env.COMBAT_SESSIONS.get(id);
-    const response = await stub.fetch("https://combat-session.internal/ready", {
-      headers: { "x-questacademy-internal": "1" },
-    });
+    const [response] = await Promise.all([
+      stub.fetch("https://combat-session.internal/ready", {
+        headers: { "x-questacademy-internal": "1" },
+      }),
+      verifyDatabase(env.DATABASE_URL),
+    ]);
     if (!response.ok) throw new Error("Durable Object readiness failed");
     return json({ status: "ready", environment: env.ENVIRONMENT }, 200, currentRequestId);
   } catch {
@@ -94,6 +107,36 @@ export default {
     }
     if (url.pathname === "/api/health/ready") {
       return handleReady(env, currentRequestId);
+    }
+    if (url.pathname.startsWith("/api/teacher/")) {
+      if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {
+        if (request.headers.get("origin") !== env.PUBLIC_ORIGIN) {
+          return json({ error: "Forbidden origin" }, 403, currentRequestId);
+        }
+      }
+      if (!env.DATABASE_URL || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+        return json({ error: "Identity service unavailable" }, 503, currentRequestId);
+      }
+      const ttlSeconds = Number(env.SESSION_TTL_SECONDS);
+      if (!Number.isSafeInteger(ttlSeconds) || ttlSeconds < 300) {
+        return json({ error: "Identity service unavailable" }, 503, currentRequestId);
+      }
+      try {
+        const authResponse = await handleTeacherAuth(request, url, {
+          repository: createIdentityRepository(env.DATABASE_URL),
+          session: {
+            cookieName: env.SESSION_COOKIE_NAME,
+            secret: env.SESSION_SECRET,
+            ttlSeconds,
+          },
+        });
+        if (authResponse) {
+          authResponse.headers.set("X-Request-Id", currentRequestId);
+          return authResponse;
+        }
+      } catch {
+        return json({ error: "Identity service unavailable" }, 503, currentRequestId);
+      }
     }
     if (url.pathname === "/ws") {
       return handleWebSocket(request, env, url, currentRequestId);

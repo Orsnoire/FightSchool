@@ -12,12 +12,12 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: cloudflare-staging
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -25,14 +25,19 @@ jobs:
       - run: npm run check:baseline
       - run: npm test
       - run: npm run build:cloudflare
-      - name: Generate staging-only smoke credential
+      - name: Prepare Worker secrets
         shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
         run: |
+          test -n "$DATABASE_URL"
+          test -n "$SESSION_SECRET"
           token="$(openssl rand -hex 32)"
           echo "::add-mask::$token"
           echo "STAGING_AUTH_TOKEN=$token" >> "$GITHUB_ENV"
           export STAGING_AUTH_TOKEN="$token"
-          node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP + "/questacademy-secrets.json", JSON.stringify({ STAGING_AUTH_TOKEN: process.env.STAGING_AUTH_TOKEN }))'
+          node -e 'require("node:fs").writeFileSync(process.env.RUNNER_TEMP + "/questacademy-secrets.json", JSON.stringify({ DATABASE_URL: process.env.DATABASE_URL, SESSION_SECRET: process.env.SESSION_SECRET, STAGING_AUTH_TOKEN: process.env.STAGING_AUTH_TOKEN }))'
       - name: Deploy staging Worker
         uses: cloudflare/wrangler-action@v4
         with:
