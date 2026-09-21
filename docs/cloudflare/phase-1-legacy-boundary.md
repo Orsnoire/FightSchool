@@ -18,7 +18,7 @@ This increment keeps the existing Express deployment releasable while making the
 - Session cookies explicitly use HttpOnly, SameSite=Lax, and Path=/; secure cookies remain enabled for deployed or production environments.
 - Teacher-scoped reads reject missing sessions and cross-teacher IDs.
 - Fight creation, updates, and deletion verify the authenticated teacher owns the requested resource.
-- CI runs the type check, Phase 0 characterization, Phase 1 configuration and authorization tests, and the legacy production build.
+- CI ratchets the exact existing TypeScript diagnostic baseline, runs Phase 0 characterization, runs Phase 1 configuration and authorization tests, and builds the legacy application.
 
 ## Compatibility matrix
 
@@ -29,6 +29,7 @@ This increment keeps the existing Express deployment releasable while making the
 | Health | No dedicated endpoint | Liveness and database readiness endpoints | Equivalent Worker endpoints can preserve the response contract | Source contract tests; staging probe later |
 | Logging | API response bodies are logged | Redacted structured request events with request IDs | Worker logs can keep the same event fields | Source contract tests |
 | Teacher authorization | Session presence is checked inconsistently; URL/body IDs can cross teacher boundaries | Selected teacher reads and fight mutations verify ownership | Establishes negative contracts before porting routes | Unit and route contract tests |
+| Type safety | The prototype starts with 36 known compiler diagnostics | CI snapshots the exact file, location, and diagnostic code; new or silently resolved diagnostics fail | Prevents migration work from increasing the baseline while debt is removed in focused changes | npm run check:baseline |
 | API fallback | Unknown APIs can reach the SPA fallback | JSON 404 for /api/* | Matches the approved Worker route ordering | Source contract test |
 | Sessions | express-session with PostgreSQL remains | Explicit cookie attributes and required production secret | Replacement with the Worker session repository remains Phase 3 | Type check/build; browser acceptance later |
 | WebSockets | Process-local ws server remains | Phase 0 contract is retained unchanged | Durable Object port remains Phase 4 | Phase 0 characterization |
@@ -54,7 +55,7 @@ No Cloudflare account ID, zone ID, database credential, session key, or producti
 Repository verification:
 
     npm ci
-    npm run check
+    npm run check:baseline
     npm test
     npm run build
 
@@ -67,5 +68,6 @@ Rollback is a normal redeploy of the prior legacy commit. This increment makes n
 - Express, connect-pg-simple, the Node WebSocket server, and the Replit object-storage adapter remain legacy-only.
 - Student identity and WebSocket upgrade authentication remain migration gates for Phases 3 and 4.
 - Ownership checks outside the selected teacher-read and fight-management boundary still require audit and negative tests before those routes are ported.
+- The repository still has 36 pre-existing TypeScript diagnostics. CI now prevents additions and requires the baseline snapshot to shrink when fixes land; npm run check remains the clean-state target.
 - Session-table creation remains managed by the legacy session adapter until committed clean-schema migrations replace it in Phase 3.
 - The unified Worker, Workers Static Assets, Durable Object binding, and Wrangler environments begin in Phase 2 after this boundary passes CI and review.
