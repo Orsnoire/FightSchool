@@ -27,10 +27,12 @@
   },
   "vars": {
     "ENVIRONMENT": "staging",
-    "PUBLIC_ORIGIN": "https://questacademy-staging.coxsonator.workers.dev"
+    "PUBLIC_ORIGIN": "https://questacademy-staging.coxsonator.workers.dev",
+    "SESSION_COOKIE_NAME": "qa_staging_session",
+    "SESSION_TTL_SECONDS": "28800"
   },
   "secrets": {
-    "required": ["STAGING_AUTH_TOKEN"]
+    "required": ["DATABASE_URL", "SESSION_SECRET", "STAGING_AUTH_TOKEN"]
   },
   "observability": {
     "enabled": true
