@@ -9,7 +9,11 @@ function randomBytes(length: number): Uint8Array {
 }
 
 function encodeBase64Url(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes))
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 1) {
+    binary += String.fromCharCode(bytes[index]);
+  }
+  return btoa(binary)
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
