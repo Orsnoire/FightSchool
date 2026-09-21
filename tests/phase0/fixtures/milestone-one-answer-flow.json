@@ -29,9 +29,9 @@
     ]
   },
   "target": {
-    "appBasePath": "/QuestAcademy",
-    "apiPrefix": "/QuestAcademy/api",
-    "webSocketPath": "/QuestAcademy/ws",
+    "appBasePath": "/",
+    "apiPrefix": "/api",
+    "webSocketPath": "/ws",
     "identity": {
       "teacher": "server-verifiable session",
       "student": "server-verifiable session",
