@@ -29,12 +29,12 @@ The selected synchronized action is a student answer submission. It is the small
 
 | Step | Legacy request | Success contract | Migration implication |
 |---|---|---|---|
-| Teacher login | `POST /api/teacher/login` with email and password | Teacher without password plus `sessionActive: true`; Express session cookie | Move to `/api/teacher/login`; retain server-verifiable identity and revocation. |
-| Student login | `POST /api/student/login` with nickname and password | Student without password; missing nickname is auto-created | Move to `/api/student/login`; issue a server-verifiable student session rather than trusting local storage. |
+| Teacher login | `POST /api/teacher/login` with email and password | Teacher without password plus `sessionActive: true`; Express session cookie | Keep `/api/teacher/login` at the canonical origin; retain server-verifiable identity and revocation. |
+| Student login | `POST /api/student/login` with nickname and password | Student without password; missing nickname is auto-created | Keep `/api/student/login` at the canonical origin; issue a server-verifiable student session rather than trusting local storage. |
 | Session lookup | `GET /api/sessions/:sessionId` | `sessionId`, `fightId`, title, and `isActive` | Keep the response minimal; authorization and enumeration controls must be decided in the authentication increment. |
 | Fight read | `GET /api/fights/:id` | Fight configuration | The Worker slice needs only the reads required by the host flow. |
 
-All target routes remain beneath `/api`. The legacy root-level paths above are evidence, not the target routing contract.
+Target HTTP routes keep the existing `/api` prefix at the canonical origin. The legacy handlers above characterize behavior to preserve or deliberately harden.
 
 ## Observed WebSocket contract
 
