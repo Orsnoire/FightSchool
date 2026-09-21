@@ -1,5 +1,6 @@
 import { createIdentityRepository, verifyDatabase } from "./db/repository.ts";
 import { handleTeacherAuth } from "./routes/teacher-auth.ts";
+import { handleFights } from "./routes/fights.ts";
 
 interface Env {
   ASSETS: Fetcher;
@@ -115,12 +116,14 @@ export default {
     if (url.pathname === "/api/health/ready") {
       return handleReady(env, currentRequestId);
     }
+    if (
+      url.pathname.startsWith("/api/")
+      && ["POST", "PUT", "PATCH", "DELETE"].includes(request.method)
+      && request.headers.get("origin") !== env.PUBLIC_ORIGIN
+    ) {
+      return json({ error: "Forbidden origin" }, 403, currentRequestId);
+    }
     if (url.pathname.startsWith("/api/teacher/")) {
-      if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {
-        if (request.headers.get("origin") !== env.PUBLIC_ORIGIN) {
-          return json({ error: "Forbidden origin" }, 403, currentRequestId);
-        }
-      }
       if (
         !env.DATABASE_URL
         || !env.PASSWORD_PEPPER
@@ -150,6 +153,25 @@ export default {
         }
       } catch {
         return json({ error: "Identity service unavailable" }, 503, currentRequestId);
+      }
+    }
+    if (url.pathname === "/api/fights" || url.pathname.startsWith("/api/fights/") || /^\/api\/teacher\/[0-9a-f-]+\/fights$/i.test(url.pathname)) {
+      if (!env.DATABASE_URL || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+        return json({ error: "Identity service unavailable" }, 503, currentRequestId);
+      }
+      try {
+        const ttlSeconds = Number(env.SESSION_TTL_SECONDS);
+        const fightResponse = await handleFights(request, url, createIdentityRepository(env.DATABASE_URL), {
+          cookieName: env.SESSION_COOKIE_NAME,
+          secret: env.SESSION_SECRET,
+          ttlSeconds,
+        });
+        if (fightResponse) {
+          fightResponse.headers.set("X-Request-Id", currentRequestId);
+          return fightResponse;
+        }
+      } catch {
+        return json({ error: "Fight service unavailable" }, 503, currentRequestId);
       }
     }
     if (url.pathname === "/ws") {
