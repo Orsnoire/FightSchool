@@ -8,6 +8,7 @@ const read = (path) => readFileSync(new URL(path, "file://" + repoRoot + "/"), "
 const config = JSON.parse(read("wrangler.jsonc"));
 const worker = read("worker/index.ts");
 const deployWorkflow = read(".github/workflows/deploy-cloudflare-staging.yml");
+const stagingSmoke = read("tests/phase2/staging-smoke.mjs");
 
 test("Wrangler config deploys only to the staging workers.dev hostname", () => {
   assert.equal(config.name, "questacademy-staging");
@@ -60,4 +61,6 @@ test("staging deployment requires approval-scoped secrets and never configures p
   assert.match(deployWorkflow, /workflow_dispatch/);
   assert.doesNotMatch(deployWorkflow, /questacademy\.bookwyrminteractive\.studio/);
   assert.doesNotMatch(deployWorkflow, /push:/);
+  assert.match(stagingSmoke, /fetchUntilReady\("\/api\/health\/live", 200\)/);
+  assert.match(stagingSmoke, /attempts = 20/);
 });
