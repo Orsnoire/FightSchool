@@ -38,13 +38,15 @@ class MemorySessions implements SessionRepository {
 }
 
 test("password hashes are salted, versioned, and reject incorrect credentials", async () => {
-  const first = await hashPassword("correct horse battery staple");
-  const second = await hashPassword("correct horse battery staple");
-  assert.match(first, /^pbkdf2_sha256\$600000\$/);
+  const pepper = "a-password-only-pepper-that-is-at-least-32-bytes";
+  const first = await hashPassword("correct horse battery staple", pepper);
+  const second = await hashPassword("correct horse battery staple", pepper);
+  assert.match(first, /^pbkdf2_sha256_peppered\$100000\$/);
   assert.notEqual(first, second);
-  assert.equal(await verifyPassword("correct horse battery staple", first), true);
-  assert.equal(await verifyPassword("incorrect", first), false);
-  assert.equal(await verifyPassword("password", "malformed"), false);
+  assert.equal(await verifyPassword("correct horse battery staple", first, pepper), true);
+  assert.equal(await verifyPassword("incorrect", first, pepper), false);
+  assert.equal(await verifyPassword("correct horse battery staple", first, "a-different-pepper-that-is-at-least-32-bytes"), false);
+  assert.equal(await verifyPassword("password", "malformed", pepper), false);
 });
 
 test("signed opaque sessions are revocable and use hardened cookies", async () => {
@@ -87,8 +89,10 @@ test("Phase 3 configuration is migration-backed and fails closed", () => {
   assert.match(worker, /Identity service unavailable/);
   assert.match(worker, /handleTeacherAuth/);
   assert.match(wrangler, /"DATABASE_URL"/);
+  assert.match(wrangler, /"PASSWORD_PEPPER"/);
   assert.match(wrangler, /"SESSION_SECRET"/);
   assert.match(deploy, /secrets\.DATABASE_URL/);
+  assert.match(deploy, /secrets\.PASSWORD_PEPPER/);
   assert.match(deploy, /secrets\.SESSION_SECRET/);
   assert.match(migrate, /db:migrate:cloudflare/);
   assert.doesNotMatch(migration, /INSERT INTO/i);

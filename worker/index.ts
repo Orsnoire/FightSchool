@@ -7,6 +7,7 @@ interface Env {
   ENVIRONMENT: string;
   PUBLIC_ORIGIN: string;
   DATABASE_URL: string;
+  PASSWORD_PEPPER: string;
   SESSION_SECRET: string;
   SESSION_COOKIE_NAME: string;
   SESSION_TTL_SECONDS: string;
@@ -57,7 +58,13 @@ function validSessionId(sessionId: string | null): sessionId is string {
 
 async function handleReady(env: Env, currentRequestId: string): Promise<Response> {
   try {
-    if (!env.DATABASE_URL || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+    if (
+      !env.DATABASE_URL
+      || !env.PASSWORD_PEPPER
+      || env.PASSWORD_PEPPER.length < 32
+      || !env.SESSION_SECRET
+      || env.SESSION_SECRET.length < 32
+    ) {
       throw new Error("Identity configuration is unavailable");
     }
     const id = env.COMBAT_SESSIONS.idFromName("__readiness__");
@@ -114,7 +121,13 @@ export default {
           return json({ error: "Forbidden origin" }, 403, currentRequestId);
         }
       }
-      if (!env.DATABASE_URL || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
+      if (
+        !env.DATABASE_URL
+        || !env.PASSWORD_PEPPER
+        || env.PASSWORD_PEPPER.length < 32
+        || !env.SESSION_SECRET
+        || env.SESSION_SECRET.length < 32
+      ) {
         return json({ error: "Identity service unavailable" }, 503, currentRequestId);
       }
       const ttlSeconds = Number(env.SESSION_TTL_SECONDS);
@@ -124,6 +137,7 @@ export default {
       try {
         const authResponse = await handleTeacherAuth(request, url, {
           repository: createIdentityRepository(env.DATABASE_URL),
+          passwordPepper: env.PASSWORD_PEPPER,
           session: {
             cookieName: env.SESSION_COOKIE_NAME,
             secret: env.SESSION_SECRET,

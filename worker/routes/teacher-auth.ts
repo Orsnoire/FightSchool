@@ -69,6 +69,7 @@ function randomGuildCode(): string {
 
 export interface TeacherAuthContext {
   repository: IdentityRepository;
+  passwordPepper: string;
   session: SessionConfig;
 }
 
@@ -89,7 +90,7 @@ export async function handleTeacherAuth(
         ...profile,
         email: emailNormalized,
         emailNormalized,
-        passwordHash: await hashPassword(password),
+        passwordHash: await hashPassword(password, context.passwordPepper),
         guildCode: randomGuildCode(),
       });
       const cookie = await issueSession(context.repository, context.session, "teacher", teacher.id);
@@ -110,10 +111,10 @@ export async function handleTeacherAuth(
       const input = loginSchema.parse(await readJson(request));
       const teacher = await context.repository.findTeacherByEmail(input.email.toLowerCase());
       if (!teacher) {
-        await hashPassword(input.password);
+        await hashPassword(input.password, context.passwordPepper);
         return response({ error: "Invalid credentials" }, 401);
       }
-      if (!await verifyPassword(input.password, teacher.passwordHash)) {
+      if (!await verifyPassword(input.password, teacher.passwordHash, context.passwordPepper)) {
         return response({ error: "Invalid credentials" }, 401);
       }
       const cookie = await issueSession(context.repository, context.session, "teacher", teacher.id);
