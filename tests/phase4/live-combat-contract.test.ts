@@ -29,7 +29,7 @@ test("one Durable Object owns room state, deadlines, reconnects, and idempotency
 });
 
 test("live schema is additive and does not touch legacy data", () => {
-  assert.match(migration, /CREATE TABLE "students"/);
-  assert.match(migration, /CREATE TABLE "live_combat_sessions"/);
+  assert.match(migration, /CREATE TABLE(?: IF NOT EXISTS)? "students"/);
+  assert.match(migration, /CREATE TABLE(?: IF NOT EXISTS)? "live_combat_sessions"/);
   assert.doesNotMatch(migration, /DROP|TRUNCATE|DELETE FROM/i);
 });
