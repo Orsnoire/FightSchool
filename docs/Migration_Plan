@@ -30,7 +30,7 @@ The following decisions are settled for implementation unless a later approved a
 - Implement server-verifiable sessions for both teachers and students. Never trust browser local storage or a WebSocket message as identity or authority.
 - R2 is not required for the first text-only combat slice. Before any upload-dependent feature is released, implement an object-storage interface and approve either R2 or a Worker-compatible GCS adapter.
 - Replit is not a live deployment target or rollback environment. It cannot call the migrated runtime or access QuestAcademy's new production data and must not receive production traffic or credentials.
-- Retain the Express implementation only as an offline characterization reference while its remaining behavior is ported. It may stay buildable in CI temporarily, but it is not deployable infrastructure.
+- Use the Express implementation only as a temporary source for extracting required behavior and executable contracts during Phase 5. Git history is the archive; after parity, delete the Express/Replit runtime from the active repository rather than preserving an archived copy in main.
 - Roll back with a previously known-good immutable Cloudflare Worker version and compatible Neon state.
 
 2. Executive Recommendation
@@ -193,14 +193,19 @@ Phase 4 - First complete combat slice on Durable Objects
 
 Exit gate: the selected classroom gameplay slice works end to end without trusting client identity or process memory.
 
-Phase 5 - Complete combat and remaining REST slices
+Phase 5 - Complete combat, remaining REST slices, and legacy removal
 
+- Inventory every still-required Express route, combat behavior, background task, and storage operation; distinguish product requirements from prototype accidents.
+- Convert required behavior into shared deterministic rules, Worker/Durable Object implementations, and executable contract tests.
 - Port the remaining combat phases and abilities in tested vertical slices.
-- Before production cutover, make the Cloudflare runtime the default build and development path; rename any retained Express commands with an explicit legacy prefix and keep them CI-only.
 - Port required guild, equipment, quest, progression, statistics, and administration behavior.
 - Keep product rules separate from transport and presentation.
+- Make the Cloudflare runtime the sole default build, development, start, and deployment path.
+- Delete server/, .replit, replit.md, Replit-only configuration, legacy Node entry points, legacy build/start scripts, the legacy TypeScript diagnostic ratchet, and dependencies used only by Express, Passport, Node WebSockets, connect-pg-simple, or the Replit object sidecar.
+- Remove the legacy build from CI and verify no workflow, package script, documentation, or production configuration can deploy or start it.
+- Rely on Git history for archaeology; do not preserve a legacy-code archive inside main.
 
-Exit gate: the agreed production feature set passes contract, browser, concurrency, and recovery tests.
+Exit gate: the agreed production feature set passes contract, browser, concurrency, and recovery tests; the Worker is the only application runtime in main; no Express/Replit runtime, legacy build, or legacy diagnostic baseline remains.
 
 Phase 6 - Object storage when required
 
@@ -219,21 +224,21 @@ Phase 7 - Staging acceptance and controlled cutover
 - Keep at least one previously known-good immutable Worker version available through the observation and rollback window; do not route traffic to Replit.
 - Add the optional /QuestAcademy redirect only after production acceptance.
 
-Exit gate: named owners approve production behavior, operations, and Worker rollback; removal of the offline Express reference is scheduled separately after its remaining contracts are represented by shared tests.
+Exit gate: named owners approve production behavior, operations, and Worker rollback; repository inspection confirms the Phase 5 legacy-removal gate remains satisfied.
 
 7. Repository Change Set
 
 Implementation must use branches named cloudflare-migration/<short-purpose> and review-ready pull requests into main.
 
-- package.json and lockfile: make Worker/client builds and local Cloudflare development the default path before production; keep any temporary Express commands explicitly legacy-named and CI-only until removal.
+- package.json and lockfile: make Worker/client builds and local Cloudflare development the only application path; remove legacy Express scripts and dependencies at the Phase 5 exit gate.
 - vite.config.ts: preserve base=/ and dist/public; remove Replit-only production behavior.
 - worker/: Worker entry, route dispatch, environment types, REST handlers, session service, Neon adapter, object adapter, error handling, and health routes.
 - worker/combat/: Durable Object class, authenticated roles, protocol validation, Hibernation WebSockets, alarms, checkpoints, and idempotent completion.
 - shared/: pure schemas, session/auth types, WebSocket protocol, and deterministic combat logic.
-- server/: freeze as an offline characterization reference while extracting shared domain logic; do not deploy it, grant it production credentials, or treat it as rollback infrastructure. Remove it after Phase 5 parity and shared-contract coverage.
+- server/: use only as a temporary extraction source, then delete the directory at the Phase 5 exit gate after required behavior is represented by shared contracts and Worker/Durable Object implementations.
 - client/: central same-origin URL helpers and removal of client-authoritative identity.
 - migrations/: reviewed clean-schema migrations and explicit seed tooling.
-- tests/: unit, contract, authorization, Neon integration, Durable Object/WebSocket, storage, browser, and smoke coverage.
+- tests/: unit, contract, authorization, Neon integration, Durable Object/WebSocket, storage, browser, and smoke coverage; delete the legacy diagnostic ratchet when server/ is removed.
 - docs/: setup, secrets/bindings, database, deploy, DNS, acceptance, incident, cutover, and rollback runbooks.
 
 Do not add Pages Functions or an API_SERVICE binding. They belong to the superseded split-deployment design.
@@ -254,7 +259,7 @@ Commit names and non-secret examples only. Use separate staging and production r
 - GCS_BUCKET and GCP_PROJECT_ID: optional non-secret configuration if GCS is retained.
 - GCP_SERVICE_ACCOUNT_JSON or equivalent approved credential: optional secret if required by the GCS design.
 
-Never expose runtime secrets through VITE_* variables. REPLIT_DEPLOYMENT, PORT, REPL_ID, and PRIVATE_OBJECT_DIR remain legacy-only and must not control Cloudflare behavior.
+Never expose runtime secrets through VITE_* variables. REPLIT_DEPLOYMENT, PORT, REPL_ID, and PRIVATE_OBJECT_DIR must never control Cloudflare behavior and must be removed with the legacy runtime at the Phase 5 exit gate.
 
 9. Cookie, Origin, and Routing Policy
 
@@ -350,7 +355,7 @@ Rollback principles:
 - Record expected traffic, concurrent rooms/players, latency objectives, and monitoring thresholds.
 - Confirm session lifetime and whether any real callback requires cross-site cookies.
 - Select R2 or Worker-compatible GCS before upload-dependent functionality enters scope.
-- Name acceptance owners, release window, rollback authority, and the offline Express reference-removal criteria.
+- Name acceptance owners, release window, and rollback authority.
 - Confirm student-data, logging, retention, and residency requirements.
 
 The canonical hostname, unified Worker topology, root-relative routing model, clean Neon production database, and Durable Object combat design are not open decisions in this version.
