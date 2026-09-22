@@ -8,6 +8,7 @@ import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, ge
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
 import { ABILITY_DISPLAYS } from "@shared/abilityUI";
 import { answersMatch, defaultActionForPlayer, findThreatLeader, questionResetPatch, selectionProgress } from "@shared/combat/phaseRules";
+import { findBlocker, resolveDamage, resolveEnemyAttacks, resolveHealing, scheduleResolution, type HealingIntent } from "@shared/combat/resolutionRules";
 import { isTeacherAuthorized, requireAuth, requireTeacherParamOwnership } from "./auth";
 
 interface ExtendedWebSocket extends WebSocket {
@@ -1549,114 +1550,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Save auto-target changes
     await storage.updateCombatSession(sessionId, { players: session.players });
     
-    // PERFORMANCE FIX (B1, B2): Process healing in memory (Herbalist, Priest, Paladin)
+    const healingIntents: HealingIntent[] = [];
     for (const [playerId, player] of Object.entries(session.players)) {
-      if (player.isDead) continue;
-      
-      // Herbalist potion healing
-      if (player.isHealing && player.healTarget && player.characterClass === "herbalist" && player.potionCount > 0) {
-        const target = session.players[player.healTarget];
-        if (target && !target.isDead) {
-          // Heal for MND
-          const healAmount = player.mnd;
-          const actualHeal = Math.min(healAmount, target.maxHealth - target.health);
-          // Update target health in memory
-          target.health = Math.min(target.health + healAmount, target.maxHealth);
-          // Use up a potion (in memory)
-          player.potionCount -= 1;
-          player.healingDone += actualHeal;
-          
-          // AGGRO SYSTEM: Healing gains +2 aggro per healing point
-          player.threat += actualHeal * 2;
-          
-          // Add healing feedback
-          if (!sessionHealingFeedback.has(playerId)) {
-            sessionHealingFeedback.set(playerId, []);
-          }
-          sessionHealingFeedback.get(playerId)!.push({
-            type: "healed_player",
-            healedPlayer: target.nickname,
-            healedAmount: actualHeal,
-          });
-          
-          // Combat log event for healing
-          broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} heals ${target.nickname} with a potion`, {
-            playerName: player.nickname,
-            targetName: target.nickname,
-            value: actualHeal,
-          });
-        }
-      }
-      
-      // Priest Mend spell healing (MND HP, 1 MP cost)
-      if (player.isHealing && player.healTarget && player.characterClass === "priest" && player.mp >= 1) {
-        const target = session.players[player.healTarget];
-        if (target && !target.isDead) {
-          const healAmount = player.mnd;
-          const actualHeal = Math.min(healAmount, target.maxHealth - target.health);
-          // Update target health in memory
-          target.health = Math.min(target.health + healAmount, target.maxHealth);
-          // Use 1 MP
-          player.mp = Math.max(0, player.mp - 1);
-          player.healingDone += actualHeal;
-          
-          // AGGRO SYSTEM: Healing gains +2 aggro per healing point
-          player.threat += actualHeal * 2;
-          
-          // Add healing feedback
-          if (!sessionHealingFeedback.has(playerId)) {
-            sessionHealingFeedback.set(playerId, []);
-          }
-          sessionHealingFeedback.get(playerId)!.push({
-            type: "healed_player",
-            healedPlayer: target.nickname,
-            healedAmount: actualHeal,
-          });
-          
-          // Combat log event for healing
-          broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} casts Mend on ${target.nickname}`, {
-            playerName: player.nickname,
-            targetName: target.nickname,
-            value: actualHeal,
-          });
-        }
-      }
-      
-      // Paladin Healing Guard (blocks AND heals, 1 MP cost)
-      if (player.isHealing && player.healTarget && player.characterClass === "paladin" && player.mp >= 1) {
-        const target = session.players[player.healTarget];
-        if (target && !target.isDead) {
-          // Heal for VIT HP
-          const healAmount = player.vit;
-          const actualHeal = Math.min(healAmount, target.maxHealth - target.health);
-          target.health = Math.min(target.health + healAmount, target.maxHealth);
-          // Use 1 MP
-          player.mp = Math.max(0, player.mp - 1);
-          player.healingDone += actualHeal;
-          
-          // AGGRO SYSTEM: Healing gains +2 aggro per healing point
-          player.threat += actualHeal * 2;
-          
-          // Add healing feedback
-          if (!sessionHealingFeedback.has(playerId)) {
-            sessionHealingFeedback.set(playerId, []);
-          }
-          sessionHealingFeedback.get(playerId)!.push({
-            type: "healed_player",
-            healedPlayer: target.nickname,
-            healedAmount: actualHeal,
-          });
-          
-          // Combat log event for healing
-          broadcastCombatLogEvent(sessionId, "heal", `${player.nickname} uses Healing Guard on ${target.nickname}`, {
-            playerName: player.nickname,
-            targetName: target.nickname,
-            value: actualHeal,
-          });
-        }
+      if (!player.isHealing || !player.healTarget) continue;
+      if (player.characterClass === "herbalist") {
+        healingIntents.push({ healerId: playerId, targetId: player.healTarget, kind: "potion" });
+      } else if (player.characterClass === "priest") {
+        healingIntents.push({ healerId: playerId, targetId: player.healTarget, kind: "mend" });
+      } else if (player.characterClass === "paladin") {
+        healingIntents.push({ healerId: playerId, targetId: player.healTarget, kind: "healing_guard" });
       }
     }
-    
+
+    const healingResolution = resolveHealing(session.players, healingIntents);
+    session.players = healingResolution.players;
+
+    for (const outcome of healingResolution.outcomes) {
+      const healer = session.players[outcome.healerId];
+      const target = session.players[outcome.targetId];
+      if (!sessionHealingFeedback.has(outcome.healerId)) {
+        sessionHealingFeedback.set(outcome.healerId, []);
+      }
+      sessionHealingFeedback.get(outcome.healerId)!.push({
+        type: "healed_player",
+        healedPlayer: target.nickname,
+        healedAmount: outcome.amount,
+      });
+
+      const action = outcome.kind === "potion"
+        ? "heals"
+        : outcome.kind === "mend"
+          ? "casts Mend on"
+          : "uses Healing Guard on";
+      broadcastCombatLogEvent(sessionId, "heal", `${healer.nickname} ${action} ${target.nickname}`, {
+        playerName: healer.nickname,
+        targetName: target.nickname,
+        value: outcome.amount,
+      });
+    }
+
     // Save ALL player changes at once - HUGE performance improvement
     await storage.updateCombatSession(sessionId, { players: session.players });
     
@@ -2116,32 +2048,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Wrong/no answer - take damage (unless blocked by alive tank)
-        let blocked = false;
-        let blockerPlayer = null;
-        for (const [blockerId, blocker] of Object.entries(session.players)) {
-          const tankClasses = ["warrior", "knight", "paladin", "dark_knight"];
-          if (blocker.blockTarget === playerId && tankClasses.includes(blocker.characterClass) && !blocker.isDead) {
-            blocked = true;
-            blockerPlayer = blocker;
-            break;
-          }
-        }
+        const blockerId = findBlocker(session.players, playerId);
+        const blockerPlayer = blockerId ? session.players[blockerId] : null;
+        const blocked = blockerPlayer !== null;
 
         if (!blocked) {
-          // Calculate damage with defense reduction
-          const rawDamage = fight.baseEnemyDamage || 1;
-          const damageReduction = calculateDamageReduction(player.def, player.vit);
-          const damageAmount = Math.max(1, rawDamage - damageReduction); // Minimum 1 damage
-          const defendedAmount = rawDamage - damageAmount;
-          
-          const newHealth = Math.max(0, player.health - damageAmount);
+          const damage = resolveDamage(
+            player.health,
+            fight.baseEnemyDamage || 1,
+            player.def,
+            player.vit,
+            player.isDead,
+          );
+          const damageAmount = damage.actualDamage;
+          const defendedAmount = damage.defendedAmount;
           const wasAlive = !player.isDead;
-          const nowDead = newHealth === 0;
-          
-          // Update player health and death state (in memory)
-          player.health = newHealth;
-          player.isDead = nowDead;
-          player.damageTaken += damageAmount;
+          const nowDead = damage.isDead;
+
+          player.health = damage.health;
+          player.isDead = damage.isDead;
+          player.damageTaken += damage.actualDamage;
           
           // Add feedback for incorrect answer - player took damage
           const enemyName = session.enemies.length > 0 ? session.enemies[0].name : "Enemy";
@@ -2266,22 +2192,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     logPhaseTiming(sessionId, "question_resolution", phaseStart);
 
-    // Calculate dynamic phase duration based on modal count
-    // Each modal needs 3 seconds for students to read and process
-    let maxModalCount = 0;
-    for (const feedbackList of Array.from(playerFeedback.values())) {
-      maxModalCount = Math.max(maxModalCount, feedbackList.length);
-    }
-    
-    // Add 1 modal for party damage summary if applicable
-    if (totalDamage > 0) {
-      maxModalCount += 1;
-    }
-    
-    // Ensure at least 3 seconds, then 3 seconds per modal
-    const resolutionDuration = Math.max(3000, maxModalCount * 3000);
-    
-    log(`[Combat] Question resolution phase will last ${resolutionDuration}ms (${maxModalCount} modals × 3s each)`, "combat");
+    const feedbackCounts = Array.from(playerFeedback.values()).map(feedback => feedback.length);
+    const resolutionSchedule = scheduleResolution(feedbackCounts, totalDamage > 0, 0);
+    const resolutionDuration = resolutionSchedule.questionResolutionMs;
+
+    log(`[Combat] Question resolution phase will last ${resolutionDuration}ms`, "combat");
     
     // Auto-advance to enemy AI phase after all modals have displayed
     setTimeout(async () => {
@@ -2304,93 +2219,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Collect enemy attack data for frontend display
     const enemyAttacks: EnemyAIAttackData[] = [];
 
-    // Default enemy AI: Attack player with highest threat
-    // PERFORMANCE FIX (B1, B2): Process all updates in memory, then save once
-    
-    for (const enemy of session.enemies) {
-      if (enemy.health <= 0) continue; // Dead enemies don't attack
-      
-      // Find alive player with highest threat
-      let highestThreat = 0;
-      let targetId: string | null = null;
-      
-      for (const [playerId, player] of Object.entries(session.players)) {
-        if (player.isDead) continue;
-        if (player.threat > highestThreat) {
-          highestThreat = player.threat;
-          targetId = playerId;
-        }
-      }
-      
-      if (targetId) {
-        const target = session.players[targetId];
-        
-        // Apply solo mode damage cap if enabled
-        let baseDamage = (fight.baseEnemyDamage || 1) + 1;
-        if (session.soloModeEnabled && session.soloModeStartHP) {
-          baseDamage = Math.min(baseDamage, session.soloModeStartHP);
-        }
-        const damageAmount = baseDamage;
-        
-        // Check if target is being blocked by an alive tank
-        let blocked = false;
-        let blockerPlayer = null;
-        for (const [blockerId, blocker] of Object.entries(session.players)) {
-          if (blocker.blockTarget === targetId && TANK_CLASSES.includes(blocker.characterClass) && !blocker.isDead) {
-            blocked = true;
-            blockerPlayer = blocker;
-            break;
-          }
-        }
-        
-        if (!blocked) {
-          // Calculate damage with defense reduction
-          const rawDamage = baseDamage;
-          const damageReduction = calculateDamageReduction(target.def, target.vit);
-          const actualDamage = Math.max(1, rawDamage - damageReduction); // Minimum 1 damage
-          const defendedAmount = rawDamage - actualDamage;
-          
-          const newHealth = Math.max(0, target.health - actualDamage);
-          const wasAlive = !target.isDead;
-          const nowDead = newHealth === 0;
-          
-          // Update player state in memory
-          target.health = newHealth;
-          target.isDead = nowDead;
-          target.damageTaken += actualDamage;
-          if (wasAlive && nowDead) {
-            target.deaths += 1;
-          }
-          
-          // Collect attack data for frontend display
-          enemyAttacks.push({
-            enemyName: enemy.name,
-            enemyImage: enemy.image,
-            enemyId: enemy.id,
-            targetPlayer: target.nickname,
-            damage: actualDamage,
-            defendedAmount: defendedAmount,
-            blocked: false,
-          });
-        } else if (blockerPlayer) {
-          // Blocked! Tank absorbs damage and gains aggro
-          blockerPlayer.damageBlocked += damageAmount;
-          // AGGRO SYSTEM: Tank who successfully blocks gains +1 aggro per damage point blocked
-          blockerPlayer.threat += damageAmount;
-          
-          // Collect attack data for frontend display (blocked)
-          enemyAttacks.push({
-            enemyName: enemy.name,
-            enemyImage: enemy.image,
-            enemyId: enemy.id,
-            targetPlayer: target.nickname,
-            damage: damageAmount,
-            blocked: true,
-            blockerName: blockerPlayer.nickname,
-          });
-        }
-      }
-    }
+    const enemyResolution = resolveEnemyAttacks(session.players, session.enemies, {
+      baseDamage: (fight.baseEnemyDamage || 1) + 1,
+      soloModeDamageCap: session.soloModeEnabled && session.soloModeStartHP
+        ? session.soloModeStartHP
+        : undefined,
+    });
+    session.players = enemyResolution.players;
+    enemyAttacks.push(...enemyResolution.attacks.map(attack => ({
+      enemyName: attack.enemyName,
+      enemyImage: attack.enemyImage,
+      enemyId: attack.enemyId,
+      targetPlayer: attack.targetName,
+      damage: attack.damage,
+      defendedAmount: attack.blocked ? undefined : attack.defendedAmount,
+      blocked: attack.blocked,
+      blockerName: attack.blockerName,
+    })));
 
     // Save ALL player changes at once - HUGE performance improvement
     await storage.updateCombatSession(sessionId, { players: session.players });
@@ -2413,19 +2258,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     logPhaseTiming(sessionId, "enemy_ai", phaseStart);
 
-    // Auto-advance to state check after all animations complete
-    // Timing calculation:
-    // - EnemyAIModal animation: 800ms
-    // - Each CounterattackModal: 3000ms (3 seconds for students to read and process)
-    // - Final cleanup delay: 1000ms
-    // Total: 800 + (attacks * 3000) + 1000 = 1800 + (attacks * 3000)
-    const enemyAnimationTime = 800;      // Enemy modal animation
-    const counterattackTime = 3000;      // Per attack modal display (3 seconds each)
-    const cleanupTime = 1000;            // Final delay
-    const totalAnimationTime = enemyAnimationTime + (enemyAttacks.length * counterattackTime) + cleanupTime;
-    const delayTime = enemyAttacks.length > 0 ? totalAnimationTime : 1000;
-    
-    log(`[Combat] Enemy AI phase will last ${delayTime}ms (800ms intro + ${enemyAttacks.length} attacks × 3s each + 1s cleanup)`, "combat");
+    const delayTime = scheduleResolution([], false, enemyAttacks.length).enemyAiMs;
+
+    log(`[Combat] Enemy AI phase will last ${delayTime}ms`, "combat");
     
     setTimeout(async () => {
       await stateCheckPhase(sessionId);
@@ -2639,10 +2474,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       questionNumber: session.currentQuestionIndex + 2, // +2 because we already incremented and it's 0-indexed
     });
     
-    // Delay to allow modal to display (2 seconds)
+    const nextQuestionDelay = scheduleResolution([], false, 0).nextQuestionMs;
     setTimeout(async () => {
       await startQuestion(sessionId);
-    }, 2000);
+    }, nextQuestionDelay);
   }
 
   // Heartbeat system to detect dead connections
