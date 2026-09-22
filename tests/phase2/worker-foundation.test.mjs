@@ -7,6 +7,7 @@ const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const read = (path) => readFileSync(new URL(path, "file://" + repoRoot + "/"), "utf8");
 const config = JSON.parse(read("wrangler.jsonc"));
 const worker = read("worker/index.ts");
+const combatSession = read("worker/combat/session-object.ts");
 const deployWorkflow = read(".github/workflows/deploy-cloudflare-staging.yml");
 const stagingSmoke = read("tests/phase2/staging-smoke.mjs");
 
@@ -41,9 +42,10 @@ test("Durable Object lifecycle uses a SQLite export and stable binding", () => {
     type: "durable-object",
     storage: "sqlite",
   });
-  assert.match(worker, /this\.state\.acceptWebSocket\(server\)/);
-  assert.match(worker, /serializeAttachment\(attachment\)/);
-  assert.match(worker, /webSocketMessage\(/);
+  assert.match(worker, /extends CombatSessionObject/);
+  assert.match(combatSession, /this\.state\.acceptWebSocket\(server\)/);
+  assert.match(combatSession, /serializeAttachment\(/);
+  assert.match(combatSession, /webSocketMessage\(/);
 });
 
 test("dynamic routes fail closed before SPA fallback", () => {
