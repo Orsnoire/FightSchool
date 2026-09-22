@@ -12,6 +12,15 @@ interface DurableObjectNamespace {
 interface DurableObjectState {
   acceptWebSocket(webSocket: WebSocket): void;
   getWebSockets(): WebSocket[];
+  storage: DurableObjectStorage;
+}
+
+interface DurableObjectStorage {
+  get<T>(key: string): Promise<T | undefined>;
+  put<T>(key: string, value: T): Promise<void>;
+  delete(key: string): Promise<boolean>;
+  setAlarm(scheduledTime: number | Date): Promise<void>;
+  deleteAlarm(): Promise<void>;
 }
 
 interface Fetcher {

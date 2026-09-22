@@ -67,8 +67,37 @@ export const fights = pgTable("fights", {
   teacherIndex: index("fights_teacher_idx").on(table.teacherId),
 }));
 
+export const students = pgTable("students", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nickname: text("nickname").notNull(),
+  nicknameNormalized: text("nickname_normalized").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  characterClass: text("character_class"),
+  gender: text("gender"),
+  guildCode: text("guild_code"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  nicknameUnique: uniqueIndex("students_nickname_normalized_unique").on(table.nicknameNormalized),
+  guildCodeIndex: index("students_guild_code_idx").on(table.guildCode),
+}));
+
+export const liveCombatSessions = pgTable("live_combat_sessions", {
+  sessionId: text("session_id").primaryKey(),
+  fightId: uuid("fight_id").notNull().references(() => fights.id, { onDelete: "cascade" }),
+  teacherId: uuid("teacher_id").notNull().references(() => teachers.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("waiting"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+}, (table) => ({
+  fightIndex: index("live_combat_sessions_fight_idx").on(table.fightId),
+  teacherIndex: index("live_combat_sessions_teacher_idx").on(table.teacherId),
+}));
+
 export type TeacherRecord = typeof teachers.$inferSelect;
 export type NewTeacherRecord = typeof teachers.$inferInsert;
 export type AppSessionRecord = typeof appSessions.$inferSelect;
 export type FightRecord = typeof fights.$inferSelect;
 export type NewFightRecord = typeof fights.$inferInsert;
+export type StudentRecord = typeof students.$inferSelect;
+export type NewStudentRecord = typeof students.$inferInsert;
+export type LiveCombatSessionRecord = typeof liveCombatSessions.$inferSelect;

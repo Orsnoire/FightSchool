@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -32,19 +32,32 @@ export default function HostFight() {
   const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
   const [combatLogEvents, setCombatLogEvents] = useState<CombatLogEvent[]>([]);
   const [combatLogFullscreen, setCombatLogFullscreen] = useState(false);
+  const sessionIdRef = useRef<string | null>(null);
+  const commandId = () => crypto.randomUUID();
 
   // B6/B7 FIX: Manual reconnect function for host
-  const connectWebSocket = () => {
+  const connectWebSocket = async () => {
     if (!fightId) return;
-
+    let roomId = sessionIdRef.current;
+    if (!roomId) {
+      const response = await fetch(`/api/fights/${fightId}/sessions`, { method: "POST" });
+      if (!response.ok) {
+        toast({ title: "Unable to host fight", description: "Could not create a live session", variant: "destructive" });
+        return;
+      }
+      const room = await response.json() as { sessionId: string };
+      roomId = room.sessionId;
+      sessionIdRef.current = roomId;
+      setSessionId(roomId);
+    }
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/ws?sessionId=${encodeURIComponent(roomId)}`;
     const socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
       setConnectionStatus("connected");
       // Send existing sessionId to rejoin instead of creating a new session
-      socket.send(JSON.stringify({ type: "host", fightId, sessionId }));
+      socket.send(JSON.stringify({ type: "host", commandId: commandId() }));
     };
 
     socket.onmessage = (event) => {
@@ -52,7 +65,7 @@ export default function HostFight() {
       if (message.type === "session_created") {
         setSessionId(message.sessionId);
         setCombatState(message.state);
-        setHasStarted(false);
+        setHasStarted(message.state.currentPhase !== "waiting");
         setCombatLogEvents([]); // Clear log on new session
       } else if (message.type === "combat_state") {
         setCombatState(message.state);
@@ -81,13 +94,14 @@ export default function HostFight() {
   };
 
   useEffect(() => {
-    const socket = connectWebSocket();
+    let socket: WebSocket | undefined;
+    void connectWebSocket().then(created => { socket = created; });
     return () => socket?.close();
   }, [fightId]);
 
   const startFight = () => {
     if (ws && !hasStarted) {
-      ws.send(JSON.stringify({ type: "start_fight" }));
+      ws.send(JSON.stringify({ type: "start_fight", commandId: commandId() }));
       setHasStarted(true);
       toast({ title: "Fight started!" });
     }
@@ -96,7 +110,7 @@ export default function HostFight() {
   const endFight = () => {
     if (ws && hasStarted) {
       if (confirm("Are you sure you want to end this fight? All progress will be lost.")) {
-        ws.send(JSON.stringify({ type: "end_fight" }));
+        ws.send(JSON.stringify({ type: "end_fight", commandId: commandId() }));
         toast({ title: "Fight ended", description: "Students have been disconnected" });
         setHasStarted(false);
       }
@@ -166,7 +180,7 @@ export default function HostFight() {
                     variant="outline"
                     onClick={() => {
                       ws?.close();
-                      connectWebSocket();
+                      void connectWebSocket();
                     }}
                     data-testid="button-host-refresh"
                   >

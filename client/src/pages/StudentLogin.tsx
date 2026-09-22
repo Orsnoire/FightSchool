@@ -11,7 +11,7 @@ import { Swords } from "lucide-react";
 
 const loginSchema = z.object({
   nickname: z.string().min(1, "Nickname is required"),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export default function StudentLogin() {
@@ -37,7 +37,7 @@ export default function StudentLogin() {
       
       // Navigate based on whether character is created
       if (student.characterClass) {
-        navigate("/lobby");
+        navigate("/student/lobby");
       } else {
         navigate("/student/character-select");
       }
