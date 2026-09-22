@@ -7,6 +7,7 @@ import { log } from "./vite";
 import { getCrossClassAbilities, getFireballCooldown, getFireballDamageBonus, getFireballMaxChargeRounds, getHeadshotMaxComboPoints, calculateXP, getTotalMechanicUpgrades, getHealingPower, getUnlockedJobs } from "@shared/jobSystem";
 import { ULTIMATE_ABILITIES, calculateUltimateEffect } from "@shared/ultimateAbilities";
 import { ABILITY_DISPLAYS } from "@shared/abilityUI";
+import { answersMatch, defaultActionForPlayer, findThreatLeader, questionResetPatch, selectionProgress } from "@shared/combat/phaseRules";
 import { isTeacherAuthorized, requireAuth, requireTeacherParamOwnership } from "./auth";
 
 interface ExtendedWebSocket extends WebSocket {
@@ -1319,14 +1320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Skip dead players - they don't participate in questions
       if (player.isDead) continue;
       
-      player.hasAnswered = false;
-      player.currentAnswer = undefined;
-      player.answeredCurrentQuestionCorrectly = false; // Reset for new question
-      player.hasSelectedAbility = false; // Reset ability selection for new question
-      player.isHealing = false;
-      player.healTarget = undefined;
-      player.blockTarget = undefined;
-      player.isCreatingPotion = false;
+      Object.assign(player, questionResetPatch());
     }
 
     // Save ALL player resets at once - HUGE performance improvement
@@ -1379,7 +1373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Only validate if they actually answered
           if (player.hasAnswered && player.currentAnswer) {
-            const isCorrect = player.currentAnswer.toLowerCase() === question.correctAnswer.toLowerCase();
+            const isCorrect = answersMatch(player.currentAnswer, question.correctAnswer, "case-insensitive");
             player.answeredCurrentQuestionCorrectly = isCorrect;
             log(`[Abilities] Player ${player.nickname} answer validation: ${isCorrect ? "CORRECT" : "INCORRECT"}`, "combat");
           } else {
@@ -1395,15 +1389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Calculate threat leader (happens at end of Question Phase, before abilities)
-    let highestThreat = 0;
-    let threatLeaderId: string | undefined = undefined;
-    for (const [playerId, player] of Object.entries(session.players)) {
-      if (player.isDead) continue;
-      if (player.threat > highestThreat) {
-        highestThreat = player.threat;
-        threatLeaderId = playerId;
-      }
-    }
+    const threatLeaderId = findThreatLeader(session.players) || undefined;
 
     await storage.updateCombatSession(sessionId, { 
       currentPhase: "abilities",
@@ -1527,59 +1513,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
   
   function checkAllSelectionsComplete(session: CombatState): boolean {
-    const alivePlayers = Object.values(session.players).filter(p => !p.isDead);
-    
-    // Check each player type separately
-    const tanks = alivePlayers.filter(p => TANK_CLASSES.includes(p.characterClass));
-    const healers = alivePlayers.filter(p => HEALER_CLASSES.includes(p.characterClass));
-    const offensivePlayers = alivePlayers.filter(p => !TANK_CLASSES.includes(p.characterClass) && !HEALER_CLASSES.includes(p.characterClass));
-    
-    // Check if all tanks have made their block selection
-    const tanksComplete = tanks.every(p => p.blockTarget !== undefined && p.blockTarget !== null);
-    
-    // Helper to check if a player's ability selection is complete
-    const isAbilityComplete = (p: PlayerState): boolean => {
-      if (!p.hasSelectedAbility) return false;
-      if (!p.pendingAction) return false;
-      
-      const abilityDetails = ABILITY_DISPLAYS[p.pendingAction.abilityId];
-      const requiresTarget = abilityDetails?.requiresTarget || abilityDetails?.opensHealingWindow;
-      
-      // If ability doesn't require a target, it's complete as soon as it's selected
-      if (!requiresTarget) return true;
-      
-      // If it requires a target, check if target is provided
-      return p.pendingAction.targetId !== undefined && p.pendingAction.targetId !== null;
-    };
-    
-    // Check if all healers have made their heal selection or declined
-    const healersComplete = healers.every(p => {
-      // If they're healing, they must have a heal target
-      if (p.isHealing) {
-        return p.healTarget !== undefined && p.healTarget !== null;
-      }
-      // If not healing, check their ability selection
-      return isAbilityComplete(p);
+    const progress = selectionProgress(session.players, abilityId => {
+      const abilityDetails = ABILITY_DISPLAYS[abilityId];
+      return Boolean(abilityDetails?.requiresTarget || abilityDetails?.opensHealingWindow);
     });
-    
-    // Check if all offensive players have completed their ability selections
-    const offensiveComplete = offensivePlayers.every(p => isAbilityComplete(p));
-    
-    // Log the completion status for debugging
-    const totalPlayers = alivePlayers.length;
-    const completedCount = alivePlayers.filter(p => {
-      if (TANK_CLASSES.includes(p.characterClass)) {
-        return p.blockTarget !== undefined && p.blockTarget !== null;
-      } else if (HEALER_CLASSES.includes(p.characterClass)) {
-        return p.isHealing ? (p.healTarget !== undefined && p.healTarget !== null) : isAbilityComplete(p);
-      } else {
-        return isAbilityComplete(p);
-      }
-    }).length;
-    
-    log(`[Abilities] Selection check: ${completedCount}/${totalPlayers} players complete (Tanks: ${tanksComplete}, Healers: ${healersComplete}, Offensive: ${offensiveComplete})`, "combat");
-    
-    return tanksComplete && healersComplete && offensiveComplete;
+
+    log(`[Abilities] Selection check: ${progress.completedCount}/${progress.totalPlayers} players complete (Tanks: ${progress.tanksComplete}, Healers: ${progress.healersComplete}, Offensive: ${progress.offensiveComplete})`, "combat");
+
+    return progress.allComplete;
   }
   
   async function processAbilitySelections(sessionId: string) {
@@ -1591,52 +1532,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     healingFeedbackMap.set(sessionId, sessionHealingFeedback);
     
     // AUTO-TARGET LOGIC: Set default targets for players who didn't submit ability selections
-    // Find the enemy with highest HP for default targeting
-    const aliveEnemies = Object.values(session.enemies).filter(e => e.health > 0);
-    const highestHpEnemy = aliveEnemies.reduce((highest, enemy) => 
-      enemy.health > highest.health ? enemy : highest
-    , aliveEnemies[0] || { id: "", health: 0 });
-    
-    // For each alive player without a complete pendingAction, assign a default target
     for (const [playerId, player] of Object.entries(session.players)) {
-      if (player.isDead) continue;
-      
-      // Check if player has a complete pendingAction (with targetId)
-      const hasCompleteAction = player.pendingAction?.targetId !== undefined && player.pendingAction?.targetId !== null;
-      
-      if (!hasCompleteAction && aliveEnemies.length > 0) {
-        // Determine default target: lastTargetId if valid, otherwise highest HP enemy
-        let defaultTargetId = highestHpEnemy.id;
-        
-        // Check if lastTargetId is still valid (enemy exists and is alive)
-        if (player.lastTargetId) {
-          const lastTarget = Object.values(session.enemies).find(e => e.id === player.lastTargetId);
-          if (lastTarget && lastTarget.health > 0) {
-            defaultTargetId = player.lastTargetId;
-          }
-        }
-        
-        // CRITICAL: If player has already selected an ability, preserve it and just add targetId
-        // Otherwise, default to base_attack for players who didn't select anything
-        if (player.pendingAction && player.pendingAction.abilityId) {
-          // Preserve the existing ability selection, just add target
-          // Only set targetType to "enemy" if it wasn't already set (to preserve healing/utility targetTypes)
-          player.pendingAction = {
-            ...player.pendingAction,
-            targetId: defaultTargetId,
-            targetType: player.pendingAction.targetType || "enemy",
-          };
-          log(`[Auto-Target] Player ${player.nickname} (${playerId}) auto-targeted ${defaultTargetId} for ability ${player.pendingAction.abilityId}`, "combat");
-        } else {
-          // No ability selected - use base attack
-          player.pendingAction = {
-            abilityId: "base_attack",
-            targetId: defaultTargetId,
-            targetType: "enemy",
-          };
-          log(`[Auto-Target] Player ${player.nickname} (${playerId}) auto-targeted ${defaultTargetId} for base attack`, "combat");
-        }
-      }
+      const selectedAbilityId = player.pendingAction?.abilityId;
+      const defaultAction = defaultActionForPlayer(player, session.enemies);
+      if (!defaultAction) continue;
+
+      player.pendingAction = defaultAction;
+      log(
+        selectedAbilityId
+          ? `[Auto-Target] Player ${player.nickname} (${playerId}) auto-targeted ${defaultAction.targetId} for ability ${selectedAbilityId}`
+          : `[Auto-Target] Player ${player.nickname} (${playerId}) auto-targeted ${defaultAction.targetId} for base attack`,
+        "combat",
+      );
     }
     
     // Save auto-target changes
@@ -1772,15 +1679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!fight) return;
 
     // Calculate threat leader
-    let highestThreat = 0;
-    let threatLeaderId: string | null = null;
-    for (const [playerId, player] of Object.entries(session.players)) {
-      if (player.isDead) continue;
-      if (player.threat > highestThreat) {
-        highestThreat = player.threat;
-        threatLeaderId = playerId;
-      }
-    }
+    const threatLeaderId = findThreatLeader(session.players);
 
     await storage.updateCombatSession(sessionId, { 
       currentPhase: "question_resolution",
