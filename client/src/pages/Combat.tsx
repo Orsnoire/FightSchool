@@ -121,20 +121,19 @@ export default function Combat() {
   
   // Track if answer has been submitted to prevent double submissions
   const hasSubmitted = useRef(false);
+  const commandId = () => crypto.randomUUID();
 
   // B6/B7 FIX: Reconnection logic with exponential backoff
   const connectWebSocket = useCallback(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const sessionId = localStorage.getItem("sessionId");
+    const wsUrl = `${protocol}//${window.location.host}/ws?sessionId=${encodeURIComponent(sessionId || "")}`;
     const socket = new WebSocket(wsUrl);
     
     let hasReceivedState = false;
     let connectionTimeout: NodeJS.Timeout | null = null;
     
     socket.onopen = () => {
-      const studentId = localStorage.getItem("studentId");
-      const sessionId = localStorage.getItem("sessionId");
-      
       if (!sessionId) {
         toast({
           title: "No Session Code",
@@ -147,7 +146,7 @@ export default function Combat() {
       
       setConnectionStatus("connected");
       setReconnectAttempts(0);
-      socket.send(JSON.stringify({ type: "join", studentId, sessionId }));
+      socket.send(JSON.stringify({ type: "join", commandId: commandId() }));
       
       connectionTimeout = setTimeout(() => {
         if (!hasReceivedState) {
@@ -349,6 +348,7 @@ export default function Combat() {
           // Submit selected answer or empty string (counts as wrong)
           ws.send(JSON.stringify({ 
             type: "answer", 
+            commandId: commandId(),
             answer: selectedAnswer || "" 
           }));
         }
@@ -754,6 +754,7 @@ export default function Combat() {
       hasSubmitted.current = true; // Mark as submitted to prevent duplicate
       ws.send(JSON.stringify({ 
         type: "answer", 
+        commandId: commandId(),
         answer: selectedAnswer
       }));
     }

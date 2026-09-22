@@ -393,8 +393,10 @@ export default function Lobby() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch("/api/student/logout", { method: "POST" });
     localStorage.removeItem("studentId");
+    localStorage.removeItem("sessionId");
     navigate("/");
   };
 

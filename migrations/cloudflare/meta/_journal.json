@@ -15,6 +15,13 @@
       "when": 1790017600000,
       "tag": "0001_phase3_teacher_fights",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790046000000,
+      "tag": "0002_phase4_student_identity",
+      "breakpoints": true
     }
   ]
 }

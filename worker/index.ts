@@ -1,6 +1,10 @@
 import { createIdentityRepository, verifyDatabase } from "./db/repository.ts";
 import { handleTeacherAuth } from "./routes/teacher-auth.ts";
 import { handleFights } from "./routes/fights.ts";
+import { authenticateSession, type SessionConfig } from "./auth/session.ts";
+import { handleStudentAuth } from "./routes/student-auth.ts";
+import { handleCombatSessions } from "./routes/combat-sessions.ts";
+import { CombatSessionObject } from "./combat/session-object.ts";
 
 interface Env {
   ASSETS: Fetcher;
@@ -13,11 +17,6 @@ interface Env {
   SESSION_COOKIE_NAME: string;
   SESSION_TTL_SECONDS: string;
   STAGING_AUTH_TOKEN: string;
-}
-
-interface SocketAttachment {
-  connectedAt: string;
-  role: "staging-smoke";
 }
 
 const JSON_HEADERS = {
@@ -92,17 +91,44 @@ async function handleWebSocket(
   if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
     return json({ error: "WebSocket upgrade required" }, 426, currentRequestId);
   }
-  if (!hasStagingAuthorization(request, env)) {
-    return json({ error: "Unauthorized" }, 401, currentRequestId);
+  if (!hasStagingAuthorization(request, env) && request.headers.get("origin") !== env.PUBLIC_ORIGIN) {
+    return json({ error: "Forbidden origin" }, 403, currentRequestId);
   }
-
   const sessionId = url.searchParams.get("sessionId");
   if (!validSessionId(sessionId)) {
     return json({ error: "Invalid sessionId" }, 400, currentRequestId);
   }
 
+  const headers = new Headers(request.headers);
+  headers.set("x-questacademy-internal", "1");
+  headers.set("x-questacademy-session-id", sessionId);
+  if (hasStagingAuthorization(request, env)) {
+    headers.set("x-questacademy-actor-id", "staging-smoke");
+    headers.set("x-questacademy-role", "staging-smoke");
+  } else {
+    const repository = createIdentityRepository(env.DATABASE_URL);
+    const sessionConfig: SessionConfig = {
+      cookieName: env.SESSION_COOKIE_NAME,
+      secret: env.SESSION_SECRET,
+      ttlSeconds: Number(env.SESSION_TTL_SECONDS),
+    };
+    const actor = await authenticateSession(request, repository, sessionConfig);
+    if (!actor) return json({ error: "Unauthorized" }, 401, currentRequestId);
+    const room = await repository.findLiveCombatSession(sessionId);
+    if (!room || !["waiting", "active"].includes(room.status)) {
+      return json({ error: "Session not found or has ended" }, 404, currentRequestId);
+    }
+    if (actor.actorType === "teacher" && actor.actorId !== room.teacherId) {
+      return json({ error: "Forbidden" }, 403, currentRequestId);
+    }
+    if (actor.actorType !== "teacher" && actor.actorType !== "student") {
+      return json({ error: "Unauthorized" }, 401, currentRequestId);
+    }
+    headers.set("x-questacademy-actor-id", actor.actorId);
+    headers.set("x-questacademy-role", actor.actorType);
+  }
   const id = env.COMBAT_SESSIONS.idFromName(sessionId);
-  return env.COMBAT_SESSIONS.get(id).fetch(request);
+  return env.COMBAT_SESSIONS.get(id).fetch(new Request(request, { headers }));
 }
 
 export default {
@@ -155,23 +181,75 @@ export default {
         return json({ error: "Identity service unavailable" }, 503, currentRequestId);
       }
     }
+    if (url.pathname.startsWith("/api/student/")) {
+      if (
+        !env.DATABASE_URL
+        || !env.PASSWORD_PEPPER
+        || env.PASSWORD_PEPPER.length < 32
+        || !env.SESSION_SECRET
+        || env.SESSION_SECRET.length < 32
+      ) return json({ error: "Identity service unavailable" }, 503, currentRequestId);
+      try {
+        const ttlSeconds = Number(env.SESSION_TTL_SECONDS);
+        const studentResponse = await handleStudentAuth(
+          request,
+          url,
+          createIdentityRepository(env.DATABASE_URL),
+          env.PASSWORD_PEPPER,
+          { cookieName: env.SESSION_COOKIE_NAME, secret: env.SESSION_SECRET, ttlSeconds },
+        );
+        if (studentResponse) {
+          studentResponse.headers.set("X-Request-Id", currentRequestId);
+          return studentResponse;
+        }
+      } catch {
+        return json({ error: "Identity service unavailable" }, 503, currentRequestId);
+      }
+    }
     if (url.pathname === "/api/fights" || url.pathname.startsWith("/api/fights/") || /^\/api\/teacher\/[0-9a-f-]+\/fights$/i.test(url.pathname)) {
       if (!env.DATABASE_URL || !env.SESSION_SECRET || env.SESSION_SECRET.length < 32) {
         return json({ error: "Identity service unavailable" }, 503, currentRequestId);
       }
       try {
         const ttlSeconds = Number(env.SESSION_TTL_SECONDS);
-        const fightResponse = await handleFights(request, url, createIdentityRepository(env.DATABASE_URL), {
+        const repository = createIdentityRepository(env.DATABASE_URL);
+        const sessionConfig = {
           cookieName: env.SESSION_COOKIE_NAME,
           secret: env.SESSION_SECRET,
           ttlSeconds,
-        });
+        };
+        const combatResponse = await handleCombatSessions(request, url, repository, sessionConfig);
+        if (combatResponse) {
+          combatResponse.headers.set("X-Request-Id", currentRequestId);
+          return combatResponse;
+        }
+        const fightResponse = await handleFights(request, url, repository, sessionConfig);
         if (fightResponse) {
           fightResponse.headers.set("X-Request-Id", currentRequestId);
           return fightResponse;
         }
       } catch {
         return json({ error: "Fight service unavailable" }, 503, currentRequestId);
+      }
+    }
+    if (url.pathname.startsWith("/api/sessions/")) {
+      try {
+        const sessionResponse = await handleCombatSessions(
+          request,
+          url,
+          createIdentityRepository(env.DATABASE_URL),
+          {
+            cookieName: env.SESSION_COOKIE_NAME,
+            secret: env.SESSION_SECRET,
+            ttlSeconds: Number(env.SESSION_TTL_SECONDS),
+          },
+        );
+        if (sessionResponse) {
+          sessionResponse.headers.set("X-Request-Id", currentRequestId);
+          return sessionResponse;
+        }
+      } catch {
+        return json({ error: "Combat service unavailable" }, 503, currentRequestId);
       }
     }
     if (url.pathname === "/ws") {
@@ -188,59 +266,9 @@ export default {
   },
 };
 
-export class CombatSession {
-  constructor(private readonly state: DurableObjectState) {}
-
-  async fetch(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-    if (
-      url.pathname === "/ready"
-      && request.headers.get("x-questacademy-internal") === "1"
-    ) {
-      return json({ status: "ready" });
-    }
-
-    if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
-      return json({ error: "WebSocket upgrade required" }, 426);
-    }
-
-    const pair = new WebSocketPair();
-    const client = pair[0];
-    const server = pair[1];
-    const attachment: SocketAttachment = {
-      connectedAt: new Date().toISOString(),
-      role: "staging-smoke",
-    };
-    server.serializeAttachment(attachment);
-    this.state.acceptWebSocket(server);
-
-    return new Response(null, { status: 101, webSocket: client });
-  }
-
-  webSocketMessage(webSocket: WebSocket, message: string | ArrayBuffer) {
-    if (typeof message !== "string") {
-      webSocket.send(JSON.stringify({ type: "protocol_error", error: "Text messages only" }));
-      return;
-    }
-
-    try {
-      const command = JSON.parse(message) as { type?: unknown; commandId?: unknown };
-      if (command.type !== "ping" || typeof command.commandId !== "string") {
-        webSocket.send(JSON.stringify({ type: "protocol_error", error: "Unsupported command" }));
-        return;
-      }
-      const attachment = webSocket.deserializeAttachment() as SocketAttachment | null;
-      webSocket.send(JSON.stringify({
-        type: "pong",
-        commandId: command.commandId,
-        role: attachment?.role || "unknown",
-      }));
-    } catch {
-      webSocket.send(JSON.stringify({ type: "protocol_error", error: "Invalid JSON" }));
-    }
-  }
-
-  webSocketError(webSocket: WebSocket) {
-    webSocket.close(1011, "WebSocket error");
+export class CombatSession extends CombatSessionObject {
+  constructor(state: DurableObjectState, env: Env) {
+    super(state, env);
+    this.setRepository(createIdentityRepository(env.DATABASE_URL));
   }
 }

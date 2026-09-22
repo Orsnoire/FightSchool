@@ -1,14 +1,19 @@
 import { neon } from "@neondatabase/serverless";
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import type { SessionRepository } from "../auth/session.ts";
 import {
   appSessions,
   fights,
+  liveCombatSessions,
+  students,
   teachers,
   type FightRecord,
   type NewFightRecord,
   type NewTeacherRecord,
+  type NewStudentRecord,
+  type StudentRecord,
+  type LiveCombatSessionRecord,
   type TeacherRecord,
 } from "./schema.ts";
 
@@ -21,6 +26,14 @@ export interface IdentityRepository extends SessionRepository {
   createFight(fight: NewFightRecord): Promise<FightRecord>;
   updateFight(id: string, teacherId: string, fight: Omit<NewFightRecord, "teacherId">): Promise<FightRecord | null>;
   deleteFight(id: string, teacherId: string): Promise<boolean>;
+  findStudentByNickname(nicknameNormalized: string): Promise<StudentRecord | null>;
+  findStudentById(id: string): Promise<StudentRecord | null>;
+  createStudent(student: NewStudentRecord): Promise<StudentRecord>;
+  updateStudentCharacter(id: string, characterClass: string, gender: string): Promise<StudentRecord | null>;
+  createLiveCombatSession(input: { sessionId: string; fightId: string; teacherId: string }): Promise<LiveCombatSessionRecord>;
+  findLiveCombatSession(sessionId: string): Promise<LiveCombatSessionRecord | null>;
+  findOpenLiveCombatSessionForFight(fightId: string, teacherId: string): Promise<LiveCombatSessionRecord | null>;
+  updateLiveCombatSessionStatus(sessionId: string, status: string): Promise<void>;
 }
 
 export function createIdentityRepository(databaseUrl: string): IdentityRepository {
@@ -76,6 +89,55 @@ export function createIdentityRepository(databaseUrl: string): IdentityRepositor
         .where(and(eq(fights.id, id), eq(fights.teacherId, teacherId)))
         .returning({ id: fights.id });
       return deleted.length === 1;
+    },
+
+    async findStudentByNickname(nicknameNormalized) {
+      const [student] = await database.select().from(students)
+        .where(eq(students.nicknameNormalized, nicknameNormalized)).limit(1);
+      return student || null;
+    },
+
+    async findStudentById(id) {
+      const [student] = await database.select().from(students).where(eq(students.id, id)).limit(1);
+      return student || null;
+    },
+
+    async createStudent(student) {
+      const [created] = await database.insert(students).values(student).returning();
+      return created;
+    },
+
+    async updateStudentCharacter(id, characterClass, gender) {
+      const [updated] = await database.update(students).set({ characterClass, gender })
+        .where(eq(students.id, id)).returning();
+      return updated || null;
+    },
+
+    async createLiveCombatSession(input) {
+      const [created] = await database.insert(liveCombatSessions).values(input).returning();
+      return created;
+    },
+
+    async findLiveCombatSession(sessionId) {
+      const [session] = await database.select().from(liveCombatSessions)
+        .where(eq(liveCombatSessions.sessionId, sessionId)).limit(1);
+      return session || null;
+    },
+
+    async findOpenLiveCombatSessionForFight(fightId, teacherId) {
+      const [session] = await database.select().from(liveCombatSessions).where(and(
+        eq(liveCombatSessions.fightId, fightId),
+        eq(liveCombatSessions.teacherId, teacherId),
+        inArray(liveCombatSessions.status, ["waiting", "active"]),
+      )).orderBy(desc(liveCombatSessions.createdAt)).limit(1);
+      return session || null;
+    },
+
+    async updateLiveCombatSessionStatus(sessionId, status) {
+      await database.update(liveCombatSessions).set({
+        status,
+        completedAt: status === "completed" ? new Date() : null,
+      }).where(eq(liveCombatSessions.sessionId, sessionId));
     },
 
     async createSession(session) {

@@ -1,18 +1,23 @@
 import { z } from "zod";
 import { hashPassword, verifyPassword } from "../auth/crypto.ts";
-import { authenticateSession, issueSession, type SessionConfig } from "../auth/session.ts";
+import {
+  authenticateSession,
+  clearSessionCookie,
+  issueSession,
+  revokeRequestSession,
+  type SessionConfig,
+} from "../auth/session.ts";
 import type { IdentityRepository } from "../db/repository.ts";
 import type { StudentRecord } from "../db/schema.ts";
 
 const loginSchema = z.object({
-  nickname: z.string().trim().min(1).max(100),
-  password: z.string().min(1).max(128),
-}).strict();
-
+  nickname: z.string().trim().min(1).max(80),
+  password: z.string().min(8).max(200),
+});
 const characterSchema = z.object({
   characterClass: z.enum(["warrior", "wizard", "scout", "herbalist"]),
   gender: z.enum(["A", "B"]),
-}).strict();
+});
 
 function json(body: unknown, status = 200, cookie?: string): Response {
   const headers = new Headers({
@@ -23,22 +28,17 @@ function json(body: unknown, status = 200, cookie?: string): Response {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
-async function readJson(request: Request): Promise<unknown> {
-  const declaredLength = Number(request.headers.get("content-length") || 0);
-  if (declaredLength > 16_384) throw new Error("REQUEST_TOO_LARGE");
-  const raw = await request.text();
-  if (raw.length > 16_384) throw new Error("REQUEST_TOO_LARGE");
-  return JSON.parse(raw);
-}
-
-export function publicStudent(student: StudentRecord) {
+function publicStudent(student: StudentRecord) {
   return {
     id: student.id,
     nickname: student.nickname,
     characterClass: student.characterClass,
     gender: student.gender,
-    guildCode: student.guildCode,
-    createdAt: student.createdAt.getTime(),
+    weapon: null,
+    headgear: null,
+    armor: null,
+    inventory: [],
+    gold: 0,
   };
 }
 
@@ -51,8 +51,8 @@ export async function handleStudentAuth(
 ): Promise<Response | null> {
   if (request.method === "POST" && url.pathname === "/api/student/login") {
     try {
-      const input = loginSchema.parse(await readJson(request));
-      const nicknameNormalized = input.nickname.toLowerCase();
+      const input = loginSchema.parse(await request.json());
+      const nicknameNormalized = input.nickname.toLocaleLowerCase("en-US");
       let student = await repository.findStudentByNickname(nicknameNormalized);
       if (student) {
         if (!await verifyPassword(input.password, student.passwordHash, passwordPepper)) {
@@ -68,14 +68,16 @@ export async function handleStudentAuth(
       const cookie = await issueSession(repository, sessionConfig, "student", student.id);
       return json(publicStudent(student), 200, cookie);
     } catch (error) {
-      if (error instanceof Error && error.message === "REQUEST_TOO_LARGE") {
-        return json({ error: "Request body too large" }, 413);
-      }
       if (error instanceof z.ZodError || error instanceof SyntaxError) {
-        return json({ error: "Invalid login request" }, 400);
+        return json({ error: "Invalid student login" }, 400);
       }
-      return json({ error: "Unable to log in" }, 500);
+      return json({ error: "Unable to sign in" }, 500);
     }
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/student/logout") {
+    await revokeRequestSession(request, repository, sessionConfig);
+    return json({ success: true }, 200, clearSessionCookie(sessionConfig.cookieName));
   }
 
   const studentMatch = url.pathname.match(/^\/api\/student\/([0-9a-f-]+)$/i);
@@ -93,14 +95,13 @@ export async function handleStudentAuth(
     if (!session) return json({ error: "Authentication required" }, 401);
     if (session.actorId !== characterMatch[1]) return json({ error: "Forbidden" }, 403);
     try {
-      const input = characterSchema.parse(await readJson(request));
-      const student = await repository.updateStudentCharacter(session.actorId, input);
+      const input = characterSchema.parse(await request.json());
+      const student = await repository.updateStudentCharacter(session.actorId, input.characterClass, input.gender);
       return student ? json(publicStudent(student)) : json({ error: "Student not found" }, 404);
     } catch (error) {
-      if (error instanceof z.ZodError || error instanceof SyntaxError) {
-        return json({ error: "Invalid character" }, 400);
-      }
-      return json({ error: "Unable to save character" }, 500);
+      return error instanceof z.ZodError || error instanceof SyntaxError
+        ? json({ error: "Invalid character" }, 400)
+        : json({ error: "Unable to update character" }, 500);
     }
   }
 
