@@ -1,4 +1,5 @@
 import type { FightEnemy, FightQuestion, FightRecord, StudentRecord } from "../db/schema.ts";
+import { answersMatch } from "../../shared/combat/phaseRules.ts";
 
 export type CombatPhase = "waiting" | "question" | "game_over";
 
@@ -90,10 +91,6 @@ export function startQuestion(state: CombatSnapshot, now = Date.now()): CombatSn
   };
 }
 
-function normalized(value: string): string {
-  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-US");
-}
-
 export function applyAnswer(
   state: CombatSnapshot,
   studentId: string,
@@ -103,7 +100,7 @@ export function applyAnswer(
   if (state.currentPhase !== "question") return state;
   const player = state.players[studentId];
   if (!player || player.isDead || player.hasAnswered) return state;
-  const correct = normalized(answer) === normalized(question.correctAnswer);
+  const correct = answersMatch(answer, question.correctAnswer, "trimmed");
   return {
     ...state,
     players: {
