@@ -10,7 +10,7 @@ Platform: Cloudflare Worker with Static Assets + Durable Objects; Neon PostgreSQ
 
 Plan version: 2.0
 
-Updated: 21 September 2026
+Updated: 22 September 2026
 
 Status: implementation authority for the Cloudflare migration
 
@@ -53,20 +53,20 @@ The Worker must return JSON errors for unknown API routes and reject invalid Web
 
 3. Current Repository Baseline
 
-The current application remains a Vite/React SPA and a single Express/TypeScript Node process. The Node process owns REST routes, teacher sessions, WebSockets, timers, database access, startup seeds, object storage, and static serving.
+The repository now contains a Vite/React SPA, a Cloudflare Worker with Durable Objects, and the original Express/TypeScript Node implementation. Cloudflare is the migration target and only eligible live runtime. Express remains an offline characterization reference while its unported behavior is extracted and tested.
 
 Repository evidence:
 
-- package.json builds Vite and then bundles server/index.ts for Node. It has no Worker build or deployment script.
+- package.json contains Cloudflare client/Worker build and staging deployment scripts alongside legacy Node scripts. The generic build, dev, and start names still point to Express and must be reassigned to Cloudflare before production cutover.
 - vite.config.ts outputs dist/public and has no base setting. That root-relative behavior matches the canonical subdomain.
-- server/index.ts uses Express, connect-pg-simple, server.listen, Replit deployment detection, and unconditional default/test seeding.
+- server/index.ts is the offline Express reference. It uses Express, connect-pg-simple, server.listen, and Replit-specific behavior and must not be deployed or receive production credentials.
 - server/routes.ts contains the REST API and stateful WebSocket combat server, including process-local connections, maps, intervals, and timeouts.
 - server/db.ts uses the Neon serverless Pool and Drizzle.
 - server/objectStorage.ts depends on a Replit localhost sidecar for credentials and signed URLs.
 - client routes, API calls, WebSockets, and object URLs are root-relative and already align with the dedicated hostname.
-- tests/phase0 characterizes one meaningful synchronized action: a student's answer mutates authoritative state and is broadcast to the room.
+- tests/phase0 through tests/phase5 cover routing, runtime boundaries, identity, live Durable Object combat, deterministic phase rules, and simulated combat resolution.
 
-The Phase 0 tests are characterization tests, not runtime acceptance. They do not prove builds, HTTP behavior, sessions, database access, WebSocket isolation, Durable Object recovery, storage, or browser behavior.
+Repository tests and CI provide contract and build evidence, while deployed staging acceptance remains required for HTTP behavior, sessions, database access, WebSocket isolation, Durable Object recovery, storage, and browser behavior.
 
 4. Migration Gates
 
@@ -196,6 +196,7 @@ Exit gate: the selected classroom gameplay slice works end to end without trusti
 Phase 5 - Complete combat and remaining REST slices
 
 - Port the remaining combat phases and abilities in tested vertical slices.
+- Before production cutover, make the Cloudflare runtime the default build and development path; rename any retained Express commands with an explicit legacy prefix and keep them CI-only.
 - Port required guild, equipment, quest, progression, statistics, and administration behavior.
 - Keep product rules separate from transport and presentation.
 
@@ -224,7 +225,7 @@ Exit gate: named owners approve production behavior, operations, and Worker roll
 
 Implementation must use branches named cloudflare-migration/<short-purpose> and review-ready pull requests into main.
 
-- package.json and lockfile: split Worker/client builds, local Cloudflare development, tests, and deployment scripts.
+- package.json and lockfile: make Worker/client builds and local Cloudflare development the default path before production; keep any temporary Express commands explicitly legacy-named and CI-only until removal.
 - vite.config.ts: preserve base=/ and dist/public; remove Replit-only production behavior.
 - worker/: Worker entry, route dispatch, environment types, REST handlers, session service, Neon adapter, object adapter, error handling, and health routes.
 - worker/combat/: Durable Object class, authenticated roles, protocol validation, Hibernation WebSockets, alarms, checkpoints, and idempotent completion.
