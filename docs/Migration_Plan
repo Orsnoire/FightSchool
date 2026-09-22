@@ -29,7 +29,9 @@ The following decisions are settled for implementation unless a later approved a
 - Store schema migrations in source control. Do not create tables or seed test data during Worker startup.
 - Implement server-verifiable sessions for both teachers and students. Never trust browser local storage or a WebSocket message as identity or authority.
 - R2 is not required for the first text-only combat slice. Before any upload-dependent feature is released, implement an object-storage interface and approve either R2 or a Worker-compatible GCS adapter.
-- Keep the existing Replit deployment available as a rollback target until Cloudflare production acceptance is complete.
+- Replit is not a live deployment target or rollback environment. It cannot call the migrated runtime or access QuestAcademy's new production data and must not receive production traffic or credentials.
+- Retain the Express implementation only as an offline characterization reference while its remaining behavior is ported. It may stay buildable in CI temporarily, but it is not deployable infrastructure.
+- Roll back with a previously known-good immutable Cloudflare Worker version and compatible Neon state.
 
 2. Executive Recommendation
 
@@ -146,7 +148,7 @@ Phase 0 - Close decisions and align contracts
 
 - Record this plan as the routing and architecture authority.
 - Align Phase 0 fixtures and tests with the canonical subdomain and root-relative paths.
-- Inventory the current host, rollback URL, DNS records, Neon limits, storage objects, traffic, compliance requirements, and acceptance owners.
+- Inventory Cloudflare routes and deployment history, DNS records, Neon limits and restore points, storage objects, traffic, compliance requirements, and acceptance owners.
 - Decide R2 versus GCS before the first upload-dependent release; it is not a blocker for the text-only combat milestone.
 
 Exit gate: documentation and tests describe one URL model and one deployment topology; remaining external unknowns have owners.
@@ -159,11 +161,11 @@ Phase 1 - Make the legacy boundary testable and safe
 - Add explicit configuration validation, health endpoints, request IDs, and redacted logs.
 - Add CI for type check, builds, unit tests, and characterization tests.
 
-Exit gate: the legacy application remains releasable and the behavior to preserve is executable in CI.
+Exit gate: behavior that must be preserved is executable in CI; the legacy application is buildable only as an offline reference and is not releasable.
 
 Phase 2 - Create the unified Worker foundation
 
-- Add build:client, build:worker, dev:cloudflare, test, and deploy scripts while preserving legacy scripts for rollback.
+- Add build:client, build:worker, dev:cloudflare, test, and deploy scripts. Keep explicitly named legacy build scripts only for offline comparison until Phase 5 parity; they must not deploy or start a live service.
 - Add Wrangler staging/production configuration with Workers Static Assets rooted at dist/public.
 - Add Worker route ordering for /api/*, /ws, /objects/*, static assets, and SPA fallback.
 - Add the COMBAT_SESSIONS Durable Object binding and a backward-compatible class migration.
@@ -213,10 +215,10 @@ Phase 7 - Staging acceptance and controlled cutover
 - Configure logs, dashboards, alerts, and release-day ownership.
 - Deploy immutable versions before activating the custom hostname.
 - Attach questacademy.bookwyrminteractive.studio only after DNS conflict review and certificate readiness.
-- Keep Replit available through the agreed observation and rollback window.
+- Keep at least one previously known-good immutable Worker version available through the observation and rollback window; do not route traffic to Replit.
 - Add the optional /QuestAcademy redirect only after production acceptance.
 
-Exit gate: named owners approve production behavior, operations, and rollback; legacy retirement is scheduled separately.
+Exit gate: named owners approve production behavior, operations, and Worker rollback; removal of the offline Express reference is scheduled separately after its remaining contracts are represented by shared tests.
 
 7. Repository Change Set
 
@@ -227,7 +229,7 @@ Implementation must use branches named cloudflare-migration/<short-purpose> and 
 - worker/: Worker entry, route dispatch, environment types, REST handlers, session service, Neon adapter, object adapter, error handling, and health routes.
 - worker/combat/: Durable Object class, authenticated roles, protocol validation, Hibernation WebSockets, alarms, checkpoints, and idempotent completion.
 - shared/: pure schemas, session/auth types, WebSocket protocol, and deterministic combat logic.
-- server/: preserve legacy entry for rollback while removing unsafe production seeding and sharing proven domain logic where appropriate.
+- server/: freeze as an offline characterization reference while extracting shared domain logic; do not deploy it, grant it production credentials, or treat it as rollback infrastructure. Remove it after Phase 5 parity and shared-contract coverage.
 - client/: central same-origin URL helpers and removal of client-authoritative identity.
 - migrations/: reviewed clean-schema migrations and explicit seed tooling.
 - tests/: unit, contract, authorization, Neon integration, Durable Object/WebSocket, storage, browser, and smoke coverage.
@@ -324,17 +326,17 @@ Operations and rollback
 
 - Type check, builds, unit tests, contracts, integration tests, and browser smoke tests pass in CI.
 - Logs contain request IDs and useful failures without passwords, session tokens, answers, or response bodies.
-- An earlier Worker version and the legacy host can be restored during a timed rehearsal.
+- A previously known-good immutable Worker version can be restored during a timed rehearsal against compatible Neon state. Replit and the legacy Express host are excluded from rollback.
 
 12. Cutover and Rollback
 
-Before cutover, freeze destructive schema/storage changes, confirm the legacy endpoint, record a Neon restore point, deploy the final immutable Worker version, and complete staging acceptance.
+Before cutover, freeze destructive schema/storage changes, identify the known-good Worker rollback version, record a Neon restore point, deploy the final immutable Worker version, and complete staging acceptance.
 
 Activate the custom hostname only after certificate and DNS checks. Immediately test home, a nested route, teacher login, student login, an API mutation, WebSocket upgrade, a short combat, any required object read, and logout. Observe HTTP failures, latency, Worker CPU, WebSocket churn, Durable Object alarms, Neon connections, and storage errors through the agreed window.
 
 Rollback principles:
 
-- Roll back code by deploying a previously known-good Worker version or detaching the custom hostname to the approved prior destination.
+- Roll back code by deploying a previously known-good Worker version. If the custom hostname must be detached, route it only to an approved Cloudflare maintenance response; never route it to Replit.
 - Keep database migrations expand/contract and compatible with both the current and rollback versions until the rollback window closes.
 - Stop new Cloudflare combat sessions before routing users away. Never allow two authoritative writers for one session.
 - Preserve original objects and reconciliation manifests until storage acceptance closes.
@@ -342,12 +344,12 @@ Rollback principles:
 
 13. Remaining External Decisions
 
-- Identify the current production host and rollback URL.
+- Record the known-good Worker version, Cloudflare deployment identifier, and rollback operator before cutover.
 - Confirm the Cloudflare zone owner and operators authorized for custom-domain changes and rollback.
 - Record expected traffic, concurrent rooms/players, latency objectives, and monitoring thresholds.
 - Confirm session lifetime and whether any real callback requires cross-site cookies.
 - Select R2 or Worker-compatible GCS before upload-dependent functionality enters scope.
-- Name acceptance owners, release window, rollback authority, and legacy retirement criteria.
+- Name acceptance owners, release window, rollback authority, and the offline Express reference-removal criteria.
 - Confirm student-data, logging, retention, and residency requirements.
 
 The canonical hostname, unified Worker topology, root-relative routing model, clean Neon production database, and Durable Object combat design are not open decisions in this version.
@@ -364,10 +366,10 @@ Each implementation pull request must include:
 - Exact manual Cloudflare actions that remain.
 - Confirmation that no secret, account ID, zone ID, database credential, or production object identifier was committed.
 
-Migration work must not merge directly to main, modify DNS, activate production traffic, retire Replit, or perform destructive data/storage changes without explicit authorization.
+Migration work must not merge directly to main, modify DNS, activate production traffic, route traffic to Replit, provide Replit production credentials, or perform destructive data/storage changes without explicit authorization.
 
 15. Plan Authority
 
-This plan is the implementation authority for the Cloudflare migration as of 21 September 2026. When older repository documents or fixtures mention a Pages gateway, API_SERVICE, the /QuestAcademy application basename, preservation of prototype database data, or Replit as a production dependency, this plan supersedes those statements.
+This plan is the implementation authority for the Cloudflare migration as of 22 September 2026. When older repository documents or fixtures mention a Pages gateway, API_SERVICE, the /QuestAcademy application basename, preservation of prototype database data, or Replit as a production dependency, this plan supersedes those statements.
 
 The product Source of Truth remains authoritative for product behavior. This plan controls the migration topology, routing, infrastructure boundaries, release gates, and operational procedure.
