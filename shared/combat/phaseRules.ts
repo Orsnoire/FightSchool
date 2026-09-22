@@ -2,7 +2,7 @@ export type AnswerNormalization = "case-insensitive" | "trimmed";
 
 export interface PendingCombatAction {
   abilityId: string;
-  targetId?: string | null;
+  targetId?: string;
   targetType?: "enemy" | "ally";
 }
 
@@ -14,10 +14,10 @@ export interface PhaseRulePlayer {
   currentAnswer?: string | null;
   hasSelectedAbility: boolean;
   isHealing: boolean;
-  healTarget?: string | null;
-  blockTarget?: string | null;
+  healTarget?: string;
+  blockTarget?: string;
   pendingAction?: PendingCombatAction;
-  lastTargetId?: string | null;
+  lastTargetId?: string;
 }
 
 export interface TargetableEnemy {
