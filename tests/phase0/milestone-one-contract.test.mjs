@@ -33,7 +33,8 @@ test("legacy WebSocket sequence remains characterized", () => {
   assert.match(hostFight, /new WebSocket\(wsUrl\)/);
   assert.match(hostFight, /type: "host"/);
   assert.match(hostFight, /type: "start_fight"/);
-  assert.match(combat, /type: "join", studentId, sessionId/);
+  assert.match(combat, /type: "join", commandId/);
+  assert.doesNotMatch(combat, /type: "join", studentId/);
   assert.match(combat, /type: "answer"/);
   assert.match(routes, /message\.type === "host"/);
   assert.match(routes, /message\.type === "join"/);
