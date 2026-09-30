@@ -7,6 +7,7 @@ interface MathEditorProps {
   onChange: (latex: string) => void;
   placeholder?: string;
   className?: string;
+  containKeyboard?: boolean;
 }
 
 export function MathEditor({
@@ -14,6 +15,7 @@ export function MathEditor({
   onChange,
   placeholder = 'Enter math expression...',
   className = '',
+  containKeyboard = false,
 }: MathEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mathfieldRef = useRef<MathfieldElement | null>(null);
@@ -35,15 +37,28 @@ export function MathEditor({
     containerRef.current.appendChild(mathfield);
     mathfieldRef.current = mathfield;
 
+    // Radix dialogs make body-level portals inert. Keep MathLive's keyboard
+    // inside the combat dialog so its keys remain visible and clickable.
+    const keyboard = window.mathVirtualKeyboard;
+    const previousContainer = keyboard?.container;
+    const keyboardHost = containKeyboard
+      ? containerRef.current.closest('[role="dialog"]')?.querySelector<HTMLElement>('[data-math-keyboard-host]')
+      : null;
+    if (keyboard && keyboardHost) keyboard.container = keyboardHost;
+
     if (value) {
       mathfield.value = value;
     }
 
     return () => {
+      if (keyboard && keyboardHost) {
+        keyboard.hide();
+        keyboard.container = previousContainer || document.body;
+      }
       mathfield.removeEventListener('input', handleInput);
       mathfield.remove();
     };
-  }, [className]);
+  }, [className, containKeyboard]);
 
   useEffect(() => {
     if (mathfieldRef.current && value !== mathfieldRef.current.value) {

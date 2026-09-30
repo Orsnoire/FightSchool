@@ -138,3 +138,24 @@ test("database failure retries completion without announcing unsaved rewards", a
   await h.object.alarm();
   assert.equal(attempts, 2);
 });
+
+test("confirming an action and readiness is atomic, including rejection and retry", async () => {
+  const s = started("wizard");
+  s.phaseDeadline = Date.now() + 100000;
+  s.players[student().id].hasAnswered = true;
+  // Keep another student pending so the confirmed choice remains in question phase.
+  s.players.other = { ...structuredClone(s.players[student().id]), studentId: "other", hasAnswered: false };
+  s.players[student().id].mp = 0;
+  const h = harness({ fight, snapshot: s, receipts: [] });
+  const command = { type: "action", commandId: "confirm-command-001", round: 1, ability: "fireball", targetId: "e1", ready: true };
+  await h.object.webSocketMessage(h.socket as any, JSON.stringify(command));
+  assert.equal(h.data.get("room").snapshot.players[student().id].ready, false);
+  assert.equal(h.data.get("room").receipts.length, 0);
+  command.ability = "attack";
+  await h.object.webSocketMessage(h.socket as any, JSON.stringify(command));
+  await h.object.webSocketMessage(h.socket as any, JSON.stringify(command));
+  const room = h.data.get("room");
+  assert.equal(room.snapshot.players[student().id].ready, true);
+  assert.equal(room.snapshot.players[student().id].questionAction.ability, "attack");
+  assert.equal(room.receipts.length, 1);
+});

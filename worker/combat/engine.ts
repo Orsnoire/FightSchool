@@ -19,6 +19,7 @@ import {
 import {
   availableAbilities,
   abilityProblem,
+  selectionProblem,
   SUPPORT,
   ALLIES,
   COSTS,
@@ -195,7 +196,7 @@ export function selectAction(
     throw new Error("Actions are closed");
   if (SUPPORT.has(ability) !== support)
     throw new Error("Ability belongs to another phase");
-  const error = abilityProblem(p, ability);
+  const error = selectionProblem(p, ability);
   if (error) throw new Error(error);
   if (ALLIES.has(ability)) {
     if (!state.players[targetId] || state.players[targetId].isDead)
@@ -251,6 +252,7 @@ function event(
   s.events.push({
     id: `${s.round}:${s.events.length}`,
     round: s.round,
+    phase: s.currentPhase === "enemy_ai" ? "enemy_ai" : "question_resolution",
     type,
     actorId,
     targetId,

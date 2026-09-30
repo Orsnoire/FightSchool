@@ -5,8 +5,11 @@ import { CombatBoard } from "@/components/CombatBoard";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { MathEditor } from "@/components/MathEditor";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { SUPPORT, ALLIES, abilityProblem } from "@shared/combat/abilities";
+import { CombatOverlay } from "@/components/CombatOverlay";
+import { CombatResources } from "@/components/CombatResources";
+import { CombatResolution } from "@/components/CombatResolution";
+import { Swords, Sparkles, FlaskConical, Shield } from "lucide-react";
+import { SUPPORT, ALLIES, selectionProblem, actionCost } from "@shared/combat/abilities";
 import { JOB_TREE } from "@shared/jobSystem";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 const names: Record<string, string> = {
@@ -78,11 +81,20 @@ export default function Combat() {
         .slice(0, state.enemyDisplayMode === "consecutive" ? 1 : undefined)
         .map((e) => ({ id: e.id, name: e.name }));
   const chosen = target || options[0]?.id || p?.studentId || "";
-  const label = (id: string) =>
+  const definition = (id: string) =>
     Object.values(JOB_TREE)
       .flatMap((j) => Object.values(j.levelRewards))
       .flatMap((r) => r.abilities || [])
-      .find((a) => a.id === id)?.name || id.replaceAll("_", " ");
+      .find((a) => a.id === id);
+  const label = (id: string) => definition(id)?.name || (id === "attack" ? "Attack" : id.replaceAll("_", " "));
+  const costLabel = (id: string) => {
+    if (!p) return "";
+    const c = actionCost(p, id);
+    return [c.mp ? (id === "fireblast" ? `All MP (${c.mp})` : `${c.mp} MP`) : "", c.combo ? `${c.combo} combo` : "", c.healing ? "1 healing potion" : "", c.shield ? "1 shield potion" : ""].filter(Boolean).join(" · ") || "No cost";
+  };
+  const needsTarget = ALLIES.has(ability) || (!SUPPORT.has(ability) && !["craft_healing_potion", "craft_shield_potion", "pact_surge", "holy_light", "finale"].includes(ability));
+  const view = intro ? "intro" : p?.isDead && ["question", "abilities"].includes(phase) ? "knocked-out" : p?.ready && ["question", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "action" : phase;
+  const title = view === "intro" ? (state.round === 1 ? "Question" : "Next question") : view === "knocked-out" ? "Your party is still fighting" : view === "ready" ? "Ready — waiting for your party" : view === "action" ? "Choose your combat action" : phase === "question" ? `Question ${state.currentQuestionIndex + 1}` : names[phase];
   const claim = async (itemId?: string) => {
     try {
       await apiRequest(
@@ -115,29 +127,15 @@ export default function Combat() {
           </p>
         )}
       </header>
-      {error && (
-        <p role="alert" className="text-destructive">
-          {error}
-        </p>
-      )}
       <CombatBoard state={state} />
-      {intro && (
-        <div
-          role="status"
-          className="fixed inset-0 bg-background/90 z-50 flex items-center justify-center"
-        >
-          <h2 className="text-4xl font-bold animate-pulse">
-            {state.round === 1 ? "Question" : "Next question"}
-          </h2>
-        </div>
-      )}
-      {phase === "question" && !intro && question && p && !p.isDead && (
-        <Card className="p-5 space-y-4">
-          <h2 className="text-xl font-semibold">
-            Question {state.currentQuestionIndex + 1}
-          </h2>
-          {!p.hasAnswered ? (
-            <>
+      <CombatOverlay title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <CombatResources player={p} />} status={status} error={error}>
+      {phase === "waiting" && <p>Your teacher will start the fight when everyone has joined.</p>}
+      {intro && <p className="text-center py-8 text-lg">Get ready…</p>}
+      {view === "ready" && <div className="text-center space-y-3 py-4"><p>Your choices are saved. Waiting for the remaining players or the timer.</p><p className="text-sm text-muted-foreground">Resources update when actions resolve.</p></div>}
+      {phase === "question" && !intro && !question && <p>Loading the question…</p>}
+      {phase === "question" && !intro && question && p && !p.isDead && !p.hasAnswered && (
+        <div className="space-y-4">
+          <>
               <RichContentRenderer html={question.question} />
               {question.type === "short_answer" ? (
                 <>
@@ -145,7 +143,7 @@ export default function Combat() {
                     {math ? "Use text answer" : "Use math answer"}
                   </Button>
                   {math ? (
-                    <MathEditor value={answer} onChange={setAnswer} />
+                    <MathEditor value={answer} onChange={setAnswer} containKeyboard />
                   ) : (
                     <input
                       aria-label="Your answer"
@@ -181,41 +179,42 @@ export default function Combat() {
               >
                 Submit answer
               </Button>
-            </>
-          ) : (
-            <p>Answer submitted. Choose your action, then select Ready.</p>
-          )}
-        </Card>
+          </>
+        </div>
       )}
       {p &&
-        canAct &&
+        !p.isDead &&
+        !p.ready &&
         p.hasAnswered &&
         ["question", "abilities"].includes(phase) && (
-          <Card className="p-5 space-y-4">
+          <div className="space-y-4">
             <h2 className="font-semibold">
               {phase === "question"
                 ? "Choose an attack or question ability"
                 : "Choose support actions"}
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {available.map((id) => (
                 <Button
                   key={id}
                   variant={ability === id ? "default" : "outline"}
-                  disabled={!!abilityProblem(p, id)}
-                  title={abilityProblem(p, id) || label(id)}
+                  disabled={!canAct || !!selectionProblem(p, id)}
+                  title={selectionProblem(p, id) || definition(id)?.description || "Deal your base damage to an enemy."}
+                  className="h-auto min-h-16 justify-start gap-3 whitespace-normal text-left"
                   onClick={() => {
                     setAbility(id);
                     setTarget("");
                   }}
                 >
-                  {label(id)}
+                  {id.includes("potion") ? <FlaskConical aria-hidden size={20} className="shrink-0" /> : id.includes("block") || id.includes("shield") ? <Shield aria-hidden size={20} className="shrink-0" /> : actionCost(p, id).mp || id.startsWith("mana") ? <Sparkles aria-hidden size={20} className="shrink-0" /> : <Swords aria-hidden size={20} className="shrink-0" />}
+                  <span><span className="block font-semibold">{label(id)}</span><span className="block text-xs font-normal">{selectionProblem(p, id) || costLabel(id)}</span></span>
                 </Button>
               ))}
             </div>
             {ability && (
               <>
-                <label className="block">
+                <p className="text-sm text-muted-foreground">{definition(ability)?.description || "Deal your base damage to an enemy."}</p>
+                {needsTarget && <label className="block">
                   Target
                   <select
                     aria-label="Ability target"
@@ -229,16 +228,15 @@ export default function Combat() {
                       </option>
                     ))}
                   </select>
-                </label>
+                </label>}
                 <Button
                   variant="secondary"
-                  onClick={() => send("action", { ability, targetId: chosen })}
+                  onClick={() => send("action", { ability, targetId: chosen, ready: phase === "question" })}
                   disabled={
-                    phase === "abilities" &&
-                    p.supportActions.some((a) => a.ability === ability)
+                    !canAct || !!selectionProblem(p, ability)
                   }
                 >
-                  Select {label(ability)}
+                  {phase === "question" ? `Confirm ${label(ability)} & Ready` : `Add ${label(ability)}`}
                 </Button>
               </>
             )}
@@ -247,26 +245,18 @@ export default function Combat() {
                 ? `Selected: ${label(p.questionAction?.ability || "attack")}`
                 : `Selected: ${p.supportActions.map((a) => label(a.ability)).join(", ") || "none"}`}
             </p>
-            <Button onClick={() => send("ready")} disabled={p.ready}>
-              {p.ready ? "Ready" : "Ready — finish choices"}
-            </Button>
-          </Card>
+            <p className="text-xs text-muted-foreground">Costs are reserved for your selected actions and spent when they resolve. Question actions require a correct answer.</p>
+            {phase === "abilities" && <Button onClick={() => send("ready")} disabled={!canAct}>
+              {p.supportActions.length ? "Ready — finish choices" : "Ready — no support actions"}
+            </Button>}
+          </div>
         )}
       {p?.isDead && phase !== "game_over" && (
         <p>You are knocked out. Your party can revive you.</p>
       )}
-      {["question_resolution", "enemy_ai", "game_over"].includes(phase) && (
-        <Card className="p-5">
-          <h2 className="font-semibold mb-3">Combat feedback</h2>
-          <ul className="space-y-2" aria-live="polite">
-            {state.events.map((e) => (
-              <li key={e.id}>{e.message}</li>
-            ))}
-          </ul>
-        </Card>
-      )}
+      {["question_resolution", "enemy_ai"].includes(phase) && <CombatResolution state={state} studentId={studentId} />}
       {phase === "game_over" && (
-        <Card className="p-6 space-y-4">
+        <div className="space-y-4">
           <h2 className="text-2xl font-bold">
             {state.victory ? "Victory!" : "Fight ended"}
           </h2>
@@ -310,8 +300,9 @@ export default function Combat() {
           ) : (
             <p>Saving your results…</p>
           )}
-        </Card>
+        </div>
       )}
+      </CombatOverlay>
     </main>
   );
 }

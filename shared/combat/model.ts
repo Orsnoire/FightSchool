@@ -67,6 +67,7 @@ export interface CombatEnemy {
 export interface CombatEvent {
   id: string;
   round: number;
+  phase?: "question_resolution" | "enemy_ai";
   type: "damage" | "heal" | "block" | "answer" | "enemy_attack" | "ability";
   actorId: string;
   targetId: string;
