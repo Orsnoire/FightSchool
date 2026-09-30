@@ -326,3 +326,10 @@
     inset: -1px;
   }
 }
+/* Keep the contained MathLive keyboard in the combat dialog's flex layout. */
+[data-math-keyboard-host] > .ML__keyboard {
+  height: 0;
+}
+[data-math-keyboard-host] > .ML__keyboard.is-visible {
+  height: var(--_keyboard-height);
+}

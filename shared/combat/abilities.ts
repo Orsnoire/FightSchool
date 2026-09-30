@@ -151,10 +151,40 @@ export function abilityProblem(p: CombatPlayer, id: string): string | null {
   if (p.mp < (COSTS[id] || 0)) return "Not enough MP";
   if (p.comboPoints < (COMBOS[id] || 0)) return "Not enough combo points";
   if (id === "fireblast" && p.mp < 1) return "Not enough MP";
-  if (id === "healing_potion" && p.healingPotions < 1)
+  if (["healing_potion", "potion_diffuser"].includes(id) && p.healingPotions < 1)
     return "No healing potions";
   if (id === "shield_potion" && p.shieldPotions < 1) return "No shield potions";
   if (id === "frostbolt" && p.questionAction?.ability === "fireball")
     return "Frostbolt cannot follow Fireball";
+  return null;
+}
+
+// Selection reserves resources; only the authoritative resolution spends them.
+export function actionCost(p: CombatPlayer, id: string) {
+  return {
+    mp: id === "fireblast" ? p.mp : COSTS[id] || 0,
+    combo: COMBOS[id] || 0,
+    healing: ["healing_potion", "potion_diffuser"].includes(id) ? 1 : 0,
+    shield: id === "shield_potion" ? 1 : 0,
+  };
+}
+
+export function selectionProblem(p: CombatPlayer, id: string): string | null {
+  const problem = abilityProblem(p, id);
+  if (problem) return problem;
+  if (!SUPPORT.has(id)) return null; // Replaces, rather than adds to, the question action.
+  if (p.supportActions.some((a) => a.ability === id)) return "Already selected";
+  if (p.supportActions.length >= 3) return "Maximum three support actions";
+  const actions = [...p.supportActions, { ability: id }];
+  if (p.questionAction && p.lastAnswerCorrect !== false) actions.push(p.questionAction);
+  const total = actions.reduce((sum, action) => {
+    const cost = actionCost(p, action.ability);
+    return { mp: sum.mp + cost.mp, combo: sum.combo + cost.combo,
+      healing: sum.healing + cost.healing, shield: sum.shield + cost.shield };
+  }, { mp: 0, combo: 0, healing: 0, shield: 0 });
+  if (total.mp > p.mp) return "MP reserved for selected actions";
+  if (total.combo > p.comboPoints) return "Combo points reserved for selected actions";
+  if (total.healing > p.healingPotions) return "Healing potions reserved for selected actions";
+  if (total.shield > p.shieldPotions) return "Shield potions reserved for selected actions";
   return null;
 }

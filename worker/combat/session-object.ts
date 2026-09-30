@@ -488,6 +488,8 @@ export class CombatSessionObject {
               command.ability,
               command.targetId,
             );
+            if (command.ready === true)
+              room.snapshot = setReady(room.snapshot, actor.actorId);
           } else if (command.type === "ready")
             room.snapshot = setReady(room.snapshot, actor.actorId);
           else throw new Error("Unsupported command");
