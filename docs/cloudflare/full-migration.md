@@ -49,14 +49,14 @@ The recovered tree was published in PR #18 and merged into `main` as `8738127a27
 
 Deployment preparation found and corrected an obsolete smoke assertion that expected object storage to be disabled (501). The smoke now reads a valid, randomly generated absent object key and requires a non-HTML 404. This exercises the R2 binding; unavailable storage still fails the release check.
 
-Release sequence still required:
+Release sequence required at the recovery checkpoint:
 
 1. Run **Deploy Cloudflare Staging** on the latest CI-passing `main`. Despite its name, this workflow updates the Worker that owns the canonical public hostname. It ensures R2, applies additive migrations, deploys, and checks both configured origins. If R2 availability or token permissions fail, fix the deployment configuration before proceeding.
 2. Run **Live Combat Staging Acceptance** on the deployed revision with `staging_origin=https://questacademy.bookwyrminteractive.studio`. It must finish through genuine enemy defeat, database rewards, guild/shop/quest flows, and solo-room creation. The workflow uses explicitly created acceptance fixtures; application startup never seeds accounts.
 3. Verify the host and student browser flows, including reconnect, question/answer previews, and a second isolated room. Finish the remaining storage/load/recovery/rollback checks in `../Migration_Plan` before claiming full migration acceptance.
 4. Record the deployed commit, immutable Worker version, deployment run, acceptance evidence, and remaining limitations here. Retain the rollback version above and the additive schema.
 
-At this checkpoint, the recovered refactor is merged but not deployed. Do not treat CI as a production cutover record.
+At that checkpoint, the recovered refactor was merged but not deployed. Subsequent deployment and acceptance evidence follows below; CI alone is not a production cutover record.
 
 ### Deployment attempt — 30 September 2026, 19:19 UTC
 
@@ -79,3 +79,11 @@ The additional live R2 probe passed authenticated upload, byte-for-byte readback
 PR #21 merged as `a943eeaa0b1355f203b30e802f5591137a8fc504`; deployment `36767696373` published Worker `dceda7fc-a3fa-4d7c-9066-8c122646ec96` and passed both smoke checks. Live acceptance `36767944961` passed the complete combat/guild/shop/quest/reward/solo/history flow and all storage checks. Thirty-player attendance, a second isolated room, host reuse, answer bursts, reconnect, and logout revocation passed (answer acknowledgement p50 1,962ms, p95 3,767ms, max 3,916ms). Thirty-player result persistence remained pending because it still queried and updated per student. The follow-up batches identity/assignment reads, ledger awards, and derived job levels, preserving unique result receipts and atomic XP/gold. A 30-player local database regression enforces a 45-query ceiling, retries completion, and requires exactly one XP/gold award per player.
 
 Quest completion and recipient rewards are also batched: the same regression completes 30 personal level milestones and one class-wide teacher award, then retries without duplicating student gold or guild XP. This keeps both result saving and simultaneous classroom progression within the request budget.
+
+### Live deployment — 30 September 2026, 19:59 UTC
+
+PR #22 merged the classroom persistence fixes as `bfc4fbedbdec3e2bde1752ce4796bb06c1461d7a` (runtime tree `28b0424bb5ec6071aaecace0f072db2911d12327`). [Deployment run 36769310686](https://github.com/Orsnoire/FightSchool/actions/runs/36769310686), job `110071359534`, passed strict type checking, all 40 tests, builds, R2 provisioning, additive migrations, deployment, and both origin smoke checks. The live immutable Worker version is `8e7588f1-e259-4c64-9a44-a6f5fcb0e825`.
+
+The existing signed-in teacher browser successfully restored its session identity, listed all three existing battles, rendered rich question/answer previews including the graph in Construct a Function, and loaded Create Fight directly without a login redirect. Existing teacher content was inspected without edits.
+
+Acceptance run `36769499444` passed full combat and storage, and classroom completion returned promptly after the batching fix. Its final assertion incorrectly expected a resolved answer immediately after ending the fight during the question phase; totals are counted when the round resolves. The operational script now advances all 30 players through question and support readiness, verifies resolved totals, then ends the fixture and checks all 30 saved results. This correction changes only acceptance code and documentation; the deployed runtime is unchanged.
