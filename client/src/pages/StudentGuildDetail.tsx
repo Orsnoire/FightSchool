@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Users, Trophy, Swords, LogOut, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { type Guild, type GuildMembership } from "@shared/schema";
+import { type Guild, type GuildMember } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 
@@ -23,13 +23,13 @@ export default function StudentGuildDetail() {
     enabled: !!guildId,
   });
 
-  const { data: members } = useQuery<GuildMembership[]>({
+  const { data: members } = useQuery<GuildMember[]>({
     queryKey: [`/api/guilds/${guildId}/members`],
     enabled: !!guildId,
   });
 
   const { data: leaderboard } = useQuery<any[]>({
-    queryKey: [`/api/guilds/${guildId}/leaderboard`, "damageDealt"],
+    queryKey: [`/api/guilds/${guildId}/leaderboard?metric=damageDealt`],
     enabled: !!guildId,
   });
 
@@ -65,52 +65,13 @@ export default function StudentGuildDetail() {
   const hostSoloMode = async (fightId: string) => {
     setIsHostingSolo(fightId);
 
-    // Create WebSocket connection to host solo mode
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    try {
+      const response=await apiRequest('POST', `/api/fights/${fightId}/solo-sessions`, {guildId});
+      const room=await response.json();
+      localStorage.setItem('sessionId',room.sessionId);
+      navigate('/student/combat');
+    } catch(error) { setIsHostingSolo(null); toast({title:'Unable to start solo fight',description:error instanceof Error?error.message:'Try again',variant:'destructive'}); }
 
-    socket.onopen = () => {
-      // Send host_solo message
-      socket.send(JSON.stringify({
-        type: "host_solo",
-        studentId: studentId,
-        fightId: fightId,
-        guildId: guildId,
-      }));
-    };
-
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "solo_session_created" || message.type === "session_created") {
-        // Solo session created successfully
-        localStorage.setItem("sessionId", message.sessionId);
-        socket.close();
-        toast({
-          title: "Solo session created!",
-          description: `Session code: ${message.sessionId}`,
-        });
-        navigate("/student/combat");
-      } else if (message.type === "error") {
-        socket.close();
-        setIsHostingSolo(null);
-        toast({
-          title: "Failed to host solo mode",
-          description: message.message || "The fight may not have solo mode enabled",
-          variant: "destructive",
-        });
-      }
-    };
-
-    socket.onerror = () => {
-      socket.close();
-      setIsHostingSolo(null);
-      toast({
-        title: "Connection error",
-        description: "Failed to connect to server",
-        variant: "destructive",
-      });
-    };
   };
 
   if (guildLoading) {
@@ -199,7 +160,7 @@ export default function StudentGuildDetail() {
                             <div className="flex-1">
                               <h3 className="font-semibold text-lg mb-1">{fight.title}</h3>
                               <div className="flex gap-4 text-sm text-muted-foreground">
-                                <span>{fight.questions?.length || 0} Questions</span>
+                                <span>{fight.questionCount ?? fight.questions?.length ?? 0} Questions</span>
                                 <span>{fight.enemies?.length || 0} Enemies</span>
                               </div>
                             </div>

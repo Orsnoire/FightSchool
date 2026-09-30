@@ -40,3 +40,16 @@ declare class WebSocketPair {
   0: WebSocket;
   1: WebSocket;
 }
+interface R2ObjectBody {
+  body: ReadableStream;
+  httpMetadata?: { contentType?: string };
+}
+interface R2Bucket {
+  get(key: string): Promise<R2ObjectBody | null>;
+  head(key: string): Promise<unknown | null>;
+  put(
+    key: string,
+    value: Uint8Array,
+    options?: { httpMetadata: { contentType: string } },
+  ): Promise<unknown>;
+}

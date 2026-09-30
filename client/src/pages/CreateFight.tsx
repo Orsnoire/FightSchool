@@ -201,7 +201,6 @@ export default function CreateFight() {
       lootTable: [],
       randomizeQuestions: false,
       shuffleOptions: true,
-      soloModeEnabled: true, // Default to true - controlled per-guild in guild settings
     },
   });
 
@@ -220,7 +219,6 @@ export default function CreateFight() {
         lootTable: existingFight.lootTable,
         randomizeQuestions: existingFight.randomizeQuestions,
         shuffleOptions: existingFight.shuffleOptions,
-        soloModeEnabled: true, // Always true - controlled per-guild in guild settings
       });
       setQuestions(existingFight.questions);
       setEnemies(existingFight.enemies);
@@ -1175,9 +1173,9 @@ export default function CreateFight() {
                               <p className="font-medium">{item.name}</p>
                               <p className="text-sm text-muted-foreground capitalize">
                                 {item.quality} | {item.slot} | 
-                                {item.hpBonus ? ` +${item.hpBonus} HP` : ''}
-                                {item.attackBonus ? ` +${item.attackBonus} ATK` : ''}
-                                {item.defenseBonus ? ` +${item.defenseBonus} DEF` : ''}
+                                {item.stats.vit ? ` +${item.stats.vit} HP` : ''}
+                                {item.stats.atk ? ` +${item.stats.atk} ATK` : ''}
+                                {item.stats.def ? ` +${item.stats.def} DEF` : ''}
                               </p>
                             </div>
                             <Button

@@ -1,3 +1,9 @@
+import { safeStudent } from "./game.ts";
+import { getUnlockedJobs } from "../../shared/jobSystem.ts";
+import {
+  ALL_CHARACTER_CLASSES,
+  type CharacterClass,
+} from "../../shared/schema.ts";
 import { z } from "zod";
 import { hashPassword, verifyPassword } from "../auth/crypto.ts";
 import {
@@ -15,7 +21,9 @@ const loginSchema = z.object({
   password: z.string().min(8).max(200),
 });
 const characterSchema = z.object({
-  characterClass: z.enum(["warrior", "wizard", "scout", "herbalist"]),
+  characterClass: z.enum(
+    ALL_CHARACTER_CLASSES as [CharacterClass, ...CharacterClass[]],
+  ),
   gender: z.enum(["A", "B"]),
 });
 
@@ -28,19 +36,7 @@ function json(body: unknown, status = 200, cookie?: string): Response {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
-function publicStudent(student: StudentRecord) {
-  return {
-    id: student.id,
-    nickname: student.nickname,
-    characterClass: student.characterClass,
-    gender: student.gender,
-    weapon: null,
-    headgear: null,
-    armor: null,
-    inventory: [],
-    gold: 0,
-  };
-}
+const publicStudent = safeStudent;
 
 export async function handleStudentAuth(
   request: Request,
@@ -55,7 +51,13 @@ export async function handleStudentAuth(
       const nicknameNormalized = input.nickname.toLocaleLowerCase("en-US");
       let student = await repository.findStudentByNickname(nicknameNormalized);
       if (student) {
-        if (!await verifyPassword(input.password, student.passwordHash, passwordPepper)) {
+        if (
+          !(await verifyPassword(
+            input.password,
+            student.passwordHash,
+            passwordPepper,
+          ))
+        ) {
           return json({ error: "Invalid credentials" }, 401);
         }
       } else {
@@ -65,7 +67,12 @@ export async function handleStudentAuth(
           passwordHash: await hashPassword(input.password, passwordPepper),
         });
       }
-      const cookie = await issueSession(repository, sessionConfig, "student", student.id);
+      const cookie = await issueSession(
+        repository,
+        sessionConfig,
+        "student",
+        student.id,
+      );
       return json(publicStudent(student), 200, cookie);
     } catch (error) {
       if (error instanceof z.ZodError || error instanceof SyntaxError) {
@@ -77,27 +84,62 @@ export async function handleStudentAuth(
 
   if (request.method === "POST" && url.pathname === "/api/student/logout") {
     await revokeRequestSession(request, repository, sessionConfig);
-    return json({ success: true }, 200, clearSessionCookie(sessionConfig.cookieName));
+    return json(
+      { success: true },
+      200,
+      clearSessionCookie(sessionConfig.cookieName),
+    );
   }
 
   const studentMatch = url.pathname.match(/^\/api\/student\/([0-9a-f-]+)$/i);
   if (request.method === "GET" && studentMatch) {
-    const session = await authenticateSession(request, repository, sessionConfig, "student");
+    const session = await authenticateSession(
+      request,
+      repository,
+      sessionConfig,
+      "student",
+    );
     if (!session) return json({ error: "Authentication required" }, 401);
-    if (session.actorId !== studentMatch[1]) return json({ error: "Forbidden" }, 403);
+    if (session.actorId !== studentMatch[1])
+      return json({ error: "Forbidden" }, 403);
     const student = await repository.findStudentById(session.actorId);
-    return student ? json(publicStudent(student)) : json({ error: "Student not found" }, 404);
+    return student
+      ? json(publicStudent(student))
+      : json({ error: "Student not found" }, 404);
   }
 
-  const characterMatch = url.pathname.match(/^\/api\/student\/([0-9a-f-]+)\/character$/i);
+  const characterMatch = url.pathname.match(
+    /^\/api\/student\/([0-9a-f-]+)\/character$/i,
+  );
   if (request.method === "PATCH" && characterMatch) {
-    const session = await authenticateSession(request, repository, sessionConfig, "student");
+    const session = await authenticateSession(
+      request,
+      repository,
+      sessionConfig,
+      "student",
+    );
     if (!session) return json({ error: "Authentication required" }, 401);
-    if (session.actorId !== characterMatch[1]) return json({ error: "Forbidden" }, 403);
+    if (session.actorId !== characterMatch[1])
+      return json({ error: "Forbidden" }, 403);
     try {
       const input = characterSchema.parse(await request.json());
-      const student = await repository.updateStudentCharacter(session.actorId, input.characterClass, input.gender);
-      return student ? json(publicStudent(student)) : json({ error: "Student not found" }, 404);
+      const current = await repository.findStudentById(session.actorId);
+      if (!current) return json({ error: "Student not found" }, 404);
+      const profile = await repository.getCombatProfile?.(current);
+      if (
+        !getUnlockedJobs(
+          (profile?.levels || {}) as Record<CharacterClass, number>,
+        ).includes(input.characterClass)
+      )
+        return json({ error: "Job is not unlocked" }, 403);
+      const student = await repository.updateStudentCharacter(
+        session.actorId,
+        input.characterClass,
+        input.gender,
+      );
+      return student
+        ? json(publicStudent(student))
+        : json({ error: "Student not found" }, 404);
     } catch (error) {
       return error instanceof z.ZodError || error instanceof SyntaxError
         ? json({ error: "Invalid character" }, 400)

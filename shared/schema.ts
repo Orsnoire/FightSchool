@@ -1,6 +1,3 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, jsonb, bigint } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { getTotalPassiveBonuses, getTotalMechanicUpgrades } from "./jobSystem";
 
@@ -34,54 +31,12 @@ export type ItemQuality = "common" | "rare" | "epic" | "legendary";
 export type WeaponType = "sword" | "staff" | "bow" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon";
 
 // Teachers table
-export const teachers = pgTable("teachers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  guildCode: text("guild_code").notNull(), // Unique code for teacher's guild/class
-  billingAddress: text("billing_address").notNull(),
-  schoolDistrict: text("school_district").notNull(),
-  school: text("school").notNull(),
-  subject: text("subject").notNull(),
-  gradeLevel: text("grade_level").notNull(),
-  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertTeacherSchema = createInsertSchema(teachers).omit({
-  id: true,
-  createdAt: true,
-  guildCode: true, // Auto-generated on creation
-});
 
-export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
-export type Teacher = typeof teachers.$inferSelect;
 
 // Students table
-export const students = pgTable("students", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  nickname: text("nickname").notNull(),
-  password: text("password").notNull(),
-  guildCode: text("guild_code"), // Future: student's assigned guild/class
-  guildId: text("guild_id"), // References guilds table
-  characterClass: text("character_class").$type<CharacterClass>(),
-  gender: text("gender").$type<Gender>(),
-  weapon: text("weapon"),
-  headgear: text("headgear"),
-  armor: text("armor"),
-  crossClassAbility1: text("cross_class_ability_1"),
-  crossClassAbility2: text("cross_class_ability_2"),
-  inventory: jsonb("inventory").$type<string[]>(), // Array of equipment item IDs, starts null
-  gold: integer("gold").notNull().default(0), // Guild shop currency
-});
 
-export const insertStudentSchema = createInsertSchema(students).omit({
-  id: true,
-});
 
-export type InsertStudent = z.infer<typeof insertStudentSchema>;
-export type Student = typeof students.$inferSelect;
 
 // Equipment stats type matching EquipmentStats interface
 export interface EquipmentItemStats {
@@ -97,29 +52,8 @@ export interface EquipmentItemStats {
 }
 
 // Equipment items table (teacher-created custom items)
-export const equipmentItems = pgTable("equipment_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  teacherId: varchar("teacher_id").notNull(),
-  name: text("name").notNull(),
-  iconUrl: text("icon_url"),
-  itemType: text("item_type").notNull().$type<ItemType>(),
-  quality: text("quality").notNull().$type<ItemQuality>(),
-  tier: integer("tier").notNull().default(1), // Equipment tier (1-10)
-  slot: text("slot").notNull().$type<EquipmentSlot>(),
-  weaponType: text("weapon_type").$type<WeaponType>(), // Nullable for backwards compatibility
-  stats: jsonb("stats").notNull().$type<EquipmentItemStats>().default({}),
-  shopPrice: integer("shop_price"), // Gold price in guild shop (null = not available for purchase)
-  isPurchasable: boolean("is_purchasable").notNull().default(true), // Whether item appears in shop when tier is unlocked
-  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertEquipmentItemSchema = createInsertSchema(equipmentItems).omit({
-  id: true,
-  createdAt: true,
-});
 
-export type InsertEquipmentItem = z.infer<typeof insertEquipmentItemSchema>;
-export type EquipmentItemDb = typeof equipmentItems.$inferSelect;
 
 // Loot table item (references equipment items)
 export interface LootItem {
@@ -127,193 +61,38 @@ export interface LootItem {
 }
 
 // Fights table
-export const fights = pgTable("fights", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  teacherId: varchar("teacher_id").notNull(),
-  title: text("title").notNull(),
-  guildCode: text("guild_code"), // Deprecated: use guild_fights table instead
-  questions: jsonb("questions").notNull().$type<Question[]>(),
-  enemies: jsonb("enemies").notNull().$type<Enemy[]>(),
-  baseXP: integer("base_xp").notNull().default(10),
-  baseEnemyDamage: integer("base_enemy_damage").notNull().default(1),
-  enemyDisplayMode: text("enemy_display_mode").notNull().$type<"simultaneous" | "consecutive">().default("consecutive"),
-  lootTable: jsonb("loot_table").$type<LootItem[]>().default([]),
-  randomizeQuestions: boolean("randomize_questions").notNull().default(false),
-  shuffleOptions: boolean("shuffle_options").notNull().default(true),
-  enemyScript: text("enemy_script"), // Future: custom AI behavior script
-  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export type DbFight = typeof fights.$inferSelect;
 
 // Student job levels table (tracks progression)
-export const studentJobLevels = pgTable("student_job_levels", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  studentId: varchar("student_id").notNull(),
-  jobClass: text("job_class").notNull().$type<CharacterClass>(),
-  level: integer("level").notNull().default(1),
-  experience: integer("experience").notNull().default(0),
-  unlockedAt: bigint("unlocked_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertStudentJobLevelSchema = createInsertSchema(studentJobLevels).omit({
-  id: true,
-  unlockedAt: true,
-});
 
-export type InsertStudentJobLevel = z.infer<typeof insertStudentJobLevelSchema>;
-export type StudentJobLevel = typeof studentJobLevels.$inferSelect;
 
 // Combat sessions table (active game state)
-export const combatSessions = pgTable("combat_sessions", {
-  sessionId: varchar("session_id", { length: 6 }).primaryKey(), // 6-character alphanumeric code
-  fightId: varchar("fight_id").notNull(), // References fights table
-  currentQuestionIndex: integer("current_question_index").notNull().default(0),
-  currentPhase: text("current_phase").notNull().$type<"waiting" | "question" | "abilities" | "question_resolution" | "enemy_ai" | "state_check" | "game_over">(),
-  players: jsonb("players").notNull().$type<Record<string, PlayerState>>(),
-  enemies: jsonb("enemies").notNull(),
-  questionStartTime: bigint("question_start_time", { mode: "number" }),
-  phaseStartTime: bigint("phase_start_time", { mode: "number" }),
-  jobLocked: boolean("job_locked").notNull().default(false),
-  questionOrder: jsonb("question_order").$type<number[]>(),
-  
-  // Threat tracking
-  threatLeaderId: varchar("threat_leader_id"), // Student ID of player with highest threat (null if none)
-  
-  // Question tracking
-  isFirstQuestionOfSession: boolean("is_first_question_of_session").notNull().default(true), // Track if this is the first question
-  
-  // Solo mode fields
-  soloModeEnabled: boolean("solo_mode_enabled").notNull().default(false),
-  soloModeHostId: varchar("solo_mode_host_id"), // Student ID of host (null for teacher-hosted)
-  soloModeStartHP: integer("solo_mode_start_hp"), // Starting HP for solo mode (scales with players)
-  soloModeAIEnabled: boolean("solo_mode_ai_enabled").notNull().default(false), // Whether AI players are enabled
-  soloModeJoinersBlocked: boolean("solo_mode_joiners_blocked").notNull().default(false), // Whether new players can join
-  guildId: varchar("guild_id"), // Which guild this session contributes XP to (for solo mode)
-});
 
-export type DbCombatSession = typeof combatSessions.$inferSelect;
 
 // Combat stats table (post-fight performance tracking)
-export const combatStats = pgTable("combat_stats", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  fightId: varchar("fight_id").notNull(),
-  studentId: varchar("student_id").notNull(),
-  nickname: text("nickname").notNull(),
-  characterClass: text("character_class").notNull().$type<CharacterClass>(),
-  questionsAnswered: integer("questions_answered").notNull().default(0),
-  questionsCorrect: integer("questions_correct").notNull().default(0),
-  questionsIncorrect: integer("questions_incorrect").notNull().default(0),
-  damageDealt: integer("damage_dealt").notNull().default(0),
-  damageBlocked: integer("damage_blocked").notNull().default(0),
-  bonusDamage: integer("bonus_damage").notNull().default(0),
-  healingDone: integer("healing_done").notNull().default(0),
-  damageTaken: integer("damage_taken").notNull().default(0),
-  deaths: integer("deaths").notNull().default(0),
-  survived: boolean("survived").notNull().default(false),
-  xpEarned: integer("xp_earned").notNull().default(0),
-  lootItemClaimed: varchar("loot_item_claimed"), // Item ID claimed from this fight's loot table
-  guildId: varchar("guild_id"), // Guild this fight contributed to (for stats/leaderboards)
-  isSoloMode: boolean("is_solo_mode").notNull().default(false), // Whether this was a solo mode fight
-  completedAt: bigint("completed_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertCombatStatSchema = createInsertSchema(combatStats).omit({
-  id: true,
-  completedAt: true,
-});
 
-export type InsertCombatStat = z.infer<typeof insertCombatStatSchema>;
-export type CombatStat = typeof combatStats.$inferSelect;
 
 // Guilds table (teacher-created groups for organizing fights and students)
-export const guilds = pgTable("guilds", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  teacherId: varchar("teacher_id").notNull(),
-  name: text("name").notNull(),
-  code: text("code").notNull().unique(), // 6-character join code
-  description: text("description"),
-  level: integer("level").notNull().default(1),
-  experience: integer("experience").notNull().default(0),
-  isArchived: boolean("is_archived").notNull().default(false),
-  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertGuildSchema = createInsertSchema(guilds).omit({
-  id: true,
-  code: true, // Auto-generated
-  createdAt: true,
-});
 
-export type InsertGuild = z.infer<typeof insertGuildSchema>;
-export type Guild = typeof guilds.$inferSelect;
 
 // Guild memberships (many-to-many: students can join multiple guilds)
-export const guildMemberships = pgTable("guild_memberships", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  guildId: varchar("guild_id").notNull(),
-  studentId: varchar("student_id").notNull(),
-  joinedAt: bigint("joined_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertGuildMembershipSchema = createInsertSchema(guildMemberships).omit({
-  id: true,
-  joinedAt: true,
-});
 
-export type InsertGuildMembership = z.infer<typeof insertGuildMembershipSchema>;
-export type GuildMembership = typeof guildMemberships.$inferSelect;
 
 // Guild fight assignments (many-to-many: fights can be assigned to multiple guilds)
-export const guildFights = pgTable("guild_fights", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  guildId: varchar("guild_id").notNull(),
-  fightId: varchar("fight_id").notNull(),
-  soloModeEnabled: boolean("solo_mode_enabled").notNull().default(false), // Per-guild solo mode setting
-  assignedAt: bigint("assigned_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertGuildFightSchema = createInsertSchema(guildFights).omit({
-  id: true,
-  assignedAt: true,
-});
 
-export type InsertGuildFight = z.infer<typeof insertGuildFightSchema>;
-export type GuildFight = typeof guildFights.$inferSelect;
 
 // Guild settings (teacher-configurable options per guild)
-export const guildSettings = pgTable("guild_settings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  guildId: varchar("guild_id").notNull().unique(),
-  hiddenLeaderboardMetrics: jsonb("hidden_leaderboard_metrics").$type<string[]>().default([]), // Metrics to hide (e.g., ["damageDealt", "healing"])
-  enableGroupQuests: boolean("enable_group_quests").notNull().default(true),
-  enableChat: boolean("enable_chat").notNull().default(false), // Teacher can enable guild chat (default off)
-  updatedAt: bigint("updated_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertGuildSettingsSchema = createInsertSchema(guildSettings).omit({
-  id: true,
-  updatedAt: true,
-});
 
-export type InsertGuildSettings = z.infer<typeof insertGuildSettingsSchema>;
-export type GuildSettings = typeof guildSettings.$inferSelect;
 
 // Student currencies table (for guild shop and economy)
-export const studentCurrencies = pgTable("student_currencies", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  studentId: varchar("student_id").notNull().unique(),
-  gold: integer("gold").notNull().default(0),
-  updatedAt: bigint("updated_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertStudentCurrencySchema = createInsertSchema(studentCurrencies).omit({
-  id: true,
-  updatedAt: true,
-});
 
-export type InsertStudentCurrency = z.infer<typeof insertStudentCurrencySchema>;
-export type StudentCurrency = typeof studentCurrencies.$inferSelect;
 
 // Quest types
 export type QuestType = "personal" | "guild" | "weekly" | "teacher_custom";
@@ -368,54 +147,12 @@ export interface QuestReward {
   unlockTier?: number; // Unlock shop tier
 }
 
-export const quests = pgTable("quests", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  guildId: varchar("guild_id"), // Null for personal quests
-  studentId: varchar("student_id"), // Null for guild quests, set for personal quests
-  questType: text("quest_type").notNull().$type<QuestType>(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  criteria: jsonb("criteria").notNull().$type<QuestCriteria>(),
-  rewards: jsonb("rewards").$type<QuestReward>().default({}),
-  isSeeded: boolean("is_seeded").notNull().default(false), // True for auto-generated quests
-  isCompleted: boolean("is_completed").notNull().default(false),
-  completedAt: bigint("completed_at", { mode: "number" }),
-  completedWeek: integer("completed_week"), // ISO week number when completed (for weekly reset)
-  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertQuestSchema = createInsertSchema(quests).omit({
-  id: true,
-  isCompleted: true,
-  completedAt: true,
-  completedWeek: true,
-  createdAt: true,
-});
 
-export type InsertQuest = z.infer<typeof insertQuestSchema>;
-export type Quest = typeof quests.$inferSelect;
 
 // Legacy guild quests table - kept for backwards compatibility but will be migrated to quests table
-export const guildQuests = pgTable("guild_quests", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  guildId: varchar("guild_id").notNull(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  criteria: jsonb("criteria").notNull().$type<QuestCriteria>(),
-  isCompleted: boolean("is_completed").notNull().default(false),
-  completedAt: bigint("completed_at", { mode: "number" }),
-  createdAt: bigint("created_at", { mode: "number" }).notNull().default(sql`extract(epoch from now()) * 1000`),
-});
 
-export const insertGuildQuestSchema = createInsertSchema(guildQuests).omit({
-  id: true,
-  isCompleted: true,
-  completedAt: true,
-  createdAt: true,
-});
 
-export type InsertGuildQuest = z.infer<typeof insertGuildQuestSchema>;
-export type GuildQuest = typeof guildQuests.$inferSelect;
 
 // Question schema
 export interface Question {
@@ -465,6 +202,8 @@ export interface Fight {
   lootTable: LootItem[];
   randomizeQuestions: boolean;
   shuffleOptions: boolean;
+  questionCount?: number;
+  soloModeEnabled?: boolean;
   enemyScript?: string; // Future: custom AI behavior script
   createdAt: number;
 }
@@ -583,6 +322,7 @@ export interface CombatState {
   isFirstQuestionOfSession?: boolean; // Track if this is the first question of the session
   
   // Solo mode fields
+  questionCount?: number;
   soloModeEnabled?: boolean;
   soloModeHostId?: string; // Student ID of the host
   soloModeStartHP?: number; // Starting HP for solo mode (scales with players)
@@ -898,7 +638,7 @@ export const CLASS_STATS: Record<CharacterClass, BaseJobStats> = {
   paladin: { baseHP: 16, vit: 1, str: 1, mnd: 1, role: "Tank/Healer - Holy defender" },
   dark_knight: { baseHP: 14, vit: 1, str: 1, int: 1, role: "Tank/DPS - Dark magic melee" },
   blood_knight: { baseHP: 20, str: 1, int: 2, vit: 1, role: "Tank/DPS - Lifesteal specialist" },
-  monk: { baseHP: 11, vit: 1, str: 1, agi: 1, role: "Tank/DPS - Stance-based combo fighter" },
+  monk: { baseHP: 10, vit: 1, str: 1, agi: 1, role: "Tank/DPS - Stance-based combo fighter" },
   ranger: { baseHP: 7, agi: 3, role: "DPS - Ranged damage with enhanced mobility" },
   bard: { baseHP: 7, int: 1, mnd: 1, role: "Support/DPS - Song-based buffs and damage" },
 };
@@ -944,10 +684,10 @@ export function calculateCharacterStats(
   // Calculate derived stats
   const maxHp = baseJob.baseHP + vit;
   const maxMp = (int + mnd) * 3;
-  const def = (equipmentStats?.def || 0) + Math.floor(vit / 2);
-  const atk = (equipmentStats?.atk || 0) + str;
-  const mat = (equipmentStats?.mat || 0) + int;
-  const rtk = (equipmentStats?.rtk || 0) + agi;
+  const def = (equipmentStats?.def || 0);
+  const atk = (equipmentStats?.atk || 0);
+  const mat = (equipmentStats?.mat || 0);
+  const rtk = (equipmentStats?.rtk || 0);
   const maxComboPoints = (agi * 2) + (mechanicUpgrades.maxComboPoints || 0);
   
   return {
@@ -1022,21 +762,9 @@ export function calculateDamageReduction(def: number, vit: number): number {
 }
 
 // Calculate base damage for a player (without critical hit variance)
-export function calculatePlayerBaseDamage(stats: CharacterStats, characterClass: CharacterClass): number {
-  // Calculate base damage based on class type (no crit multiplier)
-  if (characterClass === "wizard" || characterClass === "warlock" || characterClass === "priest") {
-    // Magical damage classes
-    return calculateMagicalDamage(stats.mat, stats.int);
-  } else if (characterClass === "scout" || characterClass === "ranger") {
-    // Ranged damage classes (base without crit)
-    return stats.rtk + stats.agi;
-  } else if (characterClass === "herbalist") {
-    // Hybrid damage
-    return calculateHybridDamage(stats.mat, stats.agi, stats.mnd);
-  } else {
-    // Physical damage classes (warrior, paladin, dark_knight, blood_knight, monk)
-    return stats.atk + stats.str;
-  }
+export function calculatePlayerBaseDamage(stats: CharacterStats, job: CharacterClass): number {
+  const {atk,mat,rtk,str,int,agi,mnd,vit}=stats;
+  return {warrior:atk+str,wizard:mat+int,scout:rtk+agi,herbalist:mat+agi+mnd,warlock:mat+int,priest:mat+mnd,paladin:atk+str+mnd,dark_knight:atk+str+vit,blood_knight:atk+str+int,monk:atk+str+agi,ranger:rtk+2*agi,bard:rtk+str+int+agi+mnd+vit}[job];
 }
 
 // Calculate solo mode enemy scaling
@@ -1103,7 +831,7 @@ export function getGuildLevelFromXP(xp: number): number {
   let level = 1;
   let cumulativeXP = 0;
   
-  while (level < 6) { // Max level 5 for now
+  while (level < 5) { // Max level 5 for now
     const xpNeededForNext = getGuildXPForLevel(level + 1);
     if (xpNeededForNext === 0 || cumulativeXP + xpNeededForNext > xp) {
       break;
@@ -1134,7 +862,9 @@ export function calculateGoldReward(difficultySlider: number): number {
   const exponential = Math.exp(-k * (difficultySlider - x0));
   const gold = L / (1 + exponential) + offset;
   
-  return Math.floor(gold);
+  const minimum = L / (1 + Math.exp(-k * (1 - x0))) + offset;
+  const maximum = L / (1 + Math.exp(-k * (100 - x0))) + offset;
+  return Math.round(10 + (Math.max(minimum, Math.min(maximum,gold)) - minimum) / (maximum - minimum) * 9990);
 }
 
 // Calculate base tier price for equipment in guild shop
@@ -1210,3 +940,36 @@ export interface PartyDamageData {
     damageTaken: number;
   }>;
 }
+
+// Public transport types. Database tables and credential fields live only in worker/db/schema.ts.
+import type * as DB from '../worker/db/schema';
+export type Teacher = Omit<DB.TeacherRecord,'passwordHash'|'emailNormalized'>;
+export type Student = Omit<DB.StudentRecord,'passwordHash'|'nicknameNormalized'|'createdAt'>;
+export type EquipmentItemDb = typeof DB.equipmentItems.$inferSelect;
+export type StudentJobLevel = typeof DB.studentJobLevels.$inferSelect;
+export type Guild = typeof DB.guilds.$inferSelect;
+export type GuildMembership = typeof DB.guildMemberships.$inferSelect;
+export type GuildMember = Student & {joinedAt:number;studentId:string};
+export type GuildFight = typeof DB.guildFights.$inferSelect;
+export type GuildSettings = typeof DB.guildSettings.$inferSelect;
+export type Quest = typeof DB.quests.$inferSelect;
+export type GuildQuest = Quest;
+export type CombatStat = Omit<typeof DB.combatResults.$inferSelect,'totals'> & import('./combat/model').CombatTotals & {nickname:string;lootItemClaimed:string|null};
+export type DbFight = DB.FightRecord;
+export type InsertQuest = typeof DB.quests.$inferInsert;
+export type InsertEquipmentItem = typeof DB.equipmentItems.$inferInsert;
+export type InsertGuild = typeof DB.guilds.$inferInsert;
+export type InsertGuildQuest = InsertQuest;
+export type InsertGuildSettings = typeof DB.guildSettings.$inferInsert;
+export type InsertStudentJobLevel = typeof DB.studentJobLevels.$inferInsert;
+export type InsertGuildMembership = typeof DB.guildMemberships.$inferInsert;
+export type InsertGuildFight = typeof DB.guildFights.$inferInsert;
+export const insertEquipmentItemSchema = z.object({
+ teacherId:z.string(),name:z.string().min(1),iconUrl:z.string().nullable().optional(),
+ itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable']),
+ quality:z.enum(['common','rare','epic','legendary']),tier:z.number().int().min(1).max(10).default(1),slot:z.enum(['weapon','headgear','armor']),
+ weaponType:z.enum(['sword','staff','bow','herbs','two-handed-sword','fist','claws','harp','spoon']).nullable().optional(),
+ stats:z.object({str:z.number().optional(),int:z.number().optional(),agi:z.number().optional(),mnd:z.number().optional(),vit:z.number().optional(),def:z.number().optional(),atk:z.number().optional(),mat:z.number().optional(),rtk:z.number().optional()}).default({}),
+ shopPrice:z.number().nullable().optional(),isPurchasable:z.boolean().default(true)
+});
+export const insertGuildSchema=z.object({teacherId:z.string(),name:z.string().min(1),description:z.string().nullable().optional()});

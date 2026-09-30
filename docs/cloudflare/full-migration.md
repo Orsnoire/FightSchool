@@ -1,0 +1,56 @@
+# Worker migration and combat recovery
+
+This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
+
+## Root cause and corrected behavior
+
+The previous Worker stored answers without resolving attacks, healing, blocking, or enemy counterattacks. Exhausting the question bank incorrectly declared victory. The server now runs waiting → question (three-second introduction) → support choices → resolution → enemy AI → health check. Living enemies continue the fight by cycling the question bank; victory requires all enemies defeated, and defeat requires the entire party knocked out.
+
+The engine is deterministic and independent of presentation, network transport, timers, and database I/O. It covers all twelve fully specified jobs in the class document. The unfinished Berserker sketch does not define an executable job and is not added. Job unlock requirements and stats follow the design rather than prototype formulas. Damage criticals and execution chances use a saved seeded generator. Question/option randomization uses a separate deterministic shuffle.
+
+Numeric policy: health, MP, damage, healing, rewards and XP are whole numbers. Fractional damage/healing rounds down; fractional blocking capacity rounds up so the starting Warrior's VIT/2 block prevents one damage. VIT mitigation rounds down and is applied once. ATK, MAT, RTK and DEF are gear values; the documented primary-stat bonuses are added once by the attack or mitigation formula. Gold is normalized to exactly 10 at difficulty 1 and 10,000 at difficulty 100.
+
+## Durable room and economy guarantees
+
+- Signed session identity is verified before WebSocket upgrade; the browser cannot choose the acting student. Room ownership and private solo-room ownership are checked.
+- Commands carry IDs, round numbers and question IDs. The object serializes all command/alarm mutations. Accepted-command receipts and updated state are stored together, with bounded receipts. Invalid commands do not consume their IDs.
+- Reconnect restores state, deadline, current question and persisted results. The browser uses server time and does not restart phase clocks. A version-1 room is upgraded in place, retaining answers and remaining HP.
+- Alarms compare saved deadlines and resume transitions after hibernation. Unsaved final results remain pending and retry through alarms; successful completion is announced after persistence.
+- Unique session/student result rows are the source of XP and automatic gold. The ledger insertion and award are one SQL statement. Loot-versus-gold choices update the claim and inventory/currency atomically. Quest completion has a separate unique period ledger.
+- Fight deletion archives content and removes assignments while preserving historical results.
+
+## Remaining application services
+
+Fetch-native routes cover guilds, authenticated membership, teacher-owned assignments/settings, solo sessions, equipment CRUD/equipping/purchases, job levels and unlocks, combat statistics, leaderboards, personal/guild/weekly/teacher quests, manual quest completion, guild XP, and shop tiers. Teacher-created items remain content authored by teachers; the engine does not invent campaign-specific gear or academic questions. Personal milestone and ultimate quests are initialized when a student joins a guild.
+
+R2 stores image assets behind an object-storage boundary. Uploads require teacher authentication and same-origin mutations, accept only PNG/JPEG/WebP/GIF, verify file signatures, and cap the body at 5MB. Object keys use owner IDs and random identifiers. SVG and arbitrary executable uploads are rejected. Rich question HTML is sanitized on rendering.
+
+The active app has one PostgreSQL schema in `worker/db/schema.ts`. Shared code contains public DTOs, validators and game rules. `server/`, Express sessions, Replit runtime/configuration, GCS code, legacy deployment scripts and the TypeScript error baseline have been removed. CI now requires a clean `tsc` result.
+
+## Verification and deployment
+
+Run `npm ci`, `npm run check`, `npm test`, and `npm run build:cloudflare`. The suite includes real PostgreSQL-compatible migration/reward tests using PGlite, deterministic combat, every unlocked ability's executable path, ownership/authentication, simultaneous command retries, early/expired alarms, and failed-result recovery.
+
+Deploy Cloudflare Staging checks the app, ensures the `questacademy-objects` R2 bucket, applies committed additive Neon migrations, publishes to the existing Worker, and verifies both configured origins. No credentials are committed. Run Live Combat Staging Acceptance on the same branch against `https://questacademy.bookwyrminteractive.studio` to exercise a complete fight plus guild/shop/quest/reward/solo flows with isolated acceptance fixtures. The workflow never seeds production accounts on startup. Acceptance fixture fights are archived after use.
+
+The current pre-refactor rollback Worker version is `20382b06-88e9-42a3-805d-bc7ca476e602`, from successful deployment run `36749441658` on 30 September 2026. It includes the rich-content preview fix merged in PR #17 (`b10488316d9f008139c000e3d4e51383548a07e8`). The added database tables and columns can remain during rollback; do not remove them or replace the Durable Object namespace. Keep the canonical domain, Worker identity, session secrets and Neon database unchanged.
+
+## Recovery checkpoint — 30 September 2026
+
+The interrupted `cloudflare-migration/full-combat-refactor` worktree contained 102 staged changes without a commit or remote branch. Its exact staged tree was recovered in commit `520864a1668582e84a1817b058465875613b7a8b`, then current main was merged on `cloudflare-migration/recover-full-refactor`. The original worktree was left intact.
+
+Recovery preserves the shared sanitized HTML/SVG/KaTeX renderer and its five regression tests from PR #17. Additional checks exercise the real Worker and Neon query adapter against a disposable PGlite database: authentication, guild ownership, class unlocks, fight ownership, room reuse after host refresh, object upload signatures/ownership, and logout revocation. No external accounts or production data are used by these local tests.
+
+The combat hook now discards stale questions together with stale snapshots, clears state and pending commands when changing rooms, and retries outstanding commands only once after a reconnect. Durable Object commands revalidate the authenticated session, preventing a revoked session from continuing to act through an already-open socket. Pre-migration socket attachments reconnect to acquire the new verification metadata.
+
+Local checks: `npm run check`, `npm test` (38 tests), `npm run build:cloudflare`, and `git diff --check` pass. These checks do not establish deployed acceptance.
+
+Release sequence still required:
+
+1. Push `cloudflare-migration/recover-full-refactor` and open its pull request into `main`; require CI on the exact reviewed head.
+2. Run **Deploy Cloudflare Staging** on that branch. Despite its name, this workflow updates the Worker that owns the canonical public hostname. It ensures R2, applies additive migrations, deploys, and checks both configured origins. If R2 availability or token permissions fail, fix the deployment configuration before proceeding.
+3. Run **Live Combat Staging Acceptance** on the same branch with `staging_origin=https://questacademy.bookwyrminteractive.studio`. It must finish through genuine enemy defeat, database rewards, guild/shop/quest flows, and solo-room creation. The workflow uses explicitly created acceptance fixtures; application startup never seeds accounts.
+4. Verify the host and student browser flows, including reconnect, question/answer previews, and a second isolated room. Finish the remaining load/recovery/rollback checks in `../Migration_Plan` before claiming full migration acceptance.
+5. Merge the reviewed, passing pull request using its expected head SHA, deploy the merged main commit, and repeat canonical-domain smoke checks. Retain the rollback version above and the additive schema.
+
+At this checkpoint, push and deployment are pending explicit remote-write approval; no recovered refactor has been released. Do not treat the local validation result as a production cutover record.

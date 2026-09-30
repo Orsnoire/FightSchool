@@ -78,11 +78,11 @@ export default function CharacterSelect() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Health:</span>
-                      <span className="font-semibold">{stats.maxHealth}</span>
+                      <span className="font-semibold">{stats.baseHP + (stats.vit || 0)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Damage:</span>
-                      <span className="font-semibold">{stats.damage}</span>
+                      <span className="font-semibold">{stats.str || stats.int || stats.agi || stats.mnd || 0}</span>
                     </div>
                   </div>
                 </CardContent>

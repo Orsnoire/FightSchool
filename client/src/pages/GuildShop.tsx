@@ -49,13 +49,13 @@ export default function GuildShop() {
 
   // Fetch guild data
   const { data: guild } = useQuery<Guild>({
-    queryKey: [`/api/guild/${student?.guildId}`],
+    queryKey: [`/api/guilds/${student?.guildId}`],
     enabled: !!student?.guildId,
   });
 
   // Fetch guild quests to determine unlocked tiers
   const { data: guildQuests = [] } = useQuery<Quest[]>({
-    queryKey: [`/api/guild/${student?.guildId}/quests`],
+    queryKey: [`/api/guilds/${student?.guildId}/quests`],
     enabled: !!student?.guildId,
   });
 
