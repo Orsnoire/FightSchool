@@ -14,8 +14,10 @@ The previous UI omitted potion inventory and action costs. Selection also checke
 
 These findings reproduce code paths; they do not establish which exact condition occurred in the classroom trial. No student records or live room data were changed.
 
-## Validation and remaining acceptance
+## Validation
 
 Automated coverage includes resource deductions, crafting bonuses/caps, wrong answers, competing choices, JSON recovery, atomic confirmation/retry, and the rendered React question-to-resolution flow with one dialog, focus changes, Escape handling, rich content, resource display updates, and math input/keyboard containment. The DOM test stubs MathLive registration; it does not validate the real virtual keyboard's rendering.
 
-Before live classroom use, visually check Chromebook and mobile viewport layouts, long rich questions, the real math keyboard, target selection, and reconnecting during each phase. Local browser preview was blocked in the editing environment; no visual or live deployment acceptance is claimed for this change.
+`tests/browser/combat-ui.mjs` runs the real client in Chromium at 1366×768 and 390×844. It checks centered, contained dialogs through questions, action confirmation, waiting, support, answer resolution, and enemy counterattacks; rich questions, internal scrolling, and real MathLive keyboard input and cleanup are included. The Combat UI Acceptance workflow preserves screenshots for visual review. WebSocket snapshots are isolated fixtures. This is viewport coverage, not a physical Chromebook or phone certification. Local browser preview was blocked in the editing environment, so browser acceptance runs in GitHub Actions.
+
+After deployment, Live Combat Staging Acceptance exercises the public origin with isolated accounts and rooms. It verifies atomic action/ready, exactly 1 MP spent per successful Fireball, no MP spent for an incorrect answer, reconnect deadlines, phase transitions, rewards/history, storage, and 30-player concurrency. Fixture fights are archived; real classroom records are not modified. Successful check links and deployment evidence are recorded in PR #25.
