@@ -57,3 +57,17 @@ Release sequence still required:
 4. Record the deployed commit, immutable Worker version, deployment run, acceptance evidence, and remaining limitations here. Retain the rollback version above and the additive schema.
 
 At this checkpoint, the recovered refactor is merged but not deployed. Do not treat CI as a production cutover record.
+
+### Deployment attempt — 30 September 2026, 19:19 UTC
+
+PR #19 corrected the storage smoke check and merged as `8558015a5d6bc978cc28f151bd217bb4c561ec17`. CI passed on that merged revision (run `36764680747`). The owner authorized starting deployment through GitHub's browser interface.
+
+**Deploy Cloudflare Staging** run `36764886693` (job `110056452170`) ran against `8558015` and passed dependency installation, type checking, all tests, and both builds. It stopped at **Ensure image storage bucket** with Cloudflare's response: `Unable to inspect R2 bucket (403): Please enable R2 through the Cloudflare Dashboard.` Database migrations, secret preparation, Worker deployment, and both smoke checks were skipped. This attempt changed neither the live Worker nor its database.
+
+The owner enabled R2 and authorized continuing. Attempt 2 (job `110058036415`) passed R2 and additive migrations, then published Worker version `7b528a4b-4286-4694-97e0-dd772c7b19b6` at 19:24 UTC. Its immediate storage smoke hit the previous rollout version (501); subsequent probes of both hostnames returned the required 404. The smoke now uses the existing bounded rollout wait for this probe as well as liveness/WebSockets.
+
+Canonical live acceptance run `36765677655` reached guild quest completion but received a 503. Local reproduction enforcing the Worker's 50 external-subrequest budget showed that personal quest evaluation fetched the same student's job levels once per quest. Job levels are now loaded once for all relevant students. The integration test enforces that budget and completes a manual quest twice, requiring exactly one award.
+
+Browser acceptance also found a valid teacher cookie with missing browser-local identity: the dashboard showed no fights and Create Fight redirected to login. Session verification now restores the teacher display cache from the authenticated response; Create Fight waits for that verification instead of trusting absent local storage. A regression test covers missing and stale cached identity.
+
+Deploy these acceptance fixes, then repeat canonical live combat and browser acceptance. The last pre-refactor rollback version remains `20382b06-88e9-42a3-805d-bc7ca476e602`. Full storage/load/recovery/rollback acceptance is still outstanding.

@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import type { GameDatabase } from "../db/game-repository.ts";
 import * as s from "../db/schema.ts";
 import { JOB_TREE, getUnlockedJobs } from "../../shared/jobSystem.ts";
@@ -158,6 +158,18 @@ export async function evaluateQuests(
     .select()
     .from(s.guildMemberships)
     .where(eq(s.guildMemberships.guildId, guildId));
+  // Every Neon HTTP query consumes a Worker subrequest. Load job levels once
+  // for the whole guild instead of once for each of its personal quests.
+  const studentIds = [...new Set(quests.map(q => q.studentId).filter((id): id is string => !!id))];
+  const jobs = studentIds.length
+    ? await db.select().from(s.studentJobLevels).where(inArray(s.studentJobLevels.studentId, studentIds))
+    : [];
+  const levelsByStudent = new Map<string, Partial<Record<CharacterClass, number>>>();
+  for (const job of jobs) {
+    const levels = levelsByStudent.get(job.studentId) || {};
+    levels[job.jobClass as CharacterClass] = job.level;
+    levelsByStudent.set(job.studentId, levels);
+  }
   const week = Math.floor(Date.now() / (7 * 86400000));
   for (const quest of quests) {
     const relevant = results.filter(
@@ -166,13 +178,7 @@ export async function evaluateQuests(
         (quest.questType !== "weekly" ||
           Math.floor(r.completedAt / (7 * 86400000)) === week),
     );
-    const jobs = quest.studentId
-      ? await db
-          .select()
-          .from(s.studentJobLevels)
-          .where(eq(s.studentJobLevels.studentId, quest.studentId))
-      : [];
-    const levels = Object.fromEntries(jobs.map((j) => [j.jobClass, j.level]));
+    const levels = quest.studentId ? levelsByStudent.get(quest.studentId) || {} : {};
     const totals = relevant.reduce(
       (n, r) => ({
         correct: n.correct + r.totals.questionsCorrect,
