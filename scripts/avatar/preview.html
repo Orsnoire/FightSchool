@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuestAcademy · Human color workshop</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#111a26;color:#e9eff5;font:16px system-ui,sans-serif}
+  main{max-width:1120px;margin:auto;padding:32px}h1{margin:8px 0;font-size:30px}p{color:#b7c6d7;line-height:1.5}
+  .controls{display:flex;gap:14px;flex-wrap:wrap;padding:20px;background:#1a293b;border-radius:14px;margin:24px 0}
+  label{display:grid;gap:6px;font-size:13px;color:#c5d3e1}select,button{font:inherit;padding:10px;border-radius:7px;border:1px solid #526780;background:#17283b;color:#fff}
+  button{align-self:end;cursor:pointer;background:#235d74}button:hover{background:#32798b}
+  .stage{display:grid;grid-template-columns:1fr 1fr;gap:24px}.panel{margin:0;background:#f1f3f5;border-radius:16px;overflow:hidden;color:#233144;text-align:center}
+  .panel figcaption{padding:16px;font-weight:600}.panel img,.panel canvas{width:100%;max-width:400px;height:auto;vertical-align:bottom}
+  #status{min-height:24px}small{color:#a8bbce}@media(max-width:650px){main{padding:16px}.stage{gap:10px}h1{font-size:24px}.controls{gap:10px;padding:14px}}
+</style>
+<main>
+  <small>QUESTACADEMY / CHARACTER ART</small>
+  <h1>Human color workshop</h1>
+  <p>Try independent hair, eye, and skin colors on either model and view. The originals stay intact.</p>
+  <div class="controls">
+    <label>Model<select id="model"><option value="human-male-v1">Male</option><option value="human-female-v1">Female</option></select></label>
+    <label>View<select id="view"><option value="front">Front</option><option value="rightNearProfile">Right near-profile</option></select></label>
+    <label>Hair<select id="hair"></select></label><label>Eyes<select id="eyes"></select></label><label>Skin<select id="skin"></select></label>
+    <label>Display<select id="display"><option value="color">Selected colors</option><option value="diagnostic">Diagnostic colors</option><option value="neutral">Neutral base</option><option value="hair">Hair mask</option><option value="eyes">Eye mask</option><option value="skin">Skin mask</option></select></label>
+    <button id="randomize">Randomize colors</button>
+  </div>
+  <div class="stage"><figure class="panel"><figcaption>Original reference</figcaption><img id="original" alt="Original Human model"></figure><figure class="panel"><figcaption id="caption">Selected appearance</figcaption><canvas id="result" width="1024" height="1536" aria-label="Recolored Human model"></canvas></figure></div>
+  <p id="status" role="status">Loading assets…</p>
+  <small>Local art preview only. These controls do not change a student's saved character.</small>
+</main>
+<script type="module">
+import { recolorAvatar, hexToRgb } from '/avatar-recolor.mjs';
+const $ = id => document.getElementById(id);
+const manifest = await fetch('/manifest.json').then(r => r.json());
+const channels = ['hair','eyes','skin'];
+let loaded, ticket = 0;
+for (const c of channels) {
+  for (const option of manifest.palettes[manifest.channels[c].paletteId]) $(''+c).add(new Option(option.label, option.hex));
+}
+const randomize = () => { for(const c of channels) $(c).selectedIndex = Math.floor(Math.random()*$(c).options.length); };
+randomize();
+async function readPixels(path) {
+  const image = new Image(); image.src = '/assets/' + path; await image.decode();
+  const canvas = document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
+  return ctx.getImageData(0,0,canvas.width,canvas.height);
+}
+function render() {
+  if(!loaded)return;
+  const mode=$('display').value;
+  let data;
+  if(channels.includes(mode)) {
+    data=new Uint8ClampedArray(loaded.base.data.length);
+    for(let i=0;i<loaded.masks[mode].length;i++){data.fill(loaded.masks[mode][i],i*4,i*4+3);data[i*4+3]=255;}
+  } else if(mode==='neutral') data=loaded.base.data;
+  else {
+    const colors=mode==='diagnostic'?{hair:[255,0,255],eyes:[255,255,0],skin:[0,255,0]}:Object.fromEntries(channels.map(c=>[c,hexToRgb($(c).value)]));
+    data=recolorAvatar(loaded.base.data,loaded.masks,colors);
+  }
+  const canvas=$('result');canvas.width=loaded.base.width;canvas.height=loaded.base.height;
+  canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(data),loaded.base.width,loaded.base.height),0,0);
+  $('caption').textContent=$('display').selectedOptions[0].textContent;
+}
+async function loadView() {
+  const current=++ticket;loaded=null;$('status').textContent='Loading assets…';
+  try {
+    const model=manifest.models.find(m=>m.id===$('model').value),view=model.views[$('view').value];
+    const [base,...masks]=await Promise.all([readPixels(view.neutralBaseFile),...channels.map(c=>readPixels(view.recolorMasks[c]))]);
+    if(current!==ticket)return;
+    loaded={base,masks:Object.fromEntries(channels.map((c,k)=>[c,Uint8Array.from({length:base.width*base.height},(_,i)=>masks[k].data[i*4])]))};
+    $('original').src='/assets/'+view.file;render();$('status').textContent='12 independent masks across four views · 512 natural color combinations per model';
+  }catch(error){if(current===ticket)$('status').textContent='Could not load preview: '+error.message;}
+}
+for(const id of ['model','view'])$(id).addEventListener('change',loadView);
+for(const id of [...channels,'display'])$(id).addEventListener('change',render);
+$('randomize').addEventListener('click',()=>{randomize();render();});
+loadView();
+</script>
+</html>

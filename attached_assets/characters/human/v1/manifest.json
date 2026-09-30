@@ -41,7 +41,7 @@
         "black ink outlines",
         "eyelashes"
       ],
-      "maskStatus": "not-created"
+      "maskStatus": "prepared"
     },
     "eyes": {
       "paletteId": "human-eyes-v1",
@@ -56,7 +56,7 @@
         "eyelashes",
         "black ink outlines"
       ],
-      "maskStatus": "not-created"
+      "maskStatus": "prepared"
     },
     "skin": {
       "paletteId": "human-skin-v1",
@@ -74,7 +74,7 @@
         "clothing",
         "black ink outlines"
       ],
-      "maskStatus": "not-created"
+      "maskStatus": "prepared"
     }
   },
   "palettes": {
@@ -212,7 +212,7 @@
       "bodyType": "male",
       "legacyGender": "A",
       "status": "approved-concept",
-      "recolorReady": false,
+      "recolorReady": true,
       "rigReady": false,
       "sampleColorsAreDefaults": false,
       "colorBindings": {
@@ -233,13 +233,20 @@
           "yawIsApproximate": true,
           "role": "appearance-reference",
           "recolorMasks": {
-            "hair": null,
-            "eyes": null,
-            "skin": null
+            "hair": "recolor/masks/human-male-front-hair.png",
+            "eyes": "recolor/masks/human-male-front-eyes.png",
+            "skin": "recolor/masks/human-male-front-skin.png"
           },
-          "neutralBaseFile": null,
+          "neutralBaseFile": "recolor/neutral/human-male-front.png",
           "rigFile": null,
-          "segmentedPartsFile": null
+          "segmentedPartsFile": null,
+          "recolorReady": true,
+          "recolorAssetSha256": {
+            "hair": "80d8e1b51df1d9d1ad9bba607a1699708fe57d6b02946212e3d6a01ecc020f43",
+            "eyes": "c593ab14895dc751129169b3ba2faa90c1bc0fa0f41c5088bcc34646b951e219",
+            "skin": "d533d5f8679f554c281754b9ced953fd1816ef0be83eb0559d77418103c5721f",
+            "neutral": "35a1c99772fb1aed902fba31d35754e2ec06c8c7655277987b65541310c8fb1e"
+          }
         },
         "rightNearProfile": {
           "file": "human-male-right-80.png",
@@ -253,13 +260,20 @@
           "yawIsApproximate": true,
           "role": "combat-rig-reference",
           "recolorMasks": {
-            "hair": null,
-            "eyes": null,
-            "skin": null
+            "hair": "recolor/masks/human-male-right-80-hair.png",
+            "eyes": "recolor/masks/human-male-right-80-eyes.png",
+            "skin": "recolor/masks/human-male-right-80-skin.png"
           },
-          "neutralBaseFile": null,
+          "neutralBaseFile": "recolor/neutral/human-male-right-80.png",
           "rigFile": null,
-          "segmentedPartsFile": null
+          "segmentedPartsFile": null,
+          "recolorReady": true,
+          "recolorAssetSha256": {
+            "hair": "620a49d4266923c3b1e399afc123943f8be20fc481363ebb490faa3b6aad25d0",
+            "eyes": "54500769635c6c8e6fe60a309129afcd8ca4a478add14c8bb303bdce8b82a947",
+            "skin": "7a5e267808021fc4082dd0a70c8f77c8691e382bac1ecce44f5dfd4dc780da58",
+            "neutral": "106b8ae40a289cc51e795f8e9ff2b20c3ebae5fca9a63a8a29302400b3411e1b"
+          }
         }
       }
     },
@@ -269,7 +283,7 @@
       "bodyType": "female",
       "legacyGender": "B",
       "status": "approved-concept",
-      "recolorReady": false,
+      "recolorReady": true,
       "rigReady": false,
       "sampleColorsAreDefaults": false,
       "colorBindings": {
@@ -290,13 +304,20 @@
           "yawIsApproximate": true,
           "role": "appearance-reference",
           "recolorMasks": {
-            "hair": null,
-            "eyes": null,
-            "skin": null
+            "hair": "recolor/masks/human-female-front-hair.png",
+            "eyes": "recolor/masks/human-female-front-eyes.png",
+            "skin": "recolor/masks/human-female-front-skin.png"
           },
-          "neutralBaseFile": null,
+          "neutralBaseFile": "recolor/neutral/human-female-front.png",
           "rigFile": null,
-          "segmentedPartsFile": null
+          "segmentedPartsFile": null,
+          "recolorReady": true,
+          "recolorAssetSha256": {
+            "hair": "04dc1543990653ec95cece8e02e7db8cc1a3f0dc9420b54e6a9f7b20e6d4bdb4",
+            "eyes": "e6164dc67368aba15fece536d4160e9fd91fe7abf7ad6696d3ec99cd0374243a",
+            "skin": "c87a6e0eaf74c50138fa092f78d7df5c64aa6c3317bbb74a369756b8966a00d4",
+            "neutral": "6c87604741152aae6adb1ae085d45f4418bbbba5cdb9dd4efcf171ff12ab3366"
+          }
         },
         "rightNearProfile": {
           "file": "human-female-right-80.png",
@@ -310,13 +331,20 @@
           "yawIsApproximate": true,
           "role": "combat-rig-reference",
           "recolorMasks": {
-            "hair": null,
-            "eyes": null,
-            "skin": null
+            "hair": "recolor/masks/human-female-right-80-hair.png",
+            "eyes": "recolor/masks/human-female-right-80-eyes.png",
+            "skin": "recolor/masks/human-female-right-80-skin.png"
           },
-          "neutralBaseFile": null,
+          "neutralBaseFile": "recolor/neutral/human-female-right-80.png",
           "rigFile": null,
-          "segmentedPartsFile": null
+          "segmentedPartsFile": null,
+          "recolorReady": true,
+          "recolorAssetSha256": {
+            "hair": "94613f84056643a0bad88b26c4adc6ba961760d1e5a2a95ab4192865f7a87f3f",
+            "eyes": "0b082bbb253570d0e33a45754fee388440c31196cd64fb4f696d8060618ecea9",
+            "skin": "f92ca65c370927e3b67f62237dc25ff121cc34821b2efdcc5d20d7a7d2578ca6",
+            "neutral": "9ea8dcc76205d89bb53a36f5d4c6ae0b5718ff6b6fc53340fe2b10bde33efd77"
+          }
         }
       }
     }
@@ -492,5 +520,20 @@
     "storeStableOptionIds": true,
     "validateAgainstModelColorBindings": true,
     "existingCharacterBackfill": "none-in-this-migration-create-on-explicit-avatar-setup"
+  },
+  "recoloring": {
+    "version": 1,
+    "method": "multiply-neutral-srgb-v1",
+    "maskEncoding": "8-bit grayscale: 0 untouched, 255 selected",
+    "maskChannelsExclusive": true,
+    "sourceAlphaPreserved": true,
+    "untargetedRgbPreserved": true,
+    "neutralShading": "per-region source red intensity divided by the region 99th percentile",
+    "renderer": "shared/avatar-recolor.mjs",
+    "buildCommand": "npm run build:avatar-assets",
+    "previewCommand": "npm run preview:avatars",
+    "buildReport": "recolor/build-report.json",
+    "migrationFile": "migrations/cloudflare/0007_human_recolor_masks.sql",
+    "rigReady": false
   }
 }

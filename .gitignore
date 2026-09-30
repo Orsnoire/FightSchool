@@ -7,3 +7,4 @@ vite.config.ts.*
 .dev.vars
 .dev.vars.*
 .wrangler
+attached_assets/characters/human/v1/recolor/previews/

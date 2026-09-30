@@ -54,9 +54,12 @@ test("avatar database preserves students, binds colors correctly and reserves eq
         assert.equal(bytes.readUInt32BE(16), view.width);
         assert.equal(bytes.readUInt32BE(20), view.height);
         assert.equal(bytes[25], 6, "PNG must retain RGBA color type");
-        assert.equal(view.recolorReady, false);
+        assert.equal(view.recolorReady, true);
         assert.equal(view.rigReady, false);
-        assert.equal(view.hairMaskPath, null);
+        assert.ok(view.hairMaskPath);
+        assert.ok(view.eyeMaskPath);
+        assert.ok(view.skinMaskPath);
+        assert.ok(view.neutralBasePath);
         assert.equal(view.rigPath, null);
       }
     });
@@ -98,7 +101,7 @@ test("avatar database preserves students, binds colors correctly and reserves eq
 
     await t.test("database rejects channel mix-ups and unprepared assets marked ready", async () => {
       await assert.rejects(() => db.update(s.avatarModels).set({ hairPaletteId: "human-eyes-v1" }).where(eq(s.avatarModels.id, "human-male-v1")));
-      await assert.rejects(() => db.update(s.avatarModelViews).set({ recolorReady: true }));
+      await assert.rejects(() => db.update(s.avatarModelViews).set({ recolorReady: true, hairMaskPath: null }));
       await assert.rejects(() => db.update(s.avatarModelViews).set({ rigReady: true }));
       await assert.rejects(() => db.insert(s.avatarColors).values({ paletteId: "human-hair-v1", id: "bad", label: "Bad", hex: "red", sortOrder: 99 }));
     });

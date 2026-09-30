@@ -1,0 +1,2733 @@
+{
+  "id": "78b5c926-f08a-4547-83f6-c5ae12edf17b",
+  "prevId": "01046c93-fa1f-4bde-8071-8046e932b44c",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.app_sessions": {
+      "name": "app_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_type": {
+          "name": "actor_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "app_sessions_actor_idx": {
+          "name": "app_sessions_actor_idx",
+          "columns": [
+            {
+              "expression": "actor_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "actor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "app_sessions_expiry_idx": {
+          "name": "app_sessions_expiry_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "app_sessions_token_hash_unique": {
+          "name": "app_sessions_token_hash_unique",
+          "columns": [
+            "token_hash"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.avatar_colors": {
+      "name": "avatar_colors",
+      "schema": "",
+      "columns": {
+        "palette_id": {
+          "name": "palette_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hex": {
+          "name": "hex",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "avatar_colors_order_unique": {
+          "name": "avatar_colors_order_unique",
+          "columns": [
+            {
+              "expression": "palette_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "avatar_colors_palette_id_avatar_palettes_id_fk": {
+          "name": "avatar_colors_palette_id_avatar_palettes_id_fk",
+          "tableFrom": "avatar_colors",
+          "columnsFrom": [
+            "palette_id"
+          ],
+          "tableTo": "avatar_palettes",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "avatar_colors_palette_id_id_pk": {
+          "name": "avatar_colors_palette_id_id_pk",
+          "columns": [
+            "palette_id",
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "avatar_colors_hex_check": {
+          "name": "avatar_colors_hex_check",
+          "value": "\"avatar_colors\".\"hex\" ~ '^#[0-9A-Fa-f]{6}$'"
+        },
+        "avatar_colors_order_check": {
+          "name": "avatar_colors_order_check",
+          "value": "\"avatar_colors\".\"sort_order\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.avatar_equipment": {
+      "name": "avatar_equipment",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gameplay_item_id": {
+          "name": "gameplay_item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "builtin_item_id": {
+          "name": "builtin_item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "avatar_equipment_gameplay_item_id_equipment_items_id_fk": {
+          "name": "avatar_equipment_gameplay_item_id_equipment_items_id_fk",
+          "tableFrom": "avatar_equipment",
+          "columnsFrom": [
+            "gameplay_item_id"
+          ],
+          "tableTo": "equipment_items",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "avatar_equipment_one_item_link": {
+          "name": "avatar_equipment_one_item_link",
+          "value": "\"avatar_equipment\".\"gameplay_item_id\" IS NULL OR \"avatar_equipment\".\"builtin_item_id\" IS NULL"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.avatar_equipment_fits": {
+      "name": "avatar_equipment_fits",
+      "schema": "",
+      "columns": {
+        "equipment_id": {
+          "name": "equipment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_id": {
+          "name": "model_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slot_id": {
+          "name": "slot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "avatar_equipment_fits_equipment_id_avatar_equipment_id_fk": {
+          "name": "avatar_equipment_fits_equipment_id_avatar_equipment_id_fk",
+          "tableFrom": "avatar_equipment_fits",
+          "columnsFrom": [
+            "equipment_id"
+          ],
+          "tableTo": "avatar_equipment",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "avatar_equipment_fits_slot_fk": {
+          "name": "avatar_equipment_fits_slot_fk",
+          "tableFrom": "avatar_equipment_fits",
+          "columnsFrom": [
+            "model_id",
+            "slot_id"
+          ],
+          "tableTo": "avatar_model_slots",
+          "columnsTo": [
+            "model_id",
+            "slot_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "avatar_equipment_fits_equipment_id_model_id_slot_id_pk": {
+          "name": "avatar_equipment_fits_equipment_id_model_id_slot_id_pk",
+          "columns": [
+            "equipment_id",
+            "model_id",
+            "slot_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.avatar_equipment_slots": {
+      "name": "avatar_equipment_slots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body_part": {
+          "name": "body_part",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "side": {
+          "name": "side",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "avatar_slots_side_check": {
+          "name": "avatar_slots_side_check",
+          "value": "\"avatar_equipment_slots\".\"side\" IN ('left','right','center')"
+        },
+        "avatar_slots_kind_check": {
+          "name": "avatar_slots_kind_check",
+          "value": "\"avatar_equipment_slots\".\"kind\" IN ('wearable','grip')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.avatar_equipment_visuals": {
+      "name": "avatar_equipment_visuals",
+      "schema": "",
+      "columns": {
+        "equipment_id": {
+          "name": "equipment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_id": {
+          "name": "model_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slot_id": {
+          "name": "slot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "view_key": {
+          "name": "view_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_path": {
+          "name": "asset_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attachment": {
+          "name": "attachment",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ready": {
+          "name": "ready",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "avatar_equipment_visuals_fit_fk": {
+          "name": "avatar_equipment_visuals_fit_fk",
+          "tableFrom": "avatar_equipment_visuals",
+          "columnsFrom": [
+            "equipment_id",
+            "model_id",
+            "slot_id"
+          ],
+          "tableTo": "avatar_equipment_fits",
+          "columnsTo": [
+            "equipment_id",
+            "model_id",
+            "slot_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "avatar_equipment_visuals_view_fk": {
+          "name": "avatar_equipment_visuals_view_fk",
+          "tableFrom": "avatar_equipment_visuals",
+          "columnsFrom": [
+            "model_id",
+            "view_key"
+          ],
+          "tableTo": "avatar_model_views",
+          "columnsTo": [
+            "model_id",
+            "view_key"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "avatar_equipment_visuals_equipment_id_model_id_slot_id_view_key_pk": {
+          "name": "avatar_equipment_visuals_equipment_id_model_id_slot_id_view_key_pk",
+          "columns": [
+            "equipment_id",
+            "model_id",
+            "slot_id",
+            "view_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "avatar_equipment_visuals_ready_check": {
+          "name": "avatar_equipment_visuals_ready_check",
+          "value": "NOT \"avatar_equipment_visuals\".\"ready\" OR \"avatar_equipment_visuals\".\"attachment\" IS NOT NULL"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.avatar_equipped_items": {
+      "name": "avatar_equipped_items",
+      "schema": "",
+      "columns": {
+        "avatar_id": {
+          "name": "avatar_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_id": {
+          "name": "model_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slot_id": {
+          "name": "slot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "equipment_id": {
+          "name": "equipment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "avatar_equipped_items_avatar_fk": {
+          "name": "avatar_equipped_items_avatar_fk",
+          "tableFrom": "avatar_equipped_items",
+          "columnsFrom": [
+            "avatar_id",
+            "model_id"
+          ],
+          "tableTo": "student_avatars",
+          "columnsTo": [
+            "id",
+            "model_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "avatar_equipped_items_fit_fk": {
+          "name": "avatar_equipped_items_fit_fk",
+          "tableFrom": "avatar_equipped_items",
+          "columnsFrom": [
+            "equipment_id",
+            "model_id",
+            "slot_id"
+          ],
+          "tableTo": "avatar_equipment_fits",
+          "columnsTo": [
+            "equipment_id",
+            "model_id",
+            "slot_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "avatar_equipped_items_avatar_id_slot_id_pk": {
+          "name": "avatar_equipped_items_avatar_id_slot_id_pk",
+          "columns": [
+            "avatar_id",
+            "slot_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.avatar_model_slots": {
+      "name": "avatar_model_slots",
+      "schema": "",
+      "columns": {
+        "model_id": {
+          "name": "model_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slot_id": {
+          "name": "slot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bone_name": {
+          "name": "bone_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "view_transforms": {
+          "name": "view_transforms",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "avatar_model_slots_model_id_avatar_models_id_fk": {
+          "name": "avatar_model_slots_model_id_avatar_models_id_fk",
+          "tableFrom": "avatar_model_slots",
+          "columnsFrom": [
+            "model_id"
+          ],
+          "tableTo": "avatar_models",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "avatar_model_slots_slot_id_avatar_equipment_slots_id_fk": {
+          "name": "avatar_model_slots_slot_id_avatar_equipment_slots_id_fk",
+          "tableFrom": "avatar_model_slots",
+          "columnsFrom": [
+            "slot_id"
+          ],
+          "tableTo": "avatar_equipment_slots",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "avatar_model_slots_model_id_slot_id_pk": {
+          "name": "avatar_model_slots_model_id_slot_id_pk",
+          "columns": [
+            "model_id",
+            "slot_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.avatar_model_views": {
+      "name": "avatar_model_views",
+      "schema": "",
+      "columns": {
+        "model_id": {
+          "name": "model_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "view_key": {
+          "name": "view_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_path": {
+          "name": "source_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_sha256": {
+          "name": "source_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "width": {
+          "name": "width",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "facing": {
+          "name": "facing",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "intended_yaw": {
+          "name": "intended_yaw",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hair_mask_path": {
+          "name": "hair_mask_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eye_mask_path": {
+          "name": "eye_mask_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "skin_mask_path": {
+          "name": "skin_mask_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "neutral_base_path": {
+          "name": "neutral_base_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rig_path": {
+          "name": "rig_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parts_path": {
+          "name": "parts_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recolor_ready": {
+          "name": "recolor_ready",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "rig_ready": {
+          "name": "rig_ready",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "avatar_model_views_model_id_avatar_models_id_fk": {
+          "name": "avatar_model_views_model_id_avatar_models_id_fk",
+          "tableFrom": "avatar_model_views",
+          "columnsFrom": [
+            "model_id"
+          ],
+          "tableTo": "avatar_models",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "avatar_model_views_model_id_view_key_pk": {
+          "name": "avatar_model_views_model_id_view_key_pk",
+          "columns": [
+            "model_id",
+            "view_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "avatar_views_dimensions_check": {
+          "name": "avatar_views_dimensions_check",
+          "value": "\"avatar_model_views\".\"width\" > 0 AND \"avatar_model_views\".\"height\" > 0"
+        },
+        "avatar_views_yaw_check": {
+          "name": "avatar_views_yaw_check",
+          "value": "\"avatar_model_views\".\"intended_yaw\" BETWEEN -180 AND 180"
+        },
+        "avatar_views_sha_check": {
+          "name": "avatar_views_sha_check",
+          "value": "\"avatar_model_views\".\"source_sha256\" ~ '^[0-9a-f]{64}$'"
+        },
+        "avatar_views_masks_check": {
+          "name": "avatar_views_masks_check",
+          "value": "NOT \"avatar_model_views\".\"recolor_ready\" OR (\"avatar_model_views\".\"hair_mask_path\" IS NOT NULL AND \"avatar_model_views\".\"eye_mask_path\" IS NOT NULL AND \"avatar_model_views\".\"skin_mask_path\" IS NOT NULL AND \"avatar_model_views\".\"neutral_base_path\" IS NOT NULL)"
+        },
+        "avatar_views_rig_check": {
+          "name": "avatar_views_rig_check",
+          "value": "NOT \"avatar_model_views\".\"rig_ready\" OR (\"avatar_model_views\".\"rig_path\" IS NOT NULL AND \"avatar_model_views\".\"parts_path\" IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.avatar_models": {
+      "name": "avatar_models",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "species": {
+          "name": "species",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body_type": {
+          "name": "body_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rig_family": {
+          "name": "rig_family",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'concept'"
+        },
+        "hair_palette_id": {
+          "name": "hair_palette_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "eye_palette_id": {
+          "name": "eye_palette_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "skin_palette_id": {
+          "name": "skin_palette_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hair_channel": {
+          "name": "hair_channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'hair'"
+        },
+        "eye_channel": {
+          "name": "eye_channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'eyes'"
+        },
+        "skin_channel": {
+          "name": "skin_channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'skin'"
+        },
+        "color_regions": {
+          "name": "color_regions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "avatar_models_hair_palette_fk": {
+          "name": "avatar_models_hair_palette_fk",
+          "tableFrom": "avatar_models",
+          "columnsFrom": [
+            "hair_palette_id",
+            "hair_channel"
+          ],
+          "tableTo": "avatar_palettes",
+          "columnsTo": [
+            "id",
+            "channel"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "avatar_models_eye_palette_fk": {
+          "name": "avatar_models_eye_palette_fk",
+          "tableFrom": "avatar_models",
+          "columnsFrom": [
+            "eye_palette_id",
+            "eye_channel"
+          ],
+          "tableTo": "avatar_palettes",
+          "columnsTo": [
+            "id",
+            "channel"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "avatar_models_skin_palette_fk": {
+          "name": "avatar_models_skin_palette_fk",
+          "tableFrom": "avatar_models",
+          "columnsFrom": [
+            "skin_palette_id",
+            "skin_channel"
+          ],
+          "tableTo": "avatar_palettes",
+          "columnsTo": [
+            "id",
+            "channel"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "avatar_models_palette_key": {
+          "name": "avatar_models_palette_key",
+          "columns": [
+            "id",
+            "hair_palette_id",
+            "eye_palette_id",
+            "skin_palette_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "avatar_models_channels_check": {
+          "name": "avatar_models_channels_check",
+          "value": "\"avatar_models\".\"hair_channel\" = 'hair' AND \"avatar_models\".\"eye_channel\" = 'eyes' AND \"avatar_models\".\"skin_channel\" = 'skin'"
+        },
+        "avatar_models_status_check": {
+          "name": "avatar_models_status_check",
+          "value": "\"avatar_models\".\"status\" IN ('concept','production','retired')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.avatar_palettes": {
+      "name": "avatar_palettes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "avatar_palettes_channel_key": {
+          "name": "avatar_palettes_channel_key",
+          "columns": [
+            "id",
+            "channel"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "avatar_palettes_channel_check": {
+          "name": "avatar_palettes_channel_check",
+          "value": "\"avatar_palettes\".\"channel\" IN ('hair','eyes','skin')"
+        },
+        "avatar_palettes_version_check": {
+          "name": "avatar_palettes_version_check",
+          "value": "\"avatar_palettes\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.combat_results": {
+      "name": "combat_results",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fight_id": {
+          "name": "fight_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "character_class": {
+          "name": "character_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "victory": {
+          "name": "victory",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "survived": {
+          "name": "survived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_solo_mode": {
+          "name": "is_solo_mode",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "totals": {
+          "name": "totals",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "xp_earned": {
+          "name": "xp_earned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gold_reward": {
+          "name": "gold_reward",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "loot_table": {
+          "name": "loot_table",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "reward_claim": {
+          "name": "reward_claim",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "(extract(epoch from now()) * 1000)::bigint"
+        }
+      },
+      "indexes": {
+        "combat_results_session_student_unique": {
+          "name": "combat_results_session_student_unique",
+          "columns": [
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "combat_results_session_id_live_combat_sessions_session_id_fk": {
+          "name": "combat_results_session_id_live_combat_sessions_session_id_fk",
+          "tableFrom": "combat_results",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "tableTo": "live_combat_sessions",
+          "columnsTo": [
+            "session_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "combat_results_student_id_students_id_fk": {
+          "name": "combat_results_student_id_students_id_fk",
+          "tableFrom": "combat_results",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "tableTo": "students",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "combat_results_fight_id_fights_id_fk": {
+          "name": "combat_results_fight_id_fights_id_fk",
+          "tableFrom": "combat_results",
+          "columnsFrom": [
+            "fight_id"
+          ],
+          "tableTo": "fights",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "combat_results_guild_id_guilds_id_fk": {
+          "name": "combat_results_guild_id_guilds_id_fk",
+          "tableFrom": "combat_results",
+          "columnsFrom": [
+            "guild_id"
+          ],
+          "tableTo": "guilds",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.equipment_items": {
+      "name": "equipment_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "teacher_id": {
+          "name": "teacher_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "icon_url": {
+          "name": "icon_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "item_type": {
+          "name": "item_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quality": {
+          "name": "quality",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tier": {
+          "name": "tier",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "slot": {
+          "name": "slot",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weapon_type": {
+          "name": "weapon_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stats": {
+          "name": "stats",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "shop_price": {
+          "name": "shop_price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_purchasable": {
+          "name": "is_purchasable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "(extract(epoch from now()) * 1000)::bigint"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "equipment_items_teacher_id_teachers_id_fk": {
+          "name": "equipment_items_teacher_id_teachers_id_fk",
+          "tableFrom": "equipment_items",
+          "columnsFrom": [
+            "teacher_id"
+          ],
+          "tableTo": "teachers",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.fights": {
+      "name": "fights",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "teacher_id": {
+          "name": "teacher_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_archived": {
+          "name": "is_archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "guild_code": {
+          "name": "guild_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "questions": {
+          "name": "questions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "enemies": {
+          "name": "enemies",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "base_xp": {
+          "name": "base_xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 10
+        },
+        "base_enemy_damage": {
+          "name": "base_enemy_damage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "enemy_display_mode": {
+          "name": "enemy_display_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'consecutive'"
+        },
+        "loot_table": {
+          "name": "loot_table",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "randomize_questions": {
+          "name": "randomize_questions",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "shuffle_options": {
+          "name": "shuffle_options",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "fights_teacher_idx": {
+          "name": "fights_teacher_idx",
+          "columns": [
+            {
+              "expression": "teacher_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "fights_teacher_id_teachers_id_fk": {
+          "name": "fights_teacher_id_teachers_id_fk",
+          "tableFrom": "fights",
+          "columnsFrom": [
+            "teacher_id"
+          ],
+          "tableTo": "teachers",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.guild_fights": {
+      "name": "guild_fights",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fight_id": {
+          "name": "fight_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "solo_mode_enabled": {
+          "name": "solo_mode_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "assigned_at": {
+          "name": "assigned_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "(extract(epoch from now()) * 1000)::bigint"
+        }
+      },
+      "indexes": {
+        "guildFights_pair_unique": {
+          "name": "guildFights_pair_unique",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "fight_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "guild_fights_guild_id_guilds_id_fk": {
+          "name": "guild_fights_guild_id_guilds_id_fk",
+          "tableFrom": "guild_fights",
+          "columnsFrom": [
+            "guild_id"
+          ],
+          "tableTo": "guilds",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "guild_fights_fight_id_fights_id_fk": {
+          "name": "guild_fights_fight_id_fights_id_fk",
+          "tableFrom": "guild_fights",
+          "columnsFrom": [
+            "fight_id"
+          ],
+          "tableTo": "fights",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.guild_memberships": {
+      "name": "guild_memberships",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "(extract(epoch from now()) * 1000)::bigint"
+        }
+      },
+      "indexes": {
+        "guildMemberships_pair_unique": {
+          "name": "guildMemberships_pair_unique",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "guild_memberships_guild_id_guilds_id_fk": {
+          "name": "guild_memberships_guild_id_guilds_id_fk",
+          "tableFrom": "guild_memberships",
+          "columnsFrom": [
+            "guild_id"
+          ],
+          "tableTo": "guilds",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "guild_memberships_student_id_students_id_fk": {
+          "name": "guild_memberships_student_id_students_id_fk",
+          "tableFrom": "guild_memberships",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "tableTo": "students",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.guild_settings": {
+      "name": "guild_settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hidden_leaderboard_metrics": {
+          "name": "hidden_leaderboard_metrics",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
+        },
+        "enable_group_quests": {
+          "name": "enable_group_quests",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "enable_chat": {
+          "name": "enable_chat",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "(extract(epoch from now()) * 1000)::bigint"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "guild_settings_guild_id_guilds_id_fk": {
+          "name": "guild_settings_guild_id_guilds_id_fk",
+          "tableFrom": "guild_settings",
+          "columnsFrom": [
+            "guild_id"
+          ],
+          "tableTo": "guilds",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "guild_settings_guild_id_unique": {
+          "name": "guild_settings_guild_id_unique",
+          "columns": [
+            "guild_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.guilds": {
+      "name": "guilds",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "teacher_id": {
+          "name": "teacher_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unlocked_tier": {
+          "name": "unlocked_tier",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "experience": {
+          "name": "experience",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "is_archived": {
+          "name": "is_archived",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "(extract(epoch from now()) * 1000)::bigint"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "guilds_teacher_id_teachers_id_fk": {
+          "name": "guilds_teacher_id_teachers_id_fk",
+          "tableFrom": "guilds",
+          "columnsFrom": [
+            "teacher_id"
+          ],
+          "tableTo": "teachers",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "guilds_code_unique": {
+          "name": "guilds_code_unique",
+          "columns": [
+            "code"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.live_combat_sessions": {
+      "name": "live_combat_sessions",
+      "schema": "",
+      "columns": {
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "fight_id": {
+          "name": "fight_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "teacher_id": {
+          "name": "teacher_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'waiting'"
+        },
+        "solo_student_id": {
+          "name": "solo_student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "live_combat_sessions_fight_idx": {
+          "name": "live_combat_sessions_fight_idx",
+          "columns": [
+            {
+              "expression": "fight_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "live_combat_sessions_teacher_idx": {
+          "name": "live_combat_sessions_teacher_idx",
+          "columns": [
+            {
+              "expression": "teacher_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "live_combat_sessions_fight_id_fights_id_fk": {
+          "name": "live_combat_sessions_fight_id_fights_id_fk",
+          "tableFrom": "live_combat_sessions",
+          "columnsFrom": [
+            "fight_id"
+          ],
+          "tableTo": "fights",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "live_combat_sessions_teacher_id_teachers_id_fk": {
+          "name": "live_combat_sessions_teacher_id_teachers_id_fk",
+          "tableFrom": "live_combat_sessions",
+          "columnsFrom": [
+            "teacher_id"
+          ],
+          "tableTo": "teachers",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "live_combat_sessions_solo_student_id_students_id_fk": {
+          "name": "live_combat_sessions_solo_student_id_students_id_fk",
+          "tableFrom": "live_combat_sessions",
+          "columnsFrom": [
+            "solo_student_id"
+          ],
+          "tableTo": "students",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.quest_completions": {
+      "name": "quest_completions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "quest_id": {
+          "name": "quest_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period": {
+          "name": "period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'once'"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "quest_completion_once": {
+          "name": "quest_completion_once",
+          "columns": [
+            {
+              "expression": "quest_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "period",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "quest_completions_quest_id_quests_id_fk": {
+          "name": "quest_completions_quest_id_quests_id_fk",
+          "tableFrom": "quest_completions",
+          "columnsFrom": [
+            "quest_id"
+          ],
+          "tableTo": "quests",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "quest_completions_student_id_students_id_fk": {
+          "name": "quest_completions_student_id_students_id_fk",
+          "tableFrom": "quest_completions",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "tableTo": "students",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.quests": {
+      "name": "quests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quest_type": {
+          "name": "quest_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "criteria": {
+          "name": "criteria",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rewards": {
+          "name": "rewards",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "is_seeded": {
+          "name": "is_seeded",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_completed": {
+          "name": "is_completed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_week": {
+          "name": "completed_week",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "(extract(epoch from now()) * 1000)::bigint"
+        }
+      },
+      "indexes": {
+        "quests_seed_unique": {
+          "name": "quests_seed_unique",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "coalesce(\"student_id\"::text, 'guild')",
+              "isExpression": true,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "title",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "quests_guild_id_guilds_id_fk": {
+          "name": "quests_guild_id_guilds_id_fk",
+          "tableFrom": "quests",
+          "columnsFrom": [
+            "guild_id"
+          ],
+          "tableTo": "guilds",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "quests_student_id_students_id_fk": {
+          "name": "quests_student_id_students_id_fk",
+          "tableFrom": "quests",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "tableTo": "students",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_avatars": {
+      "name": "student_avatars",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_id": {
+          "name": "model_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hair_palette_id": {
+          "name": "hair_palette_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hair_color_id": {
+          "name": "hair_color_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "eye_palette_id": {
+          "name": "eye_palette_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "eye_color_id": {
+          "name": "eye_color_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "skin_palette_id": {
+          "name": "skin_palette_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "skin_color_id": {
+          "name": "skin_color_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_avatars_student_id_students_id_fk": {
+          "name": "student_avatars_student_id_students_id_fk",
+          "tableFrom": "student_avatars",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "tableTo": "students",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "student_avatars_model_palettes_fk": {
+          "name": "student_avatars_model_palettes_fk",
+          "tableFrom": "student_avatars",
+          "columnsFrom": [
+            "model_id",
+            "hair_palette_id",
+            "eye_palette_id",
+            "skin_palette_id"
+          ],
+          "tableTo": "avatar_models",
+          "columnsTo": [
+            "id",
+            "hair_palette_id",
+            "eye_palette_id",
+            "skin_palette_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "student_avatars_hair_color_fk": {
+          "name": "student_avatars_hair_color_fk",
+          "tableFrom": "student_avatars",
+          "columnsFrom": [
+            "hair_palette_id",
+            "hair_color_id"
+          ],
+          "tableTo": "avatar_colors",
+          "columnsTo": [
+            "palette_id",
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "student_avatars_eye_color_fk": {
+          "name": "student_avatars_eye_color_fk",
+          "tableFrom": "student_avatars",
+          "columnsFrom": [
+            "eye_palette_id",
+            "eye_color_id"
+          ],
+          "tableTo": "avatar_colors",
+          "columnsTo": [
+            "palette_id",
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "student_avatars_skin_color_fk": {
+          "name": "student_avatars_skin_color_fk",
+          "tableFrom": "student_avatars",
+          "columnsFrom": [
+            "skin_palette_id",
+            "skin_color_id"
+          ],
+          "tableTo": "avatar_colors",
+          "columnsTo": [
+            "palette_id",
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "student_avatars_student_id_unique": {
+          "name": "student_avatars_student_id_unique",
+          "columns": [
+            "student_id"
+          ],
+          "nullsNotDistinct": false
+        },
+        "student_avatars_model_key": {
+          "name": "student_avatars_model_key",
+          "columns": [
+            "id",
+            "model_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_job_levels": {
+      "name": "student_job_levels",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "job_class": {
+          "name": "job_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "experience": {
+          "name": "experience",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "unlocked_at": {
+          "name": "unlocked_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "(extract(epoch from now()) * 1000)::bigint"
+        }
+      },
+      "indexes": {
+        "studentJobLevels_pair_unique": {
+          "name": "studentJobLevels_pair_unique",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "job_class",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "student_job_levels_student_id_students_id_fk": {
+          "name": "student_job_levels_student_id_students_id_fk",
+          "tableFrom": "student_job_levels",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "tableTo": "students",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.students": {
+      "name": "students",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nickname": {
+          "name": "nickname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nickname_normalized": {
+          "name": "nickname_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weapon": {
+          "name": "weapon",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "headgear": {
+          "name": "headgear",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "armor": {
+          "name": "armor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cross_class_ability_1": {
+          "name": "cross_class_ability_1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cross_class_ability_2": {
+          "name": "cross_class_ability_2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "inventory": {
+          "name": "inventory",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "gold": {
+          "name": "gold",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "character_class": {
+          "name": "character_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gender": {
+          "name": "gender",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guild_code": {
+          "name": "guild_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "students_nickname_normalized_unique": {
+          "name": "students_nickname_normalized_unique",
+          "columns": [
+            {
+              "expression": "nickname_normalized",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "students_guild_code_idx": {
+          "name": "students_guild_code_idx",
+          "columns": [
+            {
+              "expression": "guild_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "students_guild_id_guilds_id_fk": {
+          "name": "students_guild_id_guilds_id_fk",
+          "tableFrom": "students",
+          "columnsFrom": [
+            "guild_id"
+          ],
+          "tableTo": "guilds",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "students_gold_nonnegative": {
+          "name": "students_gold_nonnegative",
+          "value": "\"students\".\"gold\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.teachers": {
+      "name": "teachers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_normalized": {
+          "name": "email_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "guild_code": {
+          "name": "guild_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "billing_address": {
+          "name": "billing_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "school_district": {
+          "name": "school_district",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "school": {
+          "name": "school",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grade_level": {
+          "name": "grade_level",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "teachers_email_normalized_unique": {
+          "name": "teachers_email_normalized_unique",
+          "columns": [
+            {
+              "expression": "email_normalized",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "teachers_guild_code_unique": {
+          "name": "teachers_guild_code_unique",
+          "columns": [
+            {
+              "expression": "guild_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

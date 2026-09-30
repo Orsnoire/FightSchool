@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "algorithm": "source-registered-semantic-masks-v1",
+  "reports": [
+    {
+      "modelId": "human-male-v1",
+      "viewKey": "front",
+      "referenceRed": [
+        84,
+        107,
+        196
+      ],
+      "artifacts": {
+        "masks": {
+          "hair": {
+            "file": "recolor/masks/human-male-front-hair.png",
+            "sha256": "80d8e1b51df1d9d1ad9bba607a1699708fe57d6b02946212e3d6a01ecc020f43"
+          },
+          "eyes": {
+            "file": "recolor/masks/human-male-front-eyes.png",
+            "sha256": "c593ab14895dc751129169b3ba2faa90c1bc0fa0f41c5088bcc34646b951e219"
+          },
+          "skin": {
+            "file": "recolor/masks/human-male-front-skin.png",
+            "sha256": "d533d5f8679f554c281754b9ced953fd1816ef0be83eb0559d77418103c5721f"
+          }
+        },
+        "neutral": {
+          "file": "recolor/neutral/human-male-front.png",
+          "sha256": "35a1c99772fb1aed902fba31d35754e2ec06c8c7655277987b65541310c8fb1e"
+        }
+      },
+      "pixelCounts": {
+        "hair": 118762,
+        "eyes": 6071,
+        "skin": 140451
+      }
+    },
+    {
+      "modelId": "human-male-v1",
+      "viewKey": "rightNearProfile",
+      "referenceRed": [
+        89,
+        108,
+        207
+      ],
+      "artifacts": {
+        "masks": {
+          "hair": {
+            "file": "recolor/masks/human-male-right-80-hair.png",
+            "sha256": "620a49d4266923c3b1e399afc123943f8be20fc481363ebb490faa3b6aad25d0"
+          },
+          "eyes": {
+            "file": "recolor/masks/human-male-right-80-eyes.png",
+            "sha256": "54500769635c6c8e6fe60a309129afcd8ca4a478add14c8bb303bdce8b82a947"
+          },
+          "skin": {
+            "file": "recolor/masks/human-male-right-80-skin.png",
+            "sha256": "7a5e267808021fc4082dd0a70c8f77c8691e382bac1ecce44f5dfd4dc780da58"
+          }
+        },
+        "neutral": {
+          "file": "recolor/neutral/human-male-right-80.png",
+          "sha256": "106b8ae40a289cc51e795f8e9ff2b20c3ebae5fca9a63a8a29302400b3411e1b"
+        }
+      },
+      "pixelCounts": {
+        "hair": 135466,
+        "eyes": 1144,
+        "skin": 80900
+      }
+    },
+    {
+      "modelId": "human-female-v1",
+      "viewKey": "front",
+      "referenceRed": [
+        85,
+        129,
+        216
+      ],
+      "artifacts": {
+        "masks": {
+          "hair": {
+            "file": "recolor/masks/human-female-front-hair.png",
+            "sha256": "04dc1543990653ec95cece8e02e7db8cc1a3f0dc9420b54e6a9f7b20e6d4bdb4"
+          },
+          "eyes": {
+            "file": "recolor/masks/human-female-front-eyes.png",
+            "sha256": "e6164dc67368aba15fece536d4160e9fd91fe7abf7ad6696d3ec99cd0374243a"
+          },
+          "skin": {
+            "file": "recolor/masks/human-female-front-skin.png",
+            "sha256": "c87a6e0eaf74c50138fa092f78d7df5c64aa6c3317bbb74a369756b8966a00d4"
+          }
+        },
+        "neutral": {
+          "file": "recolor/neutral/human-female-front.png",
+          "sha256": "6c87604741152aae6adb1ae085d45f4418bbbba5cdb9dd4efcf171ff12ab3366"
+        }
+      },
+      "pixelCounts": {
+        "hair": 142144,
+        "eyes": 6054,
+        "skin": 124431
+      }
+    },
+    {
+      "modelId": "human-female-v1",
+      "viewKey": "rightNearProfile",
+      "referenceRed": [
+        92,
+        118,
+        225
+      ],
+      "artifacts": {
+        "masks": {
+          "hair": {
+            "file": "recolor/masks/human-female-right-80-hair.png",
+            "sha256": "94613f84056643a0bad88b26c4adc6ba961760d1e5a2a95ab4192865f7a87f3f"
+          },
+          "eyes": {
+            "file": "recolor/masks/human-female-right-80-eyes.png",
+            "sha256": "0b082bbb253570d0e33a45754fee388440c31196cd64fb4f696d8060618ecea9"
+          },
+          "skin": {
+            "file": "recolor/masks/human-female-right-80-skin.png",
+            "sha256": "f92ca65c370927e3b67f62237dc25ff121cc34821b2efdcc5d20d7a7d2578ca6"
+          }
+        },
+        "neutral": {
+          "file": "recolor/neutral/human-female-right-80.png",
+          "sha256": "9ea8dcc76205d89bb53a36f5d4c6ae0b5718ff6b6fc53340fe2b10bde33efd77"
+        }
+      },
+      "pixelCounts": {
+        "hair": 153388,
+        "eyes": 1774,
+        "skin": 76360
+      }
+    }
+  ]
+}
