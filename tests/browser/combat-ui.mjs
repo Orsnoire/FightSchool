@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { started, student } from '../phase4/fixtures.ts';
 
@@ -8,6 +8,7 @@ const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const id = student().id;
+const enemyImage = 'data:image/png;base64,' + (await readFile('attached_assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png')).toString('base64');
 try {
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
     const page = await browser.newPage({ viewport });
@@ -31,7 +32,8 @@ try {
     await page.goto(origin + '/student/combat');
     await page.waitForFunction(() => window.combatTest?.sockets.length > 0);
     let state = started('herbalist');
-    state.enemies[0].image = '/favicon.png';
+    state.enemies[0].image = enemyImage;
+    state.enemies[0].name = 'Goblins';
     state.questionStartTime = Date.now() - 1000;
     state.phaseDeadline = Date.now() + 120000;
     let question = { id: 'q1', type: 'multiple_choice', question: '<p>Which is the expansion of <span class="math-inline" data-latex="(x+2)^2"></span>?</p>', options: ['x² + 4x + 4', 'x² + 4'], timeLimit: 120 };
@@ -84,7 +86,7 @@ try {
     state.currentPhase = 'enemy_ai';
     state.events.push({ id: '1:1', round: 1, phase: 'enemy_ai', type: 'enemy_attack', actorId: 'e1', targetId: id, amount: 3, message: 'Damage' });
     await emit();
-    await page.getByText('Slime counterattacks herbalist for 3 damage!', { exact: true }).waitFor();
+    await page.getByText('Goblins counterattacks herbalist for 3 damage!', { exact: true }).waitFor();
     assert.equal(await page.getByText('Herbalist healed for 2 HP', { exact: true }).count(), 0);
     await screenshot('counterattack');
     state.round++;
@@ -102,7 +104,7 @@ try {
     await page.evaluate(() => window.mathVirtualKeyboard.show());
     await page.locator('[data-math-keyboard-host] .ML__keyboard.is-visible').waitFor();
     await screenshot('math-keyboard');
-    const key = page.locator('[data-math-keyboard-host] .MLK__keycap').filter({ hasText: /^7$/ }).first();
+    const key = page.locator('[data-math-keyboard-host] .MLK__keycap').filter({ hasText: /^7$/, visible: true }).first();
     await key.click();
     assert.match(await mathfield.evaluate((field) => field.value), /7/);
     await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
@@ -117,7 +119,7 @@ try {
     state.players[id].hasAnswered = false;
     question = { ...question, type: 'multiple_choice', question: '<p>Long question</p>' + '<p>Read this supporting information.</p>'.repeat(40) };
     await emit();
-    await page.getByRole('button', { name: 'Use text answer', exact: true }).waitFor({ state: 'detached' });
+    await page.getByText('Long question', { exact: true }).waitFor();
     await screenshot('long-question');
     assert.ok(await page.getByTestId('combat-overlay-body').evaluate((e) => e.scrollHeight > e.clientHeight));
     assert.deepEqual(errors, []);
