@@ -129,11 +129,22 @@ try {
     assert.equal(separate.messages.filter(m => m.type === "combat_state").at(-1).state.currentPhase, "waiting");
   });
   await check("30-player completion persists results exactly once", async () => {
-    main.host.send("end_fight"); await players[0].wait(m => m.type === "game_over", 60000);
+    // Answers enter the totals when the round resolves, not on receipt. Finish
+    // both choice phases before the teacher ends this controlled load fixture.
+    await Promise.all(players.map(player => player.ack("ready", { round: 1 })));
+    await players[0].state("abilities");
+    await Promise.all(players.map(player => player.ack("ready", { round: 1 })));
+    const resolved = await players[0].state("question_resolution");
+    for (const student of students.slice(0, 30))
+      assert.equal(resolved.state.players[student.payload.id].totals.questionsAnswered, 1, "The classroom round must resolve before completion");
+    main.host.send("end_fight");
+    const completed = await players[0].wait(m => m.type === "game_over", 60000);
+    assert.equal(completed.results.length, 30, "Completion must include all classroom results");
     main.host.send("end_fight");
     for (const student of students.slice(0, 30)) {
       const stats = await api(`/api/combat-stats/student/${student.payload.id}`, { cookie: student.cookie });
-      assert.equal(stats.payload.length, 1); assert.equal(stats.payload[0].questionsAnswered, 1);
+      assert.equal(stats.payload.length, 1, "Each student must have exactly one result");
+      assert.equal(stats.payload[0].questionsAnswered, 1, "The saved result must contain the resolved answer");
     }
   });
   await check("logout revokes an already-open student socket", async () => {
