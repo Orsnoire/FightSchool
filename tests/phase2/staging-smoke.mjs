@@ -66,8 +66,11 @@ const foreignOriginMutation = await fetch(origin + "/api/not-a-route", {
 });
 assert.equal(foreignOriginMutation.status, 403);
 
-const objects = await fetch(origin + "/objects/not-enabled");
-assert.equal(objects.status, 501);
+// Storage is enabled in the full migration. Probe a valid, absent key so this
+// checks the R2 binding as well as routing; unavailable storage must fail smoke.
+const objects = await fetch(origin + `/objects/${randomUUID()}/${randomUUID()}`);
+assert.equal(objects.status, 404);
+assert.doesNotMatch(objects.headers.get("content-type") || "", /text\/html/);
 
 const nestedRoute = await fetch(origin + "/teacher");
 assert.equal(nestedRoute.status, 200);
