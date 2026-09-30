@@ -19,11 +19,18 @@ export function useTeacherAuth() {
       });
       
       if (response.ok) {
+        // The verified cookie is authoritative. Restore the display cache when
+        // local storage was cleared or this browser last used another account.
+        const teacher = await response.json();
+        localStorage.setItem("teacherId", teacher.id);
+        localStorage.setItem("teacherEmail", teacher.email);
+        localStorage.setItem("teacherGuildCode", teacher.guildCode);
         setIsAuthenticated(true);
       } else {
         // Session expired or invalid
         localStorage.removeItem("teacherId");
         localStorage.removeItem("teacherEmail");
+        localStorage.removeItem("teacherGuildCode");
         setIsAuthenticated(false);
         toast({
           title: "Session Expired",
