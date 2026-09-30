@@ -171,6 +171,8 @@ export async function evaluateQuests(
     levelsByStudent.set(job.studentId, levels);
   }
   const week = Math.floor(Date.now() / (7 * 86400000));
+  const completedQuestIds: string[] = [];
+  const completions = [];
   for (const quest of quests) {
     const relevant = results.filter(
       (r) =>
@@ -234,17 +236,33 @@ export async function evaluateQuests(
     }
     if (quest.id === manualQuestId) completed = true;
     if (!completed) continue;
+    completedQuestIds.push(quest.id);
     const period = quest.questType === "weekly" ? String(week) : "once";
     const recipients = quest.studentId
       ? [quest.studentId]
       : members.map((m) => m.studentId);
-    // Completing the shared quest and awarding its guild XP is one atomic ledger transition.
-    await db.execute(sql`WITH completed AS (UPDATE quests SET is_completed=true, completed_at=${Date.now()}, completed_week=${week} WHERE id=${quest.id} AND (is_completed=false OR (quest_type='weekly' AND completed_week IS DISTINCT FROM ${week})) RETURNING *)
- UPDATE guilds SET experience=experience+COALESCE((SELECT (rewards->>'guildXP')::integer FROM completed),0), unlocked_tier=GREATEST(unlocked_tier,COALESCE((SELECT (rewards->>'unlockTier')::integer FROM completed),1)) WHERE id=${guildId}`);
     for (const studentId of recipients)
-      await db.execute(sql`WITH completion AS (INSERT INTO quest_completions(quest_id,student_id,period) VALUES(${quest.id},${studentId},${period}) ON CONFLICT(quest_id,student_id,period) DO NOTHING RETURNING student_id)
- UPDATE students SET gold=gold+${quest.rewards?.gold || 0}, inventory=CASE WHEN ${!!quest.rewards?.equipmentItemId} AND NOT(inventory @> ${JSON.stringify(quest.rewards?.equipmentItemId ? [quest.rewards.equipmentItemId] : [])}::jsonb) THEN inventory || ${JSON.stringify(quest.rewards?.equipmentItemId ? [quest.rewards.equipmentItemId] : [])}::jsonb ELSE inventory END WHERE id IN(SELECT student_id FROM completion)`);
+      completions.push(sql`(${quest.id}::uuid,${studentId}::uuid,${period}::text)`);
   }
+  // A whole class can reach a milestone together. Batch transitions so neither
+  // the number of students nor the number of completed quests exhausts fetches.
+  if (completedQuestIds.length) await db.execute(sql`WITH completed AS (
+ UPDATE quests SET is_completed=true, completed_at=${Date.now()}, completed_week=${week}
+ WHERE id IN (${sql.join(completedQuestIds.map(id => sql`${id}::uuid`), sql`, `)})
+ AND (is_completed=false OR (quest_type='weekly' AND completed_week IS DISTINCT FROM ${week})) RETURNING rewards)
+ UPDATE guilds SET experience=experience+COALESCE((SELECT sum((rewards->>'guildXP')::integer) FROM completed),0),
+ unlocked_tier=GREATEST(unlocked_tier,COALESCE((SELECT max((rewards->>'unlockTier')::integer) FROM completed),1)) WHERE id=${guildId}`);
+  if (completions.length) await db.execute(sql`WITH completion AS (
+ INSERT INTO quest_completions(quest_id,student_id,period) VALUES ${sql.join(completions, sql`, `)}
+ ON CONFLICT(quest_id,student_id,period) DO NOTHING RETURNING quest_id,student_id),
+ earned AS (SELECT completion.student_id, sum(COALESCE((quests.rewards->>'gold')::integer,0)) AS gold,
+ jsonb_agg(quests.rewards->>'equipmentItemId') FILTER (WHERE quests.rewards->>'equipmentItemId' IS NOT NULL) AS items
+ FROM completion JOIN quests ON quests.id=completion.quest_id GROUP BY completion.student_id)
+ UPDATE students SET gold=students.gold+earned.gold,
+ inventory=students.inventory || COALESCE((SELECT jsonb_agg(DISTINCT item)
+ FROM jsonb_array_elements(COALESCE(earned.items,'[]'::jsonb)) AS items(item)
+ WHERE NOT(students.inventory @> jsonb_build_array(item))), '[]'::jsonb)
+ FROM earned WHERE students.id=earned.student_id`);
   const [current] = await db
     .select()
     .from(s.guilds)
