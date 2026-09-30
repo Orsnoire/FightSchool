@@ -63,27 +63,33 @@ export async function persistCombatResults(
     .select()
     .from(s.liveCombatSessions)
     .where(eq(s.liveCombatSessions.sessionId, state.sessionId));
-  for (const p of Object.values(state.players)) {
-    const [student] = await db
-      .select()
-      .from(s.students)
-      .where(eq(s.students.id, p.studentId));
-    if (!student) continue;
-    const [assigned] = await db
-      .select({ guildId: s.guilds.id })
+  const players = Object.values(state.players);
+  const studentIds = players.map(p => p.studentId);
+  const students = studentIds.length
+    ? await db.select({ id: s.students.id }).from(s.students).where(inArray(s.students.id, studentIds))
+    : [];
+  const existingIds = new Set(students.map(student => student.id));
+  const assignments = studentIds.length ? await db
+      .select({ studentId: s.guildMemberships.studentId, guildId: s.guilds.id })
       .from(s.guildMemberships)
       .innerJoin(s.guilds, eq(s.guilds.id, s.guildMemberships.guildId))
       .innerJoin(s.guildFights, eq(s.guildFights.guildId, s.guilds.id))
       .where(
         and(
-          eq(s.guildMemberships.studentId, p.studentId),
+          inArray(s.guildMemberships.studentId, studentIds),
           eq(s.guildFights.fightId, fight.id),
           eq(s.guilds.teacherId, fight.teacherId),
           eq(s.guilds.isArchived, false),
         ),
       )
-      .limit(1);
-    const earnedGuildId = assigned?.guildId || null;
+      .orderBy(s.guilds.id) : [];
+  const guildByStudent = new Map<string, string>();
+  for (const assigned of assignments)
+    if (!guildByStudent.has(assigned.studentId)) guildByStudent.set(assigned.studentId, assigned.guildId);
+  const values = [];
+  for (const p of players) {
+    if (!existingIds.has(p.studentId)) continue;
+    const earnedGuildId = guildByStudent.get(p.studentId) || null;
     const xp = calculateXP({
       ...p.totals,
       baseFightXP: state.victory ? fight.baseXP : 0,
@@ -93,51 +99,41 @@ export async function persistCombatResults(
           Math.max(...fight.enemies.map((e) => e.difficultyMultiplier)),
         )
       : 0;
-    // One SQL statement: the inserted result is the sole source of XP and automatic gold.
-    // ON CONFLICT means a recovered/alarm-retried room cannot award either twice.
-    await db.execute(sql`WITH result AS (
+    values.push(sql`(${state.sessionId},${p.studentId},${fight.id},${earnedGuildId},${p.characterClass},${!!state.victory},${!p.isDead},${!!live?.soloStudentId},${JSON.stringify(p.totals)}::jsonb,${xp},${gold},${JSON.stringify(state.victory ? fight.lootTable : [])}::jsonb,${!state.victory || !fight.lootTable.length ? "automatic" : null})`);
+  }
+  // One classroom-wide ledger statement keeps network requests independent of
+  // attendance. Only newly inserted results may award XP or automatic gold.
+  if (values.length) await db.execute(sql`WITH result AS (
  INSERT INTO combat_results(session_id,student_id,fight_id,guild_id,character_class,victory,survived,is_solo_mode,totals,xp_earned,gold_reward,loot_table,reward_claim)
- VALUES(${state.sessionId},${p.studentId},${fight.id},${earnedGuildId},${p.characterClass},${!!state.victory},${!p.isDead},${!!live?.soloStudentId},${JSON.stringify(p.totals)}::jsonb,${xp},${gold},${JSON.stringify(state.victory ? fight.lootTable : [])}::jsonb,${!state.victory || !fight.lootTable.length ? "automatic" : null})
+ VALUES ${sql.join(values, sql`, `)}
  ON CONFLICT(session_id,student_id) DO NOTHING RETURNING *),
  job AS (INSERT INTO student_job_levels(student_id,job_class,experience,level) SELECT student_id,character_class,xp_earned,1 FROM result
  ON CONFLICT(student_id,job_class) DO UPDATE SET experience=student_job_levels.experience+EXCLUDED.experience RETURNING student_id,job_class,experience)
- UPDATE students SET gold=gold+COALESCE((SELECT gold_reward FROM result WHERE reward_claim='automatic'),0) WHERE id IN(SELECT student_id FROM result)`);
-  }
+ UPDATE students SET gold=gold+COALESCE((SELECT gold_reward FROM result WHERE reward_claim='automatic' AND result.student_id=students.id),0) WHERE id IN(SELECT student_id FROM result)`);
   // Derive levels from total earned XP after the atomic ledger write; safe to repeat on recovery.
-  for (const p of Object.values(state.players)) {
+  if (studentIds.length) {
     const rows = await db
       .select()
       .from(s.studentJobLevels)
-      .where(eq(s.studentJobLevels.studentId, p.studentId));
-    for (const row of rows)
-      await db
-        .update(s.studentJobLevels)
-        .set({
-          level: sql`greatest(${s.studentJobLevels.level}, ${calculateNewLevel(1, row.experience)})`,
-        })
-        .where(eq(s.studentJobLevels.id, row.id));
+      .where(inArray(s.studentJobLevels.studentId, studentIds));
+    if (rows.length) await db.execute(sql`UPDATE student_job_levels AS job
+ SET level=greatest(job.level, derived.level)
+ FROM (VALUES ${sql.join(rows.map(row => sql`(${row.id}::uuid, ${calculateNewLevel(1, row.experience)}::integer)`), sql`, `)}) AS derived(id,level)
+ WHERE job.id=derived.id`);
   }
   await db
     .update(s.liveCombatSessions)
     .set({ status: "completed", completedAt: new Date() })
     .where(eq(s.liveCombatSessions.sessionId, state.sessionId));
+  const results = await db.select().from(s.combatResults).where(eq(s.combatResults.sessionId, state.sessionId));
   const guildIds = [
-    ...new Set(
-      (
-        await db
-          .select()
-          .from(s.combatResults)
-          .where(eq(s.combatResults.sessionId, state.sessionId))
-      )
+    ...new Set(results
         .map((r) => r.guildId)
         .filter(Boolean),
     ),
   ];
   for (const id of guildIds) await evaluateQuests(db, id!);
-  return db
-    .select()
-    .from(s.combatResults)
-    .where(eq(s.combatResults.sessionId, state.sessionId));
+  return results;
 }
 export class RewardError extends Error {
   constructor(
