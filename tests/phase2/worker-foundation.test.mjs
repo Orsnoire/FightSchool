@@ -11,12 +11,13 @@ const combatSession = read("worker/combat/session-object.ts");
 const deployWorkflow = read(".github/workflows/deploy-cloudflare-staging.yml");
 const stagingSmoke = read("tests/phase2/staging-smoke.mjs");
 
-test("Wrangler config deploys only to the staging workers.dev hostname", () => {
+test("Wrangler attaches the canonical domain to the existing Worker", () => {
   assert.equal(config.name, "questacademy-staging");
   assert.equal(config.workers_dev, true);
   assert.equal(config.vars.ENVIRONMENT, "staging");
-  assert.equal(config.vars.PUBLIC_ORIGIN, "https://questacademy-staging.coxsonator.workers.dev");
-  assert.equal("routes" in config, false);
+  assert.equal(config.vars.PUBLIC_ORIGIN, "https://questacademy.bookwyrminteractive.studio");
+  assert.equal(config.vars.ADDITIONAL_PUBLIC_ORIGINS, "https://questacademy-staging.coxsonator.workers.dev");
+  assert.deepEqual(config.routes, [{ pattern: "questacademy.bookwyrminteractive.studio", custom_domain: true }]);
 });
 
 test("Static Assets owns the SPA while dynamic boundaries run Worker-first", () => {
@@ -56,12 +57,12 @@ test("dynamic routes fail closed before SPA fallback", () => {
   assert.match(worker, /constantTimeEqual/);
 });
 
-test("staging deployment requires approval-scoped secrets and never configures production", () => {
+test("deployment keeps scoped secrets and verifies both configured origins", () => {
   assert.match(deployWorkflow, /environment: cloudflare-staging/);
   assert.match(deployWorkflow, /secrets\.CLOUDFLARE_API_TOKEN/);
   assert.match(deployWorkflow, /secrets\.CLOUDFLARE_ACCOUNT_ID/);
   assert.match(deployWorkflow, /workflow_dispatch/);
-  assert.doesNotMatch(deployWorkflow, /questacademy\.bookwyrminteractive\.studio/);
+  assert.match(deployWorkflow, /STAGING_ORIGIN: https:\/\/questacademy\.bookwyrminteractive\.studio/);
   assert.doesNotMatch(deployWorkflow, /push:/);
   assert.match(stagingSmoke, /fetchUntilReady\("\/api\/health\/live", 200\)/);
   assert.match(stagingSmoke, /attempts = 20/);
