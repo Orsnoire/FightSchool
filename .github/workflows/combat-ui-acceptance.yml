@@ -1,0 +1,46 @@
+name: Combat UI Acceptance
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'client/**'
+      - 'shared/combat/**'
+      - 'tests/browser/combat-ui.mjs'
+      - '.github/workflows/combat-ui-acceptance.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install isolated browser test tooling
+        run: npm install --no-save --package-lock=false playwright@1.62.1 && npx playwright install --with-deps chromium
+      - name: Exercise combat overlays at Chromebook and phone sizes
+        shell: bash
+        run: |
+          npx vite --host 127.0.0.1 --port 4173 > /tmp/combat-vite.log 2>&1 &
+          vite_pid=$!
+          trap 'kill "$vite_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node --import tsx tests/browser/combat-ui.mjs
+      - name: Preserve browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: combat-ui-screenshots
+          path: artifacts/combat-ui
+          if-no-files-found: ignore
+          retention-days: 7
