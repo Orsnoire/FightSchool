@@ -267,58 +267,8 @@ export default function Lobby() {
   };
 
   const hostSoloMode = async () => {
-    if (!soloFightId.trim()) {
-      toast({ title: "Please enter a fight ID", variant: "destructive" });
-      return;
-    }
-
-    setIsHostingSolo(true);
-
-    // Create WebSocket connection to host solo mode
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
-
-    socket.onopen = () => {
-      // Send host_solo message
-      socket.send(JSON.stringify({
-        type: "host_solo",
-        studentId: studentId,
-        fightId: soloFightId.trim(),
-      }));
-    };
-
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "session_created") {
-        // Solo session created successfully
-        localStorage.setItem("sessionId", message.sessionId);
-        socket.close();
-        toast({
-          title: "Solo session created!",
-          description: `Session code: ${message.sessionId}`,
-        });
-        navigate("/student/combat");
-      } else if (message.type === "error") {
-        socket.close();
-        setIsHostingSolo(false);
-        toast({
-          title: "Failed to host solo mode",
-          description: message.message || "The fight may not have solo mode enabled",
-          variant: "destructive",
-        });
-      }
-    };
-
-    socket.onerror = () => {
-      socket.close();
-      setIsHostingSolo(false);
-      toast({
-        title: "Connection error",
-        description: "Failed to connect to server",
-        variant: "destructive",
-      });
-    };
+    toast({title:'Select a guild fight',description:'Open your guild to choose a fight with solo mode enabled.'});
+    navigate('/student/guilds');
   };
 
   const updateEquipment = async (slot: EquipmentSlot, itemId: string) => {
@@ -533,10 +483,7 @@ export default function Lobby() {
               <CardContent className="space-y-4">
                 {(() => {
                   // Convert job levels array to map
-                  const jobLevelMap: Record<CharacterClass, number> = {
-                    warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0,
-                  };
+                  const jobLevelMap: Record<CharacterClass, number> = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, 0])) as Record<CharacterClass, number>;
                   
                   jobLevels.forEach(jl => {
                     jobLevelMap[jl.jobClass] = jl.level;
@@ -690,10 +637,7 @@ export default function Lobby() {
                   if (!student?.characterClass) return null;
                   
                   // Convert job levels array to map
-                  const jobLevelMap: Record<CharacterClass, number> = {
-                    warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0,
-                  };
+                  const jobLevelMap: Record<CharacterClass, number> = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, 0])) as Record<CharacterClass, number>;
                   
                   jobLevels.forEach(jl => {
                     jobLevelMap[jl.jobClass] = jl.level;
@@ -918,10 +862,7 @@ export default function Lobby() {
               <CardContent>
                 {(() => {
                   // Create job level map
-                  const jobLevelMap: Record<CharacterClass, number> = {
-                    warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                    warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0, ranger: 0,
-                  };
+                  const jobLevelMap: Record<CharacterClass, number> = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, 0])) as Record<CharacterClass, number>;
                   jobLevels.forEach(jl => {
                     jobLevelMap[jl.jobClass] = jl.level;
                   });
@@ -1092,10 +1033,7 @@ export default function Lobby() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
             {(() => {
               // Convert job levels array to map
-              const jobLevelMap: Record<CharacterClass, number> = {
-                warrior: 0, wizard: 0, scout: 0, herbalist: 0,
-                warlock: 0, priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0, monk: 0, ranger: 0,
-              };
+              const jobLevelMap: Record<CharacterClass, number> = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, 0])) as Record<CharacterClass, number>;
               
               jobLevels.forEach(jl => {
                 jobLevelMap[jl.jobClass] = jl.level;

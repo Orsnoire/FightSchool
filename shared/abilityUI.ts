@@ -51,9 +51,9 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "crushing_blow": { id: "crushing_blow", icon: "Zap", name: "Crushing Blow", description: "Deal massive damage that ignores defense", abilityClass: ["physical"] },
   
   // WIZARD
-  "fireball": { id: "fireball", icon: "Flame", name: "Fireball", description: "Charge up powerful fire attacks", abilityClass: ["spell"], isToggle: true, mpCost: 3 },
+  "fireball": { id: "fireball", icon: "Flame", name: "Fireball", description: "Deal INT × 3 damage for 1 MP", abilityClass: ["spell"], mpCost: 1 },
   "frostbolt": { id: "frostbolt", icon: "Snowflake", name: "Frost Bolt", description: "Deal magic damage with a chance to slow enemies", abilityClass: ["spell"], mpCost: 1 },
-  "manashield": { id: "manashield", icon: "ShieldHalf", name: "Manashield", description: "Convert mana into a protective shield", abilityClass: ["spell", "support"], mpCost: 3 },
+  "manashield": { id: "manashield", icon: "ShieldHalf", name: "Manashield", description: "Convert mana into a protective shield", abilityClass: ["spell", "support"], mpCost: 0 },
   "fireblast": { id: "fireblast", icon: "Bomb", name: "Fireblast", description: "Unleash explosive magic damage to all enemies", abilityClass: ["spell"], mpCost: 999 },
   
   // SCOUT
@@ -133,7 +133,7 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   
   // CROSS-CLASS UNLOCK ABILITIES (Level 8)
   "block_crossclass": { id: "block_crossclass", icon: "Shield", name: "Block", description: "Absorb incoming damage for an ally", abilityClass: ["physical", "support", "cross_class"], requiresTarget: true, isPassive: true },
-  "fireball_crossclass": { id: "fireball_crossclass", icon: "Flame", name: "Fireball", description: "Charge up powerful fire attacks", abilityClass: ["spell", "cross_class"], isToggle: true, mpCost: 3 },
+  "fireball_crossclass": { id: "fireball_crossclass", icon: "Flame", name: "Fireball", description: "Deal INT × 3 damage for 1 MP", abilityClass: ["spell", "cross_class"], mpCost: 1 },
   "headshot_crossclass": { id: "headshot_crossclass", icon: "Target", name: "Headshot", description: "Precise shot that deals critical damage", abilityClass: ["physical", "cross_class"] },
   "healing_potion_crossclass": { id: "healing_potion_crossclass", icon: "Beaker", name: "Healing Potion", description: "Restore health to an ally", abilityClass: ["healing", "consumable", "cross_class"], opensHealingWindow: true },
   "hex_crossclass": { id: "hex_crossclass", icon: "Skull", name: "Hex", description: "Curse an enemy to reduce their power", abilityClass: ["spell", "support", "cross_class"], requiresTarget: true },

@@ -2,7 +2,7 @@
 
 Before making any architectural, product, gameplay, migration, or data-model changes, read:
 
-`docs/SOURCE_OF_TRUTH.md`
+`docs/Source_of_Truth.md`
 
 That document defines the authority hierarchy for QuestAcademy and explains how to resolve conflicts between product vision, system design documents, current code, and historical prototype behavior.
 
@@ -21,7 +21,7 @@ That document defines the authority hierarchy for QuestAcademy and explains how 
 
 ## Before Implementing a Change
 
-1. Read `docs/SOURCE_OF_TRUTH.md`.
+1. Read `docs/Source_of_Truth.md`.
 2. Read the relevant current design documents referenced there.
 3. Inspect the existing implementation.
 4. Identify any conflict between code and current design.
@@ -44,6 +44,6 @@ Prefer the former.
 
 Do not silently choose an interpretation.
 
-Follow the authority hierarchy in `docs/SOURCE_OF_TRUTH.md`.
+Follow the authority hierarchy in `docs/Source_of_Truth.md`.
 
 If ambiguity remains, stop and request a product decision.

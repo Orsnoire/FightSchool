@@ -1,58 +1,126 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import test from "node:test";
-
-const routePath = new URL("../../worker/routes/fights.ts", import.meta.url);
-const workerPath = new URL("../../worker/index.ts", import.meta.url);
-const schemaPath = new URL("../../worker/db/schema.ts", import.meta.url);
-const migrationPath = new URL("../../migrations/cloudflare/0001_phase3_teacher_fights.sql", import.meta.url);
-
-test("fight routes cover the existing teacher create and dashboard workflow", async () => {
-  const route = await readFile(routePath, "utf8");
-
-  assert.match(route, /request\.method === "POST" && url\.pathname === "\/api\/fights"/);
-  assert.match(route, /request\.method === "GET" && url\.pathname\.match\(\/\^\\\/api\\\/teacher/);
-  assert.match(route, /request\.method === "GET" && fightMatch/);
-  assert.match(route, /request\.method === "PATCH" && fightMatch/);
-  assert.match(route, /request\.method === "DELETE" && fightMatch/);
+import { test } from "node:test";
+import { issueSession } from "../../worker/auth/session.ts";
+import { handleFights } from "../../worker/routes/fights.ts";
+import { fight } from "../phase4/fixtures.ts";
+const config = {
+  cookieName: "test_session",
+  secret: "test-only-secret-not-deployed-1234567890",
+  ttlSeconds: 300,
+};
+async function setup(
+  actorId = fight.teacherId,
+  role: "teacher" | "student" = "teacher",
+) {
+  const sessions = new Map();
+  const records = new Map([[fight.id, fight]]);
+  const repository: any = {
+    createSession: async (s: any) => sessions.set(s.tokenHash, s),
+    findActiveSession: async (k: string) => sessions.get(k) || null,
+    listTeacherFights: async (id: string) =>
+      [...records.values()].filter((f) => f.teacherId === id),
+    findFightById: async (id: string) => records.get(id) || null,
+    createFight: async (f: any) => ({
+      ...f,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }),
+    validateLoot: async () => false,
+    updateFight: async (id: string, teacherId: string, f: any) =>
+      records.get(id)?.teacherId === teacherId
+        ? { ...records.get(id), ...f }
+        : null,
+    deleteFight: async (id: string, teacherId: string) =>
+      records.get(id)?.teacherId === teacherId && records.delete(id),
+  };
+  const cookie = (await issueSession(repository, config, role, actorId)).split(
+    ";",
+  )[0];
+  return {
+    repository,
+    cookie,
+    request: async (
+      method: string,
+      path: string,
+      body?: unknown,
+      authenticated = true,
+    ) => {
+      const url = new URL("https://qa.example" + path);
+      const request = new Request(url, {
+        method,
+        headers: {
+          ...(authenticated ? { Cookie: cookie } : {}),
+          "Content-Type": "application/json",
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      return handleFights(request, url, repository, config);
+    },
+  };
+}
+test("fight routes require signed teacher identity and enforce owner isolation", async () => {
+  const h = await setup();
+  assert.equal(
+    (await h.request("GET", `/api/fights/${fight.id}`, undefined, false))
+      ?.status,
+    401,
+  );
+  assert.equal(
+    (await h.request("GET", `/api/fights/${fight.id}`))?.status,
+    200,
+  );
+  const other = await setup("00000000-0000-4000-8000-999999999999");
+  assert.equal(
+    (await other.request("GET", `/api/fights/${fight.id}`))?.status,
+    403,
+  );
+  assert.equal(
+    (await other.request("DELETE", `/api/fights/${fight.id}`))?.status,
+    404,
+  );
+  assert.equal(
+    (await other.request("POST", "/api/fights", fight))?.status,
+    403,
+  );
+  const student = await setup(fight.teacherId, "student");
+  assert.equal(
+    (await student.request("GET", `/api/fights/${fight.id}`))?.status,
+    401,
+  );
 });
-
-test("fight writes and reads require the signed-in teacher and enforce ownership", async () => {
-  const route = await readFile(routePath, "utf8");
-
-  assert.match(route, /authenticateSession\(request, repository, sessionConfig, "teacher"\)/);
-  assert.match(route, /input\.teacherId !== session\.actorId/);
-  assert.match(route, /fight\.teacherId === session\.actorId/);
-  assert.match(route, /repository\.updateFight\(fightMatch\[1\], session\.actorId/);
-  assert.match(route, /repository\.deleteFight\(fightMatch\[1\], session\.actorId\)/);
-});
-
-test("fight input is bounded while preserving legacy unknown-field stripping", async () => {
-  const route = await readFile(routePath, "utf8");
-
-  assert.match(route, /1_048_576/);
-  assert.match(route, /questions: z\.array\(questionSchema\)\.min\(1\)\.max\(1_000\)/);
-  assert.doesNotMatch(route, /fightSchema[\s\S]*?\.strict\(\)/);
-});
-
-test("worker dispatches fight routes before the generic API 404", async () => {
-  const worker = await readFile(workerPath, "utf8");
-  const fightDispatch = worker.indexOf('url.pathname === "/api/fights"');
-  const notFound = worker.indexOf('url.pathname === "/api"');
-
-  assert.ok(fightDispatch > -1);
-  assert.ok(notFound > fightDispatch);
-});
-
-test("fight storage is additive and tied to teacher ownership", async () => {
-  const [schema, migration] = await Promise.all([
-    readFile(schemaPath, "utf8"),
-    readFile(migrationPath, "utf8"),
-  ]);
-
-  assert.match(schema, /export const fights = pgTable\("fights"/);
-  assert.match(schema, /references\(\(\) => teachers\.id, \{ onDelete: "cascade" \}\)/);
-  assert.match(migration, /REFERENCES "public"\."teachers"\("id"\) ON DELETE cascade/i);
-  assert.match(migration, /CREATE INDEX IF NOT EXISTS "fights_teacher_idx"/);
-  assert.doesNotMatch(migration, /DROP\s+(TABLE|COLUMN)/i);
+test("teacher CRUD validates questions, enemies, bounds, and owned loot", async () => {
+  const h = await setup();
+  assert.equal((await h.request("POST", "/api/fights", fight))?.status, 201);
+  assert.equal(
+    (await h.request("POST", "/api/fights", { ...fight, enemies: [] }))?.status,
+    400,
+  );
+  assert.equal(
+    (await h.request("POST", "/api/fights", { ...fight, baseXP: 100000 }))
+      ?.status,
+    400,
+  );
+  assert.equal(
+    (
+      await h.request("POST", "/api/fights", {
+        ...fight,
+        lootTable: [{ itemId: crypto.randomUUID() }],
+      })
+    )?.status,
+    403,
+  );
+  assert.equal(
+    (
+      await h.request("PATCH", `/api/fights/${fight.id}`, {
+        ...fight,
+        title: "Updated",
+      })
+    )?.status,
+    200,
+  );
+  assert.equal(
+    (await h.request("DELETE", `/api/fights/${fight.id}`))?.status,
+    200,
+  );
 });

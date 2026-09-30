@@ -1,3 +1,4 @@
+import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +14,7 @@ interface Fight {
   title: string;
   description: string;
   questions: any[];
+  questionCount?: number;
   enemies: any[];
   soloModeEnabled: boolean;
 }
@@ -47,49 +49,13 @@ export default function GuildFights() {
 
     setHostingFightId(fightId);
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    try {
+      const response=await apiRequest('POST', `/api/fights/${fightId}/solo-sessions`, {guildId});
+      const room=await response.json();
+      localStorage.setItem('sessionId',room.sessionId);
+      navigate('/student/combat');
+    } catch(error) { setHostingFightId(null); toast({title:'Unable to start solo fight',description:error instanceof Error?error.message:'Try again',variant:'destructive'}); }
 
-    socket.onopen = () => {
-      socket.send(JSON.stringify({
-        type: "host_solo",
-        studentId: studentId,
-        fightId: fightId,
-        guildId: guildId,
-      }));
-    };
-
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "session_created" || message.type === "solo_session_created") {
-        localStorage.setItem("sessionId", message.sessionId);
-        socket.close();
-        toast({
-          title: "Solo session created!",
-          description: `Session code: ${message.sessionId}`,
-        });
-        navigate("/student/combat");
-      } else if (message.type === "error") {
-        socket.close();
-        setHostingFightId(null);
-        toast({
-          title: "Failed to host solo mode",
-          description: message.message || "The fight may not have solo mode enabled",
-          variant: "destructive",
-        });
-      }
-    };
-
-    socket.onerror = () => {
-      socket.close();
-      setHostingFightId(null);
-      toast({
-        title: "Connection error",
-        description: "Failed to connect to server",
-        variant: "destructive",
-      });
-    };
   };
 
   if (guildLoading || fightsLoading) {
@@ -168,7 +134,7 @@ export default function GuildFights() {
                           <div className="flex items-center gap-1">
                             <HelpCircle className="h-4 w-4 text-muted-foreground" />
                             <span className="text-muted-foreground">
-                              {fight.questions?.length || 0} Questions
+                              {fight.questionCount ?? fight.questions?.length ?? 0} Questions
                             </span>
                           </div>
                           <div className="flex items-center gap-1">

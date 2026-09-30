@@ -22,9 +22,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run check:baseline
+      - run: npm run check
       - run: npm test
       - run: npm run build:cloudflare
+      - name: Ensure image storage bucket
+        run: node scripts/ensure-r2.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Apply additive database migrations
+        run: npm run db:migrate:cloudflare
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Prepare Worker secrets
         shell: bash
         env:

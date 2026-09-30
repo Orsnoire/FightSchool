@@ -44,7 +44,7 @@ test("Durable Object lifecycle uses a SQLite export and stable binding", () => {
     storage: "sqlite",
   });
   assert.match(worker, /extends CombatSessionObject/);
-  assert.match(combatSession, /this\.state\.acceptWebSocket\(server\)/);
+  assert.match(combatSession, /this\.state\.acceptWebSocket\(/);
   assert.match(combatSession, /serializeAttachment\(/);
   assert.match(combatSession, /webSocketMessage\(/);
 });

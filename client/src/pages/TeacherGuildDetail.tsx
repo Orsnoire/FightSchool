@@ -1,3 +1,4 @@
+import { GuildAdministration } from "@/components/GuildAdministration";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useRoute } from "wouter";
@@ -14,7 +15,7 @@ import { ArrowLeft, Users, Trophy, Swords, UserMinus, Copy, Save } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type Guild, type GuildMembership, type Fight } from "@shared/schema";
+import { type Guild, type GuildMember, type Fight } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
 
@@ -36,7 +37,7 @@ export default function TeacherGuildDetail() {
     enabled: !!guildId,
   });
 
-  const { data: members } = useQuery<GuildMembership[]>({
+  const { data: members } = useQuery<GuildMember[]>({
     queryKey: [`/api/guilds/${guildId}/members`],
     enabled: !!guildId,
   });
@@ -52,7 +53,7 @@ export default function TeacherGuildDetail() {
   });
 
   const { data: leaderboard } = useQuery<any[]>({
-    queryKey: [`/api/guilds/${guildId}/leaderboard`, "damageDealt"],
+    queryKey: [`/api/guilds/${guildId}/leaderboard?metric=damageDealt`],
     enabled: !!guildId,
   });
 
@@ -227,10 +228,11 @@ export default function TeacherGuildDetail() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4" data-testid="tabs-guild-management">
+          <TabsList className="grid w-full grid-cols-5" data-testid="tabs-guild-management">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="members" data-testid="tab-members">Members</TabsTrigger>
             <TabsTrigger value="fights" data-testid="tab-fights">Assigned Fights</TabsTrigger>
+            <TabsTrigger value="quests">Quests</TabsTrigger>
             <TabsTrigger value="settings" data-testid="tab-settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -380,7 +382,7 @@ export default function TeacherGuildDetail() {
                           <div className="flex-1">
                             <p className="font-medium">{fight.title}</p>
                             <p className="text-sm text-muted-foreground">
-                              {fight.questions?.length || 0} questions
+                              {fight.questionCount ?? fight.questions?.length ?? 0} questions
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -432,7 +434,7 @@ export default function TeacherGuildDetail() {
                           <div className="flex-1">
                             <p className="font-medium">{fight.title}</p>
                             <p className="text-sm text-muted-foreground">
-                              {fight.questions?.length || 0} questions
+                              {fight.questionCount ?? fight.questions?.length ?? 0} questions
                             </p>
                           </div>
                           <Button
@@ -513,6 +515,7 @@ export default function TeacherGuildDetail() {
               </CardContent>
             </Card>
           </TabsContent>
+          <TabsContent value="quests"><GuildAdministration guild={guild}/></TabsContent>
         </Tabs>
       </main>
     </div>

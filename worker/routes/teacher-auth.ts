@@ -10,22 +10,26 @@ import {
 import type { IdentityRepository } from "../db/repository.ts";
 import type { TeacherRecord } from "../db/schema.ts";
 
-const signupSchema = z.object({
-  firstName: z.string().trim().min(1).max(100),
-  lastName: z.string().trim().min(1).max(100),
-  email: z.string().trim().email().max(254),
-  password: z.string().min(12).max(128),
-  billingAddress: z.string().trim().min(1).max(500),
-  schoolDistrict: z.string().trim().min(1).max(200),
-  school: z.string().trim().min(1).max(200),
-  subject: z.string().trim().min(1).max(200),
-  gradeLevel: z.string().trim().min(1).max(100),
-}).strict();
+const signupSchema = z
+  .object({
+    firstName: z.string().trim().min(1).max(100),
+    lastName: z.string().trim().min(1).max(100),
+    email: z.string().trim().email().max(254),
+    password: z.string().min(12).max(128),
+    billingAddress: z.string().trim().min(1).max(500),
+    schoolDistrict: z.string().trim().min(1).max(200),
+    school: z.string().trim().min(1).max(200),
+    subject: z.string().trim().min(1).max(200),
+    gradeLevel: z.string().trim().min(1).max(100),
+  })
+  .strict();
 
-const loginSchema = z.object({
-  email: z.string().trim().email().max(254),
-  password: z.string().min(1).max(128),
-}).strict();
+const loginSchema = z
+  .object({
+    email: z.string().trim().email().max(254),
+    password: z.string().min(1).max(128),
+  })
+  .strict();
 
 function response(body: unknown, status = 200, cookie?: string): Response {
   const headers = new Headers({
@@ -64,7 +68,9 @@ function randomGuildCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const bytes = new Uint8Array(8);
   crypto.getRandomValues(bytes);
-  return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join("");
+  return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join(
+    "",
+  );
 }
 
 export interface TeacherAuthContext {
@@ -93,8 +99,17 @@ export async function handleTeacherAuth(
         passwordHash: await hashPassword(password, context.passwordPepper),
         guildCode: randomGuildCode(),
       });
-      const cookie = await issueSession(context.repository, context.session, "teacher", teacher.id);
-      return response({ ...publicTeacher(teacher), sessionActive: true }, 201, cookie);
+      const cookie = await issueSession(
+        context.repository,
+        context.session,
+        "teacher",
+        teacher.id,
+      );
+      return response(
+        { ...publicTeacher(teacher), sessionActive: true },
+        201,
+        cookie,
+      );
     } catch (error) {
       if (error instanceof Error && error.message === "REQUEST_TOO_LARGE") {
         return response({ error: "Request body too large" }, 413);
@@ -109,16 +124,33 @@ export async function handleTeacherAuth(
   if (request.method === "POST" && url.pathname === "/api/teacher/login") {
     try {
       const input = loginSchema.parse(await readJson(request));
-      const teacher = await context.repository.findTeacherByEmail(input.email.toLowerCase());
+      const teacher = await context.repository.findTeacherByEmail(
+        input.email.toLowerCase(),
+      );
       if (!teacher) {
         await hashPassword(input.password, context.passwordPepper);
         return response({ error: "Invalid credentials" }, 401);
       }
-      if (!await verifyPassword(input.password, teacher.passwordHash, context.passwordPepper)) {
+      if (
+        !(await verifyPassword(
+          input.password,
+          teacher.passwordHash,
+          context.passwordPepper,
+        ))
+      ) {
         return response({ error: "Invalid credentials" }, 401);
       }
-      const cookie = await issueSession(context.repository, context.session, "teacher", teacher.id);
-      return response({ ...publicTeacher(teacher), sessionActive: true }, 200, cookie);
+      const cookie = await issueSession(
+        context.repository,
+        context.session,
+        "teacher",
+        teacher.id,
+      );
+      return response(
+        { ...publicTeacher(teacher), sessionActive: true },
+        200,
+        cookie,
+      );
     } catch (error) {
       if (error instanceof Error && error.message === "REQUEST_TOO_LARGE") {
         return response({ error: "Request body too large" }, 413);
@@ -132,24 +164,51 @@ export async function handleTeacherAuth(
 
   if (request.method === "POST" && url.pathname === "/api/teacher/logout") {
     await revokeRequestSession(request, context.repository, context.session);
-    return response({ success: true, message: "Logged out successfully" }, 200, clearSessionCookie(context.session.cookieName));
+    return response(
+      { success: true, message: "Logged out successfully" },
+      200,
+      clearSessionCookie(context.session.cookieName),
+    );
   }
 
-  if (request.method === "GET" && url.pathname === "/api/teacher/check-session") {
-    const session = await authenticateSession(request, context.repository, context.session, "teacher");
+  if (
+    request.method === "GET" &&
+    url.pathname === "/api/teacher/check-session"
+  ) {
+    const session = await authenticateSession(
+      request,
+      context.repository,
+      context.session,
+      "teacher",
+    );
     if (!session) return response({ sessionActive: false }, 401);
     const teacher = await context.repository.findTeacherById(session.actorId);
-    if (!teacher) return response({ sessionActive: false }, 401, clearSessionCookie(context.session.cookieName));
+    if (!teacher)
+      return response(
+        { sessionActive: false },
+        401,
+        clearSessionCookie(context.session.cookieName),
+      );
     return response({ ...publicTeacher(teacher), sessionActive: true });
   }
 
-  const teacherMatch = request.method === "GET" && url.pathname.match(/^\/api\/teacher\/([0-9a-f-]+)$/i);
+  const teacherMatch =
+    request.method === "GET" &&
+    url.pathname.match(/^\/api\/teacher\/([0-9a-f-]+)$/i);
   if (teacherMatch) {
-    const session = await authenticateSession(request, context.repository, context.session, "teacher");
+    const session = await authenticateSession(
+      request,
+      context.repository,
+      context.session,
+      "teacher",
+    );
     if (!session) return response({ error: "Authentication required" }, 401);
-    if (session.actorId !== teacherMatch[1]) return response({ error: "Forbidden" }, 403);
+    if (session.actorId !== teacherMatch[1])
+      return response({ error: "Forbidden" }, 403);
     const teacher = await context.repository.findTeacherById(session.actorId);
-    return teacher ? response(publicTeacher(teacher)) : response({ error: "Teacher not found" }, 404);
+    return teacher
+      ? response(publicTeacher(teacher))
+      : response({ error: "Teacher not found" }, 404);
   }
 
   return null;

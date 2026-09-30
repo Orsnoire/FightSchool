@@ -1,4 +1,9 @@
-import { createOpaqueToken, decodeSignedToken, encodeSignedToken, hashToken } from "./crypto.ts";
+import {
+  createOpaqueToken,
+  decodeSignedToken,
+  encodeSignedToken,
+  hashToken,
+} from "./crypto.ts";
 
 export type ActorType = "teacher" | "student";
 
@@ -6,6 +11,7 @@ export interface SessionRecord {
   actorType: string;
   actorId: string;
   expiresAt: Date;
+  tokenHash?: string;
 }
 
 export interface SessionRepository {
@@ -15,7 +21,10 @@ export interface SessionRepository {
     actorId: string;
     expiresAt: Date;
   }): Promise<void>;
-  findActiveSession(tokenHash: string, now: Date): Promise<SessionRecord | null>;
+  findActiveSession(
+    tokenHash: string,
+    now: Date,
+  ): Promise<SessionRecord | null>;
   revokeSession(tokenHash: string, now: Date): Promise<void>;
 }
 
@@ -31,12 +40,17 @@ function cookieValue(request: Request, name: string): string | null {
   for (const part of cookie.split(";")) {
     const separator = part.indexOf("=");
     if (separator < 0) continue;
-    if (part.slice(0, separator).trim() === name) return part.slice(separator + 1).trim();
+    if (part.slice(0, separator).trim() === name)
+      return part.slice(separator + 1).trim();
   }
   return null;
 }
 
-export function serializeSessionCookie(name: string, value: string, ttlSeconds: number): string {
+export function serializeSessionCookie(
+  name: string,
+  value: string,
+  ttlSeconds: number,
+): string {
   return `${name}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${ttlSeconds}`;
 }
 
@@ -58,7 +72,11 @@ export async function issueSession(
     actorId,
     expiresAt: new Date(now.getTime() + config.ttlSeconds * 1000),
   });
-  return serializeSessionCookie(config.cookieName, await encodeSignedToken(token, config.secret), config.ttlSeconds);
+  return serializeSessionCookie(
+    config.cookieName,
+    await encodeSignedToken(token, config.secret),
+    config.ttlSeconds,
+  );
 }
 
 export async function authenticateSession(
@@ -72,9 +90,14 @@ export async function authenticateSession(
   if (!signed) return null;
   const token = await decodeSignedToken(signed, config.secret);
   if (!token) return null;
-  const session = await repository.findActiveSession(await hashToken(token), now);
-  if (!session || (expectedActorType && session.actorType !== expectedActorType)) return null;
-  return session;
+  const tokenHash = await hashToken(token);
+  const session = await repository.findActiveSession(tokenHash, now);
+  if (
+    !session ||
+    (expectedActorType && session.actorType !== expectedActorType)
+  )
+    return null;
+  return { ...session, tokenHash };
 }
 
 export async function revokeRequestSession(

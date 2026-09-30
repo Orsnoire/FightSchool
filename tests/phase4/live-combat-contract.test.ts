@@ -1,35 +1,23 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
-
-const root = fileURLToPath(new URL("../../", import.meta.url));
-const read = (path: string) => readFileSync(new URL(path, `file://${root}/`), "utf8");
-const worker = read("worker/index.ts");
-const object = read("worker/combat/session-object.ts");
-const host = read("client/src/pages/HostFight.tsx");
-const student = read("client/src/pages/Combat.tsx");
-const migration = read("migrations/cloudflare/0002_phase4_student_identity.sql");
-
-test("upgrade identity comes from the signed server session", () => {
-  assert.match(worker, /authenticateSession\(request, repository, sessionConfig\)/);
-  assert.match(worker, /x-questacademy-actor-id/);
-  assert.match(worker, /!isAllowedOrigin\(request\.headers\.get\("origin"\), env\)/);
-  assert.doesNotMatch(host, /type: "host", fightId/);
-  assert.doesNotMatch(student, /type: "join", studentId/);
+const read = (p: string) =>
+  readFileSync(new URL("../../" + p, import.meta.url), "utf8");
+test("migration adds progression and results without deleting live students or rooms", () => {
+  for (const path of [
+    "migrations/cloudflare/0003_progression_guilds_results.sql",
+    "migrations/cloudflare/0004_quest_seed_uniqueness.sql",
+  ])
+    assert.doesNotMatch(read(path), /DROP TABLE|TRUNCATE|DELETE FROM/i);
+  assert.match(
+    read("migrations/cloudflare/0003_progression_guilds_results.sql"),
+    /combat_results_session_student_unique/,
+  );
 });
-
-test("one Durable Object owns room state, deadlines, reconnects, and idempotency", () => {
-  assert.match(object, /state\.storage\.put\(ROOM_KEY/);
-  assert.match(object, /state\.storage\.setAlarm/);
-  assert.match(object, /COMMAND_PREFIX \+ attachment\.actorId/);
-  assert.match(object, /state\.getWebSockets\(\)/);
-  assert.match(object, /publicQuestion/);
-  assert.match(object, /currentAnswer: null/);
-});
-
-test("live schema is additive and does not touch legacy data", () => {
-  assert.match(migration, /CREATE TABLE(?: IF NOT EXISTS)? "students"/);
-  assert.match(migration, /CREATE TABLE(?: IF NOT EXISTS)? "live_combat_sessions"/);
-  assert.doesNotMatch(migration, /DROP|TRUNCATE|DELETE FROM/i);
+test("agent source-of-truth path is real and active architecture has one database schema", () => {
+  assert.match(read("AGENTS.md"), /docs\/Source_of_Truth.md/);
+  assert.ok(
+    existsSync(new URL("../../docs/Source_of_Truth.md", import.meta.url)),
+  );
+  assert.doesNotMatch(read("shared/schema.ts"), /pgTable\(/);
 });

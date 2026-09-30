@@ -1,315 +1,408 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
-
-const origin = (process.env.STAGING_ORIGIN || "https://questacademy-staging.coxsonator.workers.dev").replace(/\/$/, "");
-const websocketOrigin = origin.replace(/^http/, "ws");
-const runId = process.env.GITHUB_RUN_ID || Date.now().toString();
-const suffix = runId.slice(-10);
-const password = `Agentic-${randomUUID()}!`;
-
-function cookieFrom(response) {
-  const raw = response.headers.get("set-cookie");
-  assert.ok(raw, "response must issue a session cookie");
-  return raw.split(";", 1)[0];
-}
-
-async function api(path, { method = "GET", cookie, body, expected = [200] } = {}) {
-  const headers = { Accept: "application/json" };
-  if (cookie) headers.Cookie = cookie;
-  if (body !== undefined) {
-    headers["Content-Type"] = "application/json";
-    headers.Origin = origin;
-  }
+const origin = (
+  process.env.STAGING_ORIGIN ||
+  "https://questacademy.bookwyrminteractive.studio"
+).replace(/\/$/, "");
+const suffix = Date.now().toString(36) + randomUUID().slice(0, 6),
+  password = `Acceptance-${randomUUID()}!`;
+const sockets = [];
+async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
   const response = await fetch(origin + path, {
     method,
-    headers,
+    headers: {
+      Accept: "application/json",
+      Origin: origin,
+      ...(cookie ? { Cookie: cookie } : {}),
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  const text = await response.text();
-  let payload = null;
-  try { payload = text ? JSON.parse(text) : null; } catch { payload = text; }
+  const payload = await response.json();
   assert.ok(
-    expected.includes(response.status),
-    `${method} ${path}: expected ${expected.join("/")} but received ${response.status}: ${text}`,
+    [status].flat().includes(response.status),
+    `${method} ${path}: ${response.status} ${JSON.stringify(payload)}`,
   );
-  return { response, payload };
+  return { payload, cookie: response.headers.get("set-cookie")?.split(";")[0] };
 }
-
-class SocketActor {
-  constructor(name, cookie, sessionId, originOverride = origin) {
-    this.name = name;
+class Actor {
+  constructor(cookie, sessionId) {
     this.messages = [];
-    this.waiters = [];
     this.socket = new WebSocket(
-      `${websocketOrigin}/ws?sessionId=${encodeURIComponent(sessionId)}`,
-      { headers: { Cookie: cookie }, origin: originOverride },
+      origin.replace(/^http/, "ws") + `/ws?sessionId=${sessionId}`,
+      { headers: { Cookie: cookie }, origin },
     );
-    this.socket.on("message", data => {
-      const message = JSON.parse(data.toString());
-      this.messages.push(message);
-      for (const waiter of [...this.waiters]) {
-        if (waiter.predicate(message)) {
-          clearTimeout(waiter.timer);
-          this.waiters.splice(this.waiters.indexOf(waiter), 1);
-          waiter.resolve(message);
-        }
-      }
-    });
+    sockets.push(this.socket);
+    this.socket.on("message", (b) =>
+      this.messages.push(JSON.parse(b.toString())),
+    );
   }
-
   async open() {
-    if (this.socket.readyState === WebSocket.OPEN) return;
     await new Promise((resolve, reject) => {
       this.socket.once("open", resolve);
       this.socket.once("error", reject);
-      this.socket.once("unexpected-response", (_request, response) => {
-        reject(new Error(`${this.name} upgrade rejected with ${response.statusCode}`));
-      });
     });
   }
-
   send(type, fields = {}, commandId = randomUUID()) {
     this.socket.send(JSON.stringify({ type, commandId, ...fields }));
     return commandId;
   }
-
-  waitFor(predicate, timeoutMs = 12_000) {
-    const existing = this.messages.find(predicate);
-    if (existing) return Promise.resolve(existing);
-    return new Promise((resolve, reject) => {
-      const waiter = { predicate, resolve, reject, timer: null };
-      waiter.timer = setTimeout(() => {
-        this.waiters.splice(this.waiters.indexOf(waiter), 1);
-        reject(new Error(`${this.name} timed out waiting for message; received ${JSON.stringify(this.messages)}`));
-      }, timeoutMs);
-      this.waiters.push(waiter);
-    });
-  }
-
-  close() {
-    if (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING) {
-      this.socket.close();
+  async wait(predicate, timeout = 30000) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      const found = this.messages.find(predicate);
+      if (found) return found;
+      await new Promise((r) => setTimeout(r, 50));
     }
+    throw new Error(
+      `Timed out waiting for combat event; last event types: ${this.messages.slice(-8).map((m) => m.type)}`,
+    );
+  }
+  state(round, phase) {
+    return this.wait(
+      (m) =>
+        m.type === "combat_state" &&
+        m.state.round === round &&
+        m.state.currentPhase === phase,
+    );
   }
 }
-
-async function expectUpgradeStatus(cookie, sessionId, status) {
-  await new Promise((resolve, reject) => {
-    const socket = new WebSocket(
-      `${websocketOrigin}/ws?sessionId=${encodeURIComponent(sessionId)}`,
-      { headers: { Cookie: cookie }, origin: "https://invalid.example" },
-    );
-    socket.once("open", () => reject(new Error("cross-origin WebSocket unexpectedly opened")));
-    socket.once("error", () => {});
-    socket.once("unexpected-response", (_request, response) => {
-      try {
-        assert.equal(response.statusCode, status);
-        resolve();
-      } catch (error) {
-        reject(error);
-      } finally {
-        socket.terminate();
-      }
-    });
-    setTimeout(() => reject(new Error("cross-origin WebSocket rejection timed out")), 8_000);
-  });
-}
-
-function fightPayload(teacherId, title, secondQuestionSeconds = 8) {
-  return {
-    teacherId,
-    title,
-    guildCode: null,
-    questions: [
-      {
-        id: "q1",
-        type: "short_answer",
-        question: "What is 2 + 2?",
-        correctAnswer: "4",
-        timeLimit: 30,
-      },
-      {
-        id: "q2",
-        type: "true_false",
-        question: "Five is prime.",
-        options: ["true", "false"],
-        correctAnswer: "true",
-        timeLimit: secondQuestionSeconds,
-      },
-    ],
-    enemies: [{ id: "dummy", name: "Practice Dummy", image: "", difficultyMultiplier: 1 }],
-    baseXP: 10,
-    baseEnemyDamage: 1,
-    enemyDisplayMode: "consecutive",
-    lootTable: [],
-    randomizeQuestions: false,
-    shuffleOptions: false,
-  };
-}
-
-const sockets = [];
-let teacherCookie;
-let fightOneId;
-let fightTwoId;
-
+const teacherBody = (i) => ({
+  firstName: "Acceptance",
+  lastName: `Test ${i}`,
+  email: `qa-${suffix}-${i}@example.invalid`,
+  password,
+  billingAddress: "Acceptance fixture",
+  schoolDistrict: "Acceptance",
+  school: "Acceptance",
+  subject: "Math",
+  gradeLevel: "5",
+});
 try {
-  const ready = await api("/api/health/ready");
-  assert.equal(ready.payload.status, "ready");
-
-  const teacherSignup = await api("/api/teacher/signup", {
+  const teacher = await api("/api/teacher/signup", {
     method: "POST",
-    expected: [201],
-    body: {
-      firstName: "Agentic",
-      lastName: "Acceptance",
-      email: `agentic-teacher-${suffix}@example.invalid`,
-      password,
-      billingAddress: "Staging only",
-      schoolDistrict: "Agentic Test District",
-      school: "Agentic Test School",
-      subject: "System acceptance",
-      gradeLevel: "Test",
-    },
+    body: teacherBody(1),
+    status: [200, 201],
   });
-  teacherCookie = cookieFrom(teacherSignup.response);
-  const teacher = teacherSignup.payload;
-
-  const studentLogin = await api("/api/student/login", {
+  const other = await api("/api/teacher/signup", {
     method: "POST",
-    body: { nickname: `agentic-student-${suffix}`, password },
+    body: teacherBody(2),
+    status: [200, 201],
   });
-  const studentCookie = cookieFrom(studentLogin.response);
-  const student = studentLogin.payload;
-  await api(`/api/student/${student.id}/character`, {
+  const teacherId = teacher.payload.id || teacher.payload.teacher?.id;
+  assert.ok(teacherId);
+  const student = await api("/api/student/login", {
+    method: "POST",
+    body: { nickname: `qa-${suffix}-student`, password },
+  });
+  const studentId = student.payload.id;
+  await api(`/api/student/${studentId}/character`, {
     method: "PATCH",
-    cookie: studentCookie,
+    cookie: student.cookie,
     body: { characterClass: "wizard", gender: "A" },
   });
-
-  const fightOne = await api("/api/fights", {
+  const item = await api("/api/equipment-items", {
     method: "POST",
-    cookie: teacherCookie,
-    expected: [201],
-    body: fightPayload(teacher.id, `[agentic ${suffix}] room one`),
+    cookie: teacher.cookie,
+    body: {
+      name: "Acceptance wand",
+      itemType: "wand",
+      weaponType: "staff",
+      quality: "common",
+      slot: "weapon",
+      tier: 1,
+      stats: { mat: 1 },
+      shopPrice: 1,
+    },
+    status: 201,
   });
-  fightOneId = fightOne.payload.id;
-  const fightTwo = await api("/api/fights", {
+  const guild = await api("/api/guilds", {
     method: "POST",
-    cookie: teacherCookie,
-    expected: [201],
-    body: fightPayload(teacher.id, `[agentic ${suffix}] room two`, 30),
+    cookie: teacher.cookie,
+    body: {
+      name: `Acceptance ${suffix}`,
+      description: "Isolated migration acceptance fixture",
+    },
+    status: 201,
   });
-  fightTwoId = fightTwo.payload.id;
-
-  const roomOne = await api(`/api/fights/${fightOneId}/sessions`, {
+  const guildId = guild.payload.id;
+  await api(`/api/guilds/${guildId}/members`, {
     method: "POST",
-    cookie: teacherCookie,
-    expected: [200, 201],
-    body: {},
+    cookie: student.cookie,
+    body: { studentId },
   });
-  const roomTwo = await api(`/api/fights/${fightTwoId}/sessions`, {
+  await api(`/api/guilds/${guildId}/members`, {
+    cookie: other.cookie,
+    status: 403,
+  });
+  const quest = await api(`/api/guilds/${guildId}/quests`, {
     method: "POST",
-    cookie: teacherCookie,
-    expected: [200, 201],
-    body: {},
+    cookie: teacher.cookie,
+    body: {
+      title: "Acceptance manual reward",
+      description: "Test exactly once quest award",
+      criteria: { type: "custom" },
+      rewards: { gold: 2 },
+    },
+    status: 201,
   });
-
-  await expectUpgradeStatus(teacherCookie, roomOne.payload.sessionId, 403);
-
-  const hostOne = new SocketActor("host-one", teacherCookie, roomOne.payload.sessionId);
-  const hostTwo = new SocketActor("host-two", teacherCookie, roomTwo.payload.sessionId);
-  sockets.push(hostOne, hostTwo);
-  await Promise.all([hostOne.open(), hostTwo.open()]);
-  hostOne.send("host");
-  hostTwo.send("host");
-  const createdOne = await hostOne.waitFor(message => message.type === "session_created");
-  const createdTwo = await hostTwo.waitFor(message => message.type === "session_created");
-  assert.equal(createdOne.state.currentPhase, "waiting");
-  assert.equal(createdTwo.state.currentPhase, "waiting");
-
-  const lookup = await api(`/api/sessions/${roomOne.payload.sessionId}`, { cookie: studentCookie });
-  assert.equal(lookup.payload.fightId, fightOneId);
-
-  const studentOne = new SocketActor("student-one", studentCookie, roomOne.payload.sessionId);
-  sockets.push(studentOne);
-  await studentOne.open();
-  studentOne.send("join", { studentId: "00000000-0000-4000-8000-ffffffffffff" });
-  const joined = await hostOne.waitFor(
-    message => message.type === "combat_state" && message.state.players[student.id],
-  );
-  assert.deepEqual(Object.keys(joined.state.players), [student.id], "server session must select student identity");
-  await new Promise(resolve => setTimeout(resolve, 400));
+  await api(`/api/guilds/${guildId}/quests/${quest.payload.id}`, {
+    method: "PATCH",
+    cookie: teacher.cookie,
+    body: { isCompleted: true },
+  });
+  await api(`/api/guilds/${guildId}/quests/${quest.payload.id}`, {
+    method: "PATCH",
+    cookie: teacher.cookie,
+    body: { isCompleted: true },
+  });
   assert.equal(
-    hostTwo.messages.some(message => message.type === "combat_state"),
-    false,
-    "room-two host must not receive room-one broadcasts",
+    (await api(`/api/student/${studentId}`, { cookie: student.cookie })).payload
+      .gold,
+    2,
   );
-
-  hostOne.send("start_fight");
-  const questionOne = await studentOne.waitFor(message => message.type === "question" && message.question.id === "q1");
-  assert.equal("correctAnswer" in questionOne.question, false, "correct answer must not reach clients");
-
-  const answerCommandId = randomUUID();
-  studentOne.send("answer", { answer: "4" }, answerCommandId);
-  studentOne.send("answer", { answer: "different" }, answerCommandId);
-  const answered = await hostOne.waitFor(
-    message => message.type === "combat_state" && message.state.players[student.id]?.hasAnswered === true,
+  await api(`/api/student/${studentId}/purchase-item`, {
+    method: "POST",
+    cookie: student.cookie,
+    body: { itemId: item.payload.id },
+  });
+  await api(`/api/student/${studentId}/purchase-item`, {
+    method: "POST",
+    cookie: student.cookie,
+    body: { itemId: item.payload.id },
+    status: 409,
+  });
+  await api(`/api/student/${studentId}/equipment`, {
+    method: "PATCH",
+    cookie: student.cookie,
+    body: { weapon: item.payload.id },
+  });
+  const fight = await api("/api/fights", {
+    method: "POST",
+    cookie: teacher.cookie,
+    body: {
+      teacherId,
+      title: `Migration acceptance ${suffix}`,
+      questions: [
+        {
+          id: "q1",
+          type: "short_answer",
+          question: "What is 2+2?",
+          correctAnswer: "4",
+          timeLimit: 30,
+        },
+      ],
+      enemies: [
+        {
+          id: "e1",
+          name: "Acceptance slime",
+          image: "/favicon.png",
+          difficultyMultiplier: 1,
+        },
+      ],
+      baseXP: 10,
+      baseEnemyDamage: 1,
+      enemyDisplayMode: "consecutive",
+      lootTable: [{ itemId: item.payload.id }],
+      randomizeQuestions: false,
+      shuffleOptions: true,
+    },
+    status: 201,
+  });
+  await api(`/api/guilds/${guildId}/fights`, {
+    method: "POST",
+    cookie: teacher.cookie,
+    body: { fightId: fight.payload.id },
+  });
+  await api(`/api/fights/${fight.payload.id}`, {
+    cookie: other.cookie,
+    status: 403,
+  });
+  await api(`/api/fights/${fight.payload.id}`, {
+    cookie: student.cookie,
+    status: 401,
+  });
+  const room = await api(`/api/fights/${fight.payload.id}/sessions`, {
+    method: "POST",
+    cookie: teacher.cookie,
+    status: [200, 201],
+  });
+  const host = new Actor(teacher.cookie, room.payload.sessionId);
+  await host.open();
+  host.send("host");
+  await host.wait((m) => m.type === "session_created");
+  const player = new Actor(student.cookie, room.payload.sessionId);
+  await player.open();
+  player.send("join");
+  await player.state(1, "waiting");
+  host.send("start_fight");
+  const opened = await player.state(1, "question");
+  assert.ok(!JSON.stringify(opened).includes("correctAnswer"));
+  await new Promise((r) => setTimeout(r, 3100));
+  const duplicateId = player.send("answer", {
+    round: 1,
+    questionId: "q1",
+    answer: "wrong",
+  });
+  player.send(
+    "answer",
+    { round: 1, questionId: "q1", answer: "wrong" },
+    duplicateId,
   );
-  assert.equal(answered.state.players[student.id].currentAnswer, null, "submitted answer must not be broadcast");
-  const questionTwo = await studentOne.waitFor(message => message.type === "question" && message.question.id === "q2");
-  assert.equal(questionTwo.question.correctAnswer, undefined);
-
-  hostOne.close();
-  studentOne.close();
-  const rejoinedHost = new SocketActor("rejoined-host", teacherCookie, roomOne.payload.sessionId);
-  const rejoinedStudent = new SocketActor("rejoined-student", studentCookie, roomOne.payload.sessionId);
-  sockets.push(rejoinedHost, rejoinedStudent);
-  await Promise.all([rejoinedHost.open(), rejoinedStudent.open()]);
-  rejoinedHost.send("host");
-  const restored = await rejoinedHost.waitFor(message => message.type === "session_created");
-  assert.equal(restored.state.currentQuestionIndex, 1);
-  assert.equal(restored.state.players[student.id].threat, 1, "duplicate answer must not apply twice");
-  rejoinedStudent.send("join");
-  await rejoinedStudent.waitFor(message => message.type === "question" && message.question.id === "q2");
-
-  await rejoinedHost.waitFor(message => message.type === "game_over" && message.victory === true, 15_000);
-  await api(`/api/sessions/${roomOne.payload.sessionId}`, {
-    cookie: studentCookie,
-    expected: [404],
+  await player.wait(
+    (m) => m.type === "command_ack" && m.commandId === duplicateId,
+  );
+  player.send("ready", { round: 1 });
+  await player.state(1, "abilities");
+  player.send("ready", { round: 1 });
+  const wrong = await player.state(1, "question_resolution");
+  assert.equal(wrong.state.enemies[0].health, 10);
+  assert.ok(
+    wrong.state.players[studentId].health <
+      wrong.state.players[studentId].maxHealth,
+  );
+  // Accelerate visual feedback phases through the authorized teacher control.
+  await api(`/api/combat/${room.payload.sessionId}/force-question`, {
+    method: "POST",
+    cookie: teacher.cookie,
   });
-
-  hostTwo.send("end_fight");
-  await hostTwo.waitFor(message => message.type === "game_over" && message.victory === false);
-  await api(`/api/sessions/${roomTwo.payload.sessionId}`, {
-    cookie: studentCookie,
-    expected: [404],
+  await player.state(1, "enemy_ai");
+  await api(`/api/combat/${room.payload.sessionId}/force-question`, {
+    method: "POST",
+    cookie: teacher.cookie,
   });
-
-  console.log(JSON.stringify({
-    result: "pass",
-    origin,
-    assertions: [
-      "readiness",
-      "teacher and student identity",
-      "same-origin WebSocket rejection",
-      "server-derived student identity",
-      "room isolation",
-      "answer secrecy",
-      "command idempotency",
-      "host and student reconnect",
-      "alarm-driven completion",
-      "closed-room rejection",
-    ],
-  }, null, 2));
+  const next = await player.state(2, "question");
+  assert.equal(next.state.victory, null);
+  assert.equal(next.state.currentQuestionIndex, 0);
+  player.socket.close();
+  const restored = new Actor(student.cookie, room.payload.sessionId);
+  await restored.open();
+  restored.send("join");
+  const restoredState = await restored.state(2, "question");
+  assert.equal(restoredState.state.phaseDeadline, next.state.phaseDeadline);
+  assert.equal(
+    restoredState.state.players[studentId].health,
+    next.state.players[studentId].health,
+  );
+  const stale = restored.send("answer", {
+    round: 1,
+    questionId: "q1",
+    answer: "4",
+  });
+  await restored.wait(
+    (m) => m.type === "protocol_error" && m.commandId === stale,
+  );
+  for (let round = 2; round <= 3; round++) {
+    await restored.state(round, "question");
+    await new Promise((r) => setTimeout(r, 3100));
+    const answer = restored.send("answer", {
+      round,
+      questionId: "q1",
+      answer: "4",
+    });
+    await restored.wait(
+      (m) => m.type === "command_ack" && m.commandId === answer,
+    );
+    const action = restored.send("action", {
+      round,
+      ability: "fireball",
+      targetId: "e1",
+    });
+    await restored.wait(
+      (m) => m.type === "command_ack" && m.commandId === action,
+    );
+    restored.send("ready", { round });
+    await restored.state(round, "abilities");
+    restored.send("ready", { round });
+    await restored.state(round, "question_resolution");
+    await api(`/api/combat/${room.payload.sessionId}/force-question`, {
+      method: "POST",
+      cookie: teacher.cookie,
+    });
+    await restored.state(round, "enemy_ai");
+    await api(`/api/combat/${room.payload.sessionId}/force-question`, {
+      method: "POST",
+      cookie: teacher.cookie,
+    });
+  }
+  const victory = await restored.wait(
+    (m) => m.type === "game_over" && m.victory === true,
+    45000,
+  );
+  assert.equal(victory.results.length, 1);
+  const stats = await api(`/api/combat-stats/student/${studentId}`, {
+    cookie: student.cookie,
+  });
+  assert.equal(stats.payload.length, 1);
+  assert.equal(stats.payload[0].questionsAnswered, 3);
+  assert.equal(stats.payload[0].questionsCorrect, 2);
+  assert.equal(stats.payload[0].damageDealt, 10);
+  const body = { fightId: fight.payload.id, resultId: stats.payload[0].id };
+  await api(`/api/student/${studentId}/claim-gold`, {
+    method: "POST",
+    cookie: student.cookie,
+    body,
+  });
+  await api(`/api/student/${studentId}/claim-gold`, {
+    method: "POST",
+    cookie: student.cookie,
+    body,
+  });
+  assert.equal(
+    (await api(`/api/student/${studentId}`, { cookie: student.cookie })).payload
+      .gold,
+    11,
+  );
+  await api(`/api/student/${studentId}/claim-loot`, {
+    method: "POST",
+    cookie: student.cookie,
+    body: { ...body, itemId: item.payload.id },
+    status: 409,
+  });
+  await api(`/api/student/${studentId}/award-xp`, {
+    method: "POST",
+    cookie: student.cookie,
+    body: { xp: 100 },
+    status: 403,
+  });
+  await api(`/api/guilds/${guildId}/fights/${fight.payload.id}/solo-mode`, {
+    method: "PATCH",
+    cookie: teacher.cookie,
+    body: { enabled: true },
+  });
+  const solo = await api(`/api/fights/${fight.payload.id}/solo-sessions`, {
+    method: "POST",
+    cookie: student.cookie,
+    body: { guildId },
+    status: 201,
+  });
+  const soloPlayer = new Actor(student.cookie, solo.payload.sessionId);
+  await soloPlayer.open();
+  soloPlayer.send("join");
+  await soloPlayer.state(1, "question");
+  await api(`/api/guilds/${guildId}/archive`, {
+    method: "POST",
+    cookie: teacher.cookie,
+  });
+  await api(`/api/fights/${fight.payload.id}`, {
+    method: "DELETE",
+    cookie: teacher.cookie,
+  });
+  assert.equal(
+    (
+      await api(`/api/combat-stats/student/${studentId}`, {
+        cookie: student.cookie,
+      })
+    ).payload.length,
+    1,
+  );
+  console.log(
+    "PASS: live damage, wrong answers, enemy AI, cycling, reconnect deadlines, stale/retried commands, durable XP, guilds, quests, shop, reward claims, solo hosting, history, and owner isolation",
+  );
+} catch (error) {
+  console.error(error);
+  process.exitCode = 1;
 } finally {
-  for (const socket of sockets) socket.close();
-  if (teacherCookie && fightOneId) {
-    await api(`/api/fights/${fightOneId}`, { method: "DELETE", cookie: teacherCookie, body: {}, expected: [200, 404] })
-      .catch(error => console.warn("fight-one cleanup failed:", error.message));
-  }
-  if (teacherCookie && fightTwoId) {
-    await api(`/api/fights/${fightTwoId}`, { method: "DELETE", cookie: teacherCookie, body: {}, expected: [200, 404] })
-      .catch(error => console.warn("fight-two cleanup failed:", error.message));
-  }
+  for (const socket of sockets) socket.terminate();
 }

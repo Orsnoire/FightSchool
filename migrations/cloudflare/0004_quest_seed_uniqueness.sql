@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "quests_seed_unique" ON "quests" USING btree ("guild_id",coalesce("student_id"::text, 'guild'),"title");

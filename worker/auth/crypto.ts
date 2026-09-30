@@ -20,7 +20,10 @@ function encodeBase64Url(bytes: Uint8Array): string {
 }
 
 function decodeBase64Url(value: string): Uint8Array {
-  const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  const padded = value
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .padEnd(Math.ceil(value.length / 4) * 4, "=");
   return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
 }
 
@@ -33,7 +36,10 @@ function constantTimeEqual(left: Uint8Array, right: Uint8Array): boolean {
   return difference === 0;
 }
 
-async function pepperPassword(password: string, pepper: string): Promise<Uint8Array> {
+async function pepperPassword(
+  password: string,
+  pepper: string,
+): Promise<Uint8Array> {
   const key = await crypto.subtle.importKey(
     "raw",
     encoder.encode(pepper),
@@ -41,40 +47,80 @@ async function pepperPassword(password: string, pepper: string): Promise<Uint8Ar
     false,
     ["sign"],
   );
-  return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(password)));
+  return new Uint8Array(
+    await crypto.subtle.sign("HMAC", key, encoder.encode(password)),
+  );
 }
 
-async function derivePassword(password: string, pepper: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey("raw", await pepperPassword(password, pepper), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({
-    name: "PBKDF2",
-    hash: "SHA-256",
-    salt,
-    iterations,
-  }, key, 256);
+async function derivePassword(
+  password: string,
+  pepper: string,
+  salt: Uint8Array,
+  iterations: number,
+): Promise<Uint8Array> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    await pepperPassword(password, pepper),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt,
+      iterations,
+    },
+    key,
+    256,
+  );
   return new Uint8Array(bits);
 }
 
-export async function hashPassword(password: string, pepper: string): Promise<string> {
+export async function hashPassword(
+  password: string,
+  pepper: string,
+): Promise<string> {
   const salt = randomBytes(16);
-  const hash = await derivePassword(password, pepper, salt, PASSWORD_ITERATIONS);
-  return [PASSWORD_ALGORITHM, PASSWORD_ITERATIONS, encodeBase64Url(salt), encodeBase64Url(hash)].join("$");
+  const hash = await derivePassword(
+    password,
+    pepper,
+    salt,
+    PASSWORD_ITERATIONS,
+  );
+  return [
+    PASSWORD_ALGORITHM,
+    PASSWORD_ITERATIONS,
+    encodeBase64Url(salt),
+    encodeBase64Url(hash),
+  ].join("$");
 }
 
-export async function verifyPassword(password: string, storedHash: string, pepper: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  storedHash: string,
+  pepper: string,
+): Promise<boolean> {
   const [algorithm, rawIterations, rawSalt, rawHash] = storedHash.split("$");
   const iterations = Number(rawIterations);
   if (
-    algorithm !== PASSWORD_ALGORITHM
-    || !Number.isSafeInteger(iterations)
-    || iterations < PASSWORD_ITERATIONS
-    || !rawSalt
-    || !rawHash
-  ) return false;
+    algorithm !== PASSWORD_ALGORITHM ||
+    !Number.isSafeInteger(iterations) ||
+    iterations < PASSWORD_ITERATIONS ||
+    !rawSalt ||
+    !rawHash
+  )
+    return false;
 
   try {
     const expected = decodeBase64Url(rawHash);
-    const actual = await derivePassword(password, pepper, decodeBase64Url(rawSalt), iterations);
+    const actual = await derivePassword(
+      password,
+      pepper,
+      decodeBase64Url(rawSalt),
+      iterations,
+    );
     return constantTimeEqual(actual, expected);
   } catch {
     return false;
@@ -98,14 +144,22 @@ async function signToken(token: string, secret: string): Promise<Uint8Array> {
     false,
     ["sign"],
   );
-  return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(token)));
+  return new Uint8Array(
+    await crypto.subtle.sign("HMAC", key, encoder.encode(token)),
+  );
 }
 
-export async function encodeSignedToken(token: string, secret: string): Promise<string> {
+export async function encodeSignedToken(
+  token: string,
+  secret: string,
+): Promise<string> {
   return token + "." + encodeBase64Url(await signToken(token, secret));
 }
 
-export async function decodeSignedToken(value: string, secret: string): Promise<string | null> {
+export async function decodeSignedToken(
+  value: string,
+  secret: string,
+): Promise<string | null> {
   const separator = value.lastIndexOf(".");
   if (separator < 1) return null;
   const token = value.slice(0, separator);

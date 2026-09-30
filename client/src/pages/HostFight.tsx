@@ -1,375 +1,142 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { PlayerAvatar } from "@/components/PlayerAvatar";
-import { HealthBar } from "@/components/HealthBar";
-import { Play, ArrowLeft, Skull, XCircle, Wifi, WifiOff, RefreshCw, Crown, RotateCw } from "lucide-react";
-import type { Fight, CombatState } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
+import { useCombatSession } from "@/hooks/useCombatSession";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
-import { CombatLog, type CombatLogEvent } from "@/components/CombatLog";
+import { CombatBoard } from "@/components/CombatBoard";
+import { RichContentRenderer } from "@/components/RichContentRenderer";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
-
+import type { Fight } from "@shared/schema";
 export default function HostFight() {
-  const [, params] = useRoute("/teacher/host/:id");
-  const [, navigate] = useLocation();
-  const { toast } = useToast();
+  const [, params] = useRoute("/teacher/host/:id"),
+    [, navigate] = useLocation();
   const { isAuthenticated, isChecking } = useTeacherAuth();
   const fightId = params?.id;
-
+  const [sessionId, setSessionId] = useState<string | null>(null),
+    [hostingError, setHostingError] = useState("");
+  const { state, question, status, error, send, seconds } = useCombatSession(
+    sessionId,
+    "teacher",
+  );
   const { data: fight } = useQuery<Fight>({
     queryKey: [`/api/fights/${fightId}`],
-    enabled: !!fightId,
+    enabled: !!fightId && isAuthenticated,
   });
-
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [combatState, setCombatState] = useState<CombatState | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [hasStarted, setHasStarted] = useState(false);
-  // B6/B7 FIX: Connection status tracking for host
-  const [connectionStatus, setConnectionStatus] = useState<"connected" | "disconnected" | "reconnecting">("disconnected");
-  const [combatLogEvents, setCombatLogEvents] = useState<CombatLogEvent[]>([]);
-  const [combatLogFullscreen, setCombatLogFullscreen] = useState(false);
-  const sessionIdRef = useRef<string | null>(null);
-  const commandId = () => crypto.randomUUID();
-
-  // B6/B7 FIX: Manual reconnect function for host
-  const connectWebSocket = async () => {
-    if (!fightId) return;
-    let roomId = sessionIdRef.current;
-    if (!roomId) {
-      const response = await fetch(`/api/fights/${fightId}/sessions`, { method: "POST" });
-      if (!response.ok) {
-        toast({ title: "Unable to host fight", description: "Could not create a live session", variant: "destructive" });
-        return;
-      }
-      const room = await response.json() as { sessionId: string };
-      roomId = room.sessionId;
-      sessionIdRef.current = roomId;
-      setSessionId(roomId);
-    }
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws?sessionId=${encodeURIComponent(roomId)}`;
-    const socket = new WebSocket(wsUrl);
-
-    socket.onopen = () => {
-      setConnectionStatus("connected");
-      // Send existing sessionId to rejoin instead of creating a new session
-      socket.send(JSON.stringify({ type: "host", commandId: commandId() }));
-    };
-
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "session_created") {
-        setSessionId(message.sessionId);
-        setCombatState(message.state);
-        setHasStarted(message.state.currentPhase !== "waiting");
-        setCombatLogEvents([]); // Clear log on new session
-      } else if (message.type === "combat_state") {
-        setCombatState(message.state);
-      } else if (message.type === "combat_log") {
-        // Add new combat log event
-        setCombatLogEvents(prev => [...prev, message.event]);
-      } else if (message.type === "game_over") {
-        toast({ 
-          title: message.victory ? "Victory!" : "Fight Ended", 
-          description: message.message 
-        });
-        setTimeout(() => navigate("/teacher"), 2000);
-      }
-    };
-
-    socket.onclose = () => {
-      setConnectionStatus("disconnected");
-    };
-
-    socket.onerror = () => {
-      setConnectionStatus("disconnected");
-    };
-
-    setWs(socket);
-    return socket;
-  };
-
   useEffect(() => {
-    let socket: WebSocket | undefined;
-    void connectWebSocket().then(created => { socket = created; });
-    return () => socket?.close();
-  }, [fightId]);
-
-  const startFight = () => {
-    if (ws && !hasStarted) {
-      ws.send(JSON.stringify({ type: "start_fight", commandId: commandId() }));
-      setHasStarted(true);
-      toast({ title: "Fight started!" });
-    }
-  };
-
-  const endFight = () => {
-    if (ws && hasStarted) {
-      if (confirm("Are you sure you want to end this fight? All progress will be lost.")) {
-        ws.send(JSON.stringify({ type: "end_fight", commandId: commandId() }));
-        toast({ title: "Fight ended", description: "Students have been disconnected" });
-        setHasStarted(false);
-      }
-    }
-  };
-
-  const forceQuestion = async () => {
-    if (!sessionId || !hasStarted) return;
-    
-    try {
-      await apiRequest("POST", `/api/combat/${sessionId}/force-question`);
-      toast({ 
-        title: "Question forced", 
-        description: "Starting new question phase" 
-      });
-    } catch (error) {
-      toast({ 
-        title: "Error", 
-        description: "Failed to force question",
-        variant: "destructive"
-      });
-    }
-  };
-
-  if (isChecking) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">
-        <div className="text-white text-xl">Verifying session...</div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null; // Will redirect to login
-  }
-
-  if (!fight) {
-    return <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">Loading...</div>;
-  }
-
-  const playerCount = combatState ? Object.keys(combatState.players).length : 0;
-
+    if (!fightId || !isAuthenticated) return;
+    let disposed = false;
+    apiRequest("POST", `/api/fights/${fightId}/sessions`)
+      .then((r) => r.json())
+      .then((room) => {
+        if (!disposed) setSessionId(room.sessionId);
+      })
+      .catch((e) => setHostingError(e.message));
+    return () => {
+      disposed = true;
+    };
+  }, [fightId, isAuthenticated]);
+  if (isChecking) return <p className="p-6">Checking your session…</p>;
+  if (!isAuthenticated) return <p className="p-6">Sign in to host a fight.</p>;
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950">
-      <header className="sticky top-0 z-50 border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <Button variant="ghost" onClick={() => navigate("/teacher")} data-testid="button-back">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <h1 className="text-2xl font-serif font-bold" data-testid="text-fight-title">{fight.title}</h1>
-          <div className="flex gap-2 items-center">
-            {/* B6/B7 FIX: Connection status indicator for host */}
-            <div className="flex items-center gap-2 px-3 py-1 rounded border border-border">
-              {connectionStatus === "connected" && (
-                <>
-                  <Wifi className="h-4 w-4 text-health" data-testid="icon-host-connected" />
-                  <span className="text-xs text-muted-foreground">Connected</span>
-                </>
-              )}
-              {connectionStatus === "disconnected" && (
-                <>
-                  <WifiOff className="h-4 w-4 text-damage" data-testid="icon-host-disconnected" />
-                  <span className="text-xs text-damage">Disconnected</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      ws?.close();
-                      void connectWebSocket();
-                    }}
-                    data-testid="button-host-refresh"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Refresh
-                  </Button>
-                </>
-              )}
-            </div>
-            <Button
-              onClick={startFight}
-              disabled={hasStarted || playerCount === 0 || connectionStatus !== "connected"}
-              data-testid="button-start"
-            >
-              <Play className="mr-2 h-4 w-4" />
-              Start
-            </Button>
-            <Button
-              variant="outline"
-              onClick={forceQuestion}
-              disabled={!hasStarted || connectionStatus !== "connected"}
-              data-testid="button-force-question"
-            >
-              <RotateCw className="mr-2 h-4 w-4" />
-              Force Round Restart
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={endFight}
-              disabled={!hasStarted || connectionStatus !== "connected"}
-              data-testid="button-end-fight"
-            >
-              <XCircle className="mr-2 h-4 w-4" />
-              End Fight
-            </Button>
-          </div>
+    <main className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
+      <header className="flex flex-wrap justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{fight?.title || "Host fight"}</h1>
+          <p>
+            {status}
+            {state
+              ? ` · ${state.currentPhase.replaceAll("_", " ")} · round ${state.round}`
+              : ""}
+          </p>
         </div>
+        <Button variant="outline" onClick={() => navigate("/teacher")}>
+          Back to dashboard
+        </Button>
       </header>
-
-      <main className="container mx-auto px-4 py-8 h-[calc(100vh-120px)] flex flex-col gap-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-[2]">
-          <div className="lg:col-span-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Connected Students ({playerCount})</CardTitle>
-              </CardHeader>
-              <CardContent className="relative">
-                {combatState && Object.keys(combatState.players).length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {(() => {
-                      const players = Object.values(combatState.players);
-                      const maxThreat = Math.max(...players.map(p => p.threat || 0));
-                      const aggroLeader = players.find(p => p.threat === maxThreat && maxThreat > 0);
-                      
-                      return players.map((player) => {
-                        const isAggroLeader = aggroLeader && player.studentId === aggroLeader.studentId;
-                        
-                        return (
-                          <Card key={player.studentId} className={`${player.isDead ? "opacity-50" : ""} ${isAggroLeader ? "ring-2 ring-warrior ring-offset-2" : ""}`} data-testid={`player-${player.studentId}`}>
-                            <CardContent className="p-4 flex flex-col items-center gap-2">
-                              <div className="relative">
-                                <PlayerAvatar
-                                  characterClass={player.characterClass}
-                                  gender={player.gender}
-                                  size="md"
-                                />
-                                {player.isDead && (
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <Skull className="h-8 w-8 text-damage" />
-                                  </div>
-                                )}
-                                {isAggroLeader && !player.isDead && (
-                                  <div className="absolute -top-1 -right-1 bg-warrior rounded-full p-1 shadow-lg" data-testid={`aggro-leader-${player.studentId}`}>
-                                    <Crown className="h-4 w-4 text-white" />
-                                  </div>
-                                )}
-                              </div>
-                              <span className="text-sm font-semibold text-center" data-testid={`text-name-${player.studentId}`}>
-                                {player.nickname}
-                                {isAggroLeader && <span className="ml-1 text-warrior">👑</span>}
-                              </span>
-                              <HealthBar current={player.health} max={player.maxHealth} className="w-full" showText={false} />
-                              {player.hasAnswered && combatState.currentPhase === "question" && (
-                                <div className="text-xs text-health">✓ Answered</div>
-                              )}
-                              {player.characterClass === "scout" && (
-                                <div className="text-xs text-muted-foreground">
-                                  Combo Points: {player.comboPoints || 0}/{player.maxComboPoints || 3}
-                                </div>
-                              )}
-                              <div className="text-xs text-muted-foreground">
-                                Threat: {player.threat || 0}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      });
-                    })()}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground mb-6">Waiting for students to join...</p>
-                  </div>
-                )}
-                
-                {/* Waiting Phase Join Code Modal - Always visible during waiting phase */}
-                {combatState?.currentPhase === "waiting" && sessionId && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                    <div className="bg-card/95 backdrop-blur-sm border-4 border-primary rounded-lg p-12 shadow-2xl pointer-events-auto" data-testid="modal-join-code">
-                      <p className="text-sm text-muted-foreground mb-4 text-center">Share this Session Code with students:</p>
-                      <p className="text-6xl font-bold font-mono text-primary tracking-widest text-center" data-testid="text-session-code-modal">
-                        {sessionId}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Battle Info</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Session Code</p>
-                  <p className="font-bold text-xl font-mono text-primary tracking-wider" data-testid="text-session-code">
-                    {sessionId || "---"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Phase</p>
-                  <p className="font-semibold capitalize" data-testid="text-phase">
-                    {combatState?.currentPhase || "Waiting"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Question</p>
-                  <p className="font-semibold" data-testid="text-question-index">
-                    {combatState ? `${combatState.currentQuestionIndex + 1} / ${fight.questions.length}` : "0 / " + fight.questions.length}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Guild Code</p>
-                  <p className="font-bold text-lg text-primary" data-testid="text-guild-code">{fight.guildCode}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {combatState && combatState.enemies.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Enemies</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {combatState.enemies.map((enemy) => (
-                    <div key={enemy.id} data-testid={`enemy-${enemy.id}`}>
-                      <img src={enemy.image} alt={enemy.name} className="w-full h-32 object-cover rounded-md mb-2" />
-                      <p className="font-semibold text-center mb-2">{enemy.name}</p>
-                      <HealthBar current={enemy.health} max={enemy.maxHealth} />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-        
-        {/* Combat Log - Bottom 1/3 of screen with fullscreen toggle */}
-        <div className="flex-1 min-h-0 relative">
-          {combatLogFullscreen ? (
-            <div className="absolute inset-0 z-30 bg-background">
-              <CombatLog 
-                events={combatLogEvents} 
-                isFullscreen={true}
-                onToggleFullscreen={() => setCombatLogFullscreen(false)}
-              />
+      {(error || hostingError) && (
+        <p className="text-destructive" role="alert">
+          {error || hostingError}
+        </p>
+      )}
+      {sessionId && (
+        <Card className="p-6 text-center">
+          <p>Students join with this code</p>
+          <p
+            className="text-4xl font-bold tracking-widest mt-2"
+            data-testid="text-session-code"
+          >
+            {sessionId}
+          </p>
+        </Card>
+      )}
+      {state && (
+        <>
+          <CombatBoard state={state} />
+          {state.currentPhase === "waiting" ? (
+            <Button
+              disabled={
+                status !== "connected" || !Object.keys(state.players).length
+              }
+              onClick={() => send("start_fight")}
+            >
+              Start fight
+            </Button>
+          ) : state.currentPhase !== "game_over" ? (
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  apiRequest(
+                    "POST",
+                    `/api/combat/${sessionId}/force-question`,
+                  ).catch((e) => setHostingError(e.message))
+                }
+              >
+                Advance current phase
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (
+                    confirm(
+                      "End this fight and save the students’ current progress?",
+                    )
+                  )
+                    send("end_fight");
+                }}
+              >
+                End fight
+              </Button>
             </div>
           ) : (
-            <CombatLog 
-              events={combatLogEvents} 
-              isFullscreen={false}
-              onToggleFullscreen={() => setCombatLogFullscreen(true)}
-            />
+            <Card className="p-5">
+              <h2 className="text-xl font-bold">
+                {state.victory ? "Victory!" : "Fight ended"}
+              </h2>
+              <p>{state.endReason}</p>
+              <Button className="mt-4" onClick={() => navigate("/teacher")}>
+                Return to dashboard
+              </Button>
+            </Card>
           )}
-        </div>
-      </main>
-    </div>
+          {question && state.currentPhase === "question" && (
+            <Card className="p-5">
+              <p className="mb-3">Current question · {seconds}s remaining</p>
+              <RichContentRenderer html={question.question} />
+            </Card>
+          )}
+          <Card className="p-5">
+            <h2 className="font-semibold mb-3">Combat log</h2>
+            {state.events.map((e) => (
+              <p key={e.id} className="mb-2">
+                {e.message}
+              </p>
+            ))}
+          </Card>
+        </>
+      )}
+    </main>
   );
 }

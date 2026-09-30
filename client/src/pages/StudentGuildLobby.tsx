@@ -1,3 +1,4 @@
+import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -93,7 +94,7 @@ export default function StudentGuildLobby() {
 
   // Fetch leaderboard
   const { data: leaderboard = [] } = useQuery<LeaderboardEntry[]>({
-    queryKey: [`/api/guilds/${guildId}/leaderboard`, "damageDealt"],
+    queryKey: [`/api/guilds/${guildId}/leaderboard?metric=damageDealt`],
     enabled: !!guildId,
   });
 
@@ -158,52 +159,13 @@ export default function StudentGuildLobby() {
 
     setHostingFightId(fightId);
 
-    // Create WebSocket connection to host solo mode
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
+    try {
+      const response=await apiRequest('POST', `/api/fights/${fightId}/solo-sessions`, {guildId});
+      const room=await response.json();
+      localStorage.setItem('sessionId',room.sessionId);
+      navigate('/student/combat');
+    } catch(error) { setHostingFightId(null); toast({title:'Unable to start solo fight',description:error instanceof Error?error.message:'Try again',variant:'destructive'}); }
 
-    socket.onopen = () => {
-      // Send host_solo message
-      socket.send(JSON.stringify({
-        type: "host_solo",
-        studentId: studentId,
-        fightId: fightId,
-        guildId: guildId,
-      }));
-    };
-
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "session_created" || message.type === "solo_session_created") {
-        // Solo session created successfully
-        localStorage.setItem("sessionId", message.sessionId);
-        socket.close();
-        toast({
-          title: "Solo session created!",
-          description: `Session code: ${message.sessionId}`,
-        });
-        navigate("/student/combat");
-      } else if (message.type === "error") {
-        socket.close();
-        setHostingFightId(null);
-        toast({
-          title: "Failed to host solo mode",
-          description: message.message || "The fight may not have solo mode enabled",
-          variant: "destructive",
-        });
-      }
-    };
-
-    socket.onerror = () => {
-      socket.close();
-      setHostingFightId(null);
-      toast({
-        title: "Connection error",
-        description: "Failed to connect to server",
-        variant: "destructive",
-      });
-    };
   };
 
   const joinSession = (sessionId: string) => {
@@ -419,10 +381,7 @@ export default function StudentGuildLobby() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
             {(() => {
               // Convert job levels array to map
-              const jobLevelMap: Record<CharacterClass, number> = {
-                warrior: 0, wizard: 0, scout: 0, herbalist: 0, warlock: 0,
-                priest: 0, paladin: 0, dark_knight: 0, blood_knight: 0,
-              };
+              const jobLevelMap: Record<CharacterClass, number> = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, 0])) as Record<CharacterClass, number>;
               
               jobLevels.forEach(jl => {
                 jobLevelMap[jl.jobClass] = jl.level;
