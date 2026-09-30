@@ -108,6 +108,11 @@ selected color IDs rather than the old `Gender`/class image lookup.
 
 ## Rollout and validation
 
+The [avatar art and animation direction guide](avatar-art-direction.md) governs
+asset production and the pre-integration gate. Complete both models and rigs,
+starter and signature equipment for all four base jobs, and the required
+ability/weapon coverage before replacing the live portrait system.
+
 This foundation supplies the original assets, recoloring derivatives and
 preview, catalog, additive migrations, seed records, persistence helpers, and
 database tests. It neither runs a live
