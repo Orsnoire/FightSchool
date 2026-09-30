@@ -133,6 +133,13 @@ Content specifications should remain portable and should not be unnecessarily co
 
 ## Character Art and Appearance
 
+The [avatar art and animation direction guide](avatar-art-direction.md) defines
+the production workflow and pre-integration gate: skeleton-connected male/female
+models and calibrated hooks, starter and signature gear for all four base jobs,
+and complete ability animation coverage for the agreed available weapons and
+legal loadouts. All five requirements must be reviewed before live integration;
+a single working prototype does not satisfy that gate.
+
 The approved Human male/female base art and appearance contract are documented in
 [`attached_assets/characters/human/v1/README.md`](../attached_assets/characters/human/v1/README.md).
 Its adjacent `manifest.json` associates each model and view with independent
