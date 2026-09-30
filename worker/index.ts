@@ -6,11 +6,14 @@ import { handleStudentAuth } from "./routes/student-auth.ts";
 import { handleCombatSessions } from "./routes/combat-sessions.ts";
 import { CombatSessionObject } from "./combat/session-object.ts";
 
+import { isAllowedOrigin } from "./auth/origin.ts";
+
 interface Env {
   ASSETS: Fetcher;
   COMBAT_SESSIONS: DurableObjectNamespace;
   ENVIRONMENT: string;
   PUBLIC_ORIGIN: string;
+  ADDITIONAL_PUBLIC_ORIGINS?: string;
   DATABASE_URL: string;
   PASSWORD_PEPPER: string;
   SESSION_SECRET: string;
@@ -91,7 +94,7 @@ async function handleWebSocket(
   if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
     return json({ error: "WebSocket upgrade required" }, 426, currentRequestId);
   }
-  if (!hasStagingAuthorization(request, env) && request.headers.get("origin") !== env.PUBLIC_ORIGIN) {
+  if (!hasStagingAuthorization(request, env) && !isAllowedOrigin(request.headers.get("origin"), env)) {
     return json({ error: "Forbidden origin" }, 403, currentRequestId);
   }
   const sessionId = url.searchParams.get("sessionId");
@@ -145,7 +148,7 @@ export default {
     if (
       url.pathname.startsWith("/api/")
       && ["POST", "PUT", "PATCH", "DELETE"].includes(request.method)
-      && request.headers.get("origin") !== env.PUBLIC_ORIGIN
+      && !isAllowedOrigin(request.headers.get("origin"), env)
     ) {
       return json({ error: "Forbidden origin" }, 403, currentRequestId);
     }

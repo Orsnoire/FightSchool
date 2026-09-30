@@ -57,6 +57,15 @@ const missingApi = await fetch(origin + "/api/not-a-route");
 assert.equal(missingApi.status, 404);
 assert.match(missingApi.headers.get("content-type") || "", /application\/json/);
 
+const sameOriginMutation = await fetch(origin + "/api/not-a-route", {
+  method: "POST", headers: { Origin: origin },
+});
+assert.equal(sameOriginMutation.status, 404);
+const foreignOriginMutation = await fetch(origin + "/api/not-a-route", {
+  method: "POST", headers: { Origin: "https://untrusted.example" },
+});
+assert.equal(foreignOriginMutation.status, 403);
+
 const objects = await fetch(origin + "/objects/not-enabled");
 assert.equal(objects.status, 501);
 
@@ -67,7 +76,7 @@ assert.match(nestedRoute.headers.get("content-type") || "", /text\/html/);
 const socketUrl = origin.replace(/^http/, "ws") + "/ws?sessionId=staging-smoke";
 
 async function pingWebSocket() {
-  const socket = new WebSocket(socketUrl, { headers: { Authorization: "Bearer " + token } });
+  const socket = new WebSocket(socketUrl, { headers: { Authorization: "Bearer " + token, Origin: origin } });
   const commandId = randomUUID();
 
   try {

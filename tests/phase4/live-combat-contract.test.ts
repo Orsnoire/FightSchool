@@ -14,7 +14,7 @@ const migration = read("migrations/cloudflare/0002_phase4_student_identity.sql")
 test("upgrade identity comes from the signed server session", () => {
   assert.match(worker, /authenticateSession\(request, repository, sessionConfig\)/);
   assert.match(worker, /x-questacademy-actor-id/);
-  assert.match(worker, /request\.headers\.get\("origin"\) !== env\.PUBLIC_ORIGIN/);
+  assert.match(worker, /!isAllowedOrigin\(request\.headers\.get\("origin"\), env\)/);
   assert.doesNotMatch(host, /type: "host", fightId/);
   assert.doesNotMatch(student, /type: "join", studentId/);
 });
