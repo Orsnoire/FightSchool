@@ -2,6 +2,8 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
+**Current status, 30 September 2026:** the recovered refactor and live fixes are merged and deployed to the canonical hostname. Functional live combat, R2, and 30-player classroom acceptance passed. Deployment identifiers and evidence are recorded below; full Phase 7 operational signoff remains open.
+
 ## Root cause and corrected behavior
 
 The previous Worker stored answers without resolving attacks, healing, blocking, or enemy counterattacks. Exhausting the question bank incorrectly declared victory. The server now runs waiting → question (three-second introduction) → support choices → resolution → enemy AI → health check. Living enemies continue the fight by cycling the question bank; victory requires all enemies defeated, and defeat requires the entire party knocked out.
@@ -87,3 +89,21 @@ PR #22 merged the classroom persistence fixes as `bfc4fbedbdec3e2bde1752ce4796bb
 The existing signed-in teacher browser successfully restored its session identity, listed all three existing battles, rendered rich question/answer previews including the graph in Construct a Function, and loaded Create Fight directly without a login redirect. Existing teacher content was inspected without edits.
 
 Acceptance run `36769499444` passed full combat and storage, and classroom completion returned promptly after the batching fix. Its final assertion incorrectly expected a resolved answer immediately after ending the fight during the question phase; totals are counted when the round resolves. The operational script now advances all 30 players through question and support readiness, verifies resolved totals, then ends the fixture and checks all 30 saved results. This correction changes only acceptance code and documentation; the deployed runtime is unchanged.
+
+### Functional live acceptance passed — 30 September 2026, 20:07 UTC
+
+PR #23 merged the corrected acceptance script as `eff0f786c3dac5e40d615f9d72b06bdd83f1a595`, after successful CI run `36769944816`. [Live acceptance run 36770136289](https://github.com/Orsnoire/FightSchool/actions/runs/36770136289), job `110074128400`, passed both steps against `https://questacademy.bookwyrminteractive.studio`:
+
+- Complete combat: correct/wrong answers, damage, enemy AI, question cycling, reconnect deadlines, stale and retried commands, durable XP, guilds, quests, shop, reward claims, solo hosting, history, and owner isolation.
+- R2: authenticated upload, exact byte readback, MIME/cache/nosniff headers, immutable duplicate rejection, anonymous and foreign-origin rejection, range reads, and HEAD metadata. Deployment smoke also verified a missing-object 404.
+- Classroom: 30 participants, host refresh reuses the room, a second room remains isolated, simultaneous answers, reconnect with the original deadline, one resolved answer and one persisted result per student, and logout revocation of an already-open socket.
+
+The final 30-player answer burst measured p50 **2,067ms**, p95 **3,876ms**, maximum **4,025ms**, below this smoke test's 15-second maximum. This is a single live burst, not a sustained-load latency guarantee. Local PGlite regression tests additionally verified exactly-once XP/gold and simultaneous classroom quest rewards under a 45-query ceiling.
+
+The live Worker still runs runtime commit `bfc4fbe`, immutable version `8e7588f1-e259-4c64-9a44-a6f5fcb0e825`. Later commits contain only the acceptance correction and this documentation, so no additional runtime deployment was required. All 40 local/CI tests, type checking, builds, both deployed smoke checks, and both final live acceptance steps passed.
+
+### Operational signoff still open
+
+Functional live acceptance does not close every Phase 7 gate in `../Migration_Plan`. Remaining evidence includes a forced deployed Durable Object restart/eviction, deliberate Neon interruption and connection-limit recovery, a timed immutable-version rollback rehearsal, a complete student desktop/mobile browser pass, and the agreed monitoring/observation window. Local restart and failed-save tests plus live reconnect are useful evidence, but are not substitutes for those infrastructure drills. Perform disruptive drills in an isolated deployment or an agreed release window.
+
+Keep Worker `20382b06-88e9-42a3-805d-bc7ca476e602` as the pre-refactor rollback reference. The accepted runtime version recorded above is an additional immutable checkpoint. A Worker rollback does not undo Neon, R2, or Durable Object data; retain the additive schema and existing bindings. Acceptance creates separate accounts with random passwords and tiny image fixtures, and archives its fight fixtures. It does not edit the teacher's existing battles.
