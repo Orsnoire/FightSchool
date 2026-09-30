@@ -12,7 +12,7 @@ require a second database server or duplicate student identities.
 | `avatar_palettes` | Versioned hair, eye, or skin palette |
 | `avatar_colors` | Named stable color ID, hex value, and display order within a palette |
 | `avatar_models` | Species, body type, rig family, channel-to-palette bindings, semantic recoloring regions, and art status |
-| `avatar_model_views` | Front/combat source paths, hashes, dimensions, orientation, future mask/neutral-base/rig/parts paths, and readiness flags |
+| `avatar_model_views` | Front/combat source paths, hashes, dimensions, orientation, mask/neutral-base paths, future rig/parts paths, and readiness flags |
 | `student_avatars` | One saved avatar per student, model ID, palette IDs, and three selected color IDs |
 
 Migration `0006_avatar_foundation.sql` seeds two Human models, four RGBA source
@@ -26,9 +26,12 @@ each saved color to that model's palette. Palette identity includes version;
 references are stable IDs, not a fragile match against colored source pixels.
 Ink, pupils, eye whites and highlights are excluded from recoloring.
 
-Source art remains colored. Create separate region masks and a neutral fill or
-shading base as derivative assets. Masks, rig files, parts, and calibrated
-transforms remain null until those files exist. Constraints prevent a view from
+Source art remains colored. The four views now have twelve separate region
+masks and four neutral shading bases, preserving source geometry and alpha.
+Migration `0007_human_recolor_masks.sql` records those paths and marks matching
+views recolor-ready, guarded by each original source hash. The manifest also
+records derivative hashes. Rig files, parts, and calibrated transforms remain
+null. Constraints prevent a view from
 being marked recolor-ready or rig-ready without the required asset references.
 Paths are repository asset references, not automatically deployed URLs.
 
@@ -105,14 +108,15 @@ selected color IDs rather than the old `Gender`/class image lookup.
 
 ## Rollout and validation
 
-This change supplies the original assets, catalog, additive schema migration,
-seed records, persistence helpers, and database tests. It neither runs a live
+This foundation supplies the original assets, recoloring derivatives and
+preview, catalog, additive migrations, seed records, persistence helpers, and
+database tests. It neither runs a live
 migration nor replaces the current portrait UI. The legacy portraits remain a
 temporary display implementation, not the direction for new avatar work.
 
-Deploy the migration through the normal migration workflow before integrating
-avatar API routes. Complete the masks, body-part cuts, rig calibration, and
-equipment art before marking assets ready. Then integrate the avatar creator,
+Deploy the migrations through the normal migration workflow before integrating
+avatar API routes. The recoloring assets are ready; complete body-part cuts,
+rig calibration, and equipment art before marking rigs ready. Then integrate the avatar creator,
 saved appearance transport, equipment authorization, and new renderer; remove
 the old portrait imports after all callers have moved over.
 
@@ -121,3 +125,9 @@ PGlite. It verifies existing student preservation, seed/image consistency,
 independent initial colors, persistence and concurrent retries, palette/channel
 constraints, readiness flags, equipment compatibility, gloves plus held items,
 and cascading avatar cleanup.
+
+`tests/phase4/avatar-recolor.test.ts` verifies source/derivative hashes, exclusive
+grayscale masks, preserved alpha and untargeted pixels, anatomical region probes,
+and the shared recoloring function. See the
+[recoloring contract](../attached_assets/characters/human/v1/recolor/README.md)
+for regeneration and local preview commands.

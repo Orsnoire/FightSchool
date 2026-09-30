@@ -34,14 +34,19 @@ The images have shading and antialiasing; do not recolor them by matching
 brown pixels, applying a whole-image hue filter, or desaturating the entire PNG.
 Hair, eyes, and skin can share similar colors but must remain independent.
 
-Keep these colored masters. Production recoloring requires three spatial masks
-per view (or equivalent separate layers) and a neutral fill/shading layer that
-preserves the ink. A white/grayscale base may be derived as part of that work;
-stripping color alone does not identify the three regions. Mask coverage and
-recoloring should be checked against the lightest and darkest palette options.
+Keep these colored masters. Each view now has three aligned grayscale masks
+(hair, irises, skin) and a neutral shading base in [recolor/](recolor/README.md).
+The derivatives preserve every original alpha byte and all untargeted RGB
+pixels. The manifest records their paths and hashes. Diagnostic colors and
+light, dark, and mixed natural palettes have been checked across all four views.
 
-The manifest deliberately marks masks, neutral bases, segmented parts, and rigs
-as absent. These are assembled concept images, **not yet recolorable or rigged**.
+![Four views in diagnostic, light, dark, and mixed palettes](recolor/preview-sheet.png)
+
+Run `npm run preview:avatars` for the local color workshop, or
+`npm run build:avatar-assets` to rebuild masks, neutral bases, and individual
+preview images from the checked-in region maps.
+
+The views are **recolor-ready, but not rigged**. Segmented parts and rigs remain absent.
 The separately generated views are not guaranteed to have pixel-aligned joints.
 When preparing animation parts, redraw hidden overlap beneath joints, align the
 shared rig, and keep far/near limbs and weapon/shield attachment points separate.
@@ -64,7 +69,9 @@ random changes during rendering.
 The manifest is the source-controlled asset catalog. Migration
 `0006_avatar_foundation.sql` creates dedicated avatar tables and seeds these
 models, views, palettes, and 18 equipment slots per model. It changes no existing
-student data. Database helpers implement one-time randomized creation, reads
+student data. Migration `0007_human_recolor_masks.sql` associates the twelve
+masks and four neutral bases with the matching source hashes and marks those
+views recolor-ready. Database helpers implement one-time randomized creation, reads
 without rerolling, and explicit color changes. See
 [the avatar database specification](../../../../docs/avatar-database.md).
 
