@@ -18,11 +18,14 @@ import {
   index,
   integer,
   jsonb,
+  foreignKey,
+  primaryKey,
   pgTable,
   text,
   timestamp,
   uniqueIndex,
   uuid,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const teachers = pgTable(
@@ -407,3 +410,173 @@ export const questCompletions = pgTable(
     ),
   }),
 );
+
+// Avatar art is independent of jobs and combat statistics. Catalog records are
+// seeded by migrations; student choices reference palette IDs, not image pixels.
+export const avatarPalettes = pgTable("avatar_palettes", {
+  id: text("id").primaryKey(),
+  channel: text("channel").notNull().$type<"hair" | "eyes" | "skin">(),
+  version: integer("version").notNull(),
+}, (t) => ({
+  channelKey: unique("avatar_palettes_channel_key").on(t.id, t.channel),
+  validChannel: check("avatar_palettes_channel_check", sql`${t.channel} IN ('hair','eyes','skin')`),
+  positiveVersion: check("avatar_palettes_version_check", sql`${t.version} > 0`),
+}));
+
+export const avatarColors = pgTable("avatar_colors", {
+  paletteId: text("palette_id").notNull().references(() => avatarPalettes.id),
+  id: text("id").notNull(),
+  label: text("label").notNull(),
+  hex: text("hex").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.paletteId, t.id] }),
+  validHex: check("avatar_colors_hex_check", sql`${t.hex} ~ '^#[0-9A-Fa-f]{6}$'`),
+  validOrder: check("avatar_colors_order_check", sql`${t.sortOrder} >= 0`),
+  orderUnique: uniqueIndex("avatar_colors_order_unique").on(t.paletteId, t.sortOrder),
+}));
+
+export const avatarModels = pgTable("avatar_models", {
+  id: text("id").primaryKey(),
+  species: text("species").notNull(),
+  bodyType: text("body_type").notNull(),
+  rigFamily: text("rig_family").notNull(),
+  status: text("status").notNull().default("concept"),
+  hairPaletteId: text("hair_palette_id").notNull(),
+  eyePaletteId: text("eye_palette_id").notNull(),
+  skinPaletteId: text("skin_palette_id").notNull(),
+  // Constant channel columns let PostgreSQL enforce palette semantics via FKs.
+  hairChannel: text("hair_channel").notNull().default("hair"),
+  eyeChannel: text("eye_channel").notNull().default("eyes"),
+  skinChannel: text("skin_channel").notNull().default("skin"),
+  colorRegions: jsonb("color_regions").notNull().$type<Record<string, {
+    regions: string[]; excludedRegions: string[];
+  }>>(),
+}, (t) => ({
+  paletteKey: unique("avatar_models_palette_key").on(t.id, t.hairPaletteId, t.eyePaletteId, t.skinPaletteId),
+  channels: check("avatar_models_channels_check", sql`${t.hairChannel} = 'hair' AND ${t.eyeChannel} = 'eyes' AND ${t.skinChannel} = 'skin'`),
+  hairPalette: foreignKey({ name: "avatar_models_hair_palette_fk", columns: [t.hairPaletteId, t.hairChannel], foreignColumns: [avatarPalettes.id, avatarPalettes.channel] }),
+  eyePalette: foreignKey({ name: "avatar_models_eye_palette_fk", columns: [t.eyePaletteId, t.eyeChannel], foreignColumns: [avatarPalettes.id, avatarPalettes.channel] }),
+  skinPalette: foreignKey({ name: "avatar_models_skin_palette_fk", columns: [t.skinPaletteId, t.skinChannel], foreignColumns: [avatarPalettes.id, avatarPalettes.channel] }),
+  validStatus: check("avatar_models_status_check", sql`${t.status} IN ('concept','production','retired')`),
+}));
+
+export const avatarModelViews = pgTable("avatar_model_views", {
+  modelId: text("model_id").notNull().references(() => avatarModels.id),
+  viewKey: text("view_key").notNull(),
+  sourcePath: text("source_path").notNull(),
+  sourceSha256: text("source_sha256").notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  facing: text("facing").notNull(),
+  intendedYaw: integer("intended_yaw").notNull(),
+  hairMaskPath: text("hair_mask_path"),
+  eyeMaskPath: text("eye_mask_path"),
+  skinMaskPath: text("skin_mask_path"),
+  neutralBasePath: text("neutral_base_path"),
+  rigPath: text("rig_path"),
+  partsPath: text("parts_path"),
+  recolorReady: boolean("recolor_ready").notNull().default(false),
+  rigReady: boolean("rig_ready").notNull().default(false),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.modelId, t.viewKey] }),
+  dimensions: check("avatar_views_dimensions_check", sql`${t.width} > 0 AND ${t.height} > 0`),
+  yaw: check("avatar_views_yaw_check", sql`${t.intendedYaw} BETWEEN -180 AND 180`),
+  hash: check("avatar_views_sha_check", sql`${t.sourceSha256} ~ '^[0-9a-f]{64}$'`),
+  masks: check("avatar_views_masks_check", sql`NOT ${t.recolorReady} OR (${t.hairMaskPath} IS NOT NULL AND ${t.eyeMaskPath} IS NOT NULL AND ${t.skinMaskPath} IS NOT NULL AND ${t.neutralBasePath} IS NOT NULL)`),
+  rig: check("avatar_views_rig_check", sql`NOT ${t.rigReady} OR (${t.rigPath} IS NOT NULL AND ${t.partsPath} IS NOT NULL)`),
+}));
+
+export const avatarEquipmentSlots = pgTable("avatar_equipment_slots", {
+  id: text("id").primaryKey(),
+  label: text("label").notNull(),
+  bodyPart: text("body_part").notNull(),
+  side: text("side").notNull().$type<"left" | "right" | "center">(),
+  kind: text("kind").notNull().$type<"wearable" | "grip">(),
+}, (t) => ({
+  side: check("avatar_slots_side_check", sql`${t.side} IN ('left','right','center')`),
+  kind: check("avatar_slots_kind_check", sql`${t.kind} IN ('wearable','grip')`),
+}));
+
+export const avatarModelSlots = pgTable("avatar_model_slots", {
+  modelId: text("model_id").notNull().references(() => avatarModels.id),
+  slotId: text("slot_id").notNull().references(() => avatarEquipmentSlots.id),
+  boneName: text("bone_name").notNull(),
+  // Calibrated transform and layer order belong to each view/rig, not the
+  // conceptual skeleton. Null explicitly means the artwork is not rigged yet.
+  viewTransforms: jsonb("view_transforms").$type<Record<string, {
+    pivotX: number; pivotY: number; offsetX: number; offsetY: number;
+    rotation: number; scaleX: number; scaleY: number; layer: number;
+  }>>(),
+}, (t) => ({ pk: primaryKey({ columns: [t.modelId, t.slotId] }) }));
+
+export const studentAvatars = pgTable("student_avatars", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studentId: uuid("student_id").notNull().unique().references(() => students.id, { onDelete: "cascade" }),
+  modelId: text("model_id").notNull(),
+  hairPaletteId: text("hair_palette_id").notNull(),
+  hairColorId: text("hair_color_id").notNull(),
+  eyePaletteId: text("eye_palette_id").notNull(),
+  eyeColorId: text("eye_color_id").notNull(),
+  skinPaletteId: text("skin_palette_id").notNull(),
+  skinColorId: text("skin_color_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  modelKey: unique("student_avatars_model_key").on(t.id, t.modelId),
+  model: foreignKey({ name: "student_avatars_model_palettes_fk", columns: [t.modelId, t.hairPaletteId, t.eyePaletteId, t.skinPaletteId], foreignColumns: [avatarModels.id, avatarModels.hairPaletteId, avatarModels.eyePaletteId, avatarModels.skinPaletteId] }),
+  hair: foreignKey({ name: "student_avatars_hair_color_fk", columns: [t.hairPaletteId, t.hairColorId], foreignColumns: [avatarColors.paletteId, avatarColors.id] }),
+  eyes: foreignKey({ name: "student_avatars_eye_color_fk", columns: [t.eyePaletteId, t.eyeColorId], foreignColumns: [avatarColors.paletteId, avatarColors.id] }),
+  skin: foreignKey({ name: "student_avatars_skin_color_fk", columns: [t.skinPaletteId, t.skinColorId], foreignColumns: [avatarColors.paletteId, avatarColors.id] }),
+}));
+
+// One item definition can have several visual parts (for example a cuirass
+// covering torso and upper arms). A part is fitted to a model, slot and view.
+export const avatarEquipment = pgTable("avatar_equipment", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  gameplayItemId: uuid("gameplay_item_id").references(() => equipmentItems.id, { onDelete: "set null" }),
+  builtinItemId: text("builtin_item_id"),
+}, (t) => ({
+  oneLink: check("avatar_equipment_one_item_link", sql`${t.gameplayItemId} IS NULL OR ${t.builtinItemId} IS NULL`),
+}));
+
+export const avatarEquipmentFits = pgTable("avatar_equipment_fits", {
+  equipmentId: text("equipment_id").notNull().references(() => avatarEquipment.id, { onDelete: "cascade" }),
+  modelId: text("model_id").notNull(),
+  slotId: text("slot_id").notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.equipmentId, t.modelId, t.slotId] }),
+  slot: foreignKey({ name: "avatar_equipment_fits_slot_fk", columns: [t.modelId, t.slotId], foreignColumns: [avatarModelSlots.modelId, avatarModelSlots.slotId] }),
+}));
+
+export const avatarEquipmentVisuals = pgTable("avatar_equipment_visuals", {
+  equipmentId: text("equipment_id").notNull(),
+  modelId: text("model_id").notNull(),
+  slotId: text("slot_id").notNull(),
+  viewKey: text("view_key").notNull(),
+  assetPath: text("asset_path").notNull(),
+  attachment: jsonb("attachment").$type<{
+    pivotX: number; pivotY: number; offsetX: number; offsetY: number;
+    rotation: number; scaleX: number; scaleY: number; layer: number;
+  }>(),
+  ready: boolean("ready").notNull().default(false),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.equipmentId, t.modelId, t.slotId, t.viewKey] }),
+  fit: foreignKey({ name: "avatar_equipment_visuals_fit_fk", columns: [t.equipmentId, t.modelId, t.slotId], foreignColumns: [avatarEquipmentFits.equipmentId, avatarEquipmentFits.modelId, avatarEquipmentFits.slotId] }).onDelete("cascade"),
+  view: foreignKey({ name: "avatar_equipment_visuals_view_fk", columns: [t.modelId, t.viewKey], foreignColumns: [avatarModelViews.modelId, avatarModelViews.viewKey] }),
+  readyTransform: check("avatar_equipment_visuals_ready_check", sql`NOT ${t.ready} OR ${t.attachment} IS NOT NULL`),
+}));
+
+export const avatarEquippedItems = pgTable("avatar_equipped_items", {
+  avatarId: uuid("avatar_id").notNull(),
+  modelId: text("model_id").notNull(),
+  slotId: text("slot_id").notNull(),
+  equipmentId: text("equipment_id").notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.avatarId, t.slotId] }),
+  avatar: foreignKey({ name: "avatar_equipped_items_avatar_fk", columns: [t.avatarId, t.modelId], foreignColumns: [studentAvatars.id, studentAvatars.modelId] }).onDelete("cascade"),
+  fit: foreignKey({ name: "avatar_equipped_items_fit_fk", columns: [t.equipmentId, t.modelId, t.slotId], foreignColumns: [avatarEquipmentFits.equipmentId, avatarEquipmentFits.modelId, avatarEquipmentFits.slotId] }),
+}));
+
+export type StudentAvatarRecord = typeof studentAvatars.$inferSelect;

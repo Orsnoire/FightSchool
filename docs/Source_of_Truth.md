@@ -131,6 +131,22 @@ They should guide:
 
 Content specifications should remain portable and should not be unnecessarily coupled to a particular hosting provider or database implementation.
 
+## Character Art and Appearance
+
+The approved Human male/female base art and appearance contract are documented in
+[`attached_assets/characters/human/v1/README.md`](../attached_assets/characters/human/v1/README.md).
+Its adjacent `manifest.json` associates each model and view with independent
+hair, iris, and skin channels and eight-option natural-tone palettes. Initial
+colors are independently randomized and then saved per character; the sample
+art colors are not fixed defaults. These source images still need separate
+recoloring masks and animation parts.
+
+The [avatar database specification](avatar-database.md) defines the new dedicated
+avatar tables, saved appearance, and equipment attachment slots. This system
+supersedes fixed class portraits as the intended product design. Migration
+`0006_avatar_foundation.sql` seeds the Human model metadata and palettes; the
+current portrait UI is transitional until the new renderer/creator is integrated.
+
 ---
 
 # 4. Git Repository
