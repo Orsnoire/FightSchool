@@ -43,6 +43,13 @@
       "when": 1790781987899,
       "tag": "0005_history_preservation",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790802059448,
+      "tag": "0006_avatar_foundation",
+      "breakpoints": true
     }
   ]
 }

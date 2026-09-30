@@ -1,0 +1,496 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "questacademy-human-v1",
+  "paletteVersion": 1,
+  "approvedDate": "2026-09-30",
+  "assetPathsRelativeTo": "manifest-directory",
+  "runtimeIntegrated": false,
+  "sourceArtPreserved": true,
+  "colorSpace": "sRGB",
+  "paletteStatus": "initial-natural-tone-options",
+  "paletteColorsAreExactSourcePixels": false,
+  "creationPolicy": {
+    "implementationStatus": "repository-helper-implemented-ui-pending",
+    "randomizeChannels": [
+      "hair",
+      "eyes",
+      "skin"
+    ],
+    "independent": true,
+    "distribution": "uniform",
+    "optionsPerChannel": 8,
+    "combinationsPerModel": 512,
+    "sampleArtDoesNotSetDefaults": true,
+    "playerMayOverride": true,
+    "generateWhen": "initial-character-creation",
+    "persistWhen": "character-creation-confirmed",
+    "rerollOnRender": false,
+    "rerollOnLogin": false,
+    "preserveAcrossJobChanges": true,
+    "preserveAcrossViewChanges": true
+  },
+  "channels": {
+    "hair": {
+      "paletteId": "human-hair-v1",
+      "selectionField": "hairColorId",
+      "regions": [
+        "scalp hair",
+        "eyebrows"
+      ],
+      "excludedRegions": [
+        "black ink outlines",
+        "eyelashes"
+      ],
+      "maskStatus": "not-created"
+    },
+    "eyes": {
+      "paletteId": "human-eyes-v1",
+      "selectionField": "eyeColorId",
+      "regions": [
+        "irises"
+      ],
+      "excludedRegions": [
+        "pupils",
+        "eye whites",
+        "highlights",
+        "eyelashes",
+        "black ink outlines"
+      ],
+      "maskStatus": "not-created"
+    },
+    "skin": {
+      "paletteId": "human-skin-v1",
+      "selectionField": "skinColorId",
+      "regions": [
+        "face",
+        "ears",
+        "neck",
+        "exposed arms",
+        "hands"
+      ],
+      "excludedRegions": [
+        "hair",
+        "irises",
+        "clothing",
+        "black ink outlines"
+      ],
+      "maskStatus": "not-created"
+    }
+  },
+  "palettes": {
+    "human-hair-v1": [
+      {
+        "id": "black",
+        "label": "Black",
+        "hex": "#181514"
+      },
+      {
+        "id": "espresso",
+        "label": "Espresso",
+        "hex": "#30211B"
+      },
+      {
+        "id": "dark-brown",
+        "label": "Dark brown",
+        "hex": "#493126"
+      },
+      {
+        "id": "chestnut",
+        "label": "Chestnut",
+        "hex": "#70452F"
+      },
+      {
+        "id": "auburn",
+        "label": "Auburn",
+        "hex": "#7B3C2C"
+      },
+      {
+        "id": "copper",
+        "label": "Copper",
+        "hex": "#B5683C"
+      },
+      {
+        "id": "dark-blond",
+        "label": "Dark blond",
+        "hex": "#9A774B"
+      },
+      {
+        "id": "golden-blond",
+        "label": "Golden blond",
+        "hex": "#D3AE63"
+      }
+    ],
+    "human-eyes-v1": [
+      {
+        "id": "deep-brown",
+        "label": "Deep brown",
+        "hex": "#35251C"
+      },
+      {
+        "id": "brown",
+        "label": "Brown",
+        "hex": "#604029"
+      },
+      {
+        "id": "light-brown",
+        "label": "Light brown",
+        "hex": "#8A6340"
+      },
+      {
+        "id": "amber",
+        "label": "Amber",
+        "hex": "#B4863C"
+      },
+      {
+        "id": "hazel",
+        "label": "Hazel",
+        "hex": "#7C7D4C"
+      },
+      {
+        "id": "green",
+        "label": "Green",
+        "hex": "#627B55"
+      },
+      {
+        "id": "blue",
+        "label": "Blue",
+        "hex": "#668CAA"
+      },
+      {
+        "id": "gray",
+        "label": "Gray",
+        "hex": "#879196"
+      }
+    ],
+    "human-skin-v1": [
+      {
+        "id": "fair-cool",
+        "label": "Fair cool",
+        "hex": "#F3D8D0"
+      },
+      {
+        "id": "fair-warm",
+        "label": "Fair warm",
+        "hex": "#F2D4B5"
+      },
+      {
+        "id": "light-beige",
+        "label": "Light beige",
+        "hex": "#DFC0A1"
+      },
+      {
+        "id": "light-olive",
+        "label": "Light olive",
+        "hex": "#BEA078"
+      },
+      {
+        "id": "medium-golden",
+        "label": "Medium golden",
+        "hex": "#BC8A5F"
+      },
+      {
+        "id": "medium-brown",
+        "label": "Medium brown",
+        "hex": "#966542"
+      },
+      {
+        "id": "deep-brown",
+        "label": "Deep brown",
+        "hex": "#684431"
+      },
+      {
+        "id": "very-deep-brown",
+        "label": "Very deep brown",
+        "hex": "#3F2A22"
+      }
+    ]
+  },
+  "models": [
+    {
+      "id": "human-male-v1",
+      "species": "human",
+      "bodyType": "male",
+      "legacyGender": "A",
+      "status": "approved-concept",
+      "recolorReady": false,
+      "rigReady": false,
+      "sampleColorsAreDefaults": false,
+      "colorBindings": {
+        "hair": "human-hair-v1",
+        "eyes": "human-eyes-v1",
+        "skin": "human-skin-v1"
+      },
+      "views": {
+        "front": {
+          "file": "human-male-front.png",
+          "sha256": "712a61d2c007785df0b0723ca785a8a6982ac3d916f591a2a169a9ad06ae4e01",
+          "width": 1024,
+          "height": 1536,
+          "format": "png",
+          "alpha": true,
+          "facing": "front",
+          "intendedYawDegreesFromFront": 0,
+          "yawIsApproximate": true,
+          "role": "appearance-reference",
+          "recolorMasks": {
+            "hair": null,
+            "eyes": null,
+            "skin": null
+          },
+          "neutralBaseFile": null,
+          "rigFile": null,
+          "segmentedPartsFile": null
+        },
+        "rightNearProfile": {
+          "file": "human-male-right-80.png",
+          "sha256": "520bf954490b708adeb254f426f15fbc55c1074d80c5018ca5b4f67d970121f9",
+          "width": 1024,
+          "height": 1536,
+          "format": "png",
+          "alpha": true,
+          "facing": "screen-right",
+          "intendedYawDegreesFromFront": 80,
+          "yawIsApproximate": true,
+          "role": "combat-rig-reference",
+          "recolorMasks": {
+            "hair": null,
+            "eyes": null,
+            "skin": null
+          },
+          "neutralBaseFile": null,
+          "rigFile": null,
+          "segmentedPartsFile": null
+        }
+      }
+    },
+    {
+      "id": "human-female-v1",
+      "species": "human",
+      "bodyType": "female",
+      "legacyGender": "B",
+      "status": "approved-concept",
+      "recolorReady": false,
+      "rigReady": false,
+      "sampleColorsAreDefaults": false,
+      "colorBindings": {
+        "hair": "human-hair-v1",
+        "eyes": "human-eyes-v1",
+        "skin": "human-skin-v1"
+      },
+      "views": {
+        "front": {
+          "file": "human-female-front.png",
+          "sha256": "a193fe478ba20226b4f7f0030caf02629755c403a8662b67ede7a8a8654141e8",
+          "width": 1024,
+          "height": 1536,
+          "format": "png",
+          "alpha": true,
+          "facing": "front",
+          "intendedYawDegreesFromFront": 0,
+          "yawIsApproximate": true,
+          "role": "appearance-reference",
+          "recolorMasks": {
+            "hair": null,
+            "eyes": null,
+            "skin": null
+          },
+          "neutralBaseFile": null,
+          "rigFile": null,
+          "segmentedPartsFile": null
+        },
+        "rightNearProfile": {
+          "file": "human-female-right-80.png",
+          "sha256": "d94a55299aa109caa35f3dbcb316a13374c2793be991e1ee94c9363d508b3349",
+          "width": 1024,
+          "height": 1536,
+          "format": "png",
+          "alpha": true,
+          "facing": "screen-right",
+          "intendedYawDegreesFromFront": 80,
+          "yawIsApproximate": true,
+          "role": "combat-rig-reference",
+          "recolorMasks": {
+            "hair": null,
+            "eyes": null,
+            "skin": null
+          },
+          "neutralBaseFile": null,
+          "rigFile": null,
+          "segmentedPartsFile": null
+        }
+      }
+    }
+  ],
+  "equipmentSlots": [
+    {
+      "id": "head",
+      "label": "Head",
+      "bodyPart": "head",
+      "side": "center",
+      "kind": "wearable",
+      "boneName": "head"
+    },
+    {
+      "id": "neck",
+      "label": "Neck",
+      "bodyPart": "neck",
+      "side": "center",
+      "kind": "wearable",
+      "boneName": "neck"
+    },
+    {
+      "id": "torso",
+      "label": "Torso",
+      "bodyPart": "torso",
+      "side": "center",
+      "kind": "wearable",
+      "boneName": "torso"
+    },
+    {
+      "id": "pelvis",
+      "label": "Pelvis / waist",
+      "bodyPart": "pelvis",
+      "side": "center",
+      "kind": "wearable",
+      "boneName": "pelvis"
+    },
+    {
+      "id": "left-upper-arm",
+      "label": "Left upper arm",
+      "bodyPart": "upper-arm",
+      "side": "left",
+      "kind": "wearable",
+      "boneName": "left_upper_arm"
+    },
+    {
+      "id": "right-upper-arm",
+      "label": "Right upper arm",
+      "bodyPart": "upper-arm",
+      "side": "right",
+      "kind": "wearable",
+      "boneName": "right_upper_arm"
+    },
+    {
+      "id": "left-forearm",
+      "label": "Left forearm",
+      "bodyPart": "forearm",
+      "side": "left",
+      "kind": "wearable",
+      "boneName": "left_forearm"
+    },
+    {
+      "id": "right-forearm",
+      "label": "Right forearm",
+      "bodyPart": "forearm",
+      "side": "right",
+      "kind": "wearable",
+      "boneName": "right_forearm"
+    },
+    {
+      "id": "left-hand",
+      "label": "Left hand / glove",
+      "bodyPart": "hand",
+      "side": "left",
+      "kind": "wearable",
+      "boneName": "left_hand"
+    },
+    {
+      "id": "right-hand",
+      "label": "Right hand / glove",
+      "bodyPart": "hand",
+      "side": "right",
+      "kind": "wearable",
+      "boneName": "right_hand"
+    },
+    {
+      "id": "left-thigh",
+      "label": "Left thigh",
+      "bodyPart": "thigh",
+      "side": "left",
+      "kind": "wearable",
+      "boneName": "left_thigh"
+    },
+    {
+      "id": "right-thigh",
+      "label": "Right thigh",
+      "bodyPart": "thigh",
+      "side": "right",
+      "kind": "wearable",
+      "boneName": "right_thigh"
+    },
+    {
+      "id": "left-shin",
+      "label": "Left shin",
+      "bodyPart": "shin",
+      "side": "left",
+      "kind": "wearable",
+      "boneName": "left_shin"
+    },
+    {
+      "id": "right-shin",
+      "label": "Right shin",
+      "bodyPart": "shin",
+      "side": "right",
+      "kind": "wearable",
+      "boneName": "right_shin"
+    },
+    {
+      "id": "left-foot",
+      "label": "Left foot / boot",
+      "bodyPart": "foot",
+      "side": "left",
+      "kind": "wearable",
+      "boneName": "left_foot"
+    },
+    {
+      "id": "right-foot",
+      "label": "Right foot / boot",
+      "bodyPart": "foot",
+      "side": "right",
+      "kind": "wearable",
+      "boneName": "right_foot"
+    },
+    {
+      "id": "left-grip",
+      "label": "Left weapon / shield grip",
+      "bodyPart": "hand",
+      "side": "left",
+      "kind": "grip",
+      "boneName": "left_hand"
+    },
+    {
+      "id": "right-grip",
+      "label": "Right weapon / shield grip",
+      "bodyPart": "hand",
+      "side": "right",
+      "kind": "grip",
+      "boneName": "right_hand"
+    }
+  ],
+  "persistence": {
+    "schemaFile": "worker/db/schema.ts",
+    "migrationFile": "migrations/cloudflare/0006_avatar_foundation.sql",
+    "repositoryFile": "worker/db/avatar-repository.ts",
+    "status": "migration-authored-not-deployed",
+    "avatarTable": "student_avatars",
+    "uniqueOwnerField": "student_id",
+    "modelMetadataTable": "avatar_models",
+    "viewMetadataTable": "avatar_model_views",
+    "colorOptionsTable": "avatar_colors",
+    "slotDefinitionsTable": "avatar_equipment_slots",
+    "equippedPartsTable": "avatar_equipped_items",
+    "perCharacterFields": [
+      "modelId",
+      "hairPaletteId",
+      "hairColorId",
+      "eyePaletteId",
+      "eyeColorId",
+      "skinPaletteId",
+      "skinColorId"
+    ],
+    "paletteVersionsResolvedThrough": "avatar_palettes.version",
+    "storeStableOptionIds": true,
+    "validateAgainstModelColorBindings": true,
+    "existingCharacterBackfill": "none-in-this-migration-create-on-explicit-avatar-setup"
+  }
+}
