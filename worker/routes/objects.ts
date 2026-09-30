@@ -22,17 +22,36 @@ export async function handleObjects(
       { status: 503 },
     );
   const key = url.pathname.slice("/objects/".length);
-  if (request.method === "GET" && url.pathname.startsWith("/objects/")) {
+  if (["GET", "HEAD"].includes(request.method) && url.pathname.startsWith("/objects/")) {
     if (!/^[0-9a-f-]{36}\/[0-9a-f-]{36}$/.test(key))
       return new Response(null, { status: 404 });
-    const object = await env.OBJECTS.get(key);
+    const rangeHeader = request.method === "GET" ? request.headers.get("range") : null;
+    const metadata = request.method === "HEAD" || rangeHeader ? await env.OBJECTS.head(key) : null;
+    if ((request.method === "HEAD" || rangeHeader) && !metadata) return new Response(null, { status: 404 });
+    let range: { offset: number; length: number } | undefined;
+    if (rangeHeader && metadata && (!request.headers.has("if-range") || request.headers.get("if-range") === metadata.httpEtag)) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
+      if (match && (match[1] || match[2])) {
+        const offset = match[1] ? Number(match[1]) : Math.max(0, metadata.size - Number(match[2]));
+        const end = match[1] && match[2] ? Math.min(Number(match[2]), metadata.size - 1) : metadata.size - 1;
+        if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(end) || offset > end || (!match[1] && Number(match[2]) === 0))
+          return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${metadata.size}` } });
+        range = { offset, length: end - offset + 1 };
+      }
+    }
+    const object = request.method === "HEAD" ? metadata : await env.OBJECTS.get(key, range ? { range } : undefined);
     if (!object) return new Response(null, { status: 404 });
-    return new Response(object.body, {
+    return new Response(request.method === "HEAD" ? null : (object as R2ObjectBody).body, {
+      status: range ? 206 : 200,
       headers: {
         "Content-Type":
           object.httpMetadata?.contentType || "application/octet-stream",
         "X-Content-Type-Options": "nosniff",
         "Cache-Control": "public,max-age=31536000,immutable",
+        "Accept-Ranges": "bytes",
+        "Content-Length": String(range?.length ?? object.size),
+        ...(object.httpEtag ? { ETag: object.httpEtag } : {}),
+        ...(range ? { "Content-Range": `bytes ${range.offset}-${range.offset + range.length - 1}/${object.size}` } : {}),
       },
     });
   }
