@@ -23,7 +23,7 @@ jobs:
   accept:
     if: github.event_name == 'workflow_dispatch' || github.head_ref == 'cloudflare-migration/live-combat-agentic-acceptance'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -35,3 +35,7 @@ jobs:
         env:
           STAGING_ORIGIN: ${{ inputs.staging_origin || 'https://questacademy-staging.coxsonator.workers.dev' }}
         run: node tests/staging/live-combat-acceptance.mjs
+      - name: Exercise storage and classroom concurrency
+        env:
+          STAGING_ORIGIN: ${{ inputs.staging_origin || 'https://questacademy-staging.coxsonator.workers.dev' }}
+        run: node tests/staging/operational-acceptance.mjs

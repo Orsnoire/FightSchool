@@ -50,10 +50,15 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
         get: () => ({ fetch: async () => Response.json({ status: "ready", allowed: true }) }),
       },
       OBJECTS: {
-        head: async (key: string) => objects.get(key) || null,
-        get: async (key: string) => {
+        head: async (key: string) => {
           const item = objects.get(key);
-          return item ? { body: item.bytes, httpMetadata: { contentType: item.type } } : null;
+          return item ? { size: item.bytes.length, httpEtag: '"test-etag"', httpMetadata: { contentType: item.type } } : null;
+        },
+        get: async (key: string, options?: { range: { offset: number; length: number } }) => {
+          const item = objects.get(key);
+          const range = options?.range;
+          return item ? { body: range ? item.bytes.slice(range.offset, range.offset + range.length) : item.bytes,
+            size: item.bytes.length, httpEtag: '"test-etag"', httpMetadata: { contentType: item.type } } : null;
         },
         put: async (key: string, bytes: Uint8Array, options: any) => {
           objects.set(key, { bytes, type: options.httpMetadata.contentType });
@@ -128,6 +133,22 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(read.status, 200);
     assert.equal(read.headers.get("x-content-type-options"), "nosniff");
     assert.deepEqual(new Uint8Array(await read.arrayBuffer()), image);
+    const objectRequest = (method: string, headers = {}) => worker.fetch(new Request(env.PUBLIC_ORIGIN + upload.payload.objectPath, { method, headers }), env as any);
+    const partial = await objectRequest("GET", { Range: "bytes=0-3" });
+    assert.equal(partial.status, 206);
+    assert.equal(partial.headers.get("content-range"), "bytes 0-3/8");
+    assert.deepEqual(new Uint8Array(await partial.arrayBuffer()), image.slice(0, 4));
+    const suffix = await objectRequest("GET", { Range: "bytes=-2" });
+    assert.deepEqual(new Uint8Array(await suffix.arrayBuffer()), image.slice(-2));
+    const unsatisfiable = await objectRequest("GET", { Range: "bytes=99-100" });
+    assert.equal(unsatisfiable.status, 416);
+    assert.equal(unsatisfiable.headers.get("content-range"), "bytes */8");
+    assert.equal((await objectRequest("GET", { Range: "bytes=0-3", "If-Range": '"old-etag"' })).status, 200);
+    const head = await objectRequest("HEAD");
+    assert.equal(head.status, 200);
+    assert.equal(head.headers.get("content-length"), "8");
+    assert.equal(head.headers.get("etag"), '"test-etag"');
+    assert.equal(await head.text(), "");
     await api("/api/not-a-route", "GET", undefined, undefined, 404);
     await api("/api/health/ready");
     const crossOrigin = await worker.fetch(new Request(env.PUBLIC_ORIGIN + "/api/guilds", {
