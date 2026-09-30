@@ -253,10 +253,12 @@ try {
   await player.wait(
     (m) => m.type === "command_ack" && m.commandId === duplicateId,
   );
-  player.send("ready", { round: 1 });
+  player.send("action", { round: 1, ability: "fireball", targetId: "e1", ready: true });
   await player.state(1, "abilities");
   player.send("ready", { round: 1 });
   const wrong = await player.state(1, "question_resolution");
+  assert.equal(wrong.state.players[studentId].mp, opened.state.players[studentId].mp,
+    "An incorrect answer must not spend the selected Fireball's MP");
   assert.equal(wrong.state.enemies[0].health, 10);
   assert.ok(
     wrong.state.players[studentId].health <
@@ -294,7 +296,7 @@ try {
     (m) => m.type === "protocol_error" && m.commandId === stale,
   );
   for (let round = 2; round <= 3; round++) {
-    await restored.state(round, "question");
+    const before = await restored.state(round, "question");
     await new Promise((r) => setTimeout(r, 3100));
     const answer = restored.send("answer", {
       round,
@@ -308,14 +310,16 @@ try {
       round,
       ability: "fireball",
       targetId: "e1",
+      ready: true,
     });
     await restored.wait(
       (m) => m.type === "command_ack" && m.commandId === action,
     );
-    restored.send("ready", { round });
     await restored.state(round, "abilities");
     restored.send("ready", { round });
-    await restored.state(round, "question_resolution");
+    const resolved = await restored.state(round, "question_resolution");
+    assert.equal(resolved.state.players[studentId].mp, before.state.players[studentId].mp - 1,
+      "Each successful Fireball must spend exactly 1 MP");
     await api(`/api/combat/${room.payload.sessionId}/force-question`, {
       method: "POST",
       cookie: teacher.cookie,
@@ -398,7 +402,7 @@ try {
     1,
   );
   console.log(
-    "PASS: live damage, wrong answers, enemy AI, cycling, reconnect deadlines, stale/retried commands, durable XP, guilds, quests, shop, reward claims, solo hosting, history, and owner isolation",
+    "PASS: live damage, atomic action/ready, Fireball MP deductions, wrong answers, enemy AI, cycling, reconnect deadlines, stale/retried commands, durable XP, guilds, quests, shop, reward claims, solo hosting, history, and owner isolation",
   );
 } catch (error) {
   console.error(error);

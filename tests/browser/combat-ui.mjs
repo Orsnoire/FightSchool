@@ -104,7 +104,8 @@ try {
     await page.evaluate(() => window.mathVirtualKeyboard.show());
     await page.locator('[data-math-keyboard-host] .ML__keyboard.is-visible').waitFor();
     await screenshot('math-keyboard');
-    const key = page.locator('[data-math-keyboard-host] .MLK__keycap').filter({ hasText: /^7$/, visible: true }).first();
+    // MathLive appends a hidden shifted label to each numeric key's text.
+    const key = page.locator('[data-math-keyboard-host] .MLK__keycap').filter({ hasText: /^7/, visible: true }).first();
     await key.click();
     assert.match(await mathfield.evaluate((field) => field.value), /7/);
     await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
