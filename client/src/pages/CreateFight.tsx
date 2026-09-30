@@ -36,7 +36,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-// import { RichTextEditor } from "@/components/RichTextEditor"; // Disabled for now - using basic text input
+import { QuestionPreview } from "@/components/QuestionPreview";
 import { uploadImageToStorage } from "@/lib/imageUpload";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
 import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
@@ -886,6 +886,13 @@ export default function CreateFight() {
                       />
                     </div>
 
+                    {currentQuestion.question?.trim() && (
+                      <section aria-label="Student preview" className="space-y-2">
+                        <h3 className="text-sm font-medium">Student preview</h3>
+                        <QuestionPreview question={currentQuestion} />
+                      </section>
+                    )}
+
                     <Button type="button" onClick={addQuestion} className="w-full" data-testid="button-add-question">
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Add Question
@@ -900,10 +907,14 @@ export default function CreateFight() {
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {questions.map((q, i) => (
-                        <div key={q.id} className="flex items-center justify-between p-3 border border-border rounded-md" data-testid={`question-item-${i}`}>
-                          <div>
-                            <p className="font-medium">{q.question}</p>
-                            <p className="text-sm text-muted-foreground">{q.type} • {q.timeLimit}s</p>
+                        <div key={q.id} className="flex items-start gap-3 p-3 border border-border rounded-md" data-testid={`question-item-${i}`}>
+                          <div className="min-w-0 flex-1 space-y-3">
+                            <p className="font-medium">Question {i + 1} <span className="text-sm font-normal text-muted-foreground">• {q.timeLimit}s</span></p>
+                            <QuestionPreview question={q} />
+                            <details className="text-sm">
+                              <summary className="cursor-pointer text-muted-foreground">View source</summary>
+                              <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3">{q.question}</pre>
+                            </details>
                           </div>
                           <Button
                             type="button"
