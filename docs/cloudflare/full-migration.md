@@ -45,12 +45,15 @@ The combat hook now discards stale questions together with stale snapshots, clea
 
 Local checks: `npm run check`, `npm test` (38 tests), `npm run build:cloudflare`, and `git diff --check` pass. These checks do not establish deployed acceptance.
 
+The recovered tree was published in PR #18 and merged into `main` as `8738127a2749f0b7f046893a2072facfb3926d72` after owner authorization. CI passed on both the PR head (run `36763459258`) and merged main (run `36763615920`). The PR's Live Combat Staging Acceptance run was **skipped**, not passed. The owner subsequently authorized live deployment and acceptance testing.
+
+Deployment preparation found and corrected an obsolete smoke assertion that expected object storage to be disabled (501). The smoke now reads a valid, randomly generated absent object key and requires a non-HTML 404. This exercises the R2 binding; unavailable storage still fails the release check.
+
 Release sequence still required:
 
-1. Push `cloudflare-migration/recover-full-refactor` and open its pull request into `main`; require CI on the exact reviewed head.
-2. Run **Deploy Cloudflare Staging** on that branch. Despite its name, this workflow updates the Worker that owns the canonical public hostname. It ensures R2, applies additive migrations, deploys, and checks both configured origins. If R2 availability or token permissions fail, fix the deployment configuration before proceeding.
-3. Run **Live Combat Staging Acceptance** on the same branch with `staging_origin=https://questacademy.bookwyrminteractive.studio`. It must finish through genuine enemy defeat, database rewards, guild/shop/quest flows, and solo-room creation. The workflow uses explicitly created acceptance fixtures; application startup never seeds accounts.
-4. Verify the host and student browser flows, including reconnect, question/answer previews, and a second isolated room. Finish the remaining load/recovery/rollback checks in `../Migration_Plan` before claiming full migration acceptance.
-5. Merge the reviewed, passing pull request using its expected head SHA, deploy the merged main commit, and repeat canonical-domain smoke checks. Retain the rollback version above and the additive schema.
+1. Run **Deploy Cloudflare Staging** on the latest CI-passing `main`. Despite its name, this workflow updates the Worker that owns the canonical public hostname. It ensures R2, applies additive migrations, deploys, and checks both configured origins. If R2 availability or token permissions fail, fix the deployment configuration before proceeding.
+2. Run **Live Combat Staging Acceptance** on the deployed revision with `staging_origin=https://questacademy.bookwyrminteractive.studio`. It must finish through genuine enemy defeat, database rewards, guild/shop/quest flows, and solo-room creation. The workflow uses explicitly created acceptance fixtures; application startup never seeds accounts.
+3. Verify the host and student browser flows, including reconnect, question/answer previews, and a second isolated room. Finish the remaining storage/load/recovery/rollback checks in `../Migration_Plan` before claiming full migration acceptance.
+4. Record the deployed commit, immutable Worker version, deployment run, acceptance evidence, and remaining limitations here. Retain the rollback version above and the additive schema.
 
-At this checkpoint, push and deployment are pending explicit remote-write approval; no recovered refactor has been released. Do not treat the local validation result as a production cutover record.
+At this checkpoint, the recovered refactor is merged but not deployed. Do not treat CI as a production cutover record.
