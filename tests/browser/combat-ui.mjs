@@ -91,6 +91,7 @@ try {
     state.currentPhase = 'abilities';
     await emit();
     const targets = page.getByRole('button', { name: /, HP .*%, threat / });
+    await targets.first().waitFor();
     assert.equal(await targets.count(), 20);
     await screenshot('block-grid');
     await targets.first().click();

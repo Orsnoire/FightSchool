@@ -135,16 +135,24 @@ The browser acceptance script covers these views at 1366×768 and 390×844.
 
 Fireball and Headshot formulas are unchanged in this release. The owner's desired
 shape is high early Wizard damage tapering over the fight, with Scout damage
-building over time. A proposed test candidate is Headshot damage
-`3 * (RTK + AGI)`, spending 3 CP and returning 2 CP total on a damaging success.
-This is not an approved/shipped rule; the current multiplicative formula and
-one-CP gain remain active pending a product decision. Two-CP recovery improves
-sustained cadence, but a smooth continuing ramp would need a separate persistent
-mechanic. INT currently increases both Wizard damage and starting MP, so a
-short-fight taper at higher levels also requires mana-economy tuning.
+building over time. The latest discussion candidate is:
 
-The subsequent proposal is to halve Wizard starting MP specifically. With starting
-stats this permits three 6-damage Fireballs, then 3-damage basic attacks. Combined
-with the proposed 9-damage Headshot and two-CP total return, an all-correct Scout
-would pass the Wizard's cumulative damage around round six (ignoring criticals).
-Halving starting MP is also still a proposal; it is not implemented in this patch.
+- Halve Wizard starting MP; starting stats give 3 MP and three 6-damage Fireballs.
+- Headshot deals `floor(2 * (RTK + AGI) + 0.5 * consecutiveCorrectAnswers)`.
+- Count the current correct answer, so the first Headshot on question four deals
+  8 damage with starting equipment.
+- Spend 3 CP and return 2 CP total on a damaging Headshot; basic damage returns 1 CP.
+- A wrong answer costs 1 CP (minimum zero); separately, it resets the damage streak.
+
+These remain discussion candidates, not implemented rules. With perfect accuracy,
+no critical hits, and sufficient enemy HP, the proposed Scout totals after questions
+1–10 are `3, 6, 9, 17, 20, 29, 32, 42, 45, 56`; Wizard totals are
+`6, 12, 18, 21, 24, 27, 30, 33, 36, 39`. Scout overtakes on question six, exceeds
+1.25 times Wizard's damage on question eight, and finishes at about 1.44 times.
+
+With one miss in the ten-question Scout sequence, a one-CP penalty and a full
+streak reset produce 41–45 damage depending on miss position. An eight-correct
+Wizard deals 33; eight of the ten Scout miss positions exceed the 1.25 target,
+and two finish at 41/33 (about 1.24). These calculations assume the proposed rules,
+not the current engine. Higher-level mana, equipment, other abilities, and
+knockouts require separate comparison before generalizing these results.
