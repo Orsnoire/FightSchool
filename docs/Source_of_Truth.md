@@ -140,6 +140,12 @@ Content specifications should remain portable and should not be unnecessarily co
 
 ## Character Art and Appearance
 
+The [combat facelift brief](combat-facelift.md) records the October 1 direction
+for biome scenery and population-dependent player formations. Players occupy
+the left half facing right; enemies occupy the right half facing left. The
+precise formation pattern remains open; it does not replace the current
+combat overlay flow or authorize premature live avatar integration.
+
 The [avatar art and animation direction guide](avatar-art-direction.md) defines
 the production workflow and pre-integration gate: skeleton-connected male/female
 models and calibrated hooks, starter and signature gear for all four base jobs,
@@ -153,7 +159,10 @@ Its adjacent `manifest.json` associates each model and view with independent
 hair, iris, and skin channels and eight-option natural-tone palettes. Initial
 colors are independently randomized and then saved per character; the sample
 art colors are not fixed defaults. All four views have separate hair, iris, and
-skin masks plus neutral shading bases; segmented animation parts and rigs
+skin masks plus neutral shading bases. An isolated
+[male combat rig workshop](../attached_assets/characters/human/rig-prototype-v1/README.md)
+now provides equipment swaps and idle/attack/shield review loops. It is an
+unapproved prototype; the full production parts, rigs, and animation collection
 remain pending.
 
 The [avatar database specification](avatar-database.md) defines the new dedicated

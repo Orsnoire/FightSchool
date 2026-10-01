@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QuestAcademy · Character motion workshop</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f5ef;color:#223c36;font:15px/1.5 system-ui,sans-serif}button,select,input{font:inherit}button,select{border:1px solid #b9c8be;border-radius:8px;background:#fff;padding:9px 13px;color:inherit}button{cursor:pointer}button:hover{border-color:#1e705d}button[aria-pressed=true],#play{background:#245e50;color:white;border-color:#245e50}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #dca33d;outline-offset:3px}header{border-bottom:1px solid #d5ddd4;padding:18px max(24px,calc((100vw - 1160px)/2));display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{font-size:12px;letter-spacing:.16em;font-weight:750}.tag{font-size:12px;color:#5d7066;border:1px solid #ccd6cb;border-radius:20px;padding:5px 11px}main{max-width:1208px;margin:auto;padding:24px}h1{font-size:30px;letter-spacing:-.04em;margin:0 0 4px}h2{font-size:13px;text-transform:uppercase;letter-spacing:.1em;margin:0 0 11px}p{margin:0;color:#617167}.intro{margin-bottom:20px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px}.stage{background:#eef0ed;border:1px solid #d6ddd5;border-radius:16px;overflow:hidden;position:relative}canvas{display:block;width:100%;height:640px}.stage-label{position:absolute;top:18px;left:20px;font-size:12px;color:#69766f;pointer-events:none}.stage-label strong{display:block;color:#315348;font-size:14px}.controls{padding:6px 0}section{margin-bottom:24px}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1;white-space:nowrap}.stack{display:grid;gap:8px}.stack button{text-align:left}.number{color:inherit;opacity:.65;padding-right:10px}.playback{padding:15px 20px;background:#fffdf6;border-top:1px solid #d6ddd5}.timeline{display:flex;align-items:center;gap:12px;margin-top:13px}.timeline input{flex:1;min-width:0;accent-color:#245e50}.timeline output{font-size:12px;min-width:85px;font-variant-numeric:tabular-nums}.field{display:grid;grid-template-columns:1fr 155px;align-items:center;margin:8px 0}.field select{min-width:0;width:100%}.check{display:flex;align-items:center;gap:8px;margin:9px 0}.check input{accent-color:#245e50}.footnote{font-size:12px;border-top:1px solid #d5ddd4;padding-top:14px;margin-top:18px}#status{font-size:12px;min-height:20px;margin-top:13px;color:#245e50}.caption{font-size:13px;margin-top:12px;max-width:760px}footer{font-size:12px;color:#6c776d;margin-top:20px}#error{color:#932e2e;white-space:pre-wrap}@media(max-width:760px){main{padding:18px}header{padding:14px 18px}.layout{grid-template-columns:1fr}.controls{display:grid;grid-template-columns:1fr 1fr;gap:16px}.controls section{margin:0}canvas{height:540px}.field{display:block}.field select{margin-top:4px}h1{font-size:26px}.tag{font-size:10px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+<header><span class="brand">QUESTACADEMY</span><span class="tag">ART &amp; ANIMATION / WORKSHOP 01</span></header>
+<main>
+ <div class="intro"><h1>Human warrior</h1><p>Inspect the movement. Change the equipment. Keep the same character.</p></div>
+ <div id="error" role="alert"></div>
+ <div class="layout">
+  <div>
+   <div class="stage"><div class="stage-label"><strong id="kit-label">Starter clothing</strong>Male · right-facing combat view</div><canvas id="stage" width="800" height="800" aria-label="Animated male Human warrior preview"></canvas>
+    <div class="playback"><div class="row"><button id="play">Pause</button><button id="restart">Restart</button><label>Speed <select id="speed" aria-label="Playback speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option><option value="1.5">1½×</option></select></label></div><div class="timeline"><input id="timeline" aria-label="Animation time" type="range" min="0" max="3.2" step="0.01" value="0"><output id="time">0.00 / 3.20 s</output></div></div>
+   </div>
+   <p class="caption" id="motion-note">A gentle breathing loop, with both feet planted.</p>
+  </div>
+  <aside class="controls" aria-label="Character workshop controls">
+   <section><h2>01 / Equipment</h2><div class="row"><button data-outfit="starter" aria-pressed="true">Starter</button><button data-outfit="armor" aria-pressed="false">Armor</button></div><label class="check"><input id="weapons" type="checkbox" checked>Sword &amp; shield</label></section>
+   <section><h2>02 / Movement</h2><div class="stack"><button data-clip="idle" aria-pressed="true"><span class="number">01</span>Breathing idle</button><button data-clip="attack" aria-pressed="false"><span class="number">02</span>Sword attack</button><button data-clip="block" aria-pressed="false"><span class="number">03</span>Shield raise</button></div></section>
+   <section><h2>03 / Appearance</h2><label class="field">Hair<select id="hair" aria-label="Hair"></select></label><label class="field">Eyes<select id="eyes" aria-label="Eyes"></select></label><label class="field">Skin<select id="skin" aria-label="Skin"></select></label></section>
+   <section><h2>04 / Inspection</h2><label class="check"><input id="skeleton" type="checkbox">Show joints &amp; attachments</label><label class="check"><input id="reduced" type="checkbox">Still pose / reduced motion</label><p class="footnote">First fitting for review. Try slow playback and scrub the timeline to inspect the grip, foot placement, and clothing seams.</p><p id="status" role="status">Loading character…</p></section>
+  </aside>
+ </div>
+ <footer>Workshop prototype · Equipment shown here does not change a player's inventory or saved appearance.</footer>
+</main>
+<!--WORKSHOP_SCRIPT-->
+</html>
