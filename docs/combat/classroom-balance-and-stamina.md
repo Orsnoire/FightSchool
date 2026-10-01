@@ -124,7 +124,7 @@ Scaling runs only while waiting, before the first question. Reconnects and
 restarts cannot rescale a running encounter. Already-running rooms retain their
 HP. This release does not reset student data, job XP, or ongoing encounters.
 
-## Validation and remaining balance discussion
+## Validation and approved Wizard/Scout balance
 
 Coverage includes Denver midnight/DST, TypeScript/SQL curve agreement, fractional
 XP, retries and concurrent room completions, job/mode sharing, 30-player query
@@ -133,19 +133,27 @@ quiz-length HP scaling, and base-job solo survival. The real React overlay test
 exercises empty-stock crafting and immediate selection from a 20-player grid.
 The browser acceptance script covers these views at 1366×768 and 390×844.
 
-Fireball and Headshot formulas are unchanged in this release. The owner's desired
-shape is high early Wizard damage tapering over the fight, with Scout damage
-building over time. The latest discussion candidate is:
+The owner approved this balance on October 1: high early Wizard damage tapering
+over the fight, with Scout damage building over time. The 1.25x damage goal is a
+minimum, not an exact target. The implemented rules are:
 
-- Halve Wizard starting MP; starting stats give 3 MP and three 6-damage Fireballs.
+- Halve Wizard starting MP, rounding down; starting stats give 3 MP and three
+  6-damage Fireballs. Maximum MP and other jobs' starting MP are unchanged.
 - Headshot deals `floor(2 * (RTK + AGI) + 0.5 * consecutiveCorrectAnswers)`.
 - Count the current correct answer, so the first Headshot on question four deals
   8 damage with starting equipment.
 - Spend 3 CP and return 2 CP total on a damaging Headshot; basic damage returns 1 CP.
-- A wrong answer costs 1 CP (minimum zero); separately, it resets the damage streak.
+- A wrong or unanswered question costs 1 CP (minimum zero) for Headshot users,
+  including equipped cross-class Headshot; it also resets the damage streak.
+  Other combo jobs retain their existing miss behavior.
+- Correct answers build the streak regardless of action; damaging Headshots return
+  2 CP total, not 2 plus the regular 1. Failed attacks cannot earn the refund.
+- The streak persists across rounds, quiz cycles, and reconnects, and starts at
+  zero in each new encounter. Older saved rooms default missing streaks to zero.
+  Existing MP is preserved in running rooms; new Wizard entrants start at half MP.
+- Students can see their current correct-answer streak with their combat resources.
 
-These remain discussion candidates, not implemented rules. With perfect accuracy,
-no critical hits, and sufficient enemy HP, the proposed Scout totals after questions
+With perfect accuracy, no critical hits, and sufficient enemy HP, Scout totals after questions
 1–10 are `3, 6, 9, 17, 20, 29, 32, 42, 45, 56`; Wizard totals are
 `6, 12, 18, 21, 24, 27, 30, 33, 36, 39`. Scout overtakes on question six, exceeds
 1.25 times Wizard's damage on question eight, and finishes at about 1.44 times.
@@ -153,6 +161,18 @@ no critical hits, and sufficient enemy HP, the proposed Scout totals after quest
 With one miss in the ten-question Scout sequence, a one-CP penalty and a full
 streak reset produce 41–45 damage depending on miss position. An eight-correct
 Wizard deals 33; eight of the ten Scout miss positions exceed the 1.25 target,
-and two finish at 41/33 (about 1.24). These calculations assume the proposed rules,
-not the current engine. Higher-level mana, equipment, other abilities, and
-knockouts require separate comparison before generalizing these results.
+and two finish at 41/33 (about 1.24). These are accepted starting balance numbers,
+not a guarantee across accuracy patterns: eight-correct Scout versus seven-correct
+Wizard reaches 1.25x in only 3 of 45 miss patterns. Higher-level mana, equipment,
+other abilities, and knockouts also affect the comparison. Regression tests run
+the actual engine through the perfect ten-question sequence, misses, timeouts,
+cross-class Headshot, and storage round-trips.
+
+## Deferred Priest direction
+
+Replace Priest's basic attack with free First Aid at
+`max(1, floor(Mend healing / 3))`. The current level-one spell is Mend and heals
+MND for 1 MP; starting First Aid would heal 1 HP. This is not implemented yet.
+When it is, add a solo warning for loadouts without offensive abilities, provide
+a real partner/group entry path (current solo rooms are private), and exclude a
+pure healer's former basic attack from encounter damage estimates.

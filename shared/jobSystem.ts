@@ -184,7 +184,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
   wizard: {
     id: "wizard",
     name: "Wizard",
-    description: "DPS - Master of magical damage",
+    description: "DPS - Powerful opening spells. Starts combat with half of maximum MP.",
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
@@ -259,7 +259,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "headshot",
           name: "Headshot",
-          description: "Check box lights up when combo points reach 3. Deals RTK*(Combo Points)*AGI ranged damage. Costs 3 combo points.",
+          description: "Deals 2*(RTK+AGI) + 0.5 per consecutive correct answer, rounded down, including this answer. Costs 3 CP; a damaging hit returns 2 CP total. A wrong or unanswered question resets the streak and costs 1 CP.",
           isCrossClass: false,
         }]
       },
@@ -280,7 +280,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "headshot_crossclass",
           name: "Headshot",
-          description: "Cross-class unlock (also unlocks combo points if equipped). Deals RTK*(Combo Points)*AGI ranged damage. Costs 3 combo points.",
+          description: "Cross-class unlock. Deals 2*(RTK+AGI) + 0.5 per consecutive correct answer, rounded down, including this answer. Costs 3 CP; a damaging hit returns 2 CP total. While equipped, wrong or unanswered questions reset the streak and cost 1 CP.",
           isCrossClass: true,
         }]
       },

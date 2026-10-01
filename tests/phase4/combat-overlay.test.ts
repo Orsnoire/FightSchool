@@ -130,6 +130,11 @@ test("student question, action, waiting, and resolution share a focused non-dism
     assert.equal(socket.sent.at(-1).ability, "warrior_block");
     assert.equal(socket.sent.at(-1).targetId, "ally18");
 
+    state.players[student().id].availableAbilities = ["attack", "headshot"];
+    state.players[student().id].consecutiveCorrectAnswers = 4;
+    await emit();
+    assert.match(dialog().textContent!, /Correct streak 4/);
+
   } finally {
     if (root) await act(async () => root!.unmount());
     await rm(dir, { recursive: true, force: true });

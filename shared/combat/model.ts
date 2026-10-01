@@ -32,6 +32,7 @@ export interface CombatPlayer {
   maxMp: number;
   comboPoints: number;
   maxComboPoints: number;
+  consecutiveCorrectAnswers?: number;
   threat: number;
   isDead: boolean;
   hasAnswered: boolean;

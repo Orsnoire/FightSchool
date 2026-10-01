@@ -297,6 +297,7 @@ try {
   );
   for (let round = 2; round <= 10; round++) {
     const before = await restored.state(round, "question");
+    const ability = before.state.players[studentId].mp > 0 ? "fireball" : "attack";
     await new Promise((r) => setTimeout(r, 3100));
     const answer = restored.send("answer", {
       round,
@@ -308,7 +309,7 @@ try {
     );
     const action = restored.send("action", {
       round,
-      ability: "fireball",
+      ability,
       targetId: "e1",
       ready: true,
     });
@@ -318,8 +319,8 @@ try {
     await restored.state(round, "abilities");
     restored.send("ready", { round });
     const resolved = await restored.state(round, "question_resolution");
-    assert.equal(resolved.state.players[studentId].mp, before.state.players[studentId].mp - 1,
-      "Each successful Fireball must spend exactly 1 MP");
+    assert.equal(resolved.state.players[studentId].mp, before.state.players[studentId].mp - (ability === "fireball" ? 1 : 0),
+      "Fireball spends exactly 1 MP; basic attacks remain available after MP runs out");
     await api(`/api/combat/${room.payload.sessionId}/force-question`, {
       method: "POST",
       cookie: teacher.cookie,

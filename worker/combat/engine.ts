@@ -109,9 +109,10 @@ export function addStudent(
     gender: student.gender === "B" ? "B" : "A",
     health: stats.maxHp,
     maxHealth: stats.maxHp,
-    mp: stats.maxMp,
+    mp: job === "wizard" ? Math.floor(stats.maxMp / 2) : stats.maxMp,
     maxMp: stats.maxMp,
     comboPoints: 0,
+    consecutiveCorrectAnswers: 0,
     maxComboPoints: stats.maxComboPoints,
     threat: 0,
     isDead: false,
@@ -468,7 +469,6 @@ function applyAbility(
     party().forEach((t) => heal(s, p, t.studentId, n, revive));
   let damage = 0;
   const spentMP = p.mp;
-  const combo = p.comboPoints;
   const problem = abilityProblem(p, id);
   if (problem) {
     event(s, "ability", p.studentId, targetId, 0, `${id}: ${problem}`);
@@ -515,7 +515,7 @@ function applyAbility(
       all().forEach((e) => hit(s, p, e.id, int * 2, true));
       break;
     case "headshot":
-      damage = rtk * combo * agi;
+      damage = Math.floor(2 * (rtk + agi) + 0.5 * (p.consecutiveCorrectAnswers || 0));
       break;
     case "aim":
       damage = (rtk + agi) * 2;
@@ -779,6 +779,9 @@ function applyAbility(
   }
   if (damage > 0) {
     const dealt = hit(s, p, targetId, damage, id !== "attack");
+    // The normal damaging-answer reward adds the second CP below: two total.
+    if (id === "headshot" && dealt > 0)
+      p.comboPoints = Math.min(p.maxComboPoints, p.comboPoints + 1);
     if (id === "siphon")
       heal(
         s,
@@ -873,6 +876,7 @@ export function advancePhase(
         p.buffs.immunity = { rounds: 1, amount: 0 };
       if (p.lastAnswerCorrect) {
         p.totals.questionsCorrect++;
+        p.consecutiveCorrectAnswers = (p.consecutiveCorrectAnswers || 0) + 1;
         const a = p.questionAction!;
         applyAbility(s, p, a.ability, a.targetId);
         if (p.buffs.abyssal_drain) {
@@ -884,6 +888,9 @@ export function advancePhase(
         }
       } else {
         p.totals.questionsIncorrect++;
+        p.consecutiveCorrectAnswers = 0;
+        if (p.availableAbilities.includes("headshot"))
+          p.comboPoints = Math.max(0, p.comboPoints - 1);
         const provoke = ordered.find((x) => !x.isDead && x.buffs.provoke);
         damagePlayer(
           s,
