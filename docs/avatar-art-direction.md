@@ -56,6 +56,12 @@ clips do not. Live avatar integration remains pending. See the
 [recoloring contract](../attached_assets/characters/human/v1/recolor/README.md),
 and [database specification](avatar-database.md).
 
+October 1 checkpoint: the
+[male combat rig workshop](../attached_assets/characters/human/rig-prototype-v1/README.md)
+implements the first isolated prototype with starter/armor swaps, idle, sword
+attack, and shield raise. Its GIFs are review exports of reusable rig/clip data.
+It awaits visual approval and does not satisfy the full pre-integration gate.
+
 ## Visual identity
 
 - Preserve the approved chibi proportions, large expressive eyes, clear black

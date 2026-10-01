@@ -21,7 +21,10 @@
     "db:migrate:cloudflare": "drizzle-kit migrate --config drizzle.cloudflare.config.ts",
     "test:rich-content": "node --import tsx --test tests/rich-content/*.test.mjs",
     "build:avatar-assets": "node scripts/avatar/build-recolor-assets.mjs",
-    "preview:avatars": "node scripts/avatar/preview-server.mjs"
+    "preview:avatars": "node scripts/avatar/preview-server.mjs",
+    "build:avatar-workshop": "node scripts/avatar/workshop/build.mjs",
+    "preview:avatar-workshop": "npm run build:avatar-workshop && node scripts/avatar/workshop/serve.mjs",
+    "render:avatar-review": "node scripts/avatar/workshop/render-review.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -98,6 +101,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@napi-rs/canvas": "^0.1.100",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.3",
     "@types/node": "20.16.11",

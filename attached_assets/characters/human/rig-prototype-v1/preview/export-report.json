@@ -1,0 +1,21 @@
+{
+  "fps": 20,
+  "renderer": "shared/avatar/render.mjs",
+  "loop": "infinite",
+  "clips": {
+    "idle": {
+      "duration": 3.2,
+      "frames": 64
+    },
+    "attack": {
+      "duration": 2.6,
+      "frames": 52
+    },
+    "block": {
+      "duration": 2.8,
+      "frames": 56
+    }
+  },
+  "rigSha256": "9b5cfdbb51e095ed21d836d323edaa1c56db1f0fed817970a2454f23b5fe6ff9",
+  "clipsSha256": "62e8a77170e21789314cf9c0d62e7ad69dabd24703025670e5bd8cf32a5e5712"
+}
