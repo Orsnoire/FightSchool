@@ -27,6 +27,17 @@ scrubbing, skeleton display, and a still-pose mode. The operating system's
 reduced-motion preference starts it paused. Color defaults are preview choices
 only, never player-creation defaults or saved student data.
 
+### Fitting 03 — neck connection only
+
+The head bind position is lowered another 40 reference pixels to close the front
+neck seam. The lower-neck sprite (`underneck`) is attached directly to `torso`,
+with the same world placement as before. Draw order is torso underlayer,
+underneck, head, then torso equipment, so the front collar covers the lower neck
+and the cropped head's neck overlap. Both starter and armor collars are checked
+at rest and peak breathing in [neck close-ups](preview/neck-fit.png).
+Breathing keyframes and timing are unchanged; this pass changes only the fit.
+The owner considers the breathing movement right; seam fitting remains in review.
+
 ### Fitting 02 — owner feedback
 
 The head moves down/right into the neck connection. Each sleeve now draws a rear

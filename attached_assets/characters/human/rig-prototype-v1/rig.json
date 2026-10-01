@@ -47,7 +47,7 @@
       "id": "head",
       "parent": "neck",
       "x": 28,
-      "y": -15,
+      "y": 25,
       "rotation": 0
     },
     {
@@ -513,22 +513,11 @@
       "sprite": "underlayer"
     },
     {
-      "id": "torso-kit",
+      "id": "underneck",
       "bone": "torso",
       "rect": [
-        -126,
-        -25,
-        254,
-        414
-      ],
-      "slot": "body"
-    },
-    {
-      "id": "neck",
-      "bone": "neck",
-      "rect": [
-        -45,
-        -45,
+        -40,
+        -60,
         100,
         90
       ],
@@ -544,6 +533,17 @@
         565
       ],
       "sprite": "head"
+    },
+    {
+      "id": "torso-kit",
+      "bone": "torso",
+      "rect": [
+        -126,
+        -25,
+        254,
+        414
+      ],
+      "slot": "body"
     },
     {
       "id": "right-fist",
