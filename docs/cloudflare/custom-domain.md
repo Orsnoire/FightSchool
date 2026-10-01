@@ -16,8 +16,8 @@ Run Deploy Cloudflare Staging on the reviewed commit and approve its existing
 cloudflare-staging environment gate if requested. The Cloudflare API token must
 also be permitted to manage custom domains in the bookwyrminteractive.studio zone,
 which must be active in the same account as the Worker. A conflicting DNS record
-must be reviewed rather than automatically overwritten. Deployment does not
-run database migrations.
+must be reviewed rather than automatically overwritten. The current deployment
+workflow applies committed additive database migrations before publishing the Worker.
 
 The workflow checks both domain names after deployment. Verify teacher login,
 student login and a live classroom fight on the canonical domain before use.

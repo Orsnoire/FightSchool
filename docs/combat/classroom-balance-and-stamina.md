@@ -2,8 +2,9 @@
 
 These rules implement the October 1, 2026 classroom feedback. They follow the
 Source of Truth hierarchy and supersede older conflicting combat presentation
-and progression rules. This document describes the proposed release; deployment
-requires the additive migration and Worker rollout.
+and progression rules. This release was deployed on October 1, 2026, including
+the additive migration and Worker rollout. See the release record in
+[Worker migration and combat recovery](../cloudflare/full-migration.md).
 
 ## Daily XP stamina
 
