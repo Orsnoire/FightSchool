@@ -109,9 +109,10 @@ export function addStudent(
     gender: student.gender === "B" ? "B" : "A",
     health: stats.maxHp,
     maxHealth: stats.maxHp,
-    mp: stats.maxMp,
+    mp: job === "wizard" ? Math.floor(stats.maxMp / 2) : stats.maxMp,
     maxMp: stats.maxMp,
     comboPoints: 0,
+    consecutiveCorrectAnswers: 0,
     maxComboPoints: stats.maxComboPoints,
     threat: 0,
     isDead: false,
@@ -141,6 +142,41 @@ export function addStudent(
     },
   };
   return { ...state, players: { ...state.players, [student.id]: p } };
+}
+// Attendance and equipment are frozen at start; each quiz has one total HP budget.
+export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo = false): CombatSnapshot {
+  if (state.currentPhase !== "waiting") return state;
+  const players = Object.values(state.players);
+  const damage = players.reduce((sum, p) => sum + Math.max(1, baseDamage(p)), 0);
+  const questions = Math.max(1, fight.questions.length);
+  let budget = Math.max(1, Math.ceil(damage * questions * 0.9));
+  let soloEnemyDamageCap: number | undefined;
+  if (solo && players.length === 1) {
+    const p = players[0];
+    soloEnemyDamageCap = Math.max(1, Math.floor(p.maxHealth / questions));
+    // A perfect basic-attack run must finish before unavoidable counterattacks KO a solo player.
+    const rounds = Math.ceil(p.health / soloEnemyDamageCap);
+    budget = Math.min(budget, Math.max(1, baseDamage(p)) * rounds);
+  }
+  const weight = state.enemies.reduce((sum, e) => sum + e.difficultyMultiplier, 0) || 1;
+  let enemies = state.enemies.map((e) => {
+    const health = Math.max(1, Math.ceil(budget * e.difficultyMultiplier / weight));
+    return { ...e, health, maxHealth: health };
+  });
+  if (solo && players.length === 1) {
+    // Whole basic attacks are the useful unit: rounding each enemy up in HP
+    // can otherwise require extra fatal counterattack rounds in a multi-enemy fight.
+    const attack = Math.max(1, baseDamage(players[0]));
+    const rounds = Math.max(enemies.length, Math.floor(budget / attack));
+    const allocated = enemies.map(() => 1);
+    for (let remaining = rounds - enemies.length; remaining > 0; remaining--) {
+      const next = enemies.reduce((best, e, i) =>
+        e.difficultyMultiplier / (allocated[i] + 1) > enemies[best].difficultyMultiplier / (allocated[best] + 1) ? i : best, 0);
+      allocated[next]++;
+    }
+    enemies = enemies.map((e, i) => ({ ...e, health: allocated[i] * attack, maxHealth: allocated[i] * attack }));
+  }
+  return { ...state, soloEnemyDamageCap, enemies };
 }
 export function startQuestion(
   state: CombatSnapshot,
@@ -433,7 +469,6 @@ function applyAbility(
     party().forEach((t) => heal(s, p, t.studentId, n, revive));
   let damage = 0;
   const spentMP = p.mp;
-  const combo = p.comboPoints;
   const problem = abilityProblem(p, id);
   if (problem) {
     event(s, "ability", p.studentId, targetId, 0, `${id}: ${problem}`);
@@ -480,7 +515,7 @@ function applyAbility(
       all().forEach((e) => hit(s, p, e.id, int * 2, true));
       break;
     case "headshot":
-      damage = rtk * combo * agi;
+      damage = Math.floor(2 * (rtk + agi) + 0.5 * (p.consecutiveCorrectAnswers || 0));
       break;
     case "aim":
       damage = (rtk + agi) * 2;
@@ -521,8 +556,7 @@ function applyAbility(
     case "craft_healing_potion":
       p.healingPotions = Math.min(
         5,
-        p.healingPotions +
-          1 +
+        p.healingPotions === 0 ? 1 : p.healingPotions + 1 +
           (getTotalMechanicUpgrades(
             p.jobLevels as Record<CharacterClass, number>,
           ).potionCraftBonus || 0),
@@ -745,6 +779,9 @@ function applyAbility(
   }
   if (damage > 0) {
     const dealt = hit(s, p, targetId, damage, id !== "attack");
+    // The normal damaging-answer reward adds the second CP below: two total.
+    if (id === "headshot" && dealt > 0)
+      p.comboPoints = Math.min(p.maxComboPoints, p.comboPoints + 1);
     if (id === "siphon")
       heal(
         s,
@@ -789,7 +826,7 @@ export function advancePhase(
         p.ready = false;
       }
     s.currentPhase = "abilities";
-    s.phaseDeadline = now + 10000;
+    s.phaseDeadline = now + 20000;
     return s;
   }
   if (s.currentPhase === "abilities") {
@@ -839,6 +876,7 @@ export function advancePhase(
         p.buffs.immunity = { rounds: 1, amount: 0 };
       if (p.lastAnswerCorrect) {
         p.totals.questionsCorrect++;
+        p.consecutiveCorrectAnswers = (p.consecutiveCorrectAnswers || 0) + 1;
         const a = p.questionAction!;
         applyAbility(s, p, a.ability, a.targetId);
         if (p.buffs.abyssal_drain) {
@@ -850,6 +888,9 @@ export function advancePhase(
         }
       } else {
         p.totals.questionsIncorrect++;
+        p.consecutiveCorrectAnswers = 0;
+        if (p.availableAbilities.includes("headshot"))
+          p.comboPoints = Math.max(0, p.comboPoints - 1);
         const provoke = ordered.find((x) => !x.isDead && x.buffs.provoke);
         damagePlayer(
           s,
@@ -873,6 +914,21 @@ export function advancePhase(
       for (const effect of e.effects)
         if (effect.damage > 0 && s.players[effect.ownerId])
           hit(s, s.players[effect.ownerId], e.id, effect.damage, true);
+    // Transfer once per blocker/target after this round's damage has generated threat.
+    // Self-blocks never manufacture threat; Block + Shield Bash cannot transfer twice.
+    for (const p of ordered.filter((p) => !p.isDead)) {
+      const guarded = new Set(p.supportActions.filter((a) =>
+        ["warrior_block", "shield_bash"].includes(a.ability)).map((a) => a.targetId));
+      for (const id of guarded) {
+        const target = s.players[id];
+        if (!target || target === p || !p.buffs[`guard:${id}`]) continue;
+        const transferred = Math.floor(target.threat / 2);
+        target.threat -= transferred;
+        p.threat += transferred;
+        event(s, "ability", p.studentId, id, transferred,
+          `${p.nickname} took ${transferred} threat from ${target.nickname} with Block`);
+      }
+    }
     leader(s);
     s.currentPhase = "question_resolution";
     s.phaseDeadline =
@@ -882,6 +938,7 @@ export function advancePhase(
   if (s.currentPhase === "question_resolution") {
     s.currentPhase = "enemy_ai";
     leader(s);
+    let soloDamageRemaining = s.soloEnemyDamageCap ?? Infinity;
     for (const enemy of s.enemies
       .filter((e) => e.health > 0)
       .slice(0, fight.enemyDisplayMode === "simultaneous" ? undefined : 1)) {
@@ -889,17 +946,19 @@ export function advancePhase(
         (n, p) => n + (p.buffs.dread_aura?.amount || 0),
         0,
       );
-      if (s.threatLeaderId)
-        damagePlayer(
+      if (s.threatLeaderId && soloDamageRemaining > 0) {
+        const target = s.players[s.threatLeaderId];
+        const raw = Math.max(0, Math.round(fight.baseEnemyDamage * enemy.difficultyMultiplier) - reduction);
+        // Cap total counterattack damage for solo encounters, including simultaneous enemies.
+        const capped = Math.min(raw, soloDamageRemaining + target.stats.def + integer(target.stats.vit / 2));
+        const taken = damagePlayer(
           s,
           s.threatLeaderId,
-          Math.max(
-            0,
-            Math.round(fight.baseEnemyDamage * enemy.difficultyMultiplier) -
-              reduction,
-          ),
+          capped,
           enemy.id,
         );
+        soloDamageRemaining -= taken;
+      }
       leader(s);
     }
     s.phaseDeadline = now + 3000;

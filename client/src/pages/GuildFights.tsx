@@ -1,3 +1,4 @@
+import { StaminaBar } from "@/components/StaminaBar";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
 import { useRoute, Link, useLocation } from "wouter";
@@ -102,6 +103,7 @@ export default function GuildFights() {
       </header>
 
       <main className="container mx-auto px-4 py-6 flex-1">
+        <div className="mb-4 rounded-lg border bg-card p-3"><StaminaBar studentId={studentId} /></div>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

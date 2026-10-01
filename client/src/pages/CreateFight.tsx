@@ -1031,7 +1031,7 @@ export default function CreateFight() {
                         {(currentEnemy.difficultyMultiplier || 10) > 60 && " (Epic Boss)"}
                       </label>
                       <p className="text-xs text-muted-foreground">
-                        HP scales with questions × player levels. Low values = quick fights, high values = epic battles.
+                        HP follows quiz length and party damage. Difficulty increases counterattack damage and rewards; with multiple enemies, it also sets their share of total HP.
                       </p>
                       <div className="flex items-center gap-3">
                         <Slider

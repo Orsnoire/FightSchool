@@ -118,6 +118,13 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(resumed.payload.sessionId, room.payload.sessionId);
     await api(`/api/sessions/${room.payload.sessionId}`, "GET", student.cookie);
     await api(`/api/student/${student.payload.id}/award-xp`, "POST", student.cookie, { xp: 100000 }, 403);
+    const stamina = await api(`/api/student/${student.payload.id}/stamina`, "GET", student.cookie);
+    assert.equal(stamina.payload.xpMultiplier, 1);
+    assert.equal(stamina.payload.completedCombats, 0);
+    assert.equal(stamina.payload.timeZone, "America/Denver");
+    assert.ok(stamina.payload.resetsAt > Date.now());
+    await api(`/api/student/${student.payload.id}/stamina`, "GET", undefined, undefined, 401);
+
     await api("/api/objects/upload", "POST", student.cookie, undefined, 401);
     const upload = await api("/api/objects/upload", "POST", teacher.cookie);
     const image = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]);

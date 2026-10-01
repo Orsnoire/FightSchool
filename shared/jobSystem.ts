@@ -125,7 +125,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "warrior_block",
           name: "Block",
-          description: "Prevents VIT/2 damage to targeted player this turn.",
+          description: "Prevents VIT/2 damage to targeted player this turn and transfers half their threat to you before the enemy attacks.",
           isCrossClass: false,
         }]
       },
@@ -135,7 +135,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "shield_bash",
           name: "Shield Bash",
-          description: "Deals VIT/2 melee damage to enemy upon a successful block. CD 2.",
+          description: "Blocks for an ally, transfers half their threat to you, and deals VIT/2 melee damage upon a successful block. CD 2.",
           isCrossClass: false,
         }]
       },
@@ -146,7 +146,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "block_crossclass",
           name: "Block",
-          description: "Cross-class unlock. Prevents VIT/2 damage to targeted player this turn.",
+          description: "Cross-class unlock. Prevents VIT/2 damage to targeted player this turn and transfers half their threat to you before the enemy attacks.",
           isCrossClass: true,
         }]
       },
@@ -184,7 +184,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
   wizard: {
     id: "wizard",
     name: "Wizard",
-    description: "DPS - Master of magical damage",
+    description: "DPS - Powerful opening spells. Starts combat with half of maximum MP.",
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
@@ -259,7 +259,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "headshot",
           name: "Headshot",
-          description: "Check box lights up when combo points reach 3. Deals RTK*(Combo Points)*AGI ranged damage. Costs 3 combo points.",
+          description: "Deals 2*(RTK+AGI) + 0.5 per consecutive correct answer, rounded down, including this answer. Costs 3 CP; a damaging hit returns 2 CP total. A wrong or unanswered question resets the streak and costs 1 CP.",
           isCrossClass: false,
         }]
       },
@@ -280,7 +280,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "headshot_crossclass",
           name: "Headshot",
-          description: "Cross-class unlock (also unlocks combo points if equipped). Deals RTK*(Combo Points)*AGI ranged damage. Costs 3 combo points.",
+          description: "Cross-class unlock. Deals 2*(RTK+AGI) + 0.5 per consecutive correct answer, rounded down, including this answer. Costs 3 CP; a damaging hit returns 2 CP total. While equipped, wrong or unanswered questions reset the streak and cost 1 CP.",
           isCrossClass: true,
         }]
       },
@@ -336,7 +336,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "craft_healing_potion",
           name: "Craft Healing Potion",
-          description: "Phase 1 action. You can craft Healing Potions (carry 5 by default 5 max). You cannot craft a potion on the turn you choose to heal rather than damage.",
+          description: "Question action. Create 1 potion when empty, without healing. Crafting with stock remaining receives unlocked crafting bonuses, up to 5 potions. Requires a correct answer.",
           isCrossClass: false,
         }]
       },

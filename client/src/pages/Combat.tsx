@@ -1,3 +1,5 @@
+import { AllyTargetGrid } from "@/components/AllyTargetGrid";
+import { StaminaBar } from "@/components/StaminaBar";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useCombatSession } from "@/hooks/useCombatSession";
@@ -41,7 +43,7 @@ export default function Combat() {
   }, [state?.round]);
   useEffect(() => {
     if (state?.currentPhase === "abilities") {
-      setAbility("");
+      setAbility(p?.availableAbilities.includes("warrior_block") ? "warrior_block" : "");
       setTarget("");
     }
   }, [state?.currentPhase]);
@@ -66,12 +68,14 @@ export default function Combat() {
   const canAct = status === "connected" && !!p && !p.isDead;
   const available =
     p?.availableAbilities.filter(
-      (id) => SUPPORT.has(id) === (phase === "abilities"),
+      (id) => SUPPORT.has(id) === (phase === "abilities") &&
+        !(id === "healing_potion" && p.healingPotions === 0),
     ) || [];
+  const guard = ["warrior_block", "shield_bash", "healing_guard", "aegis", "deflect"].includes(ability);
   const options = ALLIES.has(ability)
     ? Object.values(state.players)
         .filter((x) => !x.isDead)
-        .sort((a, b) => b.maxHealth - b.health - (a.maxHealth - a.health))
+        .sort((a, b) => (guard ? b.threat - a.threat : 0) || a.health / a.maxHealth - b.health / b.maxHealth || a.nickname.localeCompare(b.nickname))
         .map((x) => ({
           id: x.studentId,
           name: `${x.nickname} · ${x.health}/${x.maxHealth} HP`,
@@ -80,13 +84,13 @@ export default function Combat() {
         .filter((e) => e.health > 0)
         .slice(0, state.enemyDisplayMode === "consecutive" ? 1 : undefined)
         .map((e) => ({ id: e.id, name: e.name }));
-  const chosen = target || options[0]?.id || p?.studentId || "";
+  const chosen = options.some(o => o.id === target) ? target : options[0]?.id || p?.studentId || "";
   const definition = (id: string) =>
     Object.values(JOB_TREE)
       .flatMap((j) => Object.values(j.levelRewards))
       .flatMap((r) => r.abilities || [])
       .find((a) => a.id === id);
-  const label = (id: string) => definition(id)?.name || (id === "attack" ? "Attack" : id.replaceAll("_", " "));
+  const label = (id: string) => id === "craft_healing_potion" && p?.healingPotions === 0 ? "Create potion" : definition(id)?.name || (id === "attack" ? "Attack" : id.replaceAll("_", " "));
   const costLabel = (id: string) => {
     if (!p) return "";
     const c = actionCost(p, id);
@@ -128,7 +132,7 @@ export default function Combat() {
         )}
       </header>
       <CombatBoard state={state} />
-      <CombatOverlay title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <CombatResources player={p} />} status={status} error={error}>
+      <CombatOverlay title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
       {phase === "waiting" && <p>Your teacher will start the fight when everyone has joined.</p>}
       {intro && <p className="text-center py-8 text-lg">Get ready…</p>}
       {view === "ready" && <div className="text-center space-y-3 py-4"><p>Your choices are saved. Waiting for the remaining players or the timer.</p><p className="text-sm text-muted-foreground">Resources update when actions resolve.</p></div>}
@@ -213,8 +217,14 @@ export default function Combat() {
             </div>
             {ability && (
               <>
-                <p className="text-sm text-muted-foreground">{definition(ability)?.description || "Deal your base damage to an enemy."}</p>
-                {needsTarget && <label className="block">
+                <p className="text-sm text-muted-foreground">{ability === "craft_healing_potion" && p.healingPotions === 0 ? "Create 1 healing potion. This action does not heal. Requires a correct answer." : definition(ability)?.description || "Deal your base damage to an enemy."}</p>
+                {needsTarget && ALLIES.has(ability) ? <AllyTargetGrid players={Object.values(state.players)} selectedId={chosen} onSelect={(id) => {
+                  setTarget(id);
+                  if (phase === "abilities" && !selectionProblem(p, ability)) {
+                    send("action", { ability, targetId: id });
+                    setAbility("");
+                  }
+                }} guard={guard} disabled={!canAct} /> : needsTarget && <label className="block">
                   Target
                   <select
                     aria-label="Ability target"
@@ -269,6 +279,7 @@ export default function Combat() {
                   ? "available as a reward choice"
                   : "awarded"}
               </p>
+              {result.xpMultiplier !== undefined && <p className="text-sm text-muted-foreground">{Math.round(result.xpMultiplier * 1000) / 10}% XP rate applied to {result.baseXp} base XP. Fractional XP carries forward.</p>}
               {result.lootTable.length > 0 && !claimed && (
                 <>
                   <p>Choose one reward:</p>

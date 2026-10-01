@@ -4,6 +4,9 @@ export interface EarnedResult {
   id: string;
   studentId: string;
   xpEarned: number;
+  baseXp?: number;
+  xpMultiplier?: number;
+  staminaFightNumber?: number;
   goldReward: number;
   lootTable: Array<{ itemId: string }>;
 }

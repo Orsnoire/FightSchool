@@ -107,7 +107,8 @@ test("all jobs use server-derived stats; base stats are never passive bonuses", 
     const s = started(job),
       p = s.players[student().id];
     assert.ok(Number.isFinite(baseDamage(p)));
-    assert.equal(p.mp, (p.stats.int + p.stats.mnd) * 3);
+    assert.equal(p.maxMp, (p.stats.int + p.stats.mnd) * 3);
+    assert.equal(p.mp, job === "wizard" ? Math.floor(p.maxMp / 2) : p.maxMp);
     assert.equal(
       p.stats.def,
       calculateEquipmentStats(
@@ -138,7 +139,8 @@ test("every unlocked ability has an executable rule and can only run in its docu
       p.maxMp = 100;
       p.comboPoints = 50;
       p.maxComboPoints = 50;
-      p.shieldPotions = 3;
+      p.shieldPotions = 2;
+      p.healingPotions = 4;
       p.health = 5;
       s.enemies[0].health = 10000;
       s.enemies[0].maxHealth = 10000;

@@ -259,7 +259,7 @@ try {
   const wrong = await player.state(1, "question_resolution");
   assert.equal(wrong.state.players[studentId].mp, opened.state.players[studentId].mp,
     "An incorrect answer must not spend the selected Fireball's MP");
-  assert.equal(wrong.state.enemies[0].health, 10);
+  assert.equal(wrong.state.enemies[0].health, opened.state.enemies[0].maxHealth);
   assert.ok(
     wrong.state.players[studentId].health <
       wrong.state.players[studentId].maxHealth,
@@ -295,8 +295,9 @@ try {
   await restored.wait(
     (m) => m.type === "protocol_error" && m.commandId === stale,
   );
-  for (let round = 2; round <= 3; round++) {
+  for (let round = 2; round <= 10; round++) {
     const before = await restored.state(round, "question");
+    const ability = before.state.players[studentId].mp > 0 ? "fireball" : "attack";
     await new Promise((r) => setTimeout(r, 3100));
     const answer = restored.send("answer", {
       round,
@@ -308,7 +309,7 @@ try {
     );
     const action = restored.send("action", {
       round,
-      ability: "fireball",
+      ability,
       targetId: "e1",
       ready: true,
     });
@@ -318,8 +319,8 @@ try {
     await restored.state(round, "abilities");
     restored.send("ready", { round });
     const resolved = await restored.state(round, "question_resolution");
-    assert.equal(resolved.state.players[studentId].mp, before.state.players[studentId].mp - 1,
-      "Each successful Fireball must spend exactly 1 MP");
+    assert.equal(resolved.state.players[studentId].mp, before.state.players[studentId].mp - (ability === "fireball" ? 1 : 0),
+      "Fireball spends exactly 1 MP; basic attacks remain available after MP runs out");
     await api(`/api/combat/${room.payload.sessionId}/force-question`, {
       method: "POST",
       cookie: teacher.cookie,
@@ -329,6 +330,7 @@ try {
       method: "POST",
       cookie: teacher.cookie,
     });
+    if (resolved.state.enemies.every(enemy => enemy.health <= 0)) break;
   }
   const victory = await restored.wait(
     (m) => m.type === "game_over" && m.victory === true,
@@ -339,9 +341,12 @@ try {
     cookie: student.cookie,
   });
   assert.equal(stats.payload.length, 1);
-  assert.equal(stats.payload[0].questionsAnswered, 3);
-  assert.equal(stats.payload[0].questionsCorrect, 2);
-  assert.equal(stats.payload[0].damageDealt, 10);
+  assert.ok(stats.payload[0].questionsAnswered >= 2);
+  assert.equal(stats.payload[0].questionsCorrect, stats.payload[0].questionsAnswered - 1);
+  assert.equal(stats.payload[0].damageDealt, opened.state.enemies[0].maxHealth);
+  const stamina = await api(`/api/student/${studentId}/stamina`, { cookie: student.cookie });
+  assert.equal(stamina.payload.completedCombats, 1);
+  assert.ok(Math.abs(stamina.payload.xpMultiplier - 0.9) < 1e-10);
   const body = { fightId: fight.payload.id, resultId: stats.payload[0].id };
   await api(`/api/student/${studentId}/claim-gold`, {
     method: "POST",

@@ -32,6 +32,7 @@ export interface CombatPlayer {
   maxMp: number;
   comboPoints: number;
   maxComboPoints: number;
+  consecutiveCorrectAnswers?: number;
   threat: number;
   isDead: boolean;
   hasAnswered: boolean;
@@ -93,6 +94,7 @@ export interface CombatSnapshot {
   victory: boolean | null;
   endReason: string | null;
   seed: number;
+  soloEnemyDamageCap?: number;
 }
 export type PublicQuestion = {
   id: string;

@@ -59,12 +59,18 @@ test("healing potions are consumed once; crafting respects bonuses and the cap",
   s = resolve(selectAction(s, id, "healing_potion", id));
   assert.equal(s.players[id].healingPotions, 4);
   assert.ok(s.players[id].totals.healingDone > 0);
-  for (const [count, expected] of [[1, 3], [4, 5], [5, 5]]) {
+  for (const [count, expected] of [[0, 1], [1, 3], [4, 5]]) {
     let c = answered("herbalist", 6);
     c.players[id].healingPotions = count;
     c = resolve(selectAction(c, id, "craft_healing_potion", id));
     assert.equal(c.players[id].healingPotions, expected);
   }
+});
+test("full inventories reject crafting without wasting a question action", () => {
+  const s = answered("herbalist", 10);
+  assert.throws(() => selectAction(s, id, "craft_healing_potion", id), /full/);
+  s.players[id].shieldPotions = 3;
+  assert.throws(() => selectAction(s, id, "craft_shield_potion", id), /full/);
 });
 test("shield potions craft up to three, then one is spent to protect the target", () => {
   let s = answered("herbalist", 10);

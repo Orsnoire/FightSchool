@@ -178,7 +178,7 @@ export interface Enemy {
   id: string;
   name: string;
   image: string;
-  difficultyMultiplier: number; // 1-100: scales base HP (questions × totalPlayerLevels + 10)
+  difficultyMultiplier: number; // 1-100: counterattack damage and share of the encounter HP budget
 }
 
 export const enemySchema = z.object({

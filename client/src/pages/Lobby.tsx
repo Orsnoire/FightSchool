@@ -1,3 +1,4 @@
+import { StaminaBar } from "@/components/StaminaBar";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -424,6 +425,7 @@ export default function Lobby() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <div className="mb-4 rounded-lg border bg-card p-3"><StaminaBar studentId={studentId} /></div>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2">
             <Card>
