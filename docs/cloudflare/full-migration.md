@@ -2,7 +2,7 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Current status, 30 September 2026:** the recovered refactor and live fixes are merged and deployed to the canonical hostname. Functional live combat, R2, and 30-player classroom acceptance passed. Deployment identifiers and evidence are recorded below; full Phase 7 operational signoff remains open.
+**Current status, 1 October 2026:** the recovered refactor, classroom fixes, daily XP stamina, and approved Wizard/Scout balance are merged and deployed to the canonical hostname. Functional live combat, R2, and 30-player classroom acceptance passed. Deployment identifiers and evidence are recorded below; full Phase 7 operational signoff remains open.
 
 ## Root cause and corrected behavior
 
@@ -107,3 +107,40 @@ The live Worker still runs runtime commit `bfc4fbe`, immutable version `8e7588f1
 Functional live acceptance does not close every Phase 7 gate in `../Migration_Plan`. Remaining evidence includes a forced deployed Durable Object restart/eviction, deliberate Neon interruption and connection-limit recovery, a timed immutable-version rollback rehearsal, a complete student desktop/mobile browser pass, and the agreed monitoring/observation window. Local restart and failed-save tests plus live reconnect are useful evidence, but are not substitutes for those infrastructure drills. Perform disruptive drills in an isolated deployment or an agreed release window.
 
 Keep Worker `20382b06-88e9-42a3-805d-bc7ca476e602` as the pre-refactor rollback reference. The accepted runtime version recorded above is an additional immutable checkpoint. A Worker rollback does not undo Neon, R2, or Durable Object data; retain the additive schema and existing bindings. Acceptance creates separate accounts with random passwords and tiny image fixtures, and archives its fight fixtures. It does not edit the teacher's existing battles.
+
+## Classroom balance release — 1 October 2026
+
+PR #29 merged as `35aa3fe998330305f912959dcd9c01aa17a6ba88`. It adds daily XP
+stamina, 20-second support selection and HP/threat tiles, potion replenishment,
+quiz-based enemy HP, solo survivability, half-threat Block transfers, and the
+approved Wizard/Scout balance. The exact rules and deferred Priest design are in
+[Classroom balance and daily stamina](../combat/classroom-balance-and-stamina.md).
+
+Deployment [run 36889089379](https://github.com/Orsnoire/FightSchool/actions/runs/36889089379)
+(job `110459835438`) published this revision to the existing Worker and canonical
+hostname at 16:04 UTC (10:04 Mountain). Its type check, all 74 tests, both builds,
+R2 check, committed additive migrations through `0008_daily_combat_stamina.sql`,
+and smoke checks on both hostnames passed. Immutable Worker version:
+`eee2f302-3cb6-45b4-9a56-e5be828fdc40`.
+
+Live acceptance [run 36889382720](https://github.com/Orsnoire/FightSchool/actions/runs/36889382720)
+(job `110460830754`) tested that same revision against
+`https://questacademy.bookwyrminteractive.studio` and passed both steps:
+
+- Combat and economy: actual enemy defeat, Fireball MP spending, wrong answers,
+  phase cycling, reconnect deadlines, duplicate/stale commands, persisted XP and
+  stamina status, guilds, quests, shop, reward claims, solo-room ownership and history.
+- Storage and classroom: R2 upload authorization/content/ranges, 30 participants,
+  host refresh, concurrent room isolation, simultaneous answers, reconnect,
+  exactly-once results and logout revocation. Answer acknowledgement latency was
+  p50 855ms, p95 1613ms, maximum 1664ms in this single burst.
+
+The release head also passed browser acceptance at 1366x768 and 390x844 (run
+`36886749518`), including the target grid, potion controls, rich content and math
+keyboard. This does not close the broader operational drills listed above.
+
+The immediately preceding deployed Worker version is
+`fadc38ed-c073-493a-9a3a-17b4643ccb09` from deployment run `36779575641`.
+Keep this as the latest rollback checkpoint. A rollback preserves the additive
+Neon schema, existing sessions, R2 and Durable Object bindings; it would restore
+the old combat XP policy. Do not delete or reset student data.
