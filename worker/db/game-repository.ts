@@ -99,17 +99,16 @@ export async function persistCombatResults(
           Math.max(...fight.enemies.map((e) => e.difficultyMultiplier)),
         )
       : 0;
-    values.push(sql`(${state.sessionId},${p.studentId},${fight.id},${earnedGuildId},${p.characterClass},${!!state.victory},${!p.isDead},${!!live?.soloStudentId},${JSON.stringify(p.totals)}::jsonb,${xp},${gold},${JSON.stringify(state.victory ? fight.lootTable : [])}::jsonb,${!state.victory || !fight.lootTable.length ? "automatic" : null})`);
+    values.push({ session_id: state.sessionId, student_id: p.studentId, fight_id: fight.id,
+      guild_id: earnedGuildId, character_class: p.characterClass, victory: !!state.victory,
+      survived: !p.isDead, is_solo_mode: !!live?.soloStudentId, totals: p.totals,
+      base_xp: xp, gold_reward: gold, loot_table: state.victory ? fight.lootTable : [],
+      reward_claim: !state.victory || !fight.lootTable.length ? "automatic" : null,
+      participated: p.totals.questionsAnswered > 0 || p.totals.questionsCorrect + p.totals.questionsIncorrect > 0 });
   }
-  // One classroom-wide ledger statement keeps network requests independent of
-  // attendance. Only newly inserted results may award XP or automatic gold.
-  if (values.length) await db.execute(sql`WITH result AS (
- INSERT INTO combat_results(session_id,student_id,fight_id,guild_id,character_class,victory,survived,is_solo_mode,totals,xp_earned,gold_reward,loot_table,reward_claim)
- VALUES ${sql.join(values, sql`, `)}
- ON CONFLICT(session_id,student_id) DO NOTHING RETURNING *),
- job AS (INSERT INTO student_job_levels(student_id,job_class,experience,level) SELECT student_id,character_class,xp_earned,1 FROM result
- ON CONFLICT(student_id,job_class) DO UPDATE SET experience=student_job_levels.experience+EXCLUDED.experience RETURNING student_id,job_class,experience)
- UPDATE students SET gold=gold+COALESCE((SELECT gold_reward FROM result WHERE reward_claim='automatic' AND result.student_id=students.id),0) WHERE id IN(SELECT student_id FROM result)`);
+  // The database serializes each student's daily counter and result/reward receipt
+  // across rooms. A single batched call also stays within classroom request budgets.
+  if (values.length) await db.execute(sql`SELECT award_combat_results_with_stamina(${JSON.stringify(values)}::jsonb)`);
   // Derive levels from total earned XP after the atomic ledger write; safe to repeat on recovery.
   if (studentIds.length) {
     const rows = await db

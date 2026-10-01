@@ -93,6 +93,7 @@ export interface CombatSnapshot {
   victory: boolean | null;
   endReason: string | null;
   seed: number;
+  soloEnemyDamageCap?: number;
 }
 export type PublicQuestion = {
   id: string;

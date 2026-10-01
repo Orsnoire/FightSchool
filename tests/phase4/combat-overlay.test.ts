@@ -108,6 +108,28 @@ test("student question, action, waiting, and resolution share a focused non-dism
     state.players[student().id].hasAnswered = true;
     await emit();
     assert.equal(keyboard.container, document.body, "keyboard container is restored when the math question closes");
+    // Empty stock changes the usable action to Create potion; selection sends crafting, not healing.
+    state.players[student().id].healingPotions = 0;
+    await emit();
+    const create = [...dialog().querySelectorAll("button")].find(b => b.textContent?.startsWith("Create potion"))!;
+    assert.ok(create && !create.disabled);
+    await act(async () => create.click());
+    assert.equal(dialog().querySelector('[aria-label="Ally targets"]'), null);
+    await act(async () => button("Confirm Create potion & Ready").click());
+    assert.equal(socket.sent.at(-1).ability, "craft_healing_potion");
+    // Entering support opens the Warrior's grid immediately, with all twenty targets visible in it.
+    state.players[student().id].availableAbilities = ["attack", "warrior_block"];
+    for (let i = 0; i < 19; i++) state.players[`ally${i}`] = { ...structuredClone(state.players[student().id]), studentId: `ally${i}`, nickname: `Ally ${i}`, threat: i, health: 5, maxHealth: 10 };
+    state.currentPhase = "abilities";
+    await emit();
+    const grid = dialog().querySelector('[aria-label="Ally targets"]')!;
+    assert.equal(grid.querySelectorAll("button").length, 20);
+    const first = grid.querySelector("button")!;
+    assert.match(first.getAttribute("aria-label")!, /Ally 18, HP 50%, threat 18/);
+    await act(async () => first.click());
+    assert.equal(socket.sent.at(-1).ability, "warrior_block");
+    assert.equal(socket.sent.at(-1).targetId, "ally18");
+
   } finally {
     if (root) await act(async () => root!.unmount());
     await rm(dir, { recursive: true, force: true });

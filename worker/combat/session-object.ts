@@ -6,6 +6,7 @@ import {
   applyAnswer,
   initialCombatState,
   startQuestion,
+  scaleEncounter,
   advancePhase,
   selectAction,
   setReady,
@@ -166,6 +167,9 @@ export class CombatSessionObject {
         studentId: r.studentId,
         id: r.id,
         xpEarned: r.xpEarned,
+        baseXp: r.baseXp,
+        xpMultiplier: r.xpMultiplier,
+        staminaFightNumber: r.staminaFightNumber,
         goldReward: r.goldReward,
         lootTable: r.lootTable,
       })),
@@ -389,7 +393,7 @@ export class CombatSessionObject {
             room.snapshot.currentPhase === "waiting"
           ) {
             room.snapshot = startQuestion(
-              room.snapshot,
+              scaleEncounter(room.snapshot, room.fight, true),
               Date.now(),
               room.fight.questions[0].timeLimit,
             );
@@ -420,17 +424,10 @@ export class CombatSessionObject {
           if (room.snapshot.currentPhase !== "waiting")
             throw new Error("Fight already started");
           room.snapshot = startQuestion(
-            room.snapshot,
+            scaleEncounter(room.snapshot, room.fight),
             Date.now(),
             room.fight.questions[0].timeLimit,
           );
-          // Difficulty is per participant. Attendance is fixed when the teacher starts.
-          const size = Object.keys(room.snapshot.players).length;
-          room.snapshot.enemies = room.snapshot.enemies.map((e) => ({
-            ...e,
-            health: e.maxHealth * size,
-            maxHealth: e.maxHealth * size,
-          }));
           await this.repository.updateLiveCombatSessionStatus(
             actor.sessionId,
             "active",

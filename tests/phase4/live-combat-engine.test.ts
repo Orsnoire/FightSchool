@@ -138,7 +138,8 @@ test("every unlocked ability has an executable rule and can only run in its docu
       p.maxMp = 100;
       p.comboPoints = 50;
       p.maxComboPoints = 50;
-      p.shieldPotions = 3;
+      p.shieldPotions = 2;
+      p.healingPotions = 4;
       p.health = 5;
       s.enemies[0].health = 10000;
       s.enemies[0].maxHealth = 10000;

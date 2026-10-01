@@ -86,6 +86,13 @@ Guild progression is intended to support long-term classroom engagement across a
 
 ---
 
+## Classroom balance and daily stamina
+
+The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
+record the latest explicit changes to XP stamina, Block targeting and threat,
+potion replenishment, and encounter HP. They supersede older conflicting rules
+for these systems. Fireball and Headshot changes remain proposals.
+
 ## Combat Flow Refactor
 
 This document is authoritative primarily for **player experience and presentation**, including:

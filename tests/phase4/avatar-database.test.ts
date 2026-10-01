@@ -20,11 +20,9 @@ test("avatar database preserves students, binds colors correctly and reserves eq
   try {
     for (const migration of journal.entries) {
       if (migration.tag === "0006_avatar_foundation") {
-        await db.insert(s.students).values({
-          id: existingId, nickname: "Existing", nicknameNormalized: "existing",
-          passwordHash: "never-a-valid-password", characterClass: "wizard", gender: "B",
-          gold: 123, inventory: ["basic_staff"], weapon: "basic_staff",
-        });
+        // Insert using the pre-avatar schema, before later additive columns exist.
+        await pg.query(`INSERT INTO students(id,nickname,nickname_normalized,password_hash,character_class,gender,gold,inventory,weapon)
+          VALUES($1,'Existing','existing','never-a-valid-password','wizard','B',123,'["basic_staff"]'::jsonb,'basic_staff')`, [existingId]);
       }
       await pg.exec(readFileSync(new URL(`migrations/cloudflare/${migration.tag}.sql`, root), "utf8"));
     }

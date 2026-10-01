@@ -29,6 +29,9 @@ try {
         close() { this.readyState = 3; }
       };
     }, { id });
+    await page.route('**/api/student/*/stamina', route => route.fulfill({ json: {
+      completedCombats: 2, xpMultiplier: 0.691, resetsAt: Date.now() + 3600000, timeZone: 'America/Denver'
+    } }));
     await page.goto(origin + '/student/combat');
     await page.waitForFunction(() => window.combatTest?.sockets.length > 0);
     let state = started('herbalist');
@@ -76,6 +79,25 @@ try {
     await emit();
     await page.getByRole('button', { name: 'Ready — no support actions', exact: true }).waitFor();
     await screenshot('support');
+    state.currentPhase = 'question';
+    state.players[id].healingPotions = 0;
+    await emit();
+    await page.getByRole('button', { name: /^Create potion/ }).click();
+    await screenshot('create-potion');
+    await page.getByRole('button', { name: 'Confirm Create potion & Ready', exact: true }).click();
+    assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).ability), 'craft_healing_potion');
+    state.players[id].availableAbilities = ['attack', 'warrior_block'];
+    for (let i = 0; i < 19; i++) state.players[`ally${i}`] = { ...structuredClone(state.players[id]), studentId: `ally${i}`, nickname: `Ally ${i}`, health: i % 3 ? 7 : 2, maxHealth: 10, threat: i * 2 };
+    state.currentPhase = 'abilities';
+    await emit();
+    const targets = page.getByRole('button', { name: /, HP .*%, threat / });
+    assert.equal(await targets.count(), 20);
+    await screenshot('block-grid');
+    await targets.first().click();
+    assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).targetId), 'ally18');
+    for (let i = 0; i < 19; i++) delete state.players[`ally${i}`];
+    state.players[id].availableAbilities = ['attack', 'healing_potion', 'craft_healing_potion'];
+
     state.currentPhase = 'question_resolution';
     state.players[id].lastAnswerCorrect = true;
     state.players[id].healingPotions = 4;

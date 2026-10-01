@@ -140,6 +140,8 @@ export function availableAbilities(
   );
   for (const id of equipped)
     if (cross.some((a) => a.id === id)) result.push(canonicalAbility(id));
+  // The healing/crafting pair is available from the first potion, including cross-class use.
+  if (result.includes("healing_potion")) result.push("craft_healing_potion");
   return [...new Set(result)];
 }
 export function abilityProblem(p: CombatPlayer, id: string): string | null {
@@ -153,6 +155,8 @@ export function abilityProblem(p: CombatPlayer, id: string): string | null {
   if (id === "fireblast" && p.mp < 1) return "Not enough MP";
   if (["healing_potion", "potion_diffuser"].includes(id) && p.healingPotions < 1)
     return "No healing potions";
+  if (id === "craft_healing_potion" && p.healingPotions >= 5) return "Healing potions full";
+  if (id === "craft_shield_potion" && p.shieldPotions >= 3) return "Shield potions full";
   if (id === "shield_potion" && p.shieldPotions < 1) return "No shield potions";
   if (id === "frostbolt" && p.questionAction?.ability === "fireball")
     return "Frostbolt cannot follow Fireball";

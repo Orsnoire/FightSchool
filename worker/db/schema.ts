@@ -13,6 +13,7 @@ import type {
 } from "../../shared/schema.ts";
 import {
   boolean,
+  doublePrecision,
   bigint,
   check,
   index,
@@ -133,6 +134,9 @@ export const fights = pgTable(
 export const students = pgTable(
   "students",
   {
+    staminaDay: text("stamina_day"),
+    dailyCombats: integer("daily_combats").notNull().default(0),
+    xpRemainder: doublePrecision("xp_remainder").notNull().default(0),
     id: uuid("id").primaryKey().defaultRandom(),
     nickname: text("nickname").notNull(),
     nicknameNormalized: text("nickname_normalized").notNull(),
@@ -370,6 +374,10 @@ export const combatResults = pgTable(
       .notNull()
       .$type<import("../../shared/combat/model.ts").CombatTotals>(),
     xpEarned: integer("xp_earned").notNull(),
+    baseXp: integer("base_xp").notNull().default(0),
+    xpMultiplier: doublePrecision("xp_multiplier").notNull().default(1),
+    staminaFightNumber: integer("stamina_fight_number"),
+    staminaDay: text("stamina_day"),
     goldReward: integer("gold_reward").notNull(),
     lootTable: jsonb("loot_table")
       .notNull()

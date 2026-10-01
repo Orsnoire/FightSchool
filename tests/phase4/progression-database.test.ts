@@ -44,6 +44,7 @@ test("additive migrations preserve existing students; results and rewards are ex
       "0003_progression_guilds_results",
       "0004_quest_seed_uniqueness",
       "0005_history_preservation",
+      "0008_daily_combat_stamina",
     ])
       await pg.exec(
         readFileSync(

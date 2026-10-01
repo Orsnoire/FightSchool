@@ -1,3 +1,4 @@
+import { mountainDay, nextMountainMidnight, xpMultiplier, STAMINA_TIME_ZONE } from "../../shared/combat/stamina.ts";
 import { z } from "zod";
 import { and, eq, inArray, desc, sql } from "drizzle-orm";
 import { authenticateSession, type SessionConfig } from "../auth/session.ts";
@@ -173,7 +174,7 @@ export async function handleGame(
 ): Promise<Response | null> {
   const path = url.pathname;
   if (
-    !/^\/api\/(guilds|equipment-items|combat-stats|students\/used-fight-codes|student\/[0-9a-f-]+\/(equipment|guilds|available-fights|purchase-item|claim-loot|claim-gold|job-level|award-xp|currency|quests)|teacher\/[0-9a-f-]+\/(guilds|equipment-items)|combat\/)/i.test(
+    !/^\/api\/(guilds|equipment-items|combat-stats|students\/used-fight-codes|student\/[0-9a-f-]+\/(stamina|equipment|guilds|available-fights|purchase-item|claim-loot|claim-gold|job-level|award-xp|currency|quests)|teacher\/[0-9a-f-]+\/(guilds|equipment-items)|combat\/)/i.test(
       path,
     )
   )
@@ -797,6 +798,12 @@ export async function handleGame(
               )
           ).map((r) => r.guild),
         );
+      if (tail === "stamina" && method(request, "GET")) {
+        const now = Date.now();
+        const completedCombats = student.staminaDay === mountainDay(now) ? student.dailyCombats : 0;
+        return json({ completedCombats, xpMultiplier: xpMultiplier(completedCombats),
+          resetsAt: nextMountainMidnight(now), timeZone: STAMINA_TIME_ZONE });
+      }
       if (tail === "currency") return json({ gold: student.gold });
       if (tail === "quests") {
         if (student.guildId) await evaluateQuests(db, student.guildId);
