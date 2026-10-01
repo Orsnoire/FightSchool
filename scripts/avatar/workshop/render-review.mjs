@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import { createHash } from 'node:crypto';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import { prepareTextures } from '../../../shared/avatar/textures.mjs';
-import { drawStage } from '../../../shared/avatar/render.mjs';
+import { drawStage, drawAvatar } from '../../../shared/avatar/render.mjs';
 import { validateRig } from '../../../shared/avatar/rig.mjs';
 
 const root = new URL('../../../', import.meta.url);
@@ -47,7 +47,7 @@ async function exportGif(name, seconds, width, height, paint) {
 for (const clip of ['idle', 'attack', 'block']) {
   await exportGif(clip, clips[clip].duration, 480, 680, (ctx, time) => {
     drawStage(ctx, 480, 680, data, textures, { clip, time, outfit: 'armor' });
-    label(ctx, clips[clip].name, `Rig fitting 02 · ${time.toFixed(2)} / ${clips[clip].duration.toFixed(2)} s`, 480);
+    label(ctx, clips[clip].name, `Neck fitting 03 · ${time.toFixed(2)} / ${clips[clip].duration.toFixed(2)} s`, 480);
   });
 }
 const total = clips.idle.duration + clips.attack.duration + clips.block.duration;
@@ -58,7 +58,7 @@ await exportGif('equipment-comparison', total, 840, 680, (ctx, time) => {
   else if (time >= clips.idle.duration) { clip = 'attack';local -= clips.idle.duration; }
   for (const [i, outfit] of ['starter', 'armor'].entries()) {
     drawStage(panelCtx, 420, 680, data, textures, { clip, time: local, outfit });
-    label(panelCtx, outfit === 'starter' ? 'Starter clothing' : 'Steel & blue armor', `${clips[clip].name} · ${local.toFixed(2)} s · fitting 02`, 420);
+    label(panelCtx, outfit === 'starter' ? 'Starter clothing' : 'Steel & blue armor', `${clips[clip].name} · ${local.toFixed(2)} s · neck fitting 03`, 420);
     ctx.drawImage(panel, i * 420, 0);
   }
 });
@@ -68,4 +68,16 @@ for (const [i, [clip, time]] of [['idle', 0], ['attack', .9], ['block', 1.2]].en
   const c = createCanvas(480, 680), cc = c.getContext('2d');drawStage(cc, 480, 680, data, textures, { clip, time, outfit: 'armor' });label(cc, clips[clip].name, `Inspection pose · ${time.toFixed(2)}s`, 480);ctx.drawImage(c, i * 480, 0);
 }
 writeFileSync(new URL('review-poses.png', preview), contact.toBuffer('image/png'));
+const neckReview = createCanvas(960, 720), neckCtx = neckReview.getContext('2d');
+neckCtx.fillStyle = '#eef0ed';neckCtx.fillRect(0, 0, 960, 720);
+for (const [row, time] of [0, 1.6].entries()) {
+  for (const [column, outfit] of ['starter', 'armor'].entries()) {
+    const cell = createCanvas(480, 360), cc = cell.getContext('2d');
+    cc.save();cc.scale(2, 2);cc.translate(-400, -530);
+    drawAvatar(cc, data, textures, { clip: 'idle', time, outfit, weapons: false });cc.restore();
+    label(cc, outfit === 'starter' ? 'Starter collar' : 'Armor collar', `Neck fitting 03 · idle ${time.toFixed(1)} s`, 480);
+    neckCtx.drawImage(cell, column * 480, row * 360);
+  }
+}
+writeFileSync(new URL('neck-fit.png', preview), neckReview.toBuffer('image/png'));
 writeFileSync(new URL('export-report.json', preview), JSON.stringify({ fps, renderer: 'shared/avatar/render.mjs', loop: 'infinite', clips: Object.fromEntries(Object.entries(clips).map(([id, c]) => [id, { duration: c.duration, frames: Math.round(c.duration * fps) }])), rigSha256: createHash('sha256').update(readFileSync(new URL('rig.json', folder))).digest('hex'), clipsSha256: createHash('sha256').update(readFileSync(new URL('clips.json', folder))).digest('hex') }, null, 2) + '\n');
