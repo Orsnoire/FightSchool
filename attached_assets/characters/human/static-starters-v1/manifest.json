@@ -1,7 +1,7 @@
 {
   "id": "static-starters-v1",
   "status": "workshop-review",
-  "revision": 2,
+  "revision": 3,
   "date": "2026-10-05",
   "renderer": "shared/avatar/static-renderer.ts",
   "fits": "shared/avatar/static-catalog.ts",
@@ -60,8 +60,8 @@
     }
   },
   "preview": {
-    "path": "workshop/site/previews/static-starters-02.html",
+    "path": "workshop/site/previews/static-starters-03.html",
     "bytes": 14694826,
-    "sha256": "7c615188e2e7cbce4621661438ab24d3191a18882c71f0bf6f2b050772a04a69"
+    "sha256": "dffc32d8f2be34f4294cd07c4e7b0371cc935cc32eb56b20a5bed63d895979d2"
   }
 }

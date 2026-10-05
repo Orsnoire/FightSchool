@@ -16,7 +16,7 @@ if(command==='connect') {
  if(!response.ok||!authorization.authorized)throw new Error('Workshop connection is not authorized or has expired. Open the connect link.');
  console.log(`Connected until ${new Date(authorization.expiresAt).toISOString()}`);
  if(command==='upload') {
-  const entryId=process.argv[3]||'static-starters-02';
+  const entryId=process.argv[3]||'static-starters-03';
   if(!/^static-starters-\d{2}$/.test(entryId))throw new Error('Expected a versioned static starter review ID');
   const preview=`previews/${entryId}.html`;
   const bytes=readFileSync(`workshop/site/${preview}`);
