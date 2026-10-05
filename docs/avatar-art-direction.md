@@ -49,6 +49,16 @@ returning to an earlier job must never restore stale colors. Initial channels
 randomize independently once and are explicitly saved. An initial retry or
 reconnect must preserve the saved choice.
 
+October 5 review feedback accepts the starter outfit designs while requesting
+fit corrections. Review 02 uses a continuous, palette-matched neck and upper
+chest between the back collar and its front lip. The hidden lower neck has no
+closing outline. Each of the four kits and all empty-handed armor variants
+has its own collar edge for each body. The Imperial helmet brow band sits just
+above the eyebrows; the scout cap sits slightly higher. Helmet rear neck flares
+render behind the head, with brow band and cheek plates in front. Crown hair
+is contained by these closed hats; the visible fringe and side hair remain.
+The Wizard brim split is retained. These fitting corrections still await review.
+
 The static sheets under `static-starters-v1` are workshop candidates, not
 approved production rigs. Their body clothing/props are combined starter art;
 headwear and the existing head/masks are composited separately. Arbitrary

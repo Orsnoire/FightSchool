@@ -38,11 +38,15 @@ node scripts/workshop/publish.mjs status
 node scripts/workshop/publish.mjs upload
 ```
 
-The generated `workshop/site/previews/static-starters-01.html` is self-contained and below the Worker's 25 MiB upload limit. It shares the app's appearance and renderer modules, supports both bodies and all twelve jobs, and offers PNG download. Its controls work when storage is blocked by the workshop's sandboxed iframe; shared values remain in memory. A standalone visit also remembers the latest appearance locally when browser storage is available. This preview never writes student data.
+The generated `workshop/site/previews/static-starters-02.html` is self-contained and below the Worker's 25 MiB upload limit. It shares the app's appearance and renderer modules, supports both bodies and all twelve jobs, and offers PNG download. Its controls work when storage is blocked by the workshop's sandboxed iframe; shared values remain in memory. A standalone visit also remembers the latest appearance locally when browser storage is available. This preview never writes student data.
 
 The helper uploads the new preview, checks its returned public bytes, then publishes the catalog entry last. It merges against the current public catalog to preserve later and historical entries, and aborts if that catalog changes during upload. Existing preview versions are not overwritten with different bytes. A revised visual review should use a new filename/ID. Uploading this review needs no Worker-code deployment, DNS change or Neon migration.
 
-After publication, verify both the direct preview and `/workshop/?asset=static-starters-01`, including male/female, each job, light/dark palettes, keyboard controls and a phone viewport. If connection is pending, the generated HTML can be opened directly or loaded through the workshop shell's local-file picker.
+After publication, verify both the direct preview and `/workshop/?asset=static-starters-02`, including male/female, each job, light/dark palettes, keyboard controls and a phone viewport. If connection is pending, the generated HTML can be opened directly or loaded through the workshop shell's local-file picker.
+
+Review 02 adds neck/collar and headwear fit corrections. Review 01 remains in
+the public catalog for comparison. The helper defaults to review 02 and accepts
+an explicit version as `node scripts/workshop/publish.mjs upload static-starters-02`.
 
 ## Separate live application
 

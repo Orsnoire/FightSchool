@@ -12,7 +12,7 @@ const output='artifacts/static-avatar-review';mkdirSync(output,{recursive:true})
 const page=await browser.newPage({viewport:{width:1280,height:1050}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try {
- await page.goto(pathToFileURL(resolve('workshop/site/previews/static-starters-01.html')).href);
+ await page.goto(pathToFileURL(resolve('workshop/site/previews/static-starters-02.html')).href);
  await page.waitForFunction(()=>document.querySelector('#status').textContent==='Ready for review');
  const values=await page.evaluate(()=>Object.fromEntries(['hair','eyes','skin'].map(id=>[id,document.querySelector('#'+id).options[7].value])));
  for(const [id,value] of Object.entries(values))await page.selectOption('#'+id,value);
