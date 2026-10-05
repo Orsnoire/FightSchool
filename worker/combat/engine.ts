@@ -1,3 +1,4 @@
+import type { AvatarAppearance } from "../../shared/avatar/appearance.ts";
 import type {
   FightQuestion,
   FightRecord,
@@ -39,6 +40,7 @@ export type {
   CombatPhase,
 } from "../../shared/combat/model.ts";
 export interface CombatProfile {
+  appearance?: AvatarAppearance | null;
   levels: Partial<Record<CharacterClass, number>>;
   equipment?: EquipmentStats;
   crossClass?: string[];
@@ -107,6 +109,7 @@ export function addStudent(
     nickname: student.nickname,
     characterClass: job,
     gender: student.gender === "B" ? "B" : "A",
+    appearance: profile.appearance ? { ...profile.appearance } : null,
     health: stats.maxHp,
     maxHealth: stats.maxHp,
     mp: job === "wizard" ? Math.floor(stats.maxMp / 2) : stats.maxMp,

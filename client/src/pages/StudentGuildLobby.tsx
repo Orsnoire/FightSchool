@@ -1,3 +1,4 @@
+import { useAvatarAppearance } from "@/hooks/useAvatarAppearance";
 import { StaminaBar } from "@/components/StaminaBar";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
@@ -43,6 +44,7 @@ export default function StudentGuildLobby() {
   const guildId = params?.id;
   const { toast } = useToast();
   const studentId = localStorage.getItem("studentId");
+  const savedAppearance = useAvatarAppearance(studentId);
   const [hostingFightId, setHostingFightId] = useState<string | null>(null);
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
   const [showClassModal, setShowClassModal] = useState(false);
@@ -406,6 +408,7 @@ export default function StudentGuildLobby() {
                       <div className="relative">
                         <PlayerAvatar
                           characterClass={classType}
+                          appearance={savedAppearance.data}
                           gender={student?.gender || "A"}
                           size="md"
                         />

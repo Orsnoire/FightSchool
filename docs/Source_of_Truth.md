@@ -146,12 +146,27 @@ the left half facing right; enemies occupy the right half facing left. The
 precise formation pattern remains open; it does not replace the current
 combat overlay flow or authorize premature live avatar integration.
 
-The [avatar art and animation direction guide](avatar-art-direction.md) defines
-the production workflow and pre-integration gate: skeleton-connected male/female
-models and calibrated hooks, starter and signature gear for all four base jobs,
-and complete ability animation coverage for the agreed available weapons and
-legal loadouts. All five requirements must be reviewed before live integration;
-a single working prototype does not satisfy that gate.
+October 5 owner direction supersedes the earlier all-animation release gate for
+an initial static release. Front-facing Human male/female paperdolls with the
+four approved starter-kit briefs may be integrated after visual approval,
+persistence/security checks and classroom acceptance. Independent saved colors
+remain shared across jobs; a job switch selects its hat, outfit and props.
+Animation completion is no longer a prerequisite for that static release.
+The subsequent October 5 direction removes all placeholder job portraits:
+every job uses its armor type's starter gear and the shared Human base. Missing
+weapon artwork renders empty hands in the original front-facing pose, without
+changing the equipped weapon's gameplay effects.
+
+The [avatar art and animation direction guide](avatar-art-direction.md) retains
+the full segmented-model, rig, starter/signature-gear and ability-coverage gate
+for the later animated release. Static approval does not approve an unfinished
+rig or change combat mechanics. See the [permanent starter wardrobe](starter-wardrobe.md)
+for the October 5 shared-ownership direction and review-default armor exclusions.
+The exact slot/material defaults remain subject to owner review before deployment.
+
+The separate [workshop routing guide](workshop-routing.md) records the Worker,
+R2 binding, connection/upload flow and recovered review checkpoints. Publishing
+a workshop preview does not deploy the game or migrate student data.
 
 The approved Human male/female base art and appearance contract are documented in
 [`attached_assets/characters/human/v1/README.md`](../attached_assets/characters/human/v1/README.md).

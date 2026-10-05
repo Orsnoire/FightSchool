@@ -1,3 +1,7 @@
+import { fetchEquipmentItems } from "@/lib/equipment";
+import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
+import { equipmentExclusion } from "@shared/equipment-rules";
+import type { EquipmentSlot } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,25 +29,23 @@ export default function StudentEquipment() {
   });
 
   // Fetch equipped items
-  const equippedItemIds = [student?.weapon, student?.headgear, student?.armor].filter(Boolean) as string[];
+  const equippedItemIds = EQUIPMENT_SLOTS.map(slot => student?.[slot]).filter(Boolean) as string[];
   const { data: equippedItems = [] } = useQuery<EquipmentItemDb[]>({
     queryKey: ['equipment-items', { ids: equippedItemIds.sort() }],
     queryFn: async () => {
       if (equippedItemIds.length === 0) return [];
-      const response = await fetch(`/api/equipment-items?ids=${equippedItemIds.join(',')}`);
-      return response.json();
+      return fetchEquipmentItems(equippedItemIds);
     },
     enabled: equippedItemIds.length > 0,
   });
 
   // Fetch inventory items
-  const inventoryIds = student?.inventory || [];
+  const inventoryIds = [...(student?.inventory || [])];
   const { data: inventoryItems = [] } = useQuery<EquipmentItemDb[]>({
     queryKey: ['equipment-items', { ids: inventoryIds.sort() }],
     queryFn: async () => {
       if (inventoryIds.length === 0) return [];
-      const response = await fetch(`/api/equipment-items?ids=${inventoryIds.join(',')}`);
-      return response.json();
+      return fetchEquipmentItems(inventoryIds);
     },
     enabled: inventoryIds.length > 0,
   });
@@ -55,7 +57,7 @@ export default function StudentEquipment() {
   }, {} as Record<string, EquipmentItemDb>);
 
   const updateEquipmentMutation = useMutation({
-    mutationFn: async (data: { weapon?: string; headgear?: string; armor?: string; crossClassAbility1?: string | null; crossClassAbility2?: string | null }) => {
+    mutationFn: async (data: Partial<Record<EquipmentSlot,string|null>> & { crossClassAbility1?: string | null; crossClassAbility2?: string | null }) => {
       return apiRequest("PATCH", `/api/student/${studentId}/equipment`, data);
     },
     onSuccess: () => {
@@ -82,12 +84,12 @@ export default function StudentEquipment() {
     }
   };
 
-  const handleEquipmentChange = (slot: "weapon" | "headgear" | "armor", itemId: string) => {
+  const handleEquipmentChange = (slot: EquipmentSlot, itemId: string) => {
     updateEquipmentMutation.mutate({ [slot]: itemId === "none" ? null : itemId });
   };
 
-  const getEquipmentOptions = (slot: "weapon" | "headgear" | "armor") => {
-    return inventoryItems.filter(item => item.slot === slot);
+  const getEquipmentOptions = (slot: EquipmentSlot) => {
+    return inventoryItems.filter(item => item.slot === slot && !equipmentExclusion(student?.characterClass || 'warrior',item));
   };
 
   if (studentLoading || levelsLoading) {
@@ -266,6 +268,15 @@ export default function StudentEquipment() {
               </div>
             </CardContent>
           </Card>
+
+          <Card><CardHeader><CardTitle>Hands, legs, feet & off hand</CardTitle><CardDescription>Starter items remain yours when you change jobs. Quivers pair with bows; potions pair with herbs.</CardDescription></CardHeader><CardContent className="space-y-4">
+            {(['hands','legs','feet','offhand'] as const).map(slot => <div key={slot} className="flex items-center justify-between gap-4">
+              <label htmlFor={`equipment-${slot}`}>{SLOT_LABELS[slot]}</label>
+              <select id={`equipment-${slot}`} className="rounded border p-2 bg-background max-w-[65%]" value={student[slot] || 'none'} onChange={e => handleEquipmentChange(slot,e.target.value)}>
+                <option value="none">None</option>{getEquipmentOptions(slot).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </div>)}
+          </CardContent></Card>
 
           {/* Cross-Class Abilities Section */}
           <Card data-testid="card-cross-class-abilities">

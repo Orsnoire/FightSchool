@@ -24,7 +24,9 @@
     "preview:avatars": "node scripts/avatar/preview-server.mjs",
     "build:avatar-workshop": "node scripts/avatar/workshop/build.mjs",
     "preview:avatar-workshop": "npm run build:avatar-workshop && node scripts/avatar/workshop/serve.mjs",
-    "render:avatar-review": "node scripts/avatar/workshop/render-review.mjs"
+    "render:avatar-review": "node scripts/avatar/workshop/render-review.mjs",
+    "build:static-avatars": "node scripts/avatar/static-workshop/build.mjs",
+    "render:static-avatars": "node --import tsx scripts/avatar/static-workshop/render-review.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

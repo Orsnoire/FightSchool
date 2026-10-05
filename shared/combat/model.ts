@@ -1,3 +1,4 @@
+import type { AvatarAppearance } from "../avatar/appearance";
 import type { CharacterClass, Gender, CharacterStats } from "../schema";
 export type CombatPhase =
   | "waiting"
@@ -22,6 +23,7 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  appearance?: AvatarAppearance | null;
   studentId: string;
   nickname: string;
   characterClass: CharacterClass;

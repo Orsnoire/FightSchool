@@ -3,7 +3,7 @@
 This guide defines how QuestAcademy produces reusable Human avatars through
 visual direction, iterative art review, and technical implementation. It covers
 the male and female base models, skeletons, equipment, and animations required
-before replacing the live portrait system.
+for the static-first release and subsequent animated release.
 
 The product owner describes and approves the appearance and motion. The
 implementer translates that direction into image layers, rigs, attachment
@@ -29,10 +29,61 @@ Technical conventions and job outfit motifs in this guide are working defaults
 to validate in the first prototype. They are not claims that the corresponding
 art has been approved or implemented.
 
-## Required before live integration
+## October 5 static-first release
 
-All five requirements are mandatory. A successful single-character prototype
-is a production checkpoint, not permission to release an incomplete collection.
+The owner's October 5 direction allows non-animated, front-facing avatars to
+ship before the animation collection is complete. The earlier September 30
+all-animation prerequisite is superseded **only for this static release**.
+
+| Job | Clothing and headwear | Character's right hand | Character's left hand |
+| --- | --- | --- | --- |
+| Warrior | Steel/blue starter armor; Imperial Italic helmet with blue detail | Sword | Shield; hand hidden behind it |
+| Wizard | Grey linen robe; purple conical hat | Staff | Empty |
+| Herbalist | Grey linen robe; gold filament/green leaf laurel; leather belt and green herb pouch | Herbs | Potion |
+| Scout | Brown leather armor; matching rake's/Robin Hood cap; quiver over anatomical right shoulder | Free to draw arrows | Bow |
+
+Use the approved face-on head identity and the existing independent palettes.
+Both body models and all four outfits require review. Job controls in the
+workshop, creator and job-change screen use the latest shared appearance;
+returning to an earlier job must never restore stale colors. Initial channels
+randomize independently once and are explicitly saved. An initial retry or
+reconnect must preserve the saved choice.
+
+October 5 review feedback accepts the starter outfit designs while requesting
+fit corrections. Review 02 uses a continuous, palette-matched neck and upper
+chest between the back collar and its front lip. The hidden lower neck has no
+closing outline. Each of the four kits and all empty-handed armor variants
+has its own collar edge for each body. The Imperial helmet brow band sits just
+above the eyebrows; the scout cap sits slightly higher. Helmet rear neck flares
+render behind the head, with brow band and cheek plates in front. Crown hair
+is contained by these closed hats; the visible fringe and side hair remain.
+The Wizard brim split is retained. Review 03 centers the female Warrior and
+Wizard bodies beneath the shared neck after comparison with Scout and Herbalist:
+Warrior moves 14 reference pixels left and Wizard 16 right. Their existing
+collar masks follow the body. These fitting corrections still await review.
+
+The static sheets under `static-starters-v1` are workshop candidates, not
+approved production rigs. Their body clothing/props are combined starter art;
+headwear and the existing head/masks are composited separately. Arbitrary
+item-by-item equipped visuals require further segmentation and fit work. Label
+the current displayed look as starter appearance. Do not imply new custom-gear
+art or animation coverage exists.
+
+Static release signoff requires eight fitted looks, light/dark palette and
+occlusion checks, authenticated saved-appearance tests, permanent starter
+ownership/compatibility review, migration verification and classroom browser
+acceptance. The owner's later October 5 direction removes every placeholder job
+portrait: all twelve jobs reuse the starter armor for their armor type. Known
+weapons reuse their fitted starter look; unfinished weapons use empty hands in
+the original face-on rest pose. These missing visuals do not remove an equipped
+item's gameplay stats. The new combat formation/scenery work remains its own acceptance
+track. See [workshop publishing](workshop-routing.md) and
+[starter wardrobe](starter-wardrobe.md).
+
+## Required before animated integration
+
+All five requirements below remain mandatory for the later animated release.
+A successful single-character prototype does not approve an incomplete animation collection.
 
 | Requirement | Required coverage | Completion evidence |
 | --- | --- | --- |
@@ -172,10 +223,10 @@ The clothing directions are proposals for visual review.
 
 | Job | Current weapon family and starter ID | Starter direction | Signature direction |
 | --- | --- | --- | --- |
-| Warrior | Sword, `basic_sword` | Practical padded gear and plain blade | Distinctive armor silhouette, bold trim, coordinated blade and shield presentation |
-| Wizard | Staff, `basic_staff` | Simple robe or tunic, plain staff | Layered arcane garments and a recognizable staff focus |
-| Scout | Bow, `basic_bow` | Light traveling clothes, simple bow | Fitted ranger-like gear, bracers, quiver, distinctive bow |
-| Herbalist | Herbs, `basic_herbs` | Practical tunic or apron and herb pouch | Apothecary kit with recognizable botanical motifs and potion tools |
+| Warrior | Sword, `basic_sword` | Steel/blue armor, Imperial Italic helmet, sword and shield | Distinctive armor silhouette, bold trim, coordinated blade and shield presentation |
+| Wizard | Staff, `basic_staff` | Grey linen robe, purple conical hat and staff | Layered arcane garments and a recognizable staff focus |
+| Scout | Bow, `basic_bow` | Brown leather kit, rake’s cap, bow and right-shoulder quiver | Fitted ranger-like gear, bracers, quiver, distinctive bow |
+| Herbalist | Herbs, `basic_herbs` | Grey linen robe, laurel, herbs, potion and green herb pouch | Apothecary kit with recognizable botanical motifs and potion tools |
 
 Create and fit each approved kit for both bodies and both views. Keep hair and
 headgear compatibility explicit; avoid erasing hairstyle identity as a shortcut.
@@ -318,7 +369,7 @@ animations, reconnects, and reduced motion must preserve the same combat state.
 Separate caster motion, props/projectiles, target response, and visual effects
 so multi-target actions and concurrent classroom combat remain manageable.
 
-## Integration signoff
+## Animated integration signoff
 
 - [ ] Both models have approved segmented geometry and reconciled proportions.
 - [ ] Both views have valid rigs, bind/rest poses, and calibrated hooks.
@@ -332,7 +383,7 @@ so multi-target actions and concurrent classroom combat remain manageable.
 - [ ] Representative multi-avatar performance is measured on target classroom devices; budget and results are recorded.
 - [ ] Product owner approves the collection and implementer records technical signoff.
 
-Only then begin live integration under its own implementation plan: asset
+For the animated release, only then begin live integration under its own implementation plan: asset
 delivery, authenticated avatar/equipment APIs, character creation, persisted
-appearance, combat presentation, and eventual retirement of legacy portraits.
+appearance, combat presentation, and approved replacements for each unfinished weapon.
 Local workshops and test previews may run earlier without changing live users.

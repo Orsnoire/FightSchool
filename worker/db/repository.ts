@@ -1,3 +1,4 @@
+import { EQUIPMENT_SLOTS } from "../../shared/equipment-catalog.ts";
 import {
   getStartingEquipment,
   type CharacterClass,
@@ -201,7 +202,9 @@ export function createIdentityRepository(
     },
 
     async updateStudentCharacter(id, characterClass, gender) {
-      const starting = getStartingEquipment(characterClass as CharacterClass);
+      const [previous] = await database.select().from(students).where(eq(students.id,id));
+      if (!previous) return null;
+      const starting = previous.characterClass === characterClass ? {} : getStartingEquipment(characterClass as CharacterClass);
       await database
         .insert(studentJobLevels)
         .values({ studentId: id, jobClass: characterClass as CharacterClass })
@@ -210,6 +213,7 @@ export function createIdentityRepository(
         .update(students)
         .set({
           ...starting,
+          inventory: sql`(SELECT COALESCE(jsonb_agg(DISTINCT value), '[]'::jsonb) FROM jsonb_array_elements(${students.inventory} || ${JSON.stringify(EQUIPMENT_SLOTS.map(slot => previous[slot]).filter(Boolean))}::jsonb))`,
           characterClass: characterClass as StudentRecord["characterClass"],
           gender: gender as StudentRecord["gender"],
         })

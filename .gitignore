@@ -9,3 +9,6 @@ vite.config.ts.*
 .wrangler
 attached_assets/characters/human/v1/recolor/previews/
 artifacts/avatar-workshop/
+artifacts/static-avatar-review/
+.workshop-upload-session.json
+workshop/site/previews/

@@ -144,3 +144,17 @@ The immediately preceding deployed Worker version is
 Keep this as the latest rollback checkpoint. A rollback preserves the additive
 Neon schema, existing sessions, R2 and Durable Object bindings; it would restore
 the old combat XP policy. Do not delete or reset student data.
+
+## Independent avatar workshop
+
+The review workshop uses **bookwyrm-animation-studio**, R2 **bookwyrm-workshop**,
+binding **WORKSHOP_BUCKET**, and secret **WORKSHOP_UPLOAD_TOKEN**. It serves
+https://bookwyrminteractive.studio/workshop/ and is independent of this application
+Worker and deployment workflow. See [routing and temporary upload connection](../workshop-routing.md).
+
+The October 5 static-avatar/wardrobe change adds migration `0009_starter_wardrobe.sql`.
+Apply it through the normal additive migration gate before deploying the new Worker.
+Existing students and equipped items are preserved; permanent starter ownership
+is derived from the shared catalog without repeated item grants. A workshop upload
+does not apply this migration. Do not mark this migration applied based only on
+a local test or the earlier October 1 deployment record.
