@@ -38,7 +38,7 @@ node scripts/workshop/publish.mjs status
 node scripts/workshop/publish.mjs upload
 ```
 
-The generated `workshop/site/previews/static-starters-01.html` is self-contained and below the Worker's 25 MiB upload limit. It shares the app's appearance and renderer modules, supports both bodies and all four jobs, and offers PNG download. Its controls work when storage is blocked by the workshop's sandboxed iframe; shared values remain in memory. A standalone visit also remembers the latest appearance locally when browser storage is available. This preview never writes student data.
+The generated `workshop/site/previews/static-starters-01.html` is self-contained and below the Worker's 25 MiB upload limit. It shares the app's appearance and renderer modules, supports both bodies and all twelve jobs, and offers PNG download. Its controls work when storage is blocked by the workshop's sandboxed iframe; shared values remain in memory. A standalone visit also remembers the latest appearance locally when browser storage is available. This preview never writes student data.
 
 The helper uploads the new preview, checks its returned public bytes, then publishes the catalog entry last. It merges against the current public catalog to preserve later and historical entries, and aborts if that catalog changes during upload. Existing preview versions are not overwritten with different bytes. A revised visual review should use a new filename/ID. Uploading this review needs no Worker-code deployment, DNS change or Neon migration.
 

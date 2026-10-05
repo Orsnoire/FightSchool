@@ -29,3 +29,11 @@ export const STATIC_FITS: Record<string, StarterFit> = {
     headwear: { polygon:[[1095,235],[1536,235],[1536,635],[1095,635]],scale:1.8,offsetX:-1850,offsetY:-750 },
   },
 };
+
+/** Empty hands use the approved face-on rest pose, with armor-specific sleeves/gloves. */
+export const EMPTY_BODY_FITS:Record<'plate'|'leather'|'linen',{male:SpriteFit;female:SpriteFit}> = Object.fromEntries(
+  (['plate','leather','linen'] as const).map((armor,col)=>[armor,{
+    male:{polygon:[[col*418,0],[(col+1)*418,0],[(col+1)*418,627],[col*418,627]],scale:1.75,offsetX:512-(210+col*418)*1.75,offsetY:446},
+    female:{polygon:[[col*418,627],[(col+1)*418,627],[(col+1)*418,1254],[col*418,1254]],scale:1.76,offsetX:512-(210+col*418)*1.76,offsetY:-591},
+  }])
+) as Record<'plate'|'leather'|'linen',{male:SpriteFit;female:SpriteFit}>;

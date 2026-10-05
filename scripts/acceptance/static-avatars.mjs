@@ -18,13 +18,14 @@ try {
  for(const [id,value] of Object.entries(values))await page.selectOption('#'+id,value);
  for(const model of ['human-male-v1','human-female-v1']) {
   await page.selectOption('#model',model);
-  for(const job of ['warrior','wizard','herbalist','scout','warrior']) {
+  for(const job of ['warrior','wizard','herbalist','scout','warlock','priest','paladin','dark_knight','blood_knight','monk','ranger','bard','warrior']) {
    await page.selectOption('#job',job);
    await page.waitForFunction(({model,job,values})=>{
     const c=document.querySelector('#avatar');if(c.dataset.job!==job)return false;
     const a=JSON.parse(c.dataset.appearance);return a.modelId===model&&a.hairColorId===values.hair&&a.eyeColorId===values.eyes&&a.skinColorId===values.skin;
    },{model,job,values});
    for(const [id,value] of Object.entries(values))assert.equal(await page.inputValue('#'+id),value);
+   if(['blood_knight','monk','bard'].includes(job)){assert.equal(await page.textContent('#right-hand'),'Empty');assert.equal(await page.textContent('#left-hand'),'Empty');}
   }
  }
  await page.selectOption('#job','herbalist');
@@ -72,6 +73,6 @@ try {
  await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
  assert.equal(saved.hairColorId,changed);assert.equal(student.characterClass,'herbalist');
  assert.deepEqual(errors,[]);
- writeFileSync(`${output}/browser-result.json`,JSON.stringify({passed:true,checks:['both bodies and four jobs','latest shared colors retained','desktop and phone workshop layout','real creator save','real job-change save','no browser exceptions']},null,2)+'\n');
+ writeFileSync(`${output}/browser-result.json`,JSON.stringify({passed:true,checks:['both bodies and all twelve jobs; missing weapons show empty hands','latest shared colors retained','desktop and phone workshop layout','real creator save','real job-change save','no browser exceptions']},null,2)+'\n');
  console.log('Static workshop, creator and job-change browser acceptance passed');
 } finally {await browser.close();await server?.close();}

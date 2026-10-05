@@ -152,6 +152,10 @@ four approved starter-kit briefs may be integrated after visual approval,
 persistence/security checks and classroom acceptance. Independent saved colors
 remain shared across jobs; a job switch selects its hat, outfit and props.
 Animation completion is no longer a prerequisite for that static release.
+The subsequent October 5 direction removes all placeholder job portraits:
+every job uses its armor type's starter gear and the shared Human base. Missing
+weapon artwork renders empty hands in the original front-facing pose, without
+changing the equipped weapon's gameplay effects.
 
 The [avatar art and animation direction guide](avatar-art-direction.md) retains
 the full segmented-model, rig, starter/signature-gear and ability-coverage gate

@@ -1,5 +1,5 @@
-import { appearanceColors, type AvatarAppearance, type StarterJob } from './appearance';
-import { STATIC_FITS, type SpriteFit } from './static-catalog';
+import { appearanceColors, starterVisual, type AvatarAppearance, type AvatarJob } from './appearance';
+import { STATIC_FITS, EMPTY_BODY_FITS, type SpriteFit } from './static-catalog';
 
 export type StaticAssetUrls = Record<string, string>;
 export const STATIC_CANVAS = { width: 1200, height: 1950, offsetX: 88, offsetY: 400 };
@@ -52,14 +52,14 @@ function sprite(ctx:CanvasRenderingContext2D, source:CanvasImageSource, fit:Spri
 }
 
 /** Static rendering has no combat state, timers, persistence, or equipment grants. */
-export function composeStaticAvatar(urls:StaticAssetUrls, appearance:AvatarAppearance, job:StarterJob):Promise<HTMLCanvasElement> {
+export function composeStaticAvatar(urls:StaticAssetUrls, appearance:AvatarAppearance, job:AvatarJob):Promise<HTMLCanvasElement> {
   if(!assetSetIds.has(urls))assetSetIds.set(urls,nextAssetSetId++);
   const key=JSON.stringify([appearance,job,assetSetIds.get(urls)]);
   let result=composedCache.get(key);
   if(!result) {
     result=(async()=>{
-      const fit=STATIC_FITS[job];if(!fit)throw new Error('This starter outfit is unavailable');
-      const [head,atlas]=await Promise.all([tintedHead(urls,appearance),tintedAtlas(urls[job],appearanceColors(appearance).skin)]);
+      const visual=starterVisual(job),fit=visual.body==='empty-bodies'?EMPTY_BODY_FITS[visual.armor]:STATIC_FITS[visual.body],hatFit=STATIC_FITS[visual.headwear].headwear;
+      const [head,atlas,hat]=await Promise.all([tintedHead(urls,appearance),tintedAtlas(urls[visual.body],appearanceColors(appearance).skin),image(urls[visual.headwear])]);
       const c=canvas(STATIC_CANVAS.width,STATIC_CANVAS.height),ctx=c.getContext('2d')!;
       ctx.translate(STATIC_CANVAS.offsetX,STATIC_CANVAS.offsetY);
       const isFemale=appearance.modelId==='human-female-v1';
@@ -69,11 +69,11 @@ export function composeStaticAvatar(urls:StaticAssetUrls, appearance:AvatarAppea
       ctx.beginPath();ctx.moveTo(470,isFemale?552:576);ctx.lineTo(555,isFemale?552:576);
       ctx.lineTo(558,595);ctx.lineTo(590,620);ctx.lineTo(590,765);ctx.lineTo(435,765);ctx.lineTo(435,620);ctx.lineTo(468,595);ctx.closePath();ctx.fill();
       sprite(ctx,atlas,isFemale?fit.female:fit.male);
-      if(job==='wizard') sprite(ctx,atlas,fit.headwear); // Back brim sits behind hair.
+      if(visual.headwear==='wizard') sprite(ctx,hat,hatFit); // Back brim sits behind hair.
       // Keep approved head/hair/neck geometry; original painted clothes are omitted.
       ctx.save();ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(1024,0);ctx.lineTo(1024,isFemale?589:607);
       ctx.lineTo(0,isFemale?589:607);ctx.closePath();ctx.clip();ctx.drawImage(head,0,0);ctx.restore();
-      sprite(ctx,atlas,job==='wizard'?{...fit.headwear,polygon:[[1095,235],[1536,235],[1536,510],[1095,510]]}:fit.headwear);return c;
+      sprite(ctx,hat,visual.headwear==='wizard'?{...hatFit,polygon:[[1095,235],[1536,235],[1536,510],[1095,510]]}:hatFit);return c;
     })();
     composedCache.set(key,result);if(composedCache.size>8)composedCache.delete(composedCache.keys().next().value!);
     result.catch(()=>composedCache.delete(key));

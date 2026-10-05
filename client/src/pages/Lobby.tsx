@@ -14,7 +14,7 @@ import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { AvatarAppearanceEditor } from '@/components/AvatarAppearanceEditor';
 import { StaticAvatar } from '@/components/StaticAvatar';
 import { useAvatarAppearance } from '@/hooks/useAvatarAppearance';
-import { initialAppearance, STARTER_JOBS, JOB_PRESENTATION, type StarterJob } from '@shared/avatar/appearance';
+import { initialAppearance, AVATAR_JOBS, JOB_PRESENTATION, type AvatarJob } from '@shared/avatar/appearance';
 import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, BASE_CLASSES, ALL_CHARACTER_CLASSES, WEAPON_RESTRICTIONS } from "@shared/schema";
 import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy, Lock, X, Filter, ShoppingBag } from "lucide-react";
 import { JOB_ABILITY_SLOTS, ABILITY_DISPLAYS, type AbilityClass } from "@shared/abilityUI";
@@ -176,7 +176,7 @@ export default function Lobby() {
   const studentId = localStorage.getItem("studentId");
   const savedAppearance = useAvatarAppearance(studentId);
   const [appearanceDraft, setAppearanceDraft] = useState(() => initialAppearance());
-  const [previewJob, setPreviewJob] = useState<StarterJob>('warrior');
+  const [previewJob, setPreviewJob] = useState<AvatarJob>('warrior');
   useEffect(() => {
     if (savedAppearance.data) setAppearanceDraft({ ...savedAppearance.data });
     else if (student?.gender) setAppearanceDraft(previous => ({ ...previous, modelId: student.gender === 'B' ? 'human-female-v1' : 'human-male-v1' }));
@@ -488,7 +488,7 @@ export default function Lobby() {
                   className="w-full mt-4"
                   onClick={() => {
                     if (savedAppearance.data) setAppearanceDraft({ ...savedAppearance.data });
-                    setPreviewJob(STARTER_JOBS.includes(student.characterClass as StarterJob) ? student.characterClass as StarterJob : 'warrior');
+                    setPreviewJob(student.characterClass || 'warrior');
                     setShowClassModal(true);
                   }}
                   data-testid="button-open-class-modal"
@@ -1049,15 +1049,15 @@ export default function Lobby() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-serif">Select Your Class</DialogTitle>
             <DialogDescription>
-              Preview your starter outfit, then select a class below to save. Your appearance is shared across jobs. Advanced jobs keep their existing portraits.
+              Preview your starter outfit, then select a class below to save. Your appearance is shared across jobs. Unfinished weapons display empty hands.
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid sm:grid-cols-2 gap-4 items-center">
             <StaticAvatar appearance={appearanceDraft} job={previewJob} className="h-72 aspect-[1200/1950] mx-auto" />
             <div className="space-y-4">
-              <label className="block text-sm">Preview job<select aria-label="Preview job" className="block w-full mt-1 rounded border p-2 bg-background" value={previewJob} onChange={e => setPreviewJob(e.target.value as StarterJob)}>
-                {STARTER_JOBS.map(job => <option key={job} value={job}>{JOB_PRESENTATION[job].name}</option>)}
+              <label className="block text-sm">Preview job<select aria-label="Preview job" className="block w-full mt-1 rounded border p-2 bg-background" value={previewJob} onChange={e => setPreviewJob(e.target.value as AvatarJob)}>
+                {AVATAR_JOBS.map(job => <option key={job} value={job}>{JOB_PRESENTATION[job].name}</option>)}
               </select></label>
               <AvatarAppearanceEditor value={appearanceDraft} onChange={setAppearanceDraft} modelLocked />
               <p className="text-sm text-muted-foreground">{JOB_PRESENTATION[previewJob].head} · Right: {JOB_PRESENTATION[previewJob].right} · Left: {JOB_PRESENTATION[previewJob].left}</p>

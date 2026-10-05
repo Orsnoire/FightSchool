@@ -129,13 +129,14 @@ The foundation supplies the original assets, recoloring derivatives, catalog,
 additive migrations, seed records, persistence helpers and database tests.
 The static implementation adds the creator, job-change controls and combat
 appearance transport. Code and workshop review do not themselves run a live
-migration or approve a deployment. Advanced-job portraits remain a temporary
-fallback until their fitted art is approved.
+migration or approve a deployment. All jobs use the shared chibi base and starter armor; no fixed job portraits
+remain. Missing weapon art uses empty hands without rerolling appearance or
+changing combat equipment.
 
 Deploy the migrations through the normal migration workflow before integrating
 avatar API routes. The static renderer can reuse the recoloring assets now; complete body-part cuts,
-rig calibration and per-item equipment art before marking rigs ready. Remove
-legacy portrait imports only after every caller and job has an approved replacement.
+rig calibration and per-item equipment art before marking rigs ready. The placeholder portrait imports/assets have been removed; unfinished weapons
+use the approved empty-hand fallback direction.
 
 `tests/phase4/avatar-database.test.ts` runs the real migrations in PostgreSQL via
 PGlite. It verifies existing student preservation, seed/image consistency,

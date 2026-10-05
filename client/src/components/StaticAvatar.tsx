@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { composeStaticAvatar, STATIC_CANVAS, type StaticAssetUrls } from '@shared/avatar/static-renderer';
-import type { AvatarAppearance, StarterJob } from '@shared/avatar/appearance';
+import type { AvatarAppearance, AvatarJob } from '@shared/avatar/appearance';
 
 import male_neutral from '../../../attached_assets/characters/human/v1/recolor/neutral/human-male-front.png';
 import male_hair from '../../../attached_assets/characters/human/v1/recolor/masks/human-male-front-hair.png';
@@ -14,6 +14,7 @@ import warrior from '../../../attached_assets/characters/human/static-starters-v
 import wizard from '../../../attached_assets/characters/human/static-starters-v1/source/wizard.png';
 import scout from '../../../attached_assets/characters/human/static-starters-v1/source/scout.png';
 import herbalist from '../../../attached_assets/characters/human/static-starters-v1/source/herbalist.png';
+import emptyBodies from '../../../attached_assets/characters/human/static-starters-v1/source/empty-bodies.png';
 export const staticAvatarUrls:StaticAssetUrls = {
   'male-neutral':male_neutral,
   'male-hair':male_hair,
@@ -23,13 +24,14 @@ export const staticAvatarUrls:StaticAssetUrls = {
   'female-hair':female_hair,
   'female-eyes':female_eyes,
   'female-skin':female_skin,
+  'empty-bodies':emptyBodies,
   warrior,
   wizard,
   scout,
   herbalist,
 };
 
-export function StaticAvatar({ appearance, job, className='', label }: { appearance:AvatarAppearance; job:StarterJob; className?:string; label?:string }) {
+export function StaticAvatar({ appearance, job, className='', label }: { appearance:AvatarAppearance; job:AvatarJob; className?:string; label?:string }) {
   const canvas=useRef<HTMLCanvasElement>(null),[error,setError]=useState('');
   useEffect(()=>{
     let active=true;setError('');

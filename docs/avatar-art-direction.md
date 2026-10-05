@@ -59,8 +59,11 @@ art or animation coverage exists.
 Static release signoff requires eight fitted looks, light/dark palette and
 occlusion checks, authenticated saved-appearance tests, permanent starter
 ownership/compatibility review, migration verification and classroom browser
-acceptance. Advanced jobs retain their existing portraits until fitted art is
-approved. The new combat formation/scenery work remains its own acceptance
+acceptance. The owner's later October 5 direction removes every placeholder job
+portrait: all twelve jobs reuse the starter armor for their armor type. Known
+weapons reuse their fitted starter look; unfinished weapons use empty hands in
+the original face-on rest pose. These missing visuals do not remove an equipped
+item's gameplay stats. The new combat formation/scenery work remains its own acceptance
 track. See [workshop publishing](workshop-routing.md) and
 [starter wardrobe](starter-wardrobe.md).
 
@@ -369,5 +372,5 @@ so multi-target actions and concurrent classroom combat remain manageable.
 
 For the animated release, only then begin live integration under its own implementation plan: asset
 delivery, authenticated avatar/equipment APIs, character creation, persisted
-appearance, combat presentation, and eventual retirement of legacy portraits.
+appearance, combat presentation, and approved replacements for each unfinished weapon.
 Local workshops and test previews may run earlier without changing live users.

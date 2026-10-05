@@ -1,11 +1,11 @@
-import { initialAppearance, validAppearance, STARTER_JOBS, JOB_PRESENTATION, CHANNELS, COLOR_FIELDS, PALETTES, selectAvatarJob, type AvatarAppearance, type StarterJob } from '../../../shared/avatar/appearance';
+import { initialAppearance, validAppearance, STARTER_JOBS, AVATAR_JOBS, JOB_PRESENTATION, CHANNELS, COLOR_FIELDS, PALETTES, selectAvatarJob, type AvatarAppearance, type AvatarJob } from '../../../shared/avatar/appearance';
 import { composeStaticAvatar, STATIC_CANVAS, type StaticAssetUrls } from '../../../shared/avatar/static-renderer';
 declare global { interface Window { STATIC_STARTER_ASSETS: StaticAssetUrls } }
 const $ = <T extends HTMLElement>(id:string) => document.getElementById(id) as T;
-let appearance=initialAppearance(null,'human-male-v1',()=>0.35),job:StarterJob='warrior';
+let appearance=initialAppearance(null,'human-male-v1',()=>0.35),job:AvatarJob='warrior';
 try { const previous=JSON.parse(localStorage.getItem('qa-static-avatar-review-v1')||'null'); if(validAppearance(previous))appearance=initialAppearance(previous); } catch { /* Workshop iframe storage may be unavailable. */ }
 const jobSelect=$<HTMLSelectElement>('job'),modelSelect=$<HTMLSelectElement>('model');
-for(const j of STARTER_JOBS)jobSelect.add(new Option(JOB_PRESENTATION[j].name,j));
+for(const j of AVATAR_JOBS)jobSelect.add(new Option(JOB_PRESENTATION[j].name,j));
 modelSelect.value=appearance.modelId;
 for(const channel of CHANNELS) {
  const select=$<HTMLSelectElement>(channel);
@@ -13,7 +13,7 @@ for(const channel of CHANNELS) {
  select.value=appearance[COLOR_FIELDS[channel]];
  select.addEventListener('change',()=>{appearance={...appearance,[COLOR_FIELDS[channel]]:select.value};render();});
 }
-jobSelect.addEventListener('change',()=>{job=jobSelect.value as StarterJob;render();});
+jobSelect.addEventListener('change',()=>{job=jobSelect.value as AvatarJob;render();});
 modelSelect.addEventListener('change',()=>{appearance={...appearance,modelId:modelSelect.value as AvatarAppearance['modelId']};render();});
 const main=$<HTMLCanvasElement>('avatar');main.width=STATIC_CANVAS.width;main.height=STATIC_CANVAS.height;
 let generation=0;
@@ -23,6 +23,7 @@ async function render() {
  $('job-title').textContent=selection.kit.name;
  $('clothing').textContent=selection.kit.clothing;
  $('headwear').textContent=selection.kit.head;
+ $('weapon-status').textContent=selection.kit.missingWeapon?'Weapon artwork pending — showing empty hands.':'';
  $('right-hand').textContent=selection.kit.right;
  $('left-hand').textContent=selection.kit.left;
  $('status').textContent='Rendering…';

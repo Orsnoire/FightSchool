@@ -23,7 +23,7 @@ Player-facing slots are weapon, off hand, head, body, hands, legs and feet. Pair
 - Linen robe, purple wizard cap and gold/green laurel.
 - Sword, staff, bow, and herb pouch with herbs.
 - Shield, potion and quiver off hands.
-- Existing basic fist wraps, claymore and harp are retained as advanced-job fallbacks. They do not receive new artwork in the four-job static review.
+- Existing basic fist wraps, claymore and harp are retained as advanced-job fallbacks. Until their weapon artwork is finished, those jobs render empty hands in the face-on rest pose. Their equipped stats remain in effect.
 
 The source catalog uses existing stable IDs such as `basic_sword`, `basic_staff`, `basic_helm` and `basic_armor`. Legacy class-specific starter restrictions are replaced by weapon/material compatibility, so a Priest can reuse the starter staff and a Paladin can reuse the starter sword. Blood Knight receives its permitted two-handed claymore rather than the previous incompatible sword fallback.
 
@@ -41,7 +41,7 @@ Starter body/head defenses retain the prior +1 each; sword/staff/bow/herbs retai
 
 ## Art and rollout boundary
 
-The first static review provides four fitted complete starter looks on both bodies, with separate head/headwear rendering and independent hair/eye/skin recoloring. Garments and held props within each source body sheet remain a combined starter illustration. **It is not yet an arbitrary item-by-item paperdoll renderer.** Starter appearance is labeled in the lobby; purchased gear still affects stats even where its individual overlay art is not available. Do not mark equipment-fit or animation records ready based on these sheets.
+The static review covers all twelve jobs on both bodies, with separate head/headwear rendering and independent hair/eye/skin recoloring. Garments and held props within each source body sheet remain a combined starter illustration. **It is not yet an arbitrary item-by-item paperdoll renderer.** All placeholder job portraits and their imported PNGs are removed. Plate, leather and linen have empty-handed male/female bodies for missing weapons; hats are selected independently, so Priest can reuse the staff/robe with a laurel. Starter appearance is labeled in the lobby; purchased gear still affects stats even where its individual overlay art is not available. Do not mark equipment-fit or animation records ready based on these sheets.
 
 Migration `0009_starter_wardrobe.sql` adds nullable hands/legs/feet/offhand columns and optional armor/offhand metadata. It preserves existing rows and loadouts. New compatibility rules apply to new equip requests and the next job selection; the migration does not strip or rebalance existing equipped items. The deployment must apply this migration before the new Worker is activated.
 

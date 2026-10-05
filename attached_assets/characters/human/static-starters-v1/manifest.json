@@ -53,11 +53,15 @@
     "herbalist": {
       "path": "attached_assets/characters/human/static-starters-v1/source/herbalist.png",
       "sha256": "fe523dbccc6ce847b4ffbc21f31d41cef7d1bdb8f98eaf34666a44c7a13d97b2"
+    },
+    "empty-bodies": {
+      "path": "attached_assets/characters/human/static-starters-v1/source/empty-bodies.png",
+      "sha256": "ee17435afda050626034aa6a80bfb4276ccd292440d8a8fdcd5cd8a376c011b0"
     }
   },
   "preview": {
     "path": "workshop/site/previews/static-starters-01.html",
-    "bytes": 12688167,
-    "sha256": "80ba74793de69e0238d41ba7b64e66d25dbb2bc1fb5f6eec735b05db86304123"
+    "bytes": 14692330,
+    "sha256": "9b12cad8872dfffa14ecb3e1d5c9ad4ad8b6b550a87fce29d0b351963ff65c5e"
   }
 }
