@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STARTER_EQUIPMENT, STARTER_LOADOUTS } from "./equipment-catalog";
 import { getTotalPassiveBonuses, getTotalMechanicUpgrades } from "./jobSystem";
 
 // Generate 6-character alphanumeric ID (used for session IDs and guild codes)
@@ -25,8 +26,8 @@ export const TANK_CLASSES: CharacterClass[] = ["warrior", "paladin", "dark_knigh
 export const HEALER_CLASSES: CharacterClass[] = ["herbalist", "priest", "paladin"];
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
-export type EquipmentSlot = "weapon" | "headgear" | "armor";
-export type ItemType = "sword" | "wand" | "bow" | "staff" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
+export type EquipmentSlot = "weapon" | "headgear" | "armor" | "offhand" | "hands" | "legs" | "feet";
+export type ItemType = "shield" | "potion" | "quiver" | "gloves" | "leggings" | "boots" | "sword" | "wand" | "bow" | "staff" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
 export type ItemQuality = "common" | "rare" | "epic" | "legendary";
 export type WeaponType = "sword" | "staff" | "bow" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon";
 
@@ -349,7 +350,8 @@ export interface EquipmentItem {
   };
   classRestriction?: CharacterClass[]; // undefined = available to all
   weaponType?: WeaponType; // Weapon type for class weapon restrictions
-  armorCategory?: "heavy_armor" | "light_armor"; // Armor category (optional)
+  offhandType?: "shield" | "potion" | "quiver";
+  armorCategory?: "heavy_armor" | "leather_armor" | "light_armor"; // Armor category (optional)
 }
 
 // Weapon type restrictions by character class
@@ -557,28 +559,10 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
   },
 };
 
-// Get class-specific starting equipment
-export function getStartingEquipment(characterClass: CharacterClass): { weapon: string; headgear: string; armor: string } {
-  const weaponMap: Record<CharacterClass, string> = {
-    warrior: "basic_sword",
-    wizard: "basic_staff",
-    scout: "basic_bow",
-    herbalist: "basic_herbs",
-    warlock: "basic_staff",
-    priest: "basic_staff",      // MAT-based healer
-    paladin: "basic_sword",      // ATK-based tank/healer
-    dark_knight: "basic_sword",  // ATK-based tank/DPS
-    blood_knight: "basic_sword", // ATK-based tank/DPS
-    monk: "basic_fist",          // ATK-based tank/DPS with combo points
-    ranger: "basic_bow",         // RTK-based ranged DPS with combo points
-    bard: "basic_harp",          // RTK-based support/DPS with songs
-  };
-
-  return {
-    weapon: weaponMap[characterClass],
-    headgear: "basic_helm",
-    armor: "basic_armor",
-  };
+// Universal ownership; each job selects a compatible starter loadout.
+Object.assign(EQUIPMENT_ITEMS, STARTER_EQUIPMENT);
+export function getStartingEquipment(characterClass: CharacterClass) {
+  return { ...STARTER_LOADOUTS[characterClass] };
 }
 
 // Calculate total equipment bonuses
@@ -594,12 +578,12 @@ export interface EquipmentStats {
   rtk: number;
 }
 
-export function calculateEquipmentStats(weapon: string, headgear: string, armor: string): EquipmentStats {
+export function calculateEquipmentStats(weapon: string | null, headgear: string | null, armor: string | null, ...additional: (string | null)[]): EquipmentStats {
   const stats: EquipmentStats = { str: 0, int: 0, agi: 0, mnd: 0, vit: 0, def: 0, atk: 0, mat: 0, rtk: 0 };
   
-  const items = [weapon, headgear, armor];
+  const items = [weapon, headgear, armor, ...additional];
   for (const itemId of items) {
-    const item = EQUIPMENT_ITEMS[itemId];
+    const item = itemId ? EQUIPMENT_ITEMS[itemId] : undefined;
     if (item) {
       stats.str += item.stats.str || 0;
       stats.int += item.stats.int || 0;
@@ -966,8 +950,10 @@ export type InsertGuildMembership = typeof DB.guildMemberships.$inferInsert;
 export type InsertGuildFight = typeof DB.guildFights.$inferInsert;
 export const insertEquipmentItemSchema = z.object({
  teacherId:z.string(),name:z.string().min(1),iconUrl:z.string().nullable().optional(),
- itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable']),
- quality:z.enum(['common','rare','epic','legendary']),tier:z.number().int().min(1).max(10).default(1),slot:z.enum(['weapon','headgear','armor']),
+ itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable','shield','potion','quiver','gloves','leggings','boots']),
+ quality:z.enum(['common','rare','epic','legendary']),tier:z.number().int().min(1).max(10).default(1),slot:z.enum(['weapon','headgear','armor','offhand','hands','legs','feet']),
+ armorCategory:z.enum(['heavy_armor','leather_armor','light_armor']).nullable().optional(),
+ offhandType:z.enum(['shield','potion','quiver']).nullable().optional(),
  weaponType:z.enum(['sword','staff','bow','herbs','two-handed-sword','fist','claws','harp','spoon']).nullable().optional(),
  stats:z.object({str:z.number().optional(),int:z.number().optional(),agi:z.number().optional(),mnd:z.number().optional(),vit:z.number().optional(),def:z.number().optional(),atk:z.number().optional(),mat:z.number().optional(),rtk:z.number().optional()}).default({}),
  shopPrice:z.number().nullable().optional(),isPurchasable:z.boolean().default(true)

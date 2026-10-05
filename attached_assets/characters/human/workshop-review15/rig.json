@@ -1,0 +1,821 @@
+{
+  "schemaVersion": 1,
+  "id": "human-male-right-rig-prototype-v1",
+  "rigFamily": "human-chibi-v1",
+  "status": "workshop-unapproved",
+  "sourceModelId": "human-male-v1",
+  "sourceViewKey": "rightNearProfile",
+  "canvas": {
+    "width": 1024,
+    "height": 1536,
+    "positiveRotation": "clockwise-degrees"
+  },
+  "anatomicalSides": {
+    "near": "right",
+    "far": "left"
+  },
+  "bones": [
+    {
+      "id": "root",
+      "parent": null,
+      "x": 520,
+      "y": 1480,
+      "rotation": 0
+    },
+    {
+      "id": "pelvis",
+      "parent": "root",
+      "x": 0,
+      "y": -515,
+      "rotation": 0
+    },
+    {
+      "id": "torso",
+      "parent": "pelvis",
+      "x": -5,
+      "y": -360,
+      "rotation": 0
+    },
+    {
+      "id": "neck",
+      "parent": "torso",
+      "x": -1,
+      "y": -15,
+      "rotation": 0
+    },
+    {
+      "id": "head",
+      "parent": "neck",
+      "x": 28,
+      "y": 25,
+      "rotation": 0
+    },
+    {
+      "id": "left_upper_arm",
+      "parent": "torso",
+      "x": 50,
+      "y": 55,
+      "rotation": 60
+    },
+    {
+      "id": "left_forearm",
+      "parent": "left_upper_arm",
+      "x": 0,
+      "y": 122.39999999999999,
+      "rotation": -150
+    },
+    {
+      "id": "left_hand",
+      "parent": "left_forearm",
+      "x": 0,
+      "y": 116,
+      "rotation": 90
+    },
+    {
+      "id": "left_grip",
+      "parent": "left_hand",
+      "x": 80,
+      "y": 25,
+      "rotation": 0
+    },
+    {
+      "id": "right_upper_arm",
+      "parent": "torso",
+      "x": -70,
+      "y": 55,
+      "rotation": 8
+    },
+    {
+      "id": "right_forearm",
+      "parent": "right_upper_arm",
+      "x": 0,
+      "y": 170,
+      "rotation": -65
+    },
+    {
+      "id": "right_hand",
+      "parent": "right_forearm",
+      "x": 0,
+      "y": 145,
+      "rotation": 0
+    },
+    {
+      "id": "right_grip",
+      "parent": "right_hand",
+      "x": 0,
+      "y": 35,
+      "rotation": 100
+    },
+    {
+      "id": "left_thigh",
+      "parent": "pelvis",
+      "x": 35,
+      "y": 20,
+      "rotation": 0
+    },
+    {
+      "id": "left_shin",
+      "parent": "left_thigh",
+      "x": 0,
+      "y": 150,
+      "rotation": 0
+    },
+    {
+      "id": "left_foot",
+      "parent": "left_shin",
+      "x": 0,
+      "y": 160,
+      "rotation": 0
+    },
+    {
+      "id": "right_thigh",
+      "parent": "pelvis",
+      "x": -40,
+      "y": 20,
+      "rotation": 0
+    },
+    {
+      "id": "right_shin",
+      "parent": "right_thigh",
+      "x": 0,
+      "y": 175,
+      "rotation": 0
+    },
+    {
+      "id": "right_foot",
+      "parent": "right_shin",
+      "x": 0,
+      "y": 185,
+      "rotation": 0
+    }
+  ],
+  "feet": [
+    {
+      "upper": "left_thigh",
+      "lower": "left_shin",
+      "foot": "left_foot",
+      "target": [
+        70,
+        -195
+      ],
+      "lengths": [
+        150,
+        160
+      ]
+    },
+    {
+      "upper": "right_thigh",
+      "lower": "right_shin",
+      "foot": "right_foot",
+      "target": [
+        -90,
+        -145
+      ],
+      "lengths": [
+        175,
+        185
+      ]
+    }
+  ],
+  "sprites": {
+    "tunic": {
+      "source": "atlas",
+      "crop": [
+        100,
+        29,
+        175,
+        278
+      ],
+      "frontBoundary": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          8
+        ],
+        [
+          67,
+          15
+        ],
+        [
+          78,
+          22
+        ],
+        [
+          92,
+          28
+        ],
+        [
+          105,
+          32
+        ],
+        [
+          119,
+          34
+        ],
+        [
+          126,
+          35
+        ],
+        [
+          175,
+          50
+        ]
+      ]
+    },
+    "underlayer": {
+      "source": "atlas",
+      "crop": [
+        416,
+        30,
+        150,
+        282
+      ]
+    },
+    "sleeve": {
+      "source": "atlas",
+      "crop": [
+        700,
+        66,
+        157,
+        187
+      ]
+    },
+    "upperarm": {
+      "source": "upperarm06",
+      "crop": [
+        371,
+        44,
+        512,
+        1177
+      ],
+      "tint": "skin"
+    },
+    "forearm": {
+      "source": "forearm10",
+      "crop": [
+        216,
+        134,
+        376,
+        1676
+      ],
+      "tint": "skin"
+    },
+    "fist": {
+      "source": "atlas",
+      "crop": [
+        421,
+        427,
+        129,
+        158
+      ],
+      "tint": "skin"
+    },
+    "thigh": {
+      "source": "atlas",
+      "crop": [
+        710,
+        337,
+        149,
+        245
+      ]
+    },
+    "shin": {
+      "source": "atlas",
+      "crop": [
+        1022,
+        393,
+        133,
+        202
+      ]
+    },
+    "boot": {
+      "source": "atlas",
+      "crop": [
+        104,
+        700,
+        187,
+        167
+      ]
+    },
+    "neck": {
+      "source": "atlas",
+      "crop": [
+        402,
+        736,
+        151,
+        123
+      ],
+      "tint": "skin"
+    },
+    "sword": {
+      "source": "atlas",
+      "crop": [
+        726,
+        621,
+        124,
+        304
+      ]
+    },
+    "shield": {
+      "source": "atlas",
+      "crop": [
+        1039,
+        631,
+        142,
+        288
+      ]
+    },
+    "cuirass": {
+      "source": "atlas",
+      "crop": [
+        91,
+        923,
+        192,
+        289
+      ],
+      "frontBoundary": [
+        [
+          0,
+          0
+        ],
+        [
+          62,
+          9
+        ],
+        [
+          69,
+          16
+        ],
+        [
+          83,
+          22
+        ],
+        [
+          103,
+          28
+        ],
+        [
+          123,
+          32
+        ],
+        [
+          138,
+          33
+        ],
+        [
+          151,
+          31
+        ],
+        [
+          156,
+          29
+        ],
+        [
+          192,
+          44
+        ]
+      ]
+    },
+    "pauldron": {
+      "source": "atlas",
+      "crop": [
+        394,
+        978,
+        183,
+        158
+      ]
+    },
+    "bracer": {
+      "source": "atlas",
+      "crop": [
+        734,
+        958,
+        114,
+        218
+      ]
+    },
+    "sabatons": {
+      "source": "atlas",
+      "crop": [
+        1033,
+        978,
+        190,
+        214
+      ]
+    },
+    "head": {
+      "source": "neutral",
+      "crop": [
+        180,
+        0,
+        600,
+        565
+      ]
+    },
+    "farBoot": {
+      "source": "farBoots",
+      "crop": [
+        199,
+        200,
+        578,
+        558
+      ]
+    },
+    "farSabatons": {
+      "source": "farBoots",
+      "crop": [
+        1108,
+        200,
+        565,
+        560
+      ]
+    }
+  },
+  "parts": [
+    {
+      "id": "left-foot",
+      "bone": "left_foot",
+      "rect": [
+        -60,
+        -35,
+        200,
+        175
+      ],
+      "slot": "farBoots",
+      "opacity": 0.94
+    },
+    {
+      "id": "left-shin",
+      "bone": "left_shin",
+      "rect": [
+        -64,
+        -32,
+        128,
+        212
+      ],
+      "sprite": "shin",
+      "opacity": 0.94
+    },
+    {
+      "id": "left-thigh",
+      "bone": "left_thigh",
+      "rect": [
+        -67,
+        -30,
+        140,
+        208
+      ],
+      "sprite": "thigh",
+      "opacity": 0.94
+    },
+    {
+      "id": "right-foot",
+      "bone": "right_foot",
+      "rect": [
+        -70,
+        -35,
+        210,
+        185
+      ],
+      "slot": "boots",
+      "opacity": 1,
+      "flipX": true
+    },
+    {
+      "id": "right-shin",
+      "bone": "right_shin",
+      "rect": [
+        -64,
+        -32,
+        128,
+        237
+      ],
+      "sprite": "shin",
+      "opacity": 1
+    },
+    {
+      "id": "right-thigh",
+      "bone": "right_thigh",
+      "rect": [
+        -67,
+        -30,
+        140,
+        238
+      ],
+      "sprite": "thigh",
+      "opacity": 1
+    },
+    {
+      "id": "left-fist",
+      "bone": "left_hand",
+      "rect": [
+        -31.200000000000003,
+        -7.2,
+        65.60000000000001,
+        81.60000000000001
+      ],
+      "sprite": "fist",
+      "opacity": 0.94,
+      "hiddenByEquipment": "shield"
+    },
+    {
+      "id": "left-sleeve-back",
+      "bone": "left_upper_arm",
+      "rect": [
+        -53.6,
+        -36,
+        112,
+        116
+      ],
+      "slot": "shoulders",
+      "opacity": 0.94,
+      "flipXForOutfits": [
+        "armor"
+      ]
+    },
+    {
+      "id": "left-forearm",
+      "bone": "left_forearm",
+      "rect": [
+        -30.42,
+        -24,
+        64.74000000000001,
+        159.20000000000002
+      ],
+      "sprite": "forearm",
+      "opacity": 0.94,
+      "projectedLengthScale": 0.8
+    },
+    {
+      "id": "left-upperarm",
+      "bone": "left_upper_arm",
+      "rect": [
+        -44.5419,
+        -25.2,
+        89.0838,
+        165.6
+      ],
+      "sprite": "upperarm",
+      "opacity": 0.94,
+      "projectedLengthScale": 0.72
+    },
+    {
+      "id": "left-sleeve",
+      "bone": "left_upper_arm",
+      "rect": [
+        -53.6,
+        -36,
+        112,
+        116
+      ],
+      "slot": "shoulders",
+      "opacity": 0.94,
+      "layerRegion": "sleeve-front",
+      "flipXForOutfits": [
+        "armor"
+      ]
+    },
+    {
+      "id": "left-bracer",
+      "bone": "left_forearm",
+      "rect": [
+        -35.88,
+        -19.200000000000003,
+        71.76,
+        148.8
+      ],
+      "slot": "bracers",
+      "opacity": 0.94
+    },
+    {
+      "id": "underlayer",
+      "bone": "torso",
+      "rect": [
+        -108,
+        -25,
+        224,
+        409
+      ],
+      "sprite": "underlayer"
+    },
+    {
+      "id": "torso-kit-back",
+      "bone": "torso",
+      "rect": [
+        -126,
+        -25,
+        254,
+        414
+      ],
+      "slot": "body"
+    },
+    {
+      "id": "underneck",
+      "bone": "torso",
+      "rect": [
+        -46,
+        -60,
+        100,
+        100
+      ],
+      "sprite": "neck"
+    },
+    {
+      "id": "head",
+      "bone": "head",
+      "rect": [
+        -335,
+        -550,
+        600,
+        565
+      ],
+      "sprite": "head"
+    },
+    {
+      "id": "torso-kit",
+      "bone": "torso",
+      "rect": [
+        -126,
+        -25,
+        254,
+        414
+      ],
+      "slot": "body",
+      "layerRegion": "chest-front"
+    },
+    {
+      "id": "right-fist",
+      "bone": "right_hand",
+      "rect": [
+        -39,
+        -9,
+        82,
+        102
+      ],
+      "sprite": "fist",
+      "opacity": 1
+    },
+    {
+      "id": "right-sleeve-back",
+      "bone": "right_upper_arm",
+      "rect": [
+        -67,
+        -45,
+        140,
+        145
+      ],
+      "slot": "shoulders",
+      "opacity": 1,
+      "flipXForOutfits": [
+        "armor"
+      ]
+    },
+    {
+      "id": "right-forearm",
+      "bone": "right_forearm",
+      "rect": [
+        -39,
+        -30,
+        83,
+        199
+      ],
+      "sprite": "forearm",
+      "opacity": 1
+    },
+    {
+      "id": "right-upperarm",
+      "bone": "right_upper_arm",
+      "rect": [
+        -57.105,
+        -35,
+        114.21,
+        230
+      ],
+      "sprite": "upperarm",
+      "opacity": 1
+    },
+    {
+      "id": "right-sleeve",
+      "bone": "right_upper_arm",
+      "rect": [
+        -67,
+        -45,
+        140,
+        145
+      ],
+      "slot": "shoulders",
+      "opacity": 1,
+      "layerRegion": "sleeve-front",
+      "flipXForOutfits": [
+        "armor"
+      ]
+    },
+    {
+      "id": "right-bracer",
+      "bone": "right_forearm",
+      "rect": [
+        -46,
+        -24,
+        92,
+        186
+      ],
+      "slot": "bracers",
+      "opacity": 1
+    },
+    {
+      "id": "sword",
+      "bone": "right_grip",
+      "rect": [
+        -64,
+        -320,
+        128,
+        397
+      ],
+      "sprite": "sword",
+      "weapon": true
+    },
+    {
+      "id": "right-gripping-fingers",
+      "bone": "right_hand",
+      "rect": [
+        -39,
+        -9,
+        82,
+        102
+      ],
+      "sprite": "fist"
+    },
+    {
+      "id": "shield",
+      "bone": "left_grip",
+      "rect": [
+        -95,
+        -155,
+        190,
+        320
+      ],
+      "sprite": "shield",
+      "weapon": true
+    }
+  ],
+  "kits": {
+    "starter": {
+      "body": "tunic",
+      "shoulders": "sleeve",
+      "boots": "boot",
+      "bracers": null,
+      "farBoots": "farBoot"
+    },
+    "armor": {
+      "body": "cuirass",
+      "shoulders": "pauldron",
+      "boots": "sabatons",
+      "bracers": "bracer",
+      "farBoots": "farSabatons"
+    }
+  },
+  "hooks": {
+    "left-grip": {
+      "bone": "left_grip",
+      "purpose": "prototype-shield"
+    },
+    "right-grip": {
+      "bone": "right_grip",
+      "purpose": "prototype-sword"
+    },
+    "sword-tip": {
+      "bone": "right_grip",
+      "local": [
+        0,
+        -320
+      ]
+    },
+    "spell-origin": {
+      "bone": "right_hand",
+      "local": [
+        0,
+        35
+      ]
+    },
+    "ground": {
+      "bone": "root",
+      "local": [
+        0,
+        0
+      ]
+    }
+  },
+  "limitations": [
+    "Male combat view only; female fit is pending.",
+    "Generated limb/clothing art is a first fit, not approved final art.",
+    "Trouser segments are shared by both kits; full bare-leg/garment separation remains pending.",
+    "Fixed gripping hands; alternate open hands and finger articulation are pending.",
+    "Shield is a workshop prop only; no inventory or stat effect.",
+    "No live integration or database readiness change."
+  ],
+  "joinedElbows": true,
+  "actionGrips": true
+}

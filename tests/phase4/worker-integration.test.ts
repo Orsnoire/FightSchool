@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { neonConfig } from "@neondatabase/serverless";
 import worker from "../../worker/index.ts";
+import { EQUIPMENT_SLOTS, STARTER_ITEM_IDS } from "../../shared/equipment-catalog.ts";
+import { initialAppearance, PALETTES } from "../../shared/avatar/appearance.ts";
 
 // Run the real Worker routes, identity repository, and SQL against a disposable
 // database. Only Neon's network boundary and Cloudflare bindings are replaced.
@@ -87,6 +89,53 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(student.payload.passwordHash, undefined);
     await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "wizard", gender: "A" });
     await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "paladin", gender: "A" }, 403);
+    // Appearance is independently persisted, own-student only, and never rerolled by reads or job changes.
+    const avatarPath = `/api/student/${student.payload.id}/avatar`;
+    await api(avatarPath, "GET", undefined, undefined, 401);
+    await api(avatarPath, "GET", teacher.cookie, undefined, 401);
+    await api(`/api/student/00000000-0000-0000-0000-000000000000/avatar`, "GET", student.cookie, undefined, 403);
+    assert.equal((await api(avatarPath, "GET", student.cookie)).payload, null);
+    const appearance = initialAppearance(null, 'human-male-v1', () => 0.25);
+    await api(avatarPath, "PUT", student.cookie, appearance, 409);
+    await api(avatarPath, "POST", student.cookie, {...appearance, hairColorId: 'invalid'}, 400);
+    const beforeAppearance = (await api(`/api/student/${student.payload.id}`, "GET", student.cookie)).payload;
+    assert.deepEqual((await api(avatarPath, "POST", student.cookie, appearance)).payload, appearance);
+    assert.deepEqual((await api(avatarPath, "POST", student.cookie, {...appearance, skinColorId: PALETTES.skin[7].id})).payload, appearance);
+    const changedAppearance = {...appearance, hairColorId: PALETTES.hair[7].id, eyeColorId: PALETTES.eyes[5].id};
+    assert.deepEqual((await api(avatarPath, "PUT", student.cookie, changedAppearance)).payload, changedAppearance);
+    await api(avatarPath, "PUT", student.cookie, {...appearance, modelId: 'human-female-v1'}, 409);
+    const afterAppearance = (await api(`/api/student/${student.payload.id}`, "GET", student.cookie)).payload;
+    for (const key of ['characterClass','gender','weapon','headgear','armor','gold','totalXP']) assert.deepEqual(afterAppearance[key], beforeAppearance[key]);
+    await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "scout", gender: "A" });
+    assert.deepEqual((await api(avatarPath, "GET", student.cookie)).payload, changedAppearance);
+    await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "wizard", gender: "A" });
+    assert.deepEqual((await api(avatarPath, "GET", student.cookie)).payload, changedAppearance);
+    const badOrigin = await worker.fetch(new Request(env.PUBLIC_ORIGIN + avatarPath, {method:'PUT',headers:{Origin:'https://untrusted.invalid',Cookie:student.cookie!,'Content-Type':'application/json'},body:JSON.stringify(appearance)}), env as any);
+    assert.equal(badOrigin.status,403);
+    const stock = (await api(`/api/student/${student.payload.id}`, 'GET', student.cookie)).payload.inventory;
+    assert.ok(STARTER_ITEM_IDS.every(item => stock.includes(item)));
+    assert.equal(new Set(stock).size, stock.length);
+    const equipPath = `/api/student/${student.payload.id}/equipment`;
+    await api(equipPath, 'PATCH', student.cookie, {armor:'basic_armor'},400);
+    await api(equipPath, 'PATCH', student.cookie, {hands:'basic_leather_gloves'},400);
+    await api(equipPath, 'PATCH', student.cookie, {weapon:'legendary_blade'},400);
+    await api(equipPath, 'PATCH', student.cookie, {offhand:'basic_potion'},400);
+    await api(equipPath, 'PATCH', student.cookie, {armor:'basic_robe',headgear:'basic_laurel'});
+    await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
+    assert.equal((await api(`/api/student/${student.payload.id}`, 'GET', student.cookie)).payload.headgear,'basic_laurel');
+    const herbalist = await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'herbalist',gender:'A'});
+    assert.equal(herbalist.payload.offhand,'basic_potion');
+    await api(equipPath, 'PATCH', student.cookie, {weapon:null},400);
+    await api(equipPath, 'PATCH', student.cookie, {weapon:null,offhand:null});
+    const warrior = await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'warrior',gender:'A'});
+    assert.equal(warrior.payload.offhand,'basic_shield');
+    assert.equal(warrior.payload.hands,'basic_plate_gloves');
+    await api(equipPath, 'PATCH', student.cookie, {armor:'plate_armor'},400); // Nonstarter built-ins are not free.
+    const scout = await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'scout',gender:'A'});
+    assert.equal(scout.payload.offhand,'basic_quiver');
+    await api(equipPath, 'PATCH', student.cookie, {headgear:'basic_helm'},400);
+    assert.ok(STARTER_ITEM_IDS.every(item => scout.payload.inventory.includes(item)));
+    await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
     const guild = await api("/api/guilds", "POST", teacher.cookie, { name: "Test guild" }, 201);
     await api(`/api/guilds/${guild.payload.id}/members`, "POST", student.cookie, { studentId: student.payload.id });
     await api(`/api/guilds/${guild.payload.id}/members`, "GET", other.cookie, undefined, 403);

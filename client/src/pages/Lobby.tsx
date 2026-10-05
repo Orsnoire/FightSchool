@@ -1,3 +1,6 @@
+import { fetchEquipmentItems } from "@/lib/equipment";
+import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
+import { equipmentExclusion } from "@shared/equipment-rules";
 import { StaminaBar } from "@/components/StaminaBar";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
@@ -8,6 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
+import { AvatarAppearanceEditor } from '@/components/AvatarAppearanceEditor';
+import { StaticAvatar } from '@/components/StaticAvatar';
+import { useAvatarAppearance } from '@/hooks/useAvatarAppearance';
+import { initialAppearance, STARTER_JOBS, JOB_PRESENTATION, type StarterJob } from '@shared/avatar/appearance';
 import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, BASE_CLASSES, ALL_CHARACTER_CLASSES, WEAPON_RESTRICTIONS } from "@shared/schema";
 import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy, Lock, X, Filter, ShoppingBag } from "lucide-react";
 import { JOB_ABILITY_SLOTS, ABILITY_DISPLAYS, type AbilityClass } from "@shared/abilityUI";
@@ -167,6 +174,13 @@ export default function Lobby() {
   const [draggedAbility, setDraggedAbility] = useState<Ability | null>(null);
   const [abilityFilter, setAbilityFilter] = useState<"all" | "healing" | "spell" | "physical" | "ultimate">("all");
   const studentId = localStorage.getItem("studentId");
+  const savedAppearance = useAvatarAppearance(studentId);
+  const [appearanceDraft, setAppearanceDraft] = useState(() => initialAppearance());
+  const [previewJob, setPreviewJob] = useState<StarterJob>('warrior');
+  useEffect(() => {
+    if (savedAppearance.data) setAppearanceDraft({ ...savedAppearance.data });
+    else if (student?.gender) setAppearanceDraft(previous => ({ ...previous, modelId: student.gender === 'B' ? 'human-female-v1' : 'human-male-v1' }));
+  }, [savedAppearance.data, student?.gender]);
   
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -209,25 +223,23 @@ export default function Lobby() {
   }, [studentId, navigate]);
 
   // Fetch equipped items
-  const equippedItemIds = [student?.weapon, student?.headgear, student?.armor].filter(Boolean) as string[];
+  const equippedItemIds = EQUIPMENT_SLOTS.map(slot => student?.[slot]).filter(Boolean) as string[];
   const { data: equippedItems = [] } = useQuery<EquipmentItemDb[]>({
     queryKey: ['equipment-items', { ids: equippedItemIds.sort() }],
     queryFn: async () => {
       if (equippedItemIds.length === 0) return [];
-      const response = await fetch(`/api/equipment-items?ids=${equippedItemIds.join(',')}`);
-      return response.json();
+      return fetchEquipmentItems(equippedItemIds);
     },
     enabled: equippedItemIds.length > 0,
   });
 
   // Fetch inventory items
-  const inventoryIds = student?.inventory || [];
+  const inventoryIds = [...(student?.inventory || [])];
   const { data: inventoryItems = [] } = useQuery<EquipmentItemDb[]>({
     queryKey: ['equipment-items', { ids: inventoryIds.sort() }],
     queryFn: async () => {
       if (inventoryIds.length === 0) return [];
-      const response = await fetch(`/api/equipment-items?ids=${inventoryIds.join(',')}`);
-      return response.json();
+      return fetchEquipmentItems(inventoryIds);
     },
     enabled: inventoryIds.length > 0,
   });
@@ -272,7 +284,7 @@ export default function Lobby() {
     navigate('/student/guilds');
   };
 
-  const updateEquipment = async (slot: EquipmentSlot, itemId: string) => {
+  const updateEquipment = async (slot: EquipmentSlot, itemId: string | null) => {
     const studentId = localStorage.getItem("studentId");
     const response = await fetch(`/api/student/${studentId}/equipment`, {
       method: "PATCH",
@@ -283,6 +295,9 @@ export default function Lobby() {
     if (response.ok) {
       setStudent(await response.json());
       toast({ title: "Equipment updated!" });
+    } else {
+      const result = await response.json().catch(() => ({}));
+      toast({ title: 'Equipment could not be changed', description: result.error || 'Please try again.', variant: 'destructive' });
     }
   };
 
@@ -353,6 +368,9 @@ export default function Lobby() {
 
   const handleClassChange = async (newClass: CharacterClass) => {
     if (!student?.gender) return;
+    if (savedAppearance.isLoading || savedAppearance.isError || savedAppearance.saving) return;
+    try { await savedAppearance.save(appearanceDraft); }
+    catch { toast({title: 'Your appearance could not be saved. Please try again.', variant: 'destructive'}); return; }
     if (newClass === student.characterClass) {
       setShowClassModal(false);
       return;
@@ -435,9 +453,11 @@ export default function Lobby() {
               <CardContent className="flex flex-col items-center gap-4">
                 <PlayerAvatar
                   characterClass={student.characterClass}
+                  appearance={savedAppearance.data}
                   gender={student.gender}
                   size="lg"
                 />
+                {savedAppearance.data && <p className="text-xs text-muted-foreground">Starter appearance</p>}
                 <div className="text-center">
                   <h2 className="text-2xl font-bold" data-testid="text-nickname">{student.nickname}</h2>
                   <p className="text-muted-foreground capitalize">{student.characterClass}</p>
@@ -466,11 +486,15 @@ export default function Lobby() {
                 <Button
                   variant="outline"
                   className="w-full mt-4"
-                  onClick={() => setShowClassModal(true)}
+                  onClick={() => {
+                    if (savedAppearance.data) setAppearanceDraft({ ...savedAppearance.data });
+                    setPreviewJob(STARTER_JOBS.includes(student.characterClass as StarterJob) ? student.characterClass as StarterJob : 'warrior');
+                    setShowClassModal(true);
+                  }}
                   data-testid="button-open-class-modal"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Change Class
+                  Change Class or Appearance
                 </Button>
               </CardContent>
             </Card>
@@ -768,8 +792,9 @@ export default function Lobby() {
             <Card>
               <CardHeader>
                 <CardTitle>Equipment</CardTitle>
-                <div className="flex gap-2 mt-4">
-                  {(["weapon", "headgear", "armor"] as EquipmentSlot[]).map((slot) => (
+                <p className="text-sm text-muted-foreground">Your starter wardrobe stays available for every job. Only compatible items are shown.</p>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {EQUIPMENT_SLOTS.map((slot) => (
                     <Button
                       key={slot}
                       variant={selectedSlot === slot ? "default" : "outline"}
@@ -777,12 +802,13 @@ export default function Lobby() {
                       className="capitalize"
                       data-testid={`button-slot-${slot}`}
                     >
-                      {slot}
+                      {SLOT_LABELS[slot]}
                     </Button>
                   ))}
                 </div>
               </CardHeader>
               <CardContent>
+                {student[selectedSlot] && <Button variant="outline" size="sm" className="mb-4" onClick={() => updateEquipment(selectedSlot,null)}>Unequip {SLOT_LABELS[selectedSlot]}</Button>}
                 {inventoryItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <p>No equipment in inventory</p>
@@ -795,17 +821,12 @@ export default function Lobby() {
                         // Filter by slot
                         if (item.slot !== selectedSlot) return false;
                         
-                        // Filter weapons by weapon type restrictions
-                        if (item.slot === "weapon" && item.weaponType && student?.characterClass) {
-                          const allowedWeaponTypes = WEAPON_RESTRICTIONS[student.characterClass];
-                          if (!allowedWeaponTypes.includes(item.weaponType)) return false;
-                        }
-                        
+                        if (equipmentExclusion(student.characterClass || 'warrior', item)) return false;
                         return true;
                       })
                       .map((item) => {
                         const isEquipped =
-                          student[selectedSlot as keyof Pick<Student, "weapon" | "headgear" | "armor">] === item.id;
+                          student[selectedSlot] === item.id;
 
                         return (
                           <Card
@@ -1028,10 +1049,22 @@ export default function Lobby() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-serif">Select Your Class</DialogTitle>
             <DialogDescription>
-              Choose a class to change to. Your progress in all jobs is saved.
+              Preview your starter outfit, then select a class below to save. Your appearance is shared across jobs. Advanced jobs keep their existing portraits.
             </DialogDescription>
           </DialogHeader>
           
+          <div className="grid sm:grid-cols-2 gap-4 items-center">
+            <StaticAvatar appearance={appearanceDraft} job={previewJob} className="h-72 aspect-[1200/1950] mx-auto" />
+            <div className="space-y-4">
+              <label className="block text-sm">Preview job<select aria-label="Preview job" className="block w-full mt-1 rounded border p-2 bg-background" value={previewJob} onChange={e => setPreviewJob(e.target.value as StarterJob)}>
+                {STARTER_JOBS.map(job => <option key={job} value={job}>{JOB_PRESENTATION[job].name}</option>)}
+              </select></label>
+              <AvatarAppearanceEditor value={appearanceDraft} onChange={setAppearanceDraft} modelLocked />
+              <p className="text-sm text-muted-foreground">{JOB_PRESENTATION[previewJob].head} · Right: {JOB_PRESENTATION[previewJob].right} · Left: {JOB_PRESENTATION[previewJob].left}</p>
+              <Button disabled={savedAppearance.isLoading || savedAppearance.isError || savedAppearance.saving} onClick={() => student.characterClass && handleClassChange(student.characterClass)}>Save Appearance</Button>
+              {savedAppearance.isError && <p role="alert">Your saved appearance could not load. <button className="underline" onClick={() => savedAppearance.refetch()}>Try again</button></p>}
+            </div>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
             {(() => {
               // Convert job levels array to map
@@ -1061,6 +1094,7 @@ export default function Lobby() {
                       <div className="relative">
                         <PlayerAvatar
                           characterClass={classType}
+                          appearance={appearanceDraft}
                           gender={student.gender || undefined}
                           size="md"
                         />

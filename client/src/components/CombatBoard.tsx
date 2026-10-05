@@ -33,6 +33,7 @@ export function CombatBoard({ state }: { state: CombatSnapshot }) {
           >
             <PlayerAvatar
               characterClass={p.characterClass}
+              appearance={p.appearance}
               gender={p.gender}
               size="sm"
               isThreatLeader={state.threatLeaderId === p.studentId}

@@ -73,8 +73,9 @@ nonexistent view. Gloves and grips can coexist. A model change with equipped
 parts must explicitly validate/rebind or unequip them in one transaction;
 the database prevents silently retaining equipment fitted to another model.
 
-These are visual equipment records. The existing weapon/headgear/armor gameplay
-stats and inventory rules are preserved. `gameplay_item_id` may reference a
+These are visual equipment records. Gameplay equipment remains separate; the
+October 5 [starter wardrobe](starter-wardrobe.md) adds grouped hands/legs/feet
+and offhand gameplay slots plus explicit job exclusions. `gameplay_item_id` may reference a
 teacher-created item; `builtin_item_id` may identify an existing built-in item.
 An appearance may use at most one of those links. Future equip endpoints must
 validate authenticated ownership, inventory, class restrictions, two-handed
@@ -109,21 +110,32 @@ selected color IDs rather than the old `Gender`/class image lookup.
 ## Rollout and validation
 
 The [avatar art and animation direction guide](avatar-art-direction.md) governs
-asset production and the pre-integration gate. Complete both models and rigs,
-starter and signature equipment for all four base jobs, and the required
-ability/weapon coverage before replacing the live portrait system.
+two release gates after the owner's October 5 update. The initial static
+front-facing release may precede completed rigs, signature kits and animation
+coverage. The later animated release still requires the full collection.
 
-This foundation supplies the original assets, recoloring derivatives and
-preview, catalog, additive migrations, seed records, persistence helpers, and
-database tests. It neither runs a live
-migration nor replaces the current portrait UI. The legacy portraits remain a
-temporary display implementation, not the direction for new avatar work.
+`GET /api/student/:id/avatar` reads only; `POST` creates once and returns the
+first saved selection on retry; `PUT` saves the three explicit color selections.
+All routes require the owning student session. Mutation origin checks and palette
+validation apply. Body-model changes after creation are rejected until equipped
+parts can be rebound safely. Combat profiles include the validated saved palette
+selection, and combat reconnects retain the existing snapshot without rerolls.
+
+[Permanent starter ownership](starter-wardrobe.md) and the new gameplay off-hand
+and limb slots are additive to this visual schema. Static review sheets do not
+set rig/equipment-fit readiness flags or populate imaginary attachment rows.
+
+The foundation supplies the original assets, recoloring derivatives, catalog,
+additive migrations, seed records, persistence helpers and database tests.
+The static implementation adds the creator, job-change controls and combat
+appearance transport. Code and workshop review do not themselves run a live
+migration or approve a deployment. Advanced-job portraits remain a temporary
+fallback until their fitted art is approved.
 
 Deploy the migrations through the normal migration workflow before integrating
-avatar API routes. The recoloring assets are ready; complete body-part cuts,
-rig calibration, and equipment art before marking rigs ready. Then integrate the avatar creator,
-saved appearance transport, equipment authorization, and new renderer; remove
-the old portrait imports after all callers have moved over.
+avatar API routes. The static renderer can reuse the recoloring assets now; complete body-part cuts,
+rig calibration and per-item equipment art before marking rigs ready. Remove
+legacy portrait imports only after every caller and job has an approved replacement.
 
 `tests/phase4/avatar-database.test.ts` runs the real migrations in PostgreSQL via
 PGlite. It verifies existing student preservation, seed/image consistency,

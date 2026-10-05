@@ -1,3 +1,5 @@
+import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
+import { equipmentExclusion, handConflict } from "../../shared/equipment-rules.ts";
 import { mountainDay, nextMountainMidnight, xpMultiplier, STAMINA_TIME_ZONE } from "../../shared/combat/stamina.ts";
 import { z } from "zod";
 import { and, eq, inArray, desc, sql } from "drizzle-orm";
@@ -51,11 +53,13 @@ const itemSchema = z.object({
     "helmet",
     "cap",
     "hat",
-    "consumable",
+    "consumable", "shield", "potion", "quiver", "gloves", "leggings", "boots",
   ]),
   quality: z.enum(["common", "rare", "epic", "legendary"]),
   tier: z.number().int().min(1).max(10).default(1),
-  slot: z.enum(["weapon", "headgear", "armor"]),
+  slot: z.enum(EQUIPMENT_SLOTS),
+  armorCategory: z.enum(["heavy_armor", "leather_armor", "light_armor"]).nullable().optional(),
+  offhandType: z.enum(["shield", "potion", "quiver"]).nullable().optional(),
   weaponType: z
     .enum([
       "sword",
@@ -158,7 +162,7 @@ export function safeStudent(student: s.StudentRecord) {
     createdAt: ___,
     ...safe
   } = student;
-  return safe;
+  return { ...safe, inventory: ownedEquipment([...safe.inventory, ...EQUIPMENT_SLOTS.map(slot => safe[slot]).filter((id): id is string => !!id)]) };
 }
 const method = (r: Request, m: string) => r.method === m;
 function safeFight(fight: any) {
@@ -853,6 +857,10 @@ export async function handleGame(
             weapon: z.string().max(100).nullable().optional(),
             headgear: z.string().max(100).nullable().optional(),
             armor: z.string().max(100).nullable().optional(),
+            offhand: z.string().max(100).nullable().optional(),
+            hands: z.string().max(100).nullable().optional(),
+            legs: z.string().max(100).nullable().optional(),
+            feet: z.string().max(100).nullable().optional(),
             crossClassAbility1: z.string().max(100).nullable().optional(),
             crossClassAbility2: z.string().max(100).nullable().optional(),
           })
@@ -883,48 +891,41 @@ export async function handleGame(
                 .from(s.equipmentItems)
                 .where(eq(s.equipmentItems.id, uuid.parse(itemId)));
           const item = builtin || custom;
-          if (
-            builtin?.classRestriction &&
-            !builtin.classRestriction.includes(
-              student.characterClass || "warrior",
-            )
-          )
-            throw new ApiError("Item is not usable by this job");
+          if (item) {
+            const exclusion = equipmentExclusion(student.characterClass || 'warrior', item);
+            if (exclusion) throw new ApiError(exclusion);
+          }
           if (
             !item ||
             item.slot !== slot ||
-            (!builtin && !student.inventory.includes(itemId))
+            !ownedEquipment([...student.inventory, ...EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id)]).includes(itemId)
           )
             throw new ApiError("Equipment is not owned or has the wrong slot");
           const tier = (item as any).tier || 1;
           const level = levels[student.characterClass || "warrior"] || 1;
           if (level < [1, 2, 4, 6, 8, 10, 11, 12, 13, 15][tier - 1])
             throw new ApiError("Job level is too low for this tier");
-          if (
-            slot === "weapon" &&
-            item.weaponType &&
-            !WEAPON_RESTRICTIONS[student.characterClass || "warrior"].includes(
-              item.weaponType as any,
-            )
-          )
-            throw new ApiError("Weapon is not usable by this job");
+
+        }
+        if ('weapon' in input || 'offhand' in input) {
+          const nextWeapon = 'weapon' in input ? input.weapon : student.weapon;
+          const nextOffhand = 'offhand' in input ? input.offhand : student.offhand;
+          const resolveItem = async (id:string|null|undefined) => !id ? null : EQUIPMENT_ITEMS[id] || (await db.select().from(s.equipmentItems).where(eq(s.equipmentItems.id, uuid.parse(id))))[0] || null;
+          const weapon = await resolveItem(nextWeapon), offhand = await resolveItem(nextOffhand);
+          if (handConflict(weapon, offhand)) throw new ApiError('The weapon and off-hand item are incompatible. Change or remove both together.');
         }
         if (
           input.crossClassAbility1 &&
           input.crossClassAbility1 === input.crossClassAbility2
         )
           throw new ApiError("Choose different cross-class abilities");
-        return json(
-          safeStudent(
-            (
-              await db
-                .update(s.students)
-                .set(input)
-                .where(eq(s.students.id, id))
-                .returning()
-            )[0],
-          ),
-        );
+        const [updated] = await db.update(s.students).set(input).where(and(
+          eq(s.students.id,id),
+          sql`${s.students.characterClass} IS NOT DISTINCT FROM ${student.characterClass}`,
+          ...EQUIPMENT_SLOTS.map(slot => sql`${s.students[slot]} IS NOT DISTINCT FROM ${student[slot]}`),
+        )).returning();
+        if (!updated) throw new ApiError('Your equipment changed. Refresh and try again.',409);
+        return json(safeStudent(updated));
       }
       if (tail === "purchase-item" && method(request, "POST")) {
         const { itemId } = z

@@ -1,3 +1,6 @@
+import { getStudentAvatar } from "./avatar-repository.ts";
+import { validAppearance } from "../../shared/avatar/appearance.ts";
+import { EQUIPMENT_SLOTS } from "../../shared/equipment-catalog.ts";
 import { evaluateQuests } from "../progression/quests.ts";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -25,13 +28,8 @@ export async function combatProfile(
     .from(s.studentJobLevels)
     .where(eq(s.studentJobLevels.studentId, student.id));
   const levels = Object.fromEntries(jobs.map((j) => [j.jobClass, j.level]));
-  const defaults = getStartingEquipment(student.characterClass || "warrior");
-  const ids = [
-    student.weapon || defaults.weapon,
-    student.headgear || defaults.headgear,
-    student.armor || defaults.armor,
-  ];
-  const equipment = calculateEquipmentStats(ids[0], ids[1], ids[2]);
+  const ids = EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id);
+  const equipment = calculateEquipmentStats(student.weapon, student.headgear, student.armor, student.hands, student.legs, student.feet, student.offhand);
   const custom = await db
     .select()
     .from(s.equipmentItems)
@@ -44,7 +42,10 @@ export async function combatProfile(
   for (const item of custom)
     for (const [k, n] of Object.entries(item.stats))
       equipment[k as keyof EquipmentStats] += n || 0;
+  const avatar = await getStudentAvatar(db, student.id);
+  const appearance = avatar && { modelId: avatar.modelId, hairColorId: avatar.hairColorId, eyeColorId: avatar.eyeColorId, skinColorId: avatar.skinColorId };
   return {
+    appearance: validAppearance(appearance) ? appearance : null,
     levels,
     equipment,
     crossClass: [student.crossClassAbility1, student.crossClassAbility2].filter(

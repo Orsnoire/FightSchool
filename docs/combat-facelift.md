@@ -145,3 +145,13 @@ apply damage or spend resources themselves.
 Biome art, final positions/scales, formation algorithm, and entrance choreography
 are not yet approved. This brief records the direction
 without beginning live combat integration or bypassing the avatar readiness gate.
+
+## October 5 static-first sequencing
+
+The owner now permits front-facing static starter avatars before animations.
+Combat snapshots may carry saved appearance and the current board may display
+those static starters without changing phase timing, damage resolution, player
+positions or the centered overlay flow. This does not approve the proposed new
+biome composition or formation algorithm. Keep that scene's 1/2/4/5/10/20/30
+player, transition and classroom-device checks as a separate implementation gate.
+Static starter ownership and off-hand rules are in [starter wardrobe](starter-wardrobe.md).

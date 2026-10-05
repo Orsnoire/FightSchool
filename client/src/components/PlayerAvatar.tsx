@@ -1,4 +1,6 @@
 import type { CharacterClass, Gender } from "@shared/schema";
+import { STARTER_JOBS, type AvatarAppearance, type StarterJob } from '@shared/avatar/appearance';
+import { StaticAvatar } from './StaticAvatar';
 import { Crown } from "lucide-react";
 import warriorMale from "@assets/generated_images/Knight_male_character_sprite_732b2fa0.png";
 import warriorFemale from "@assets/generated_images/Knight_female_character_sprite_3ca497a8.png";
@@ -26,6 +28,7 @@ import bardMale from "@assets/generated_images/Bard_male_character_sprite_eb6469
 import bardFemale from "@assets/generated_images/Bard_female_character_sprite_14b09f07.png";
 
 interface PlayerAvatarProps {
+  appearance?: AvatarAppearance | null;
   characterClass: CharacterClass;
   gender?: Gender;
   size?: "xs" | "sm" | "md" | "lg";
@@ -64,6 +67,7 @@ const CROWN_SIZE_CLASSES = {
 };
 
 export function PlayerAvatar({
+  appearance,
   characterClass,
   gender,
   size = "md",
@@ -80,7 +84,9 @@ export function PlayerAvatar({
       className={`${SIZE_CLASSES[size]} ${showBorder ? `border-2 ${borderColor} rounded-md` : ""} overflow-visible bg-card ${className} relative`}
       data-testid={`avatar-${characterClass}-${gender}`}
     >
-      <img src={image} alt={`${characterClass} ${gender}`} className="w-full h-full object-cover" />
+      {appearance && STARTER_JOBS.includes(characterClass as StarterJob)
+        ? <StaticAvatar appearance={appearance} job={characterClass as StarterJob} className="w-full h-full" />
+        : <img src={image} alt={`${characterClass} ${gender}`} className="w-full h-full object-cover" />}
       {isThreatLeader && (
         <div 
           className="absolute -top-1 -right-1 bg-warning rounded-full p-0.5 border border-warning-foreground shadow-lg"

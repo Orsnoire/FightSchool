@@ -1,4 +1,5 @@
 import { gameDatabase } from "./db/game-repository.ts";
+import { handleAvatar } from "./routes/avatars.ts";
 import { handleGame } from "./routes/game.ts";
 import { handleObjects } from "./routes/objects.ts";
 import { createIdentityRepository, verifyDatabase } from "./db/repository.ts";
@@ -226,6 +227,7 @@ export default {
           });
         }
         const response =
+          (await handleAvatar(request, url, repository, config, gameDatabase(env.DATABASE_URL))) ||
           (await handleObjects(request, url, env, repository, config)) ||
           (await handleGame(
             request,

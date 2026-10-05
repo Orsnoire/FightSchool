@@ -1,3 +1,4 @@
+import { ARMOR_EXCLUSIONS, type ArmorCategory } from "./equipment-catalog";
 import type { CharacterClass } from "./schema";
 
 // Job unlock requirements
@@ -40,6 +41,7 @@ export interface JobLevelReward {
 // Complete job configuration
 export interface JobConfig {
   id: CharacterClass;
+  armorExclusions: readonly ArmorCategory[];
   name: string;
   description: string;
   maxLevel: number;
@@ -116,6 +118,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
   // BASE CLASSES (Available from start)
   warrior: {
     id: "warrior",
+    armorExclusions: ARMOR_EXCLUSIONS.warrior,
     name: "Warrior",
     description: "Tank - High health, blocks damage for allies",
     maxLevel: 15,
@@ -183,6 +186,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   wizard: {
     id: "wizard",
+    armorExclusions: ARMOR_EXCLUSIONS.wizard,
     name: "Wizard",
     description: "DPS - Powerful opening spells. Starts combat with half of maximum MP.",
     maxLevel: 15,
@@ -250,6 +254,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   scout: {
     id: "scout",
+    armorExclusions: ARMOR_EXCLUSIONS.scout,
     name: "Scout",
     description: "DPS - Ranged damage with combo points",
     maxLevel: 15,
@@ -317,6 +322,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   herbalist: {
     id: "herbalist",
+    armorExclusions: ARMOR_EXCLUSIONS.herbalist,
     name: "Herbalist",
     description: "Healer - Can heal allies and create potions",
     maxLevel: 15,
@@ -390,6 +396,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   warlock: {
     id: "warlock",
+    armorExclusions: ARMOR_EXCLUSIONS.warlock,
     name: "Warlock",
     description: "Curse specialist - Deals damage over time",
     maxLevel: 15,
@@ -457,6 +464,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   priest: {
     id: "priest",
+    armorExclusions: ARMOR_EXCLUSIONS.priest,
     name: "Priest",
     description: "Advanced healer - Master of holy magic",
     maxLevel: 15,
@@ -524,6 +532,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   paladin: {
     id: "paladin",
+    armorExclusions: ARMOR_EXCLUSIONS.paladin,
     name: "Paladin",
     description: "Holy defender - Tank/Healer hybrid",
     maxLevel: 15,
@@ -591,6 +600,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   dark_knight: {
     id: "dark_knight",
+    armorExclusions: ARMOR_EXCLUSIONS.dark_knight,
     name: "Dark Knight",
     description: "Dark warrior - Tank/DPS with shadow magic",
     maxLevel: 15,
@@ -658,6 +668,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   blood_knight: {
     id: "blood_knight",
+    armorExclusions: ARMOR_EXCLUSIONS.blood_knight,
     name: "Blood Knight",
     description: "Vampiric warrior - Lifesteal specialist",
     maxLevel: 15,
@@ -725,6 +736,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   monk: {
     id: "monk",
+    armorExclusions: ARMOR_EXCLUSIONS.monk,
     name: "Monk",
     description: "Stance-based fighter - Tank/DPS hybrid with combo points",
     maxLevel: 15,
@@ -792,6 +804,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   ranger: {
     id: "ranger",
+    armorExclusions: ARMOR_EXCLUSIONS.ranger,
     name: "Ranger",
     description: "DPS - Advanced ranged damage with combo points and mobility",
     maxLevel: 15,
@@ -859,6 +872,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
 
   bard: {
     id: "bard",
+    armorExclusions: ARMOR_EXCLUSIONS.bard,
     name: "Bard",
     description: "Support/DPS - Song-based buffs and damage",
     maxLevel: 15,

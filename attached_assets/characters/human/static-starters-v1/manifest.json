@@ -1,0 +1,63 @@
+{
+  "id": "static-starters-v1",
+  "status": "workshop-review",
+  "revision": 1,
+  "date": "2026-10-05",
+  "renderer": "shared/avatar/static-renderer.ts",
+  "fits": "shared/avatar/static-catalog.ts",
+  "sources": {
+    "male-neutral": {
+      "path": "attached_assets/characters/human/v1/recolor/neutral/human-male-front.png",
+      "sha256": "35a1c99772fb1aed902fba31d35754e2ec06c8c7655277987b65541310c8fb1e"
+    },
+    "male-hair": {
+      "path": "attached_assets/characters/human/v1/recolor/masks/human-male-front-hair.png",
+      "sha256": "80d8e1b51df1d9d1ad9bba607a1699708fe57d6b02946212e3d6a01ecc020f43"
+    },
+    "male-eyes": {
+      "path": "attached_assets/characters/human/v1/recolor/masks/human-male-front-eyes.png",
+      "sha256": "c593ab14895dc751129169b3ba2faa90c1bc0fa0f41c5088bcc34646b951e219"
+    },
+    "male-skin": {
+      "path": "attached_assets/characters/human/v1/recolor/masks/human-male-front-skin.png",
+      "sha256": "d533d5f8679f554c281754b9ced953fd1816ef0be83eb0559d77418103c5721f"
+    },
+    "female-neutral": {
+      "path": "attached_assets/characters/human/v1/recolor/neutral/human-female-front.png",
+      "sha256": "6c87604741152aae6adb1ae085d45f4418bbbba5cdb9dd4efcf171ff12ab3366"
+    },
+    "female-hair": {
+      "path": "attached_assets/characters/human/v1/recolor/masks/human-female-front-hair.png",
+      "sha256": "04dc1543990653ec95cece8e02e7db8cc1a3f0dc9420b54e6a9f7b20e6d4bdb4"
+    },
+    "female-eyes": {
+      "path": "attached_assets/characters/human/v1/recolor/masks/human-female-front-eyes.png",
+      "sha256": "e6164dc67368aba15fece536d4160e9fd91fe7abf7ad6696d3ec99cd0374243a"
+    },
+    "female-skin": {
+      "path": "attached_assets/characters/human/v1/recolor/masks/human-female-front-skin.png",
+      "sha256": "c87a6e0eaf74c50138fa092f78d7df5c64aa6c3317bbb74a369756b8966a00d4"
+    },
+    "warrior": {
+      "path": "attached_assets/characters/human/static-starters-v1/source/warrior.png",
+      "sha256": "da3d376f4c26c316934f514aaf644115d454a4308aa369dd9e41673fe30d00ed"
+    },
+    "wizard": {
+      "path": "attached_assets/characters/human/static-starters-v1/source/wizard.png",
+      "sha256": "231d7818c98d7962a7b74bfcca0d9986ef49a3e0763e0dfbce232fedc3639dc7"
+    },
+    "scout": {
+      "path": "attached_assets/characters/human/static-starters-v1/source/scout.png",
+      "sha256": "5f5c9f59b3994dafbe1d07fc741f27b9fe081a1c5be51c68220ba16f778da15c"
+    },
+    "herbalist": {
+      "path": "attached_assets/characters/human/static-starters-v1/source/herbalist.png",
+      "sha256": "fe523dbccc6ce847b4ffbc21f31d41cef7d1bdb8f98eaf34666a44c7a13d97b2"
+    }
+  },
+  "preview": {
+    "path": "workshop/site/previews/static-starters-01.html",
+    "bytes": 12688167,
+    "sha256": "80ba74793de69e0238d41ba7b64e66d25dbb2bc1fb5f6eec735b05db86304123"
+  }
+}
