@@ -2,9 +2,9 @@
 
 October 5, 2026 owner direction: every student owns the starter collection, regardless of current job. Changing jobs selects compatible equipment without losing starter gear or acquired upgrades. Potion and quiver off hands are equipment; future variants may modify healing or other effects, but no such effect is defined in this release.
 
-## Review defaults
+## Release defaults
 
-The Expanded Class List defines jobs, weapon usage and abilities but contains no armor exclusions. The following material rules and grouped player slots are implementation defaults for review, not a claim of prior owner approval. Confirm them with the static-avatar collection before live deployment.
+The Expanded Class List defines jobs, weapon usage and abilities but contains no armor exclusions. The following material rules and grouped player slots were prepared as review defaults and are included in the October 5 owner-authorized static-avatar release.
 
 | Jobs | Plate / heavy | Leather | Linen / unarmored clothing |
 | --- | --- | --- | --- |
@@ -45,4 +45,4 @@ The static review covers all twelve jobs on both bodies, with separate head/head
 
 Migration `0009_starter_wardrobe.sql` adds nullable hands/legs/feet/offhand columns and optional armor/offhand metadata. It preserves existing rows and loadouts. New compatibility rules apply to new equip requests and the next job selection; the migration does not strip or rebalance existing equipped items. The deployment must apply this migration before the new Worker is activated.
 
-Before live release: owner review of the material/slot defaults, static art approval, migration verification, the regular CI and authenticated classroom acceptance checks. The independent [workshop](workshop-routing.md) can publish previews without deploying this database or game change.
+The owner approved the static collection and requested live release on October 5. Migration verification, the regular CI and authenticated classroom acceptance checks remain deployment gates. The independent [workshop](workshop-routing.md) can publish previews without deploying this database or game change.

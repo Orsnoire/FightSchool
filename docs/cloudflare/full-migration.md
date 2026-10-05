@@ -158,3 +158,34 @@ Existing students and equipped items are preserved; permanent starter ownership
 is derived from the shared catalog without repeated item grants. A workshop upload
 does not apply this migration. Do not mark this migration applied based only on
 a local test or the earlier October 1 deployment record.
+
+
+## Static avatars and starter wardrobe — 5 October 2026
+
+The owner approved static workshop review 03 and authorized live release. PR #33
+merged as `c056895bc7e54171fd4976c1820fac0489ba0feb`. All 81 local tests, type
+checking, both builds, and the static workshop/creator/job-change browser checks
+passed. The PR head CI run `37369592788` also passed.
+
+Deployment [run 37370440485](https://github.com/Orsnoire/FightSchool/actions/runs/37370440485)
+was dispatched on that merged revision through the existing workflow. At the
+preparation checkpoint it was waiting for a GitHub-hosted runner during the
+October 5 Actions runner-assignment incident. This is a queued deployment, not
+a completed production release. Migration `0009_starter_wardrobe.sql`, Worker
+publication and deployed acceptance must be confirmed from the completed run.
+The last deployed rollback checkpoint remains
+`eee2f302-3cb6-45b4-9a56-e5be828fdc40` from October 1.
+
+The targeted live API check is now reproducible with:
+
+```sh
+STAGING_ORIGIN=https://questacademy.bookwyrminteractive.studio \
+  node --import tsx tests/staging/static-avatar-acceptance.mjs
+```
+
+It explicitly creates two isolated student fixtures, checks both saved body
+models, creation retries, palette persistence across jobs/relogin, permanent
+starter ownership, all four base-job loadouts, same-job equipment retention,
+armor exclusions, body immutability, ownership and origin checks. It signs out
+its sessions afterward and does not touch real students. It is not run at app
+startup and does not replace the live combat/classroom acceptance workflow.

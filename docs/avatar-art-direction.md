@@ -60,7 +60,8 @@ is contained by these closed hats; the visible fringe and side hair remain.
 The Wizard brim split is retained. Review 03 centers the female Warrior and
 Wizard bodies beneath the shared neck after comparison with Scout and Herbalist:
 Warrior moves 14 reference pixels left and Wizard 16 right. Their existing
-collar masks follow the body. These fitting corrections still await review.
+collar masks follow the body. The owner approved review 03 and authorized live deployment on October 5, 2026.
+This approval covers the static collection; the animated integration gate remains separate.
 
 The static sheets under `static-starters-v1` are workshop candidates, not
 approved production rigs. Their body clothing/props are combined starter art;

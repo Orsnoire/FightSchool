@@ -1,6 +1,6 @@
 # Static starter review 03
 
-October 5, 2026. **Awaiting owner visual approval.** Both bodies for all twelve jobs, reusing plate, leather and linen starter gear. The earlier animation-completion gate is superseded
+October 5, 2026. **Static review 03 approved by the owner on October 5, 2026.** Both bodies for all twelve jobs, reusing plate, leather and linen starter gear. The earlier animation-completion gate is superseded
 for this static-first track; see `docs/avatar-art-direction.md`.
 
 The original front-facing neutral heads and hair/iris/skin masks are reused
@@ -52,7 +52,7 @@ and side hair. Wizard brim layering is unchanged.
 
 The render command also exports enlarged starter/fallback fit sheets and
 light/dark skin checks. Review 01 remains available as a historical workshop
-entry. Review 02 still needs owner visual approval before live deployment.
+entry. Review 02 was superseded by the approved review 03 below.
 
 ## Review 03 — female body alignment
 
