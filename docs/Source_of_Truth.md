@@ -161,8 +161,9 @@ The [avatar art and animation direction guide](avatar-art-direction.md) retains
 the full segmented-model, rig, starter/signature-gear and ability-coverage gate
 for the later animated release. Static approval does not approve an unfinished
 rig or change combat mechanics. See the [permanent starter wardrobe](starter-wardrobe.md)
-for the October 5 shared-ownership direction and review-default armor exclusions.
-The exact slot/material defaults remain subject to owner review before deployment.
+for the October 5 shared-ownership direction and armor exclusions. The owner
+approved static review 03, including the slot/material defaults, and authorized
+live release on October 5. Deployment and live acceptance still require verification.
 
 The separate [workshop routing guide](workshop-routing.md) records the Worker,
 R2 binding, connection/upload flow and recovered review checkpoints. Publishing

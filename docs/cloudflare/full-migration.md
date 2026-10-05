@@ -165,16 +165,22 @@ a local test or the earlier October 1 deployment record.
 The owner approved static workshop review 03 and authorized live release. PR #33
 merged as `c056895bc7e54171fd4976c1820fac0489ba0feb`. All 81 local tests, type
 checking, both builds, and the static workshop/creator/job-change browser checks
-passed. The PR head CI run `37369592788` also passed.
+passed. The PR head CI run `37369592788` and Avatar Workshop Acceptance run
+`37369592682` also passed. Combat UI Acceptance run `37369592777` was cancelled
+before any job steps ran during the runner incident; it is not an application
+test result.
 
 Deployment [run 37370440485](https://github.com/Orsnoire/FightSchool/actions/runs/37370440485)
 was dispatched on that merged revision through the existing workflow. At the
-preparation checkpoint it was waiting for a GitHub-hosted runner during the
+20:43 UTC checkpoint it was waiting for a GitHub-hosted runner during the
 October 5 Actions runner-assignment incident. This is a queued deployment, not
 a completed production release. Migration `0009_starter_wardrobe.sql`, Worker
 publication and deployed acceptance must be confirmed from the completed run.
 The last deployed rollback checkpoint remains
 `eee2f302-3cb6-45b4-9a56-e5be828fdc40` from October 1.
+The [queued-run snapshot](../releases/2026-10-05-static-avatar-deployment-queued.jpg)
+records this checkpoint. Check the existing run before retrying; do not dispatch
+a duplicate deployment while it is still queued or running.
 
 The targeted live API check is now reproducible with:
 
