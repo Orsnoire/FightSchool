@@ -163,7 +163,8 @@ for the later animated release. Static approval does not approve an unfinished
 rig or change combat mechanics. See the [permanent starter wardrobe](starter-wardrobe.md)
 for the October 5 shared-ownership direction and armor exclusions. The owner
 approved static review 03, including the slot/material defaults, and authorized
-live release on October 5. Deployment and live acceptance still require verification.
+live release on October 5. The static release is deployed and live acceptance
+passed; see the [release record](cloudflare/full-migration.md#static-avatars-and-starter-wardrobe--5-october-2026).
 
 The separate [workshop routing guide](workshop-routing.md) records the Worker,
 R2 binding, connection/upload flow and recovered review checkpoints. Publishing

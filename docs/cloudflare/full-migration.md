@@ -170,17 +170,29 @@ passed. The PR head CI run `37369592788` and Avatar Workshop Acceptance run
 before any job steps ran during the runner incident; it is not an application
 test result.
 
-Deployment [run 37370440485](https://github.com/Orsnoire/FightSchool/actions/runs/37370440485)
-was dispatched on that merged revision through the existing workflow. At the
-20:43 UTC checkpoint it was waiting for a GitHub-hosted runner during the
-October 5 Actions runner-assignment incident. This is a queued deployment, not
-a completed production release. Migration `0009_starter_wardrobe.sql`, Worker
-publication and deployed acceptance must be confirmed from the completed run.
-The last deployed rollback checkpoint remains
-`eee2f302-3cb6-45b4-9a56-e5be828fdc40` from October 1.
+Deployment run `37370440485` and the first attempt of `37371803971` were cancelled
+before any job steps ran during the October 5 GitHub Actions runner incident.
 The [queued-run snapshot](../releases/2026-10-05-static-avatar-deployment-queued.jpg)
-records this checkpoint. Check the existing run before retrying; do not dispatch
-a duplicate deployment while it is still queued or running.
+is historical evidence of that delay, not the current release status.
+
+After Actions recovered, [deployment run 37371803971, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37371803971/attempts/2)
+successfully deployed `9431f7fa0a65fa4db75ca32e7083c2579e528407` at 00:31 UTC
+October 6 (18:31 MDT October 5). The workflow passed type checking, all 81 tests,
+the client/Worker build, R2 verification, additive migrations including
+`0009_starter_wardrobe.sql`, publication and smoke checks on both hostnames.
+Immutable Worker version: `381d9a52-e2d8-479b-9396-00d2668d9e8a`.
+The previous deployed version, `eee2f302-3cb6-45b4-9a56-e5be828fdc40`, remains the
+rollback checkpoint. Keep the additive database schema when rolling back.
+
+The live saved-avatar API acceptance below passed on the canonical domain for
+both bodies, all four base jobs and all 23 permanent starter items. Live combat
+and classroom acceptance also passed in [run 36889382720, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/36889382720/attempts/2),
+job `112047036895`. This reran the established October 1 acceptance harness;
+its two scripts and workflow are unchanged from the release revision, and it
+tested the newly deployed canonical domain. Coverage includes combat resources,
+reconnect/rewards, R2 behavior and 30-participant classroom concurrency.
+The public login page also loaded in the browser; authenticated avatar UI
+coverage remains the pre-release browser acceptance plus the live API checks.
 
 The targeted live API check is now reproducible with:
 
