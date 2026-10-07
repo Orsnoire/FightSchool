@@ -26,18 +26,18 @@ test("only host boards expose clickable and keyboard-accessible resurrection on 
     const chosen: string[] = [];
     const onResurrect = (id: string) => chosen.push(id);
     await act(async () => root.render(createElement(CombatBoard, { state, onResurrect })));
-    const card = document.querySelector('[role="button"]') as HTMLElement;
+    const card = document.querySelector('button[aria-label^="Resurrect"]') as HTMLElement;
     assert.equal(card.getAttribute("aria-label"), "Resurrect warrior with 1 HP");
     assert.equal(card.tabIndex, 0);
     await act(async () => card.click());
-    await act(async () => card.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
-    assert.deepEqual(chosen, [student().id, student().id]);
+    assert.equal(card.tagName, "BUTTON", "native button provides keyboard activation");
+    assert.deepEqual(chosen, [student().id]);
     await act(async () => root.render(createElement(CombatBoard, { state })));
-    assert.equal(document.querySelector('[role="button"]'), null, "student view has no resurrection control");
+    assert.equal(document.querySelector('button[aria-label^="Resurrect"]'), null, "student view has no resurrection control");
     state.players[student().id].isDead = false;
     state.players[student().id].health = 1;
     await act(async () => root.render(createElement(CombatBoard, { state, onResurrect })));
-    assert.equal(document.querySelector('[role="button"]'), null, "living players cannot be resurrected again");
+    assert.equal(document.querySelector('button[aria-label^="Resurrect"]'), null, "living players cannot be resurrected again");
   } finally {
     await act(async () => root.unmount());
     await rm(dir, { recursive: true, force: true });

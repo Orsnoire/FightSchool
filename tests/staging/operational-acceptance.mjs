@@ -50,10 +50,10 @@ class Actor {
     return Date.now() - start;
   }
 }
-async function fight(title) {
+async function fight(title, questionCount = 1) {
   const created = await api("/api/fights", { method: "POST", cookie: teacher.cookie, status: 201, body: {
     teacherId: teacher.payload.id, title: `${title} ${suffix}`, baseXP: 10, baseEnemyDamage: 1,
-    questions: [{ id: "q1", type: "short_answer", question: "What is 2+2?", correctAnswer: "4", timeLimit: 120 }],
+    questions: Array.from({length:questionCount}, (_,i) => ({ id: `q${i+1}`, type: "short_answer", question: "What is 2+2?", correctAnswer: "4", timeLimit: 120 })),
     enemies: [{ id: "e1", name: "Acceptance slime", image: "/favicon.png", difficultyMultiplier: 1 }],
     enemyDisplayMode: "consecutive", lootTable: [], randomizeQuestions: false, shuffleOptions: false,
   } });
@@ -149,6 +149,53 @@ try {
       assert.equal(stats.payload.length, 1, "Each student must have exactly one result");
       assert.equal(stats.payload[0].questionsAnswered, 1, "The saved result must contain the resolved answer");
     }
+  });
+  await check("late entry, moderated rejoin, blocked requests and fractional host-end rewards", async () => {
+    const room = await fight("Acceptance battlefield participation", 4);
+    const open = async (index) => { const actor = new Actor(students[index].cookie, room.room); await actor.open(); actor.send("join"); return actor; };
+    let a = await open(0), b = await open(1);
+    const aId = students[0].payload.id, bId = students[1].payload.id, lateId = students[2].payload.id;
+    await room.host.wait(m => m.type === "combat_state" && Object.keys(m.state.players).length === 2);
+    await room.host.ack("start_fight");
+    const resolve = async (actors, round) => {
+      const opening = await actors[0].wait(m => m.type === "combat_state" && m.state.round === round && m.state.currentPhase === "question");
+      await sleep(Math.max(0, opening.state.questionStartTime - Date.now()) + 100);
+      await Promise.all(actors.map(actor => actor.ack("answer", {round, questionId:`q${round}`, answer:"4"})));
+      await actors[0].wait(m => m.type === "combat_state" && m.state.round === round && m.state.currentPhase === "actions");
+      await Promise.all(actors.map(actor => actor.ack("ready", {round})));
+      await actors[0].wait(m => m.type === "combat_state" && m.state.round === round && m.state.currentPhase === "abilities");
+      await Promise.all(actors.map(actor => actor.ack("ready", {round})));
+      return (await actors[0].wait(m => m.type === "combat_state" && m.state.round === round && m.state.currentPhase === "question_resolution")).state;
+    };
+    const first = await resolve([a,b], 1);
+    await room.host.ack("remove_player", {targetId:aId});
+    await a.wait(m => m.type === "fight_removed");
+    a = await open(0); await a.wait(m => m.type === "join_status" && m.status === "pending");
+    const refreshed = new Actor(teacher.cookie, room.room); await refreshed.open(); refreshed.send("host");
+    await refreshed.wait(m => m.type === "combat_state" && m.rejoinRequests?.some(r => r.studentId === aId));
+    await refreshed.ack("review_rejoin", {targetId:aId, decision:"allow"});
+    const returned = await a.wait(m => m.type === "combat_state" && m.state.pendingPlayers?.[aId]);
+    assert.equal(returned.state.pendingPlayers[aId].health, first.players[aId].health);
+    assert.equal(returned.state.pendingPlayers[aId].totals.damageDealt, first.players[aId].totals.damageDealt);
+    const late = await open(2); await late.wait(m => m.type === "combat_state" && m.state.pendingPlayers?.[lateId]);
+    for (let step = 0; step < 2; step++) await api(`/api/combat/${room.room}/force-question`, {method:"POST",cookie:teacher.cookie});
+    const second = await resolve([a,b,late], 2);
+    assert.equal(second.players[lateId].roundsParticipated, 1);
+    assert.equal(second.players[aId].roundsParticipated, 2);
+    assert.equal(second.enemies[0].maxHealth, first.enemies[0].maxHealth);
+    await refreshed.ack("remove_player", {targetId:bId});
+    b = await open(1); await b.wait(m => m.type === "join_status" && m.status === "pending");
+    await refreshed.ack("review_rejoin", {targetId:bId,decision:"block"});
+    await b.wait(m => m.type === "join_status" && m.status === "blocked");
+    const blocked = await open(1); await blocked.wait(m => m.type === "join_status" && m.status === "blocked");
+    await refreshed.ack("end_fight");
+    const done = await late.wait(m => m.type === "game_over" && m.results?.length, 60000);
+    const result = done.results.find(r => r.studentId === lateId), totals = second.players[lateId].totals;
+    const progress = 1 - second.enemies.reduce((sum,e) => sum+e.health,0) / second.enemies.reduce((sum,e) => sum+e.maxHealth,0);
+    const expected = Math.max(0, 10*progress*.5 + totals.questionsCorrect + totals.damageBlocked + totals.healingDone + totals.bonusDamage - totals.questionsIncorrect);
+    assert.ok(Math.abs(result.baseXp-expected) < 1e-8);
+    assert.equal(result.goldReward,0);
+    assert.equal(done.results.some(r => r.studentId === bId),false);
   });
   await check("logout revokes an already-open student socket", async () => {
     const closed = new Promise(resolve => separate.socket.once("close", code => resolve(code)));

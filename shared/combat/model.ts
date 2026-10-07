@@ -24,6 +24,7 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  roundsParticipated?: number;
   appearance?: AvatarAppearance | null;
   studentId: string;
   nickname: string;
@@ -88,6 +89,12 @@ export interface CombatSnapshot {
   round: number;
   currentPhase: CombatPhase;
   players: Record<string, CombatPlayer>;
+  pendingPlayers?: Record<string, CombatPlayer>;
+  /** Server-only saved participants; stripped from public snapshots. */
+  departedPlayers?: Record<string, CombatPlayer>;
+  completedRounds?: number;
+  damageLeaderId?: string | null;
+  endedByHost?: boolean;
   enemies: CombatEnemy[];
   questionStartTime: number | null;
   phaseStartTime: number;

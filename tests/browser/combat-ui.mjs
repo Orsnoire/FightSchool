@@ -21,7 +21,8 @@ try {
       window.WebSocket = class {
         static OPEN = 1;
         readyState = 1;
-        constructor() {
+        constructor(url) {
+          this.url = url;
           window.combatTest.sockets.push(this);
           setTimeout(() => this.onopen?.(), 0);
         }
@@ -33,7 +34,7 @@ try {
       completedCombats: 2, xpMultiplier: 0.691, resetsAt: Date.now() + 3600000, timeZone: 'America/Denver'
     } }));
     await page.goto(origin + '/student/combat');
-    await page.waitForFunction(() => window.combatTest?.sockets.length > 0);
+    await page.waitForFunction(() => window.combatTest?.sockets.some(s => s.url.includes('sessionId=ABC234') && typeof s.onmessage === 'function'));
     let state = started('herbalist');
     state.enemies[0].image = enemyImage;
     state.enemies[0].name = 'Goblins';
@@ -43,11 +44,18 @@ try {
     async function emit() {
       state.revision++;
       await page.evaluate(({ state, question }) => {
-        const socket = window.combatTest.sockets.at(-1);
+        const socket = window.combatTest.sockets.filter(s => s.url.includes('sessionId=ABC234')).at(-1);
         socket.onmessage({ data: JSON.stringify({ type: 'combat_state', state, question, results: [], serverTime: Date.now() }) });
       }, { state, question });
     }
     async function screenshot(name) {
+      if (name === 'waiting') {
+        await page.getByTestId('battle-wait').waitFor();
+        assert.equal(await page.getByRole('dialog').count(), 0);
+        await page.getByRole('complementary', { name: 'Your character' }).waitFor();
+        await page.screenshot({ path: `${output}/${viewport.width}-${name}.png` });
+        return;
+      }
       const dialog = page.getByRole('dialog');
       await dialog.waitFor();
       const rect = await dialog.boundingBox();
@@ -74,7 +82,7 @@ try {
     assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).ready), true);
     state.players[id].ready = true;
     await emit();
-    await page.getByRole('heading', { name: 'Ready — waiting for your party', exact: true }).waitFor();
+    await page.getByText('Waiting for other players', { exact: true }).waitFor();
     await page.keyboard.press('Escape');
     await screenshot('waiting');
     state.currentPhase = 'abilities';
@@ -162,7 +170,7 @@ try {
     assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).type), 'leave_fight');
     await page.getByRole('button', { name: 'Leaving…', exact: true }).waitFor();
     await page.route('**/api/**', route => route.fulfill({ json: {} }));
-    await page.evaluate(() => window.combatTest.sockets.at(-1).onmessage({ data: JSON.stringify({ type: 'fight_left', sessionId: 'ABC234' }) }));
+    await page.evaluate(() => window.combatTest.sockets.filter(s => s.url.includes('sessionId=ABC234')).at(-1).onmessage({ data: JSON.stringify({ type: 'fight_left', sessionId: 'ABC234' }) }));
     await page.waitForURL('**/student');
     assert.equal(await page.evaluate(() => localStorage.getItem('sessionId')), null);
     assert.deepEqual(errors, []);

@@ -64,6 +64,10 @@ export function initialCombatState(
     round: 1,
     currentPhase: "waiting",
     players: {},
+    pendingPlayers: {},
+    departedPlayers: {},
+    completedRounds: 0,
+    damageLeaderId: null,
     enemies: fight.enemies.map((e) => ({
       ...e,
       health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
@@ -86,10 +90,10 @@ export function addStudent(
   profile: CombatProfile = { levels: {} },
 ): CombatSnapshot {
   if (state.players[student.id]) return state;
-  if (state.currentPhase !== "waiting")
-    throw new Error(
-      "Fight already started; reconnect with your original account",
-    );
+  if (state.pendingPlayers?.[student.id]) return state;
+  if (state.currentPhase === "game_over") throw new Error("Fight has ended");
+  const returning = state.departedPlayers?.[student.id];
+  if (returning) return admitStudent(state, structuredClone(returning));
   const job = (student.characterClass || "warrior") as CharacterClass;
   const levels = { ...profile.levels, [job]: profile.levels[job] || 1 };
   const starting = getStartingEquipment(job);
@@ -105,6 +109,7 @@ export function addStudent(
     getTotalMechanicUpgrades(levels as Record<CharacterClass, number>),
   );
   const p: CombatPlayer = {
+    roundsParticipated: 0,
     studentId: student.id,
     nickname: student.nickname,
     characterClass: job,
@@ -144,8 +149,36 @@ export function addStudent(
       deaths: 0,
     },
   };
-  return { ...state, players: { ...state.players, [student.id]: p } };
+  return admitStudent(state, p);
 }
+/** New/returning participants enter only at a question boundary. */
+function admitStudent(state: CombatSnapshot, player: CombatPlayer): CombatSnapshot {
+  const next = structuredClone(state);
+  delete next.departedPlayers?.[player.studentId];
+  player.hasAnswered = false;
+  player.currentAnswer = null;
+  delete player.lastAnswerCorrect;
+  player.questionAction = null;
+  player.supportActions = [];
+  player.ready = false;
+  // Block links refer to participation in one turn, not a reusable resource.
+  for (const key of Object.keys(player.buffs)) if (key.startsWith("guard:")) delete player.buffs[key];
+  if (state.currentPhase === "waiting") next.players[player.studentId] = player;
+  else (next.pendingPlayers ||= {})[player.studentId] = player;
+  next.revision++;
+  leader(next);
+  return next;
+}
+
+export function completedRounds(state: CombatSnapshot): number {
+  return Math.max(state.completedRounds || 0, state.round - 1,
+    ...Object.values({ ...state.departedPlayers, ...state.pendingPlayers, ...state.players })
+      .map(p => Math.max(p.totals.questionsAnswered, p.totals.questionsCorrect + p.totals.questionsIncorrect)));
+}
+export function participatedRounds(state: CombatSnapshot, player: CombatPlayer): number {
+  return Math.min(completedRounds(state), Math.max(player.roundsParticipated ?? completedRounds(state), player.totals.questionsAnswered, player.totals.questionsCorrect + player.totals.questionsIncorrect));
+}
+
 // Attendance and equipment are frozen at start; each quiz has one total HP budget.
 export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo = false): CombatSnapshot {
   if (state.currentPhase !== "waiting") return state;
@@ -223,8 +256,12 @@ export function allLivingPlayersAnswered(state: CombatSnapshot): boolean {
 }
 /** An intentional departure removes participation; a dropped socket never does. */
 export function removeStudent(state: CombatSnapshot, id: string): CombatSnapshot {
-  if (!state.players[id] || state.currentPhase === "game_over") return state;
+  if ((!state.players[id] && !state.pendingPlayers?.[id]) || state.currentPhase === "game_over") return state;
   const next = structuredClone(state);
+  const player = next.players[id] || next.pendingPlayers![id];
+  player.roundsParticipated = participatedRounds(state, player);
+  (next.departedPlayers ||= {})[id] = player;
+  delete next.pendingPlayers?.[id];
   delete next.players[id];
   for (const player of Object.values(next.players)) {
     if (player.questionAction?.targetId === id) player.questionAction = null;
@@ -232,7 +269,7 @@ export function removeStudent(state: CombatSnapshot, id: string): CombatSnapshot
     delete player.buffs[`guard:${id}`];
   }
   leader(next);
-  if (next.currentPhase !== "waiting" && !Object.keys(next.players).length) {
+  if (next.currentPhase !== "waiting" && !Object.keys(next.players).length && !Object.keys(next.pendingPlayers || {}).length) {
     next.currentPhase = "game_over";
     next.victory = false;
     next.endReason = "All players left the fight";
@@ -341,6 +378,10 @@ function event(
   });
 }
 function leader(s: CombatSnapshot) {
+  const top = Object.values(s.players).filter(p => p.totals.damageDealt > 0)
+    .sort((a, b) => b.totals.damageDealt - a.totals.damageDealt ||
+      (a.studentId === s.damageLeaderId ? -1 : b.studentId === s.damageLeaderId ? 1 : a.studentId.localeCompare(b.studentId)))[0];
+  s.damageLeaderId = top?.studentId || null;
   s.threatLeaderId =
     Object.values(s.players)
       .filter((p) => !p.isDead)
@@ -879,6 +920,9 @@ export function advancePhase(
     return s;
   }
   if (s.currentPhase === "abilities") {
+    const completed = completedRounds(s);
+    for (const p of Object.values(s.players)) p.roundsParticipated = participatedRounds(s, p) + 1;
+    s.completedRounds = completed + 1;
     s.events = [];
     // Support resolves before answer damage so blocks protect wrong answers, as specified.
     const ordered = Object.values(s.players).sort(
@@ -1016,7 +1060,7 @@ export function advancePhase(
   }
   if (s.currentPhase === "enemy_ai") {
     const victory = s.enemies.every((e) => e.health <= 0);
-    const defeat = Object.values(s.players).every((p) => p.isDead);
+    const defeat = Object.values({ ...s.pendingPlayers, ...s.players }).every((p) => p.isDead);
     if (victory || defeat) {
       s.currentPhase = "game_over";
       s.victory = victory;
@@ -1051,6 +1095,9 @@ export function advancePhase(
           .map((x) => ({ ...x, rounds: x.rounds - 1 }))
           .filter((x) => x.rounds > 0)),
     );
+    for (const [id, player] of Object.entries(s.pendingPlayers || {})) s.players[id] = player;
+    s.pendingPlayers = {};
+    leader(s);
     s.round++;
     s.currentQuestionIndex =
       (s.currentQuestionIndex + 1) % fight.questions.length;

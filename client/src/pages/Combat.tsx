@@ -27,7 +27,7 @@ export default function Combat() {
   const [, navigate] = useLocation();
   const sessionId = localStorage.getItem("sessionId"),
     studentId = localStorage.getItem("studentId");
-  const { state, question, results, status, error, send, seconds, serverNow, leave, hasLeft, isLeaving } =
+  const { state, question, results, status, error, send, seconds, serverNow, leave, hasLeft, isLeaving, admission, requestRejoin } =
     useCombatSession(sessionId, "student");
   const [answer, setAnswer] = useState(""),
     [ability, setAbility] = useState("attack"),
@@ -35,7 +35,8 @@ export default function Combat() {
     [math, setMath] = useState(false),
     [claimed, setClaimed] = useState(false),
     [claimError, setClaimError] = useState("");
-  const p = studentId ? state?.players[studentId] : null;
+  const p = studentId ? state?.players[studentId] || state?.pendingPlayers?.[studentId] : null;
+  const queued = !!(studentId && state?.pendingPlayers?.[studentId]);
   const result = results.find((r) => r.studentId === studentId);
   const returnToLobby = () => {
     if (localStorage.getItem("sessionId") === sessionId) localStorage.removeItem("sessionId");
@@ -45,7 +46,7 @@ export default function Combat() {
   const requestLeave = () => {
     const message = state?.currentPhase === "game_over"
       ? "Leave this fight and return to your dashboard? Your completed results are kept."
-      : "Leave this fight and return to your dashboard? Unfinished fights grant no rewards. Once the fight has started, you cannot rejoin it.";
+      : "Leave this fight and return to your dashboard? You can rejoin with the fight code while it is active. Your resources and earlier participation will be kept; you must return before completion to receive rewards.";
     if (window.confirm(message)) leave();
   };
   useEffect(() => { if (hasLeft) returnToLobby(); }, [hasLeft]);
@@ -66,9 +67,11 @@ export default function Combat() {
   if (!state)
     return (
       <main className="p-6">
-        <h1 className="text-xl font-bold">Connecting to combat…</h1>
+        <h1 className="text-xl font-bold">{admission === "removed" ? "You were removed from this fight" : admission === "pending" ? "Waiting for your host’s approval" : admission === "blocked" ? "Rejoin requests are blocked for this fight" : admission === "denied" ? "Your rejoin request was declined" : "Connecting to combat…"}</h1>
+        {["removed", "denied"].includes(admission) && <><p className="mt-2 text-sm">{admission === "denied" ? "You can request again after 30 seconds." : "Your host must approve your return."}</p><Button className="mt-4 mr-3" onClick={requestRejoin}>Request to rejoin</Button></>}
+        {admission === "pending" && <p className="mt-2">Your host has your request. You will join the next round if approved.</p>}
         <p role="alert">{error}</p>
-        <Button className="mt-4" onClick={() => navigate("/student")}>
+        <Button className="mt-4" onClick={returnToLobby}>
           Back to lobby
         </Button>
       </main>
@@ -78,7 +81,7 @@ export default function Combat() {
     phase === "question" &&
     !!state.questionStartTime &&
     serverNow < state.questionStartTime;
-  const canAct = status === "connected" && !isLeaving && !!p && !p.isDead;
+  const canAct = status === "connected" && !isLeaving && !queued && !!p && !p.isDead;
   const available =
     p?.availableAbilities.filter(
       (id) => SUPPORT.has(id) === (phase === "abilities") &&
@@ -110,8 +113,10 @@ export default function Combat() {
     return [c.mp ? (id === "fireblast" ? `All MP (${c.mp})` : `${c.mp} MP`) : "", c.combo ? `${c.combo} combo` : "", c.healing ? "1 healing potion" : "", c.shield ? "1 shield potion" : ""].filter(Boolean).join(" · ") || "No cost";
   };
   const needsTarget = ALLIES.has(ability) || (!SUPPORT.has(ability) && !["craft_healing_potion", "craft_shield_potion", "pact_surge", "holy_light", "finale"].includes(ability));
-  const view = intro ? "intro" : p?.isDead && ["question", "actions", "abilities"].includes(phase) ? "knocked-out" : p?.ready && ["question", "actions", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "answered" : phase === "actions" ? "action" : phase;
+  const view = queued && phase !== "game_over" ? "joining" : intro ? "intro" : p?.isDead && ["question", "actions", "abilities"].includes(phase) ? "knocked-out" : p?.ready && ["question", "actions", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "answered" : phase === "actions" ? "action" : phase;
   const title = view === "answered" ? "Answer submitted" : view === "intro" ? (state.round === 1 ? "Question" : "Next question") : view === "knocked-out" ? "Your party is still fighting" : view === "ready" ? "Ready — waiting for your party" : view === "action" ? "Choose your combat action" : phase === "question" ? `Question ${state.currentQuestionIndex + 1}` : names[phase];
+  const minimal = ["waiting", "joining", "intro", "answered", "ready", "knocked-out"].includes(view);
+  const waitMessage = view === "joining" ? "Joining next round" : view === "waiting" ? "Waiting for your teacher" : view === "intro" ? "Get ready…" : view === "knocked-out" ? "Knocked out · Your party is still fighting" : "Waiting for other players";
   const claim = async (itemId?: string) => {
     try {
       await apiRequest(
@@ -130,22 +135,12 @@ export default function Combat() {
     }
   };
   return (
-    <main className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
-      <header className="flex flex-wrap justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">{names[phase]}</h1>
-          <p className="text-muted-foreground">
-            Round {state.round} · Room {state.sessionId} · {status}
-          </p>
-        </div>
-        {state.phaseDeadline && (
-          <p aria-live="off" className="text-2xl tabular-nums">
-            {seconds}s
-          </p>
-        )}
-      </header>
-      <CombatBoard state={state} />
-      <CombatOverlay onLeave={requestLeave} isLeaving={isLeaving} title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
+    <main className="battle-shell battle-student">
+      <header className="battle-student-top"><span>Round {state.round} · Room {state.sessionId}</span>{minimal && <Button size="sm" variant="ghost" onClick={requestLeave} disabled={isLeaving}>{isLeaving ? "Leaving…" : "Leave fight"}</Button>}</header>
+      <CombatBoard state={state} selfId={studentId}/>
+      {minimal && <div className="battle-wait" role="status" data-testid="battle-wait"><div><strong>{waitMessage}</strong>{status !== "connected" && <span>Reconnecting…</span>}{error && <p role="alert">{error}</p>}</div>{state.phaseDeadline && <time aria-label={`${seconds} seconds remaining`}>{seconds}s</time>}</div>}
+      {p && minimal && <aside className="battle-self-hud" aria-label="Your character"><h2>{p.nickname} · {p.characterClass}</h2><div className="battle-self-bars"><label>HP {p.health}/{p.maxHealth}<progress value={p.health} max={p.maxHealth}/></label>{p.maxMp > 0 && <label className="self-mp">MP {p.mp}/{p.maxMp}<progress value={p.mp} max={p.maxMp}/></label>}{p.maxComboPoints > 0 && <label className="self-cp">COMBO {p.comboPoints}/{p.maxComboPoints}<progress value={p.comboPoints} max={p.maxComboPoints}/></label>}</div><CombatResources player={p}/></aside>}
+      {!minimal && <CombatOverlay onLeave={requestLeave} isLeaving={isLeaving} title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
       {phase === "waiting" && <p>Your teacher will start the fight when everyone has joined.</p>}
       {intro && <p className="text-center py-8 text-lg">Get ready…</p>}
       {view === "answered" && <p>Your answer is saved. Combat action selection will begin when everyone has answered or the question timer ends. You will have a fresh 20 seconds to choose.</p>}
@@ -326,7 +321,7 @@ export default function Combat() {
           )}
         </div>
       )}
-      </CombatOverlay>
+      </CombatOverlay>}
     </main>
   );
 }

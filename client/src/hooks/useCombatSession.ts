@@ -14,6 +14,9 @@ export function useCombatSession(
   sessionId: string | null,
   role: "teacher" | "student",
 ) {
+  const [connectionEpoch, setConnectionEpoch] = useState(0);
+  const [admission, setAdmission] = useState<"joining" | "admitted" | "removed" | "pending" | "denied" | "blocked">("joining");
+  const [rejoinRequests, setRejoinRequests] = useState<Array<{ studentId: string; nickname: string }>>([]);
   const [state, setState] = useState<CombatSnapshot | null>(null),
     [hasLeft, setHasLeft] = useState(false),
     [isLeaving, setIsLeaving] = useState(false),
@@ -33,6 +36,8 @@ export function useCombatSession(
   }, []);
   useEffect(() => {
     setState(null);
+    setAdmission("joining");
+    setRejoinRequests([]);
     setQuestion(null);
     setResults([]);
     setHasLeft(false);
@@ -71,6 +76,20 @@ export function useCombatSession(
         } catch {
           return;
         }
+        if ((message.type === "fight_removed" || message.type === "join_status") && message.sessionId === sessionId) {
+          const next = message.type === "fight_removed" ? "removed" : message.status;
+          if (!["removed", "pending", "denied", "blocked"].includes(next)) return;
+          setAdmission(next);
+          setState(null);
+          setQuestion(null);
+          pending.current.clear();
+          if (next !== "pending") {
+            disposed = true;
+            clearTimeout(retry);
+            ws.close();
+          }
+          return;
+        }
         if (message.type === "fight_left" && message.sessionId === sessionId) {
           disposed = true;
           clearTimeout(retry);
@@ -89,6 +108,8 @@ export function useCombatSession(
               message.state.revision < revision.current) return;
           revision.current = message.state.revision;
           setState(message.state);
+          setAdmission("admitted");
+          if (role === "teacher" && message.rejoinRequests) setRejoinRequests(message.rejoinRequests);
           if (message.type === "combat_state") {
             setQuestion(message.question);
             if (message.results) setResults(message.results);
@@ -132,7 +153,7 @@ export function useCombatSession(
       socket.current?.close();
       socket.current = null;
     };
-  }, [sessionId, role]);
+  }, [sessionId, role, connectionEpoch]);
   const send = useCallback(
     (type: string, payload: Record<string, unknown> = {}) => {
       if (leaveCommand.current) return;
@@ -164,6 +185,9 @@ export function useCombatSession(
   }, [role]);
   return {
     state,
+    admission,
+    rejoinRequests,
+    requestRejoin: () => setConnectionEpoch(n => n + 1),
     question,
     results,
     status,

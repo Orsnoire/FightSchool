@@ -76,7 +76,7 @@ test("victory requires every enemy to die, and dead enemies do not attack", () =
   s = advancePhase(s, fight, 500);
   assert.equal(s.victory, true);
 });
-test("answer retries and late joins reject; pure rules do not mutate input", () => {
+test("answer retries reject and late joins queue; pure rules do not mutate input", () => {
   const s = started();
   const copy = structuredClone(s);
   const first = applyAnswer(s, student().id, "4", fight.questions[0]);
@@ -84,9 +84,9 @@ test("answer retries and late joins reject; pure rules do not mutate input", () 
   assert.throws(() =>
     applyAnswer(first, student().id, "5", fight.questions[0]),
   );
-  assert.throws(() =>
-    addStudent(s, student("wizard", "00000000-0000-4000-8000-000000000004")),
-  );
+  const joined = addStudent(s, student("wizard", "00000000-0000-4000-8000-000000000004"));
+  assert.ok(joined.pendingPlayers?.["00000000-0000-4000-8000-000000000004"]);
+  assert.deepEqual(s, copy);
 });
 test("a one-vitality warrior can block a real amount and healing cannot exceed missing HP", () => {
   let s = applyAnswer(started(), student().id, "wrong", fight.questions[0]);

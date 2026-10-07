@@ -155,3 +155,41 @@ positions or the centered overlay flow. This does not approve the proposed new
 biome composition or formation algorithm. Keep that scene's 1/2/4/5/10/20/30
 player, transition and classroom-device checks as a separate implementation gate.
 Static starter ownership and off-hand rules are in [starter wardrobe](starter-wardrobe.md).
+
+## October 7 battlefield and participation approval
+
+The owner approved implementation of the static battlefield: full-width grassland,
+players left and enemies right, stable curved formations, saved starter avatars.
+This supersedes the earlier no-integration gate and centered waiting modal.
+Student self avatars have a consistent foreground size and a private resource HUD;
+other avatars show HP only when damaged. Enemy HP remains visible overhead.
+Names appear on hover/focus/selection. Threat retains its crown; the highest
+cumulative actual damage receives a star (incumbent wins ties; no zero-damage star).
+KO players keep their place. Static front-facing art remains approved; this is
+not an approval of unfinished animation rigs. Narrow screens retain left/right
+sides, a prominent self avatar and an accessible party roster for inspection.
+
+The host keeps the control banner, a collapsible current question, a movable,
+resizable/minimizable in-page log, and fullscreen of the complete combat view.
+KO resurrection remains available; a separate hover/focus red circled X removes
+an active or queued participant after confirmation. Removed accounts must request
+host approval to return. Allow, Deny, and Block future rejoin requests apply only
+to this room; one outstanding request per student and a 30-second denial cooldown
+prevent dialog flooding. Moderation survives host refresh and room hibernation.
+
+Students may join/rejoin active classroom fights by code, entering at the next
+question. Reconnects retain active membership. Voluntary departures and removals
+archive the student's original job, HP, resources, activity and attendance;
+readmission restores them without a refill. Enemy HP does not rescale. Pending
+entrants do not answer, become targets, hold up phases, or earn the current round.
+KO attendance counts. A resolved question counts one round, including question
+cycles; each active participant receives one round of attendance at resolution.
+An absent student receives no result unless they return before completion.
+
+Completion base XP and victory gold use attended/resolved rounds; activity XP
+is not prorated. Host-ended base XP additionally uses the fraction of combined
+enemy starting HP depleted. Defeat grants only activity XP; early host ending
+does not newly grant victory gold or loot. Zero-round entrants earn no reward,
+loot, or stamina charge. Stamina applies afterward, preserving fractional XP.
+Migration 0010 widens the existing XP audit field and award function input;
+no saved students, historical results or existing XP are reset.

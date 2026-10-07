@@ -8,7 +8,7 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const enemyImage = 'data:image/png;base64,' + (await readFile('attached_assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png')).toString('base64');
 try {
-  for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
+  for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }, { width: 3840, height: 2160 }]) {
     const page = await browser.newPage({ viewport });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
@@ -33,7 +33,7 @@ try {
     state.enemies[0].name = 'Goblins';
     state.phaseDeadline = null;
     state.currentPhase = 'waiting';
-    for (let i = 1; i < 24; i++) state.players['student-' + i] = { ...structuredClone(state.players[student().id]), studentId: 'student-' + i, nickname: 'Player ' + i };
+    for (let i = 1; i < 30; i++) state.players['student-' + i] = { ...structuredClone(state.players[student().id]), studentId: 'student-' + i, nickname: 'Player ' + i };
     state.players['student-1'].isDead = true;
     state.players['student-1'].health = 0;
     const question = { id: 'q1', type: 'multiple_choice', question: '<p>Which expression is equivalent to <span class="math-inline" data-latex="\\frac{x^2-9}{x-3}"></span>, for x ≠ 3?</p>', options: ['x+3', 'x−3'], timeLimit: 60 };
@@ -45,7 +45,7 @@ try {
     await emit();
     await panel.getByRole('button', { name: 'Start fight', exact: true }).click();
     assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).type), 'start_fight');
-    assert.match(await page.getByTestId('host-status').innerText(), /24 players joined/);
+    assert.match(await page.getByTestId('host-status').innerText(), /30 players joined/);
     assert.match(await panel.innerText(), /ABC234/);
     await page.screenshot({ path: `${output}/${viewport.width}-host-waiting.png` });
     state.currentPhase = 'question';
@@ -54,18 +54,37 @@ try {
     state.events = Array.from({ length: 45 }, (_, i) => ({ id: `1:${i}`, round: 1, phase: 'question_resolution', type: 'damage', actorId: student().id, targetId: 'e1', amount: 3, message: `Player ${i % 24} dealt 3 damage to Goblins (${i + 1}).` }));
     await emit();
     await panel.getByRole('button', { name: 'Advance current phase' }).waitFor();
-    assert.match(await page.getByTestId('host-status').innerText(), /1\/23 answered/);
+    assert.match(await page.getByTestId('host-status').innerText(), /1\/29 answered/);
     await page.getByTestId('host-question').waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'no horizontal overflow');
     const log = page.getByTestId('combat-log');
     const feed = page.getByRole('region', { name: 'Combat log entries' });
     await feed.getByText(/Player 20 dealt/).first().waitFor();
     assert.ok(await feed.evaluate(el => el.scrollHeight > el.clientHeight), 'log scrolls internally');
-    if (viewport.width > 1000) {
-      const enemy = await page.getByAltText('Goblins').locator('..').boundingBox();
-      const logRect = await log.boundingBox();
-      assert.ok(logRect.x >= enemy.x + enemy.width && Math.abs(logRect.y - enemy.y) < 2, 'log fills row beside enemies');
-    }
+    const enemy = await page.getByAltText('Goblins').boundingBox();
+    const player = await page.locator('[data-player-id]').first().boundingBox();
+    assert.ok(player.x + player.width < enemy.x, 'party left, enemy right');
+    await page.getByRole('button', { name: 'Minimize combat log' }).click();
+    await page.getByRole('button', { name: 'Combat log ↗' }).click();
+    const handle = page.getByLabel('Move combat log with arrow keys');
+    const before = await page.getByTestId('floating-log').boundingBox();
+    await handle.focus(); await page.keyboard.press('ArrowLeft');
+    assert.ok((await page.getByTestId('floating-log').boundingBox()).x < before.x, 'log can move with keyboard');
+    await page.getByRole('button', { name: 'Hide question' }).click();
+    assert.equal(await page.getByTestId('host-question').count(), 0);
+    await page.getByRole('button', { name: 'Show question' }).click();
+    // Removal requires confirmation and does not trigger resurrection.
+    page.once('dialog', dialog => dialog.dismiss());
+    const remove = page.getByRole('button', { name: 'Remove Player 1 from fight', exact: true });
+    await remove.focus(); await remove.click();
+    assert.equal(await page.evaluate(() => window.hostTest.sent.some(m => m.type === 'remove_player')), false);
+    page.once('dialog', dialog => dialog.accept()); await remove.click();
+    assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).type), 'remove_player');
+    assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).targetId), 'student-1');
+    await page.getByRole('button', { name: 'Fullscreen combat' }).click();
+    await page.waitForFunction(() => !!document.fullscreenElement);
+    await page.getByRole('button', { name: 'Exit fullscreen' }).click();
+    await page.waitForFunction(() => !document.fullscreenElement);
     await page.screenshot({ path: `${output}/${viewport.width}-host-question.png` });
     await feed.evaluate(el => { el.scrollTop = 0; el.dispatchEvent(new Event('scroll')); });
     await page.getByRole('button', { name: 'Jump to latest' }).waitFor();
@@ -79,7 +98,23 @@ try {
     await page.screenshot({ path: `${output}/${viewport.width}-host-scrolled.png` });
     delete state.players['student-2'];
     await emit();
-    assert.match(await page.getByTestId('host-status').innerText(), /23 players joined/);
+    assert.match(await page.getByTestId('host-status').innerText(), /29 players joined/);
+    const completeRoster = structuredClone(state.players);
+    await page.getByRole('button', { name: 'Minimize combat log' }).click();
+    for (const count of [1, 2, 4, 5, 10, 20, 30]) {
+      state.players = Object.fromEntries(Object.entries(completeRoster).slice(0, count));
+      if (count === 30) state.players['student-2'] = { ...structuredClone(state.players[student().id]), studentId: 'student-2', nickname: 'Player 2' };
+      await emit();
+      assert.equal(await page.locator('[data-player-id]').count(), count);
+      await page.waitForTimeout(650);
+      if ([1, 4, 30].includes(count)) await page.screenshot({ path: `${output}/${viewport.width}-formation-${count}.png` });
+    }
+    state.revision++;
+    await page.evaluate(({ state, question }) => window.hostTest.sockets.filter(s => s.url.includes('sessionId=ABC234')).at(-1).onmessage({ data: JSON.stringify({ type:'combat_state', state, question, rejoinRequests:[{studentId:'removed',nickname:'Alex'}] }) }), {state,question});
+    await page.getByRole('dialog').waitFor();
+    await page.getByLabel('Block future rejoin requests for this fight').check();
+    await page.getByRole('button', {name:'Block requests',exact:true}).click();
+    assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).decision), 'block');
     assert.deepEqual(errors, []);
     console.log(`PASS ${viewport.width}: host panel, player count, question, sticky controls and scrolling log`);
     await page.close();
