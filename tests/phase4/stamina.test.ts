@@ -90,6 +90,18 @@ test("SQL stamina awards are atomic, mode/job-independent, retry-safe and preser
     const abandoned = await persistCombatResults(db as any, empty, earnedFight);
     assert.equal(abandoned[0].xpEarned, 0);
     assert.equal(abandoned[0].staminaFightNumber, null);
+    const partial = await makeState(17);
+    partial.victory = false; partial.endedByHost = true; partial.round = 11; partial.completedRounds = 10;
+    partial.enemies[0].health = 3; partial.enemies[0].maxHealth = 10;
+    partial.players[student().id].roundsParticipated = 5;
+    await db.update(schema.students).set({ dailyCombats: 0, xpRemainder: 0 });
+    const half = await persistCombatResults(db as any, partial, { ...fight, baseXP: 10 });
+    assert.equal(half[0].baseXp, 4.5, "half participation at 70% progress adds 3.5 base plus one earned activity XP");
+    assert.equal(half[0].xpEarned, 4);
+    [record] = await db.select().from(schema.students);
+    assert.equal(record.xpRemainder, .5);
+    const again = await persistCombatResults(db as any, partial, fight);
+    assert.equal(again[0].id, half[0].id);
     // At the floor, tiny rewards must accumulate instead of rounding up to 1 per fight or vanishing.
     await db.update(schema.students).set({ dailyCombats: 100, xpRemainder: 0.999 });
     const tiny = await persistCombatResults(db as any, await makeState(16), { ...fight, baseXP: 0 });

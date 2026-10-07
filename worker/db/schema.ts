@@ -380,7 +380,7 @@ export const combatResults = pgTable(
       .notNull()
       .$type<import("../../shared/combat/model.ts").CombatTotals>(),
     xpEarned: integer("xp_earned").notNull(),
-    baseXp: integer("base_xp").notNull().default(0),
+    baseXp: doublePrecision("base_xp").notNull().default(0),
     xpMultiplier: doublePrecision("xp_multiplier").notNull().default(1),
     staminaFightNumber: integer("stamina_fight_number"),
     staminaDay: text("stamina_day"),

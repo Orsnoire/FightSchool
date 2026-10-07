@@ -16,7 +16,7 @@ import {
   type EquipmentStats,
 } from "../../shared/schema.ts";
 import type { CombatSnapshot } from "../../shared/combat/model.ts";
-import type { CombatProfile } from "../combat/engine.ts";
+import { completedRounds, participatedRounds, type CombatProfile } from "../combat/engine.ts";
 export const gameDatabase = (url: string) => drizzle(neon(url), { schema: s });
 export type GameDatabase = ReturnType<typeof gameDatabase>;
 export async function combatProfile(
@@ -53,6 +53,21 @@ export async function combatProfile(
     ) as string[],
   };
 }
+/** Activity XP is never prorated. Stamina is applied atomically by the database. */
+export function combatReward(state: CombatSnapshot, player: import("../../shared/combat/model.ts").CombatPlayer, fight: s.FightRecord) {
+  const rounds = completedRounds(state);
+  const participation = rounds ? participatedRounds(state, player) / rounds : 0;
+  const maximum = state.enemies.reduce((sum, enemy) => sum + enemy.maxHealth, 0);
+  const remaining = state.enemies.reduce((sum, enemy) => sum + Math.max(0, Math.min(enemy.health, enemy.maxHealth)), 0);
+  const progress = state.victory ? 1 : state.endedByHost && maximum ? 1 - remaining / maximum : 0;
+  return {
+    participation,
+    progress,
+    xp: participation ? calculateXP({ ...player.totals, baseFightXP: fight.baseXP * progress * participation }) : 0,
+    gold: state.victory && participation ? Math.floor(calculateGoldReward(Math.max(...fight.enemies.map(e => e.difficultyMultiplier))) * participation) : 0,
+  };
+}
+
 export async function persistCombatResults(
   db: GameDatabase,
   state: CombatSnapshot,
@@ -64,7 +79,7 @@ export async function persistCombatResults(
     .select()
     .from(s.liveCombatSessions)
     .where(eq(s.liveCombatSessions.sessionId, state.sessionId));
-  const players = Object.values(state.players);
+  const players = Object.values({ ...state.pendingPlayers, ...state.players });
   const studentIds = players.map(p => p.studentId);
   const students = studentIds.length
     ? await db.select({ id: s.students.id }).from(s.students).where(inArray(s.students.id, studentIds))
@@ -91,21 +106,14 @@ export async function persistCombatResults(
   for (const p of players) {
     if (!existingIds.has(p.studentId)) continue;
     const earnedGuildId = guildByStudent.get(p.studentId) || null;
-    const xp = calculateXP({
-      ...p.totals,
-      baseFightXP: state.victory ? fight.baseXP : 0,
-    });
-    const gold = state.victory
-      ? calculateGoldReward(
-          Math.max(...fight.enemies.map((e) => e.difficultyMultiplier)),
-        )
-      : 0;
+    const { xp, gold, participation } = combatReward(state, p, fight);
+    const eligibleLoot = state.victory && participation > 0 ? fight.lootTable : [];
     values.push({ session_id: state.sessionId, student_id: p.studentId, fight_id: fight.id,
       guild_id: earnedGuildId, character_class: p.characterClass, victory: !!state.victory,
       survived: !p.isDead, is_solo_mode: !!live?.soloStudentId, totals: p.totals,
-      base_xp: xp, gold_reward: gold, loot_table: state.victory ? fight.lootTable : [],
-      reward_claim: !state.victory || !fight.lootTable.length ? "automatic" : null,
-      participated: p.totals.questionsAnswered > 0 || p.totals.questionsCorrect + p.totals.questionsIncorrect > 0 });
+      base_xp: xp, gold_reward: gold, loot_table: eligibleLoot,
+      reward_claim: !eligibleLoot.length ? "automatic" : null,
+      participated: participation > 0 });
   }
   // The database serializes each student's daily counter and result/reward receipt
   // across rooms. A single batched call also stays within classroom request budgets.

@@ -71,6 +71,13 @@
       "when": 1791228000000,
       "tag": "0009_starter_wardrobe",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791406800000,
+      "tag": "0010_fractional_participation_xp",
+      "breakpoints": true
     }
   ]
 }

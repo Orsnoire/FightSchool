@@ -33,11 +33,13 @@ interface StoredRoom {
   receipts: string[];
   results?: unknown[];
   resultsPersisted?: boolean;
+  removals?: Record<string, { nickname: string; blocked: boolean; requestedAt?: number; deniedAt?: number }>;
 }
 const ROOM_KEY = "room";
 export function publicSnapshot(snapshot: CombatSnapshot): CombatSnapshot {
+  const { departedPlayers: _, ...visible } = snapshot;
   return {
-    ...snapshot,
+    ...visible,
     players: Object.fromEntries(
       Object.entries(snapshot.players).map(([id, p]) => [
         id,
@@ -83,6 +85,14 @@ export class CombatSessionObject {
       if (attachment.role !== "student" || attachment.actorId !== actorId) continue;
       this.send(socket, { type: "fight_left", sessionId, commandId });
       try { socket.close(1000, "Left fight"); } catch {}
+    }
+  }
+  private notifyStudent(actorId: string, message: unknown, close = false) {
+    for (const socket of this.state.getWebSockets()) {
+      const actor = socket.deserializeAttachment() as SocketAttachment;
+      if (actor.role !== "student" || actor.actorId !== actorId) continue;
+      this.send(socket, message);
+      if (close) try { socket.close(1000, "Fight membership changed"); } catch {}
     }
   }
   private async room() {
@@ -153,7 +163,7 @@ export class CombatSessionObject {
       await this.state.storage.setAlarm(Date.now() + 5000);
     else await this.state.storage.deleteAlarm();
   }
-  private snapshotMessage(room: StoredRoom) {
+  private snapshotMessage(room: StoredRoom, role = "student") {
     const question = room.fight.questions[room.snapshot.currentQuestionIndex];
     const { correctAnswer: _, ...safe } = question;
     if (room.fight.shuffleOptions && safe.options)
@@ -163,6 +173,7 @@ export class CombatSessionObject {
       );
     return {
       type: "combat_state",
+      rejoinRequests: role === "teacher" ? Object.entries(room.removals || {}).filter(([, r]) => r.requestedAt && !r.blocked).map(([studentId, r]) => ({ studentId, nickname: r.nickname })) : undefined,
       state: publicSnapshot(room.snapshot),
       question: [
         "question",
@@ -187,14 +198,15 @@ export class CombatSessionObject {
     };
   }
   private async publish(room: StoredRoom) {
-    this.broadcast(this.snapshotMessage(room));
-    if (room.snapshot.currentPhase === "game_over")
-      this.broadcast({
-        type: "game_over",
-        victory: room.snapshot.victory,
-        message: room.snapshot.endReason,
-        results: room.results,
-      });
+    if (room.snapshot.currentPhase === "game_over") for (const [id, request] of Object.entries(room.removals || {})) {
+      if (request.requestedAt) this.notifyStudent(id, { type: "join_status", status: "ended", sessionId: room.snapshot.sessionId }, true);
+    }
+    for (const ws of this.state.getWebSockets()) {
+      const actor = ws.deserializeAttachment() as SocketAttachment;
+      if (actor.role !== "teacher" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) continue;
+      this.send(ws, this.snapshotMessage(room, actor.role));
+      if (room.snapshot.currentPhase === "game_over") this.send(ws, { type: "game_over", victory: room.snapshot.victory, message: room.snapshot.endReason, results: room.results });
+    }
   }
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
@@ -366,7 +378,7 @@ export class CombatSessionObject {
             sessionId: actor.sessionId,
             state: publicSnapshot(room.snapshot),
           });
-          this.send(ws, this.snapshotMessage(room));
+          this.send(ws, this.snapshotMessage(room, actor.role));
           await this.syncAlarm(room);
           return;
         }
@@ -386,9 +398,34 @@ export class CombatSessionObject {
         }
         if (!room) throw new Error("Host has not opened this session");
         room.receipts ||= [];
+        if (command.type === "leave_fight" && actor.role !== "student") throw new Error("Student role required");
+        if (actor.role === "teacher") {
+          const live = await this.repository.findLiveCombatSession(actor.sessionId);
+          if (live?.teacherId !== actor.actorId || live.status === "superseded") throw new Error("Only the host can manage this fight");
+        }
         if (command.type === "join") {
           if (actor.role !== "student")
             throw new Error("Student role required");
+          if (room.snapshot.currentPhase === "game_over" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) throw new Error("Fight has ended");
+          const removal = room.removals?.[actor.actorId];
+          if (removal) {
+            if (removal.blocked) {
+              this.send(ws, { type: "join_status", status: "blocked", sessionId: actor.sessionId });
+              return;
+            }
+            if (!removal.requestedAt && removal.deniedAt && Date.now() - removal.deniedAt < 30000) {
+              this.send(ws, { type: "join_status", status: "denied", sessionId: actor.sessionId });
+              return;
+            }
+            if (!removal.requestedAt) {
+              removal.requestedAt = Date.now();
+              room.snapshot.revision++;
+              await this.save(room);
+            }
+            this.send(ws, { type: "join_status", status: "pending", sessionId: actor.sessionId });
+            await this.publish(room);
+            return;
+          }
           const student = await this.repository.findStudentById(actor.actorId);
           if (!student) throw new Error("Student unavailable");
           room.snapshot = addStudent(
@@ -428,7 +465,7 @@ export class CombatSessionObject {
             commandId: command.commandId,
             revision: room.snapshot.revision,
           });
-          this.send(ws, this.snapshotMessage(room));
+          this.send(ws, this.snapshotMessage(room, actor.role));
           return;
         }
         if (command.type === "leave_fight") {
@@ -436,6 +473,7 @@ export class CombatSessionObject {
           // Identity comes from the authenticated socket, never a supplied target.
           // Completed rosters stay intact until their rewards have been persisted.
           room.snapshot = removeStudent(room.snapshot, actor.actorId);
+          if (room.removals?.[actor.actorId]) room.removals[actor.actorId].requestedAt = undefined;
           room.snapshot.revision++;
           room.receipts = [...room.receipts, key].slice(-512);
           await this.save(room);
@@ -449,7 +487,31 @@ export class CombatSessionObject {
         }
         if (room.snapshot.currentPhase === "game_over")
           throw new Error("Fight has ended");
-        if (command.type === "start_fight") {
+        if (command.type === "remove_player" || command.type === "review_rejoin") {
+          if (actor.role !== "teacher") throw new Error("Teacher role required");
+          const id = command.targetId;
+          if (typeof id !== "string") throw new Error("Invalid player");
+          if (command.type === "remove_player") {
+            const player = room.snapshot.players[id] || room.snapshot.pendingPlayers?.[id];
+            if (!player) throw new Error("Player is not in this fight");
+            room.snapshot = removeStudent(room.snapshot, id);
+            (room.removals ||= {})[id] = { nickname: player.nickname, blocked: false };
+          } else {
+            const removal = room.removals?.[id];
+            if (!removal?.requestedAt || removal.blocked) throw new Error("Rejoin request is no longer pending");
+            if (!["allow", "deny", "block"].includes(command.decision)) throw new Error("Invalid decision");
+            if (command.decision === "allow") {
+              const student = await this.repository.findStudentById(id);
+              if (!student) throw new Error("Student unavailable");
+              room.snapshot = addStudent(room.snapshot, student);
+              delete room.removals![id];
+            } else {
+              removal.requestedAt = undefined;
+              removal.deniedAt = Date.now();
+              removal.blocked = command.decision === "block";
+            }
+          }
+        } else if (command.type === "start_fight") {
           if (actor.role !== "teacher")
             throw new Error("Teacher role required");
           if (room.snapshot.currentPhase !== "waiting")
@@ -479,6 +541,7 @@ export class CombatSessionObject {
             currentPhase: "game_over",
             victory: false,
             endReason: "Fight ended by teacher",
+            endedByHost: true,
             phaseDeadline: null,
           };
         } else {
@@ -535,6 +598,10 @@ export class CombatSessionObject {
         room.receipts = room.receipts.slice(-512);
         await this.save(room);
         await this.syncAlarm(room);
+        // Persist membership and moderation before acknowledging or closing any socket.
+        if (command.type === "remove_player") this.notifyStudent(command.targetId, { type: "fight_removed", sessionId: actor.sessionId }, true);
+        if (command.type === "review_rejoin" && command.decision !== "allow") this.notifyStudent(command.targetId,
+          { type: "join_status", status: command.decision === "block" ? "blocked" : "denied", sessionId: actor.sessionId }, true);
         this.send(ws, {
           type: "command_ack",
           commandId: command.commandId,

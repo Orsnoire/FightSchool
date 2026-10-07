@@ -147,6 +147,12 @@ Content specifications should remain portable and should not be unnecessarily co
 
 ## Character Art and Appearance
 
+The [October 7 battlefield and participation approval](combat-facelift.md#october-7-battlefield-and-participation-approval)
+supersedes older scene integration gates, centered waiting dialogs, no-entry-after-start
+rules and all-or-nothing host-ended base XP. It authorizes the static battlefield,
+moderated re-entry, proportional completion rewards and full earned activity XP.
+
+
 The [combat facelift brief](combat-facelift.md) records the October 1 direction
 for biome scenery and population-dependent player formations. Players occupy
 the left half facing right; enemies occupy the right half facing left. The

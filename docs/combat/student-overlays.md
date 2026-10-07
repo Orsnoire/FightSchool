@@ -2,7 +2,7 @@
 
 Implemented from the September 30 classroom feedback, following `docs/Source_of_Truth.md` and the Combat Flow Refactor presentation intent.
 
-The student battlefield stays mounted behind a lightly dimmed, centered dialog. Question introduction, answering, combat choices, waiting, answer resolution, enemy counterattack, and results use that same dialog. Its header keeps the server timer and current HP, MP, combo points, and applicable potion counts visible. The body scrolls on small screens. Escape and outside clicks cannot dismiss a timed phase or advance combat. Focus returns to the heading when the view changes. MathLive's virtual keyboard is contained in the dialog and restored on unmount.
+The student battlefield stays mounted throughout combat. Answering, combat choices, answer resolution, enemy counterattack, and results use a lightly dimmed centered dialog. Introduction, lobby waiting, queued entry, submitted answers, readiness and knockouts use a compact nonmodal status strip so the battlefield and private character HUD remain visible. Its header keeps the server timer and current HP, MP, combo points, and applicable potion counts visible. The body scrolls on small screens. Escape and outside clicks cannot dismiss a timed phase or advance combat. Focus returns to the heading when the view changes. MathLive's virtual keyboard is contained in the dialog and restored on unmount.
 
 Question choices now have an atomic **Confirm action & Ready** command. This avoids highlighting a spell and then accidentally confirming the default attack. Support actions can still be added individually before Ready. Buttons show costs and explain unavailable actions. Enemy counterattack feedback is separated from question resolution using an optional phase field on events, with a fallback for existing snapshots.
 
@@ -18,7 +18,7 @@ These findings reproduce code paths; they do not establish which exact condition
 
 Automated coverage includes resource deductions, crafting bonuses/caps, wrong answers, competing choices, JSON recovery, atomic confirmation/retry, and the rendered React question-to-resolution flow with one dialog, focus changes, Escape handling, rich content, resource display updates, and math input/keyboard containment. The DOM test stubs MathLive registration; it does not validate the real virtual keyboard's rendering.
 
-`tests/browser/combat-ui.mjs` runs the real client in Chromium at 1366×768 and 390×844. It checks centered, contained dialogs through questions, action confirmation, waiting, support, answer resolution, and enemy counterattacks; rich questions, internal scrolling, and real MathLive keyboard input and cleanup are included. The Combat UI Acceptance workflow preserves screenshots for visual review. WebSocket snapshots are isolated fixtures. This is viewport coverage, not a physical Chromebook or phone certification. Local browser preview was blocked in the editing environment, so browser acceptance runs in GitHub Actions.
+`tests/browser/combat-ui.mjs` runs the real client in Chromium at 1366×768 and 390×844. It checks centered, contained dialogs through questions, action confirmation, support, answer resolution, and enemy counterattacks; rich questions, internal scrolling, and real MathLive keyboard input and cleanup are included. The Combat UI Acceptance workflow preserves screenshots for visual review. WebSocket snapshots are isolated fixtures. This is viewport coverage, not a physical Chromebook or phone certification. Local browser preview was blocked in the editing environment, so browser acceptance runs in GitHub Actions.
 
 After deployment, Live Combat Staging Acceptance exercises the public origin with isolated accounts and rooms. It verifies atomic action/ready, exactly 1 MP spent per successful Fireball, no MP spent for an incorrect answer, reconnect deadlines, phase transitions, rewards/history, storage, and 30-player concurrency. Fixture fights are archived; real classroom records are not modified. Successful check links and deployment evidence are recorded in PR #25.
 
@@ -32,11 +32,11 @@ participants, while attendance includes knocked-out players. The host's socket
 connection is distinct from the joined-player count. A disconnected browser does
 not remove a participant.
 
-A bounded combat log temporarily occupies the space next to the enemy cards;
-the player grid remains full width. It retains the most recent 200 feedback
+The battlefield release replaces the temporary log beside the enemy cards with
+a draggable, resizable and minimizable floating panel. It retains the most recent 200 feedback
 entries received during this page visit, including across round changes. It
 follows new entries until the host scrolls back, then offers Jump to latest.
-Small screens stack the log below the enemies.
+The panel stays within the viewport when moved or resized.
 
 Every student phase dialog exposes Leave fight with confirmation. The client
 waits for a server acknowledgement before clearing the room code and returning
@@ -48,10 +48,13 @@ waiting lobby remains open; an empty active fight ends. Interrupted connections
 retain participation and normal recovery.
 
 An unfinished departure grants no result, consistent with the existing stamina
-policy. The existing entry restriction still applies: a student who leaves can
-rejoin while waiting, but cannot re-enter a running fight as a fresh participant.
+policy. The battlefield release supersedes the earlier entry restriction: a student
+may join or rejoin a running classroom fight at the next question. A returning
+student retains resources and participation; host removals require approval.
 Exiting a completed fight preserves its roster and pending/persisted rewards.
-No database migration, enemy rescaling, or student data reset is involved.
+PR #35 involved no migration or reset. The subsequent battlefield release adds
+0010 for fractional participation XP; enemy HP and existing student data remain
+unchanged. See [the current battlefield rules](../combat-facelift.md#october-7-battlefield-and-participation-approval).
 
 Local validation for this change passes all 92 automated tests, TypeScript, and
 both production builds. Coverage includes the rendered host panel/counts,

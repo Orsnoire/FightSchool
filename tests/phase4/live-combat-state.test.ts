@@ -249,7 +249,7 @@ test("student leave removes only the authenticated player and unblocks each inpu
     assert.equal(restored.data.get("room").snapshot.currentPhase, room.snapshot.currentPhase);
     assert.equal(restored.messages.at(-1).type, "fight_left");
     await restored.object.webSocketMessage(restored.socket as any, JSON.stringify({ type: "join", commandId: "rejoin-command-1" }));
-    assert.match(restored.messages.at(-1).error, /Fight already started/);
+    assert.ok(restored.data.get("room").snapshot.pendingPlayers[student().id], "re-entry waits for the next question");
   }
 });
 

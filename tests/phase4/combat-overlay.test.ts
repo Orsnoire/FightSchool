@@ -65,8 +65,8 @@ test("student question, action, waiting, and resolution share a focused non-dism
     assert.equal(socket.sent.at(-1).answer, "4");
     state.players[student().id].hasAnswered = true;
     await emit();
-    assert.match(dialog().textContent!, /Answer submitted/);
-    assert.equal(button("Confirm Attack & Ready"), undefined);
+    assert.equal(dialog(), null);
+    assert.match(document.querySelector('[data-testid="battle-wait"]')!.textContent!, /Waiting for other players/);
     state.currentPhase = "actions";
     state.phaseDeadline = Date.now() + 20000;
     await emit();
@@ -77,9 +77,10 @@ test("student question, action, waiting, and resolution share a focused non-dism
     assert.equal(socket.sent.at(-1).ready, true);
     state.players[student().id].ready = true;
     await emit();
-    assert.match(dialog().textContent!, /Your choices are saved/);
+    assert.equal(dialog(), null);
+    assert.ok(document.querySelector('[aria-label="Your character"]'));
     await act(async () => document.activeElement?.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-    assert.ok(dialog(), "Escape cannot dismiss a timed phase");
+    assert.ok(document.querySelector('[data-testid="battle-wait"]'), "Escape does not alter the waiting phase");
     state.currentPhase = "abilities";
     state.players[student().id].ready = false;
     await emit();
