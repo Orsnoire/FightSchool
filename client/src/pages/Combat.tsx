@@ -27,7 +27,7 @@ export default function Combat() {
   const [, navigate] = useLocation();
   const sessionId = localStorage.getItem("sessionId"),
     studentId = localStorage.getItem("studentId");
-  const { state, question, results, status, error, send, seconds, serverNow } =
+  const { state, question, results, status, error, send, seconds, serverNow, leave, hasLeft, isLeaving } =
     useCombatSession(sessionId, "student");
   const [answer, setAnswer] = useState(""),
     [ability, setAbility] = useState("attack"),
@@ -37,6 +37,18 @@ export default function Combat() {
     [claimError, setClaimError] = useState("");
   const p = studentId ? state?.players[studentId] : null;
   const result = results.find((r) => r.studentId === studentId);
+  const returnToLobby = () => {
+    if (localStorage.getItem("sessionId") === sessionId) localStorage.removeItem("sessionId");
+    queryClient.invalidateQueries();
+    navigate("/student");
+  };
+  const requestLeave = () => {
+    const message = state?.currentPhase === "game_over"
+      ? "Leave this fight and return to your dashboard? Your completed results are kept."
+      : "Leave this fight and return to your dashboard? Unfinished fights grant no rewards. Once the fight has started, you cannot rejoin it.";
+    if (window.confirm(message)) leave();
+  };
+  useEffect(() => { if (hasLeft) returnToLobby(); }, [hasLeft]);
   useEffect(() => {
     setAnswer("");
     setAbility("attack");
@@ -66,7 +78,7 @@ export default function Combat() {
     phase === "question" &&
     !!state.questionStartTime &&
     serverNow < state.questionStartTime;
-  const canAct = status === "connected" && !!p && !p.isDead;
+  const canAct = status === "connected" && !isLeaving && !!p && !p.isDead;
   const available =
     p?.availableAbilities.filter(
       (id) => SUPPORT.has(id) === (phase === "abilities") &&
@@ -133,7 +145,7 @@ export default function Combat() {
         )}
       </header>
       <CombatBoard state={state} />
-      <CombatOverlay title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
+      <CombatOverlay onLeave={requestLeave} isLeaving={isLeaving} title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
       {phase === "waiting" && <p>Your teacher will start the fight when everyone has joined.</p>}
       {intro && <p className="text-center py-8 text-lg">Get ready…</p>}
       {view === "answered" && <p>Your answer is saved. Combat action selection will begin when everyone has answered or the question timer ends. You will have a fresh 20 seconds to choose.</p>}
@@ -303,8 +315,7 @@ export default function Combat() {
               {claimed && <p>Reward saved.</p>}
               <Button
                 onClick={() => {
-                  queryClient.invalidateQueries();
-                  navigate("/student");
+                  leave();
                 }}
               >
                 Return to lobby

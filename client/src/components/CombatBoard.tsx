@@ -1,19 +1,21 @@
+import type { ReactNode } from "react";
 import type { CombatSnapshot } from "@shared/combat/model";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { HealthBar } from "./HealthBar";
 import { MPBar } from "./MPBar";
 import { Card } from "./ui/card";
-export function CombatBoard({ state, onResurrect }: { state: CombatSnapshot; onResurrect?: (studentId: string) => void }) {
+export function CombatBoard({ state, onResurrect, enemyAside }: { state: CombatSnapshot; onResurrect?: (studentId: string) => void; enemyAside?: ReactNode }) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={enemyAside ? "grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]" : ""}>
+      <div className={enemyAside ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-1 min-w-0" : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"}>
         {(state.enemyDisplayMode === "consecutive"
           ? state.enemies.filter((e) => e.health > 0).slice(0, 1)
           : state.enemies
         ).map((e) => (
           <Card
             key={e.id}
-            className={`p-4 text-center ${e.health <= 0 ? "opacity-40" : ""}`}
+            className={`p-4 text-center flex flex-col justify-center ${e.health <= 0 ? "opacity-40" : ""}`}
           >
             <img
               src={e.image}
@@ -24,6 +26,8 @@ export function CombatBoard({ state, onResurrect }: { state: CombatSnapshot; onR
             <HealthBar current={e.health} max={e.maxHealth} />
           </Card>
         ))}
+      </div>
+        {enemyAside}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {Object.values(state.players).map((p) => (

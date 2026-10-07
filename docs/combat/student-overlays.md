@@ -21,3 +21,41 @@ Automated coverage includes resource deductions, crafting bonuses/caps, wrong an
 `tests/browser/combat-ui.mjs` runs the real client in Chromium at 1366×768 and 390×844. It checks centered, contained dialogs through questions, action confirmation, waiting, support, answer resolution, and enemy counterattacks; rich questions, internal scrolling, and real MathLive keyboard input and cleanup are included. The Combat UI Acceptance workflow preserves screenshots for visual review. WebSocket snapshots are isolated fixtures. This is viewport coverage, not a physical Chromebook or phone certification. Local browser preview was blocked in the editing environment, so browser acceptance runs in GitHub Actions.
 
 After deployment, Live Combat Staging Acceptance exercises the public origin with isolated accounts and rooms. It verifies atomic action/ready, exactly 1 MP spent per successful Fireball, no MP spent for an incorrect answer, reconnect deadlines, phase transitions, rewards/history, storage, and 30-player concurrency. Fixture fights are archived; real classroom records are not modified. Successful check links and deployment evidence are recorded in PR #25.
+
+## October 7 host controls and student departure
+
+The host title, connection status, joined-player count, join code, phase, timer,
+and Start/Advance/End controls share a compact panel. Its control strip stays
+visible while scrolling; the full-width current question sits directly beneath
+it and remains visible through the round. Answered/ready counts include living
+participants, while attendance includes knocked-out players. The host's socket
+connection is distinct from the joined-player count. A disconnected browser does
+not remove a participant.
+
+A bounded combat log temporarily occupies the space next to the enemy cards;
+the player grid remains full width. It retains the most recent 200 feedback
+entries received during this page visit, including across round changes. It
+follows new entries until the host scrolls back, then offers Jump to latest.
+Small screens stack the log below the enemies.
+
+Every student phase dialog exposes Leave fight with confirmation. The client
+waits for a server acknowledgement before clearing the room code and returning
+to the lobby. A reconnect during departure resends the departure, not a join.
+The server removes only the authenticated student, clears actions/guards aimed
+at them, recomputes threat, and advances when the remaining living players are
+done. Leaving closes that student's other sockets for the room too. An empty
+waiting lobby remains open; an empty active fight ends. Interrupted connections
+retain participation and normal recovery.
+
+An unfinished departure grants no result, consistent with the existing stamina
+policy. The existing entry restriction still applies: a student who leaves can
+rejoin while waiting, but cannot re-enter a running fight as a fresh participant.
+Exiting a completed fight preserves its roster and pending/persisted rewards.
+No database migration, enemy rescaling, or student data reset is involved.
+
+Local validation for this change passes all 92 automated tests, TypeScript, and
+both production builds. Coverage includes the rendered host panel/counts,
+student confirmation/cancellation and acknowledged navigation, role checks,
+replayed departures, remaining-player phase advancement, and completed rewards.
+Real-browser desktop/mobile checks are prepared in the Combat UI Acceptance
+workflow; visual acceptance and deployment are still pending.

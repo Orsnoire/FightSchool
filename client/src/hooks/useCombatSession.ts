@@ -15,12 +15,15 @@ export function useCombatSession(
   role: "teacher" | "student",
 ) {
   const [state, setState] = useState<CombatSnapshot | null>(null),
+    [hasLeft, setHasLeft] = useState(false),
+    [isLeaving, setIsLeaving] = useState(false),
     [question, setQuestion] = useState<PublicQuestion | null>(null),
     [results, setResults] = useState<EarnedResult[]>([]),
     [status, setStatus] = useState("connecting"),
     [error, setError] = useState<string | null>(null),
     [now, setNow] = useState(Date.now());
   const socket = useRef<WebSocket | null>(null),
+    leaveCommand = useRef<Record<string, unknown> | null>(null),
     pending = useRef(new Map<string, Record<string, unknown>>()),
     offset = useRef(0),
     revision = useRef(-1);
@@ -32,6 +35,9 @@ export function useCombatSession(
     setState(null);
     setQuestion(null);
     setResults([]);
+    setHasLeft(false);
+    setIsLeaving(false);
+    leaveCommand.current = null;
     setError(null);
     pending.current.clear();
     revision.current = -1;
@@ -51,7 +57,7 @@ export function useCombatSession(
         attempt = 0;
         setStatus("connected");
         ws.send(
-          JSON.stringify({
+          JSON.stringify(leaveCommand.current || {
             type: role === "teacher" ? "host" : "join",
             commandId: crypto.randomUUID(),
           }),
@@ -63,6 +69,16 @@ export function useCombatSession(
         try {
           message = JSON.parse(e.data);
         } catch {
+          return;
+        }
+        if (message.type === "fight_left" && message.sessionId === sessionId) {
+          disposed = true;
+          clearTimeout(retry);
+          pending.current.clear();
+          leaveCommand.current = null;
+          setIsLeaving(false);
+          setHasLeft(true);
+          ws.close();
           return;
         }
         if (
@@ -88,6 +104,10 @@ export function useCombatSession(
           pending.current.delete(message.commandId);
           setError(null);
         } else if (message.type === "protocol_error") {
+          if (message.commandId === leaveCommand.current?.commandId) {
+            leaveCommand.current = null;
+            setIsLeaving(false);
+          }
           pending.current.delete(message.commandId);
           setError(message.error);
         } else if (message.type === "game_over" && message.results)
@@ -115,6 +135,7 @@ export function useCombatSession(
   }, [sessionId, role]);
   const send = useCallback(
     (type: string, payload: Record<string, unknown> = {}) => {
+      if (leaveCommand.current) return;
       if (socket.current?.readyState !== WebSocket.OPEN) {
         setError("Wait for the connection to recover");
         return;
@@ -130,6 +151,17 @@ export function useCombatSession(
     },
     [state?.round],
   );
+  const leave = useCallback(() => {
+    if (role !== "student" || leaveCommand.current) return;
+    const command = { type: "leave_fight", commandId: crypto.randomUUID() };
+    leaveCommand.current = command;
+    pending.current.clear();
+    setError(null);
+    setIsLeaving(true);
+    // A reconnect retries departure instead of joining the room again.
+    if (socket.current?.readyState === WebSocket.OPEN)
+      socket.current.send(JSON.stringify(command));
+  }, [role]);
   return {
     state,
     question,
@@ -137,6 +169,9 @@ export function useCombatSession(
     status,
     error,
     send,
+    leave,
+    isLeaving,
+    hasLeft,
     serverNow: now,
     seconds: state?.phaseDeadline
       ? Math.max(0, Math.ceil((state.phaseDeadline - now) / 1000))

@@ -11,6 +11,7 @@ import {
   selectAction,
   setReady,
   resurrectPlayer,
+  removeStudent,
   deterministicShuffle,
   type CombatSnapshot,
 } from "./engine.ts";
@@ -75,6 +76,14 @@ export class CombatSessionObject {
   }
   private broadcast(message: unknown) {
     for (const ws of this.state.getWebSockets()) this.send(ws, message);
+  }
+  private acknowledgeLeave(ws: WebSocket, actorId: string, sessionId: string, commandId: string) {
+    for (const socket of new Set([ws, ...this.state.getWebSockets()])) {
+      const attachment = socket.deserializeAttachment() as SocketAttachment;
+      if (attachment.role !== "student" || attachment.actorId !== actorId) continue;
+      this.send(socket, { type: "fight_left", sessionId, commandId });
+      try { socket.close(1000, "Left fight"); } catch {}
+    }
   }
   private async room() {
     const room = await this.state.storage.get<StoredRoom>(ROOM_KEY);
@@ -410,12 +419,32 @@ export class CombatSessionObject {
           return;
         }
         if (room.receipts.includes(key)) {
+          if (command.type === "leave_fight" && actor.role === "student") {
+            this.acknowledgeLeave(ws, actor.actorId, actor.sessionId, command.commandId);
+            return;
+          }
           this.send(ws, {
             type: "command_ack",
             commandId: command.commandId,
             revision: room.snapshot.revision,
           });
           this.send(ws, this.snapshotMessage(room));
+          return;
+        }
+        if (command.type === "leave_fight") {
+          if (actor.role !== "student") throw new Error("Student role required");
+          // Identity comes from the authenticated socket, never a supplied target.
+          // Completed rosters stay intact until their rewards have been persisted.
+          room.snapshot = removeStudent(room.snapshot, actor.actorId);
+          room.snapshot.revision++;
+          room.receipts = [...room.receipts, key].slice(-512);
+          await this.save(room);
+          await this.syncAlarm(room);
+          this.acknowledgeLeave(ws, actor.actorId, actor.sessionId, command.commandId);
+          if (["question", "actions", "abilities"].includes(room.snapshot.currentPhase) && allLivingPlayersAnswered(room.snapshot))
+            await this.advance(room);
+          else if (room.snapshot.currentPhase === "game_over") await this.complete(room);
+          else await this.publish(room);
           return;
         }
         if (room.snapshot.currentPhase === "game_over")
