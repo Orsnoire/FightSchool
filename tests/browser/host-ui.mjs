@@ -17,7 +17,7 @@ try {
       window.WebSocket = class {
         static OPEN = 1;
         readyState = 1;
-        constructor() { window.hostTest.sockets.push(this); setTimeout(() => this.onopen?.(), 0); }
+        constructor(url) { this.url = url; window.hostTest.sockets.push(this); setTimeout(() => this.onopen?.(), 0); }
         send(data) { window.hostTest.sent.push(JSON.parse(data)); }
         close() { this.readyState = 3; }
       };
@@ -27,7 +27,7 @@ try {
     await page.route(`**/api/fights/${fight.id}/sessions`, route => route.fulfill({ json: { sessionId: 'ABC234' } }));
     await page.route('**/api/combat/ABC234/force-question', route => route.fulfill({ json: { success: true } }));
     await page.goto(origin + '/teacher/host/' + fight.id);
-    await page.waitForFunction(() => window.hostTest.sockets.length > 0);
+    await page.waitForFunction(() => window.hostTest.sockets.some(s => s.url.includes("sessionId=ABC234") && typeof s.onmessage === "function"));
     const state = started();
     state.enemies[0].image = enemyImage;
     state.enemies[0].name = 'Goblins';
@@ -39,7 +39,7 @@ try {
     const question = { id: 'q1', type: 'multiple_choice', question: '<p>Which expression is equivalent to <span class="math-inline" data-latex="\\frac{x^2-9}{x-3}"></span>, for x ≠ 3?</p>', options: ['x+3', 'x−3'], timeLimit: 60 };
     async function emit() {
       state.revision++;
-      await page.evaluate(({ state, question }) => window.hostTest.sockets.at(-1).onmessage({ data: JSON.stringify({ type: 'combat_state', state, question: state.currentPhase === 'waiting' ? null : question, serverTime: Date.now() }) }), { state, question });
+      await page.evaluate(({ state, question }) => window.hostTest.sockets.filter(s => s.url.includes("sessionId=ABC234")).at(-1).onmessage({ data: JSON.stringify({ type: 'combat_state', state, question: state.currentPhase === 'waiting' ? null : question, serverTime: Date.now() }) }), { state, question });
     }
     const panel = page.getByTestId('host-controls');
     await emit();
