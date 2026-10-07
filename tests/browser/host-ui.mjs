@@ -62,9 +62,9 @@ try {
     await feed.getByText(/Player 20 dealt/).first().waitFor();
     assert.ok(await feed.evaluate(el => el.scrollHeight > el.clientHeight), 'log scrolls internally');
     if (viewport.width > 1000) {
-      const enemy = await page.getByRole('heading', { name: 'Goblins', exact: true }).boundingBox();
+      const enemy = await page.getByAltText('Goblins').locator('..').boundingBox();
       const logRect = await log.boundingBox();
-      assert.ok(logRect.x > enemy.x && Math.abs(logRect.y - (await page.getByAltText('Goblins').boundingBox()).y) < 80, 'log fills row beside enemies');
+      assert.ok(logRect.x >= enemy.x + enemy.width && Math.abs(logRect.y - enemy.y) < 2, 'log fills row beside enemies');
     }
     await page.screenshot({ path: `${output}/${viewport.width}-host-question.png` });
     await feed.evaluate(el => { el.scrollTop = 0; el.dispatchEvent(new Event('scroll')); });
