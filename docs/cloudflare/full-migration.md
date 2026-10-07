@@ -207,3 +207,34 @@ starter ownership, all four base-job loadouts, same-job equipment retention,
 armor exclusions, body immutability, ownership and origin checks. It signs out
 its sessions afterward and does not touch real students. It is not run at app
 startup and does not replace the live combat/classroom acceptance workflow.
+
+## Host controls and student departure — 7 October 2026
+
+The owner authorized publication, browser checks, merge and live deployment.
+[PR #35](https://github.com/Orsnoire/FightSchool/pull/35) merged as
+`1aa7ccb16130d5822010766c6c7b13316588b7cd`. The release consolidates host controls
+and the current question around the join-code panel, restores joined-player
+counts, places a bounded scrollable log beside the enemies, and adds confirmed,
+acknowledged student departure to every combat context dialog.
+
+All 92 automated tests, TypeScript and both production builds passed in
+[CI run 37681311378](https://github.com/Orsnoire/FightSchool/actions/runs/37681311378).
+[Combat UI Acceptance run 37681311265](https://github.com/Orsnoire/FightSchool/actions/runs/37681311265)
+passed host and student browser checks at 1366×768 and 390×844; screenshot review
+also passed. Both runs checked PR head `c360af693a7f66c67a90fe98ed50e323827554ce`.
+
+[Deployment run 37681816536](https://github.com/Orsnoire/FightSchool/actions/runs/37681816536)
+successfully deployed the merge revision at 20:26 UTC (14:26 MDT). The workflow
+passed all 92 tests, type checking, both builds, image storage verification,
+the additive migration gate and smoke checks on both hostnames. Immutable
+Worker version: `4ba61e1d-374d-4224-a0d4-cda88a62e442`.
+See the [successful deployment snapshot](../releases/2026-10-07-host-panel-deployed.jpg).
+
+[Live Combat Staging Acceptance run 37682106085](https://github.com/Orsnoire/FightSchool/actions/runs/37682106085),
+job `113000499181`, passed against
+`https://questacademy.bookwyrminteractive.studio` at 20:29 UTC. Coverage includes
+combat resources, reconnect deadlines, durable rewards, authorization, R2,
+30 simultaneous participants/answers, room isolation and exactly-once results.
+The new departure path is covered by the automated and browser suites above.
+This release adds no schema migration or student-data reset. Hosts and students
+should refresh existing browser tabs to load the updated client.

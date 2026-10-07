@@ -57,5 +57,16 @@ Local validation for this change passes all 92 automated tests, TypeScript, and
 both production builds. Coverage includes the rendered host panel/counts,
 student confirmation/cancellation and acknowledged navigation, role checks,
 replayed departures, remaining-player phase advancement, and completed rewards.
-Real-browser desktop/mobile checks are prepared in the Combat UI Acceptance
-workflow; visual acceptance and deployment are still pending.
+Real-browser checks passed at 1366×768 and 390×844 in
+[Combat UI Acceptance run 37681311265](https://github.com/Orsnoire/FightSchool/actions/runs/37681311265),
+including host counts/layout/log scrolling and student rich content, keyboard,
+leave confirmation/cancellation and acknowledged navigation. Screenshot review
+passed. [PR #35](https://github.com/Orsnoire/FightSchool/pull/35) merged as
+`1aa7ccb16130d5822010766c6c7b13316588b7cd` and was deployed to the canonical
+domain at 20:26 UTC on October 7, 2026 by
+[deployment run 37681816536](https://github.com/Orsnoire/FightSchool/actions/runs/37681816536).
+Worker version: `4ba61e1d-374d-4224-a0d4-cda88a62e442`.
+[Live acceptance run 37682106085](https://github.com/Orsnoire/FightSchool/actions/runs/37682106085)
+then passed combat, storage and 30-participant classroom checks against that
+deployment. Departure-specific behavior is covered by automated and browser
+tests; the live acceptance harness checks the established combat flows.
