@@ -93,6 +93,9 @@ record the latest explicit changes to XP stamina, Block targeting and threat,
 potion replenishment, encounter HP, and the approved Wizard/Scout balance. They
 supersede older conflicting rules for these systems. Priest First Aid remains deferred.
 
+The October 7 corrections in the same document supersede raw enemy-difficulty
+multiplication and the shared question/action clock, and restore host resurrection.
+
 ## Combat Flow Refactor
 
 This document is authoritative primarily for **player experience and presentation**, including:

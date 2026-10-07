@@ -10,7 +10,7 @@ function round(state: CombatSnapshot, ability: string, answer: string | null = "
   state.seed = 1;
   let s = answer === null ? state : applyAnswer(state, id, answer, fight.questions[0]);
   if (answer !== null) s = selectAction(s, id, ability, "e1");
-  s = advancePhase(advancePhase(s, fight), fight);
+  s = advancePhase(advancePhase(advancePhase(s, fight), fight), fight);
   return JSON.parse(JSON.stringify(s)) as CombatSnapshot;
 }
 const next = (s: CombatSnapshot) => advancePhase(advancePhase(s, fight), fight);

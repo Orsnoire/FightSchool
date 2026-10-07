@@ -3,7 +3,7 @@ import { PlayerAvatar } from "./PlayerAvatar";
 import { HealthBar } from "./HealthBar";
 import { MPBar } from "./MPBar";
 import { Card } from "./ui/card";
-export function CombatBoard({ state }: { state: CombatSnapshot }) {
+export function CombatBoard({ state, onResurrect }: { state: CombatSnapshot; onResurrect?: (studentId: string) => void }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -29,7 +29,17 @@ export function CombatBoard({ state }: { state: CombatSnapshot }) {
         {Object.values(state.players).map((p) => (
           <Card
             key={p.studentId}
-            className={`p-3 space-y-2 ${p.isDead ? "opacity-50" : ""}`}
+            role={onResurrect && p.isDead ? "button" : undefined}
+            tabIndex={onResurrect && p.isDead ? 0 : undefined}
+            aria-label={onResurrect && p.isDead ? `Resurrect ${p.nickname} with 1 HP` : undefined}
+            onClick={() => { if (p.isDead) onResurrect?.(p.studentId); }}
+            onKeyDown={(e) => {
+              if (p.isDead && onResurrect && (e.key === "Enter" || e.key === " ")) {
+                e.preventDefault();
+                onResurrect(p.studentId);
+              }
+            }}
+            className={`p-3 space-y-2 ${p.isDead ? "opacity-50" : ""} ${onResurrect && p.isDead ? "cursor-pointer hover:ring-2 focus-visible:ring-2 ring-primary" : ""}`}
           >
             <PlayerAvatar
               characterClass={p.characterClass}
@@ -49,7 +59,7 @@ export function CombatBoard({ state }: { state: CombatSnapshot }) {
             </p>
             <p className="text-xs">
               {p.isDead
-                ? "Knocked out"
+                ? onResurrect ? "Resurrect with 1 HP" : "Knocked out"
                 : p.ready
                   ? "Ready"
                   : p.hasAnswered

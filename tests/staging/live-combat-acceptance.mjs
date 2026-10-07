@@ -253,6 +253,9 @@ try {
   await player.wait(
     (m) => m.type === "command_ack" && m.commandId === duplicateId,
   );
+  const actionPhase = await player.state(1, "actions");
+  assert.equal(actionPhase.state.phaseDeadline - actionPhase.state.phaseStartTime, 20000);
+  assert.equal(actionPhase.state.players[studentId].lastAnswerCorrect, undefined);
   player.send("action", { round: 1, ability: "fireball", targetId: "e1", ready: true });
   await player.state(1, "abilities");
   player.send("ready", { round: 1 });
@@ -307,6 +310,8 @@ try {
     await restored.wait(
       (m) => m.type === "command_ack" && m.commandId === answer,
     );
+    const actionPhase = await restored.state(round, "actions");
+    assert.equal(actionPhase.state.phaseDeadline - actionPhase.state.phaseStartTime, 20000);
     const action = restored.send("action", {
       round,
       ability,

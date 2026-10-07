@@ -73,7 +73,9 @@ export default function HostFight() {
       )}
       {state && (
         <>
-          <CombatBoard state={state} />
+          <CombatBoard state={state} onResurrect={status === "connected" && !["waiting", "game_over"].includes(state.currentPhase)
+            ? (targetId) => send("resurrect", { targetId }) : undefined} />
+          {state.phaseDeadline && state.currentPhase !== "question" && <p>{state.currentPhase === "actions" ? "Combat action selection" : state.currentPhase === "abilities" ? "Block, heal, and support" : "Phase"} · {seconds}s remaining</p>}
           {state.currentPhase === "waiting" ? (
             <Button
               disabled={

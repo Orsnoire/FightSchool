@@ -30,7 +30,7 @@ test("perfect solo play can finish with each base job before unavoidable counter
       let s = startQuestion(scaleEncounter(addStudent(initialCombatState("SOLO", quiz), student(job)), quiz, true));
       for (let i = 0; i < 30 && s.currentPhase !== "game_over"; i++) {
         s = applyAnswer(s, student().id, "4", quiz.questions[0]);
-        for (let phase = 0; phase < 4; phase++) s = advancePhase(s, quiz);
+        for (let phase = 0; phase < 5; phase++) s = advancePhase(s, quiz);
       }
       assert.equal(s.victory, true, `${job} ${mode}`);
     }
@@ -45,7 +45,7 @@ test("Block includes current wizard damage, transfers once, preserves total thre
   s = startQuestion(s);
   for (const id of ["tank", "mage"]) s = applyAnswer(s, id, "4", fight.questions[0]);
   s = selectAction(s, "mage", "fireball", "e1");
-  s = advancePhase(s, fight, 100);
+  s = advancePhase(advancePhase(s, fight, 50), fight, 100);
   assert.equal(s.phaseDeadline, 20100);
   s = selectAction(s, "tank", "warrior_block", "mage");
   s = selectAction(s, "tank", "shield_bash", "mage");
@@ -70,7 +70,7 @@ test("empty level-one and cross-class potion users can create exactly one withou
     p.health = p.maxHealth - 3;
     s = applyAnswer(s, p.studentId, correct ? "4" : "wrong", fight.questions[0]);
     s = selectAction(s, p.studentId, "craft_healing_potion", p.studentId);
-    s = advancePhase(advancePhase(s, fight), fight);
+    s = advancePhase(advancePhase(advancePhase(s, fight), fight), fight);
     assert.equal(s.players[p.studentId].healingPotions, correct ? 1 : 0);
     assert.equal(s.players[p.studentId].totals.healingDone, 0);
     assert.equal(s.players[p.studentId].totals.damageDealt, 0);

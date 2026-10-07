@@ -10,6 +10,7 @@ import {
   advancePhase,
   selectAction,
   setReady,
+  resurrectPlayer,
   deterministicShuffle,
   type CombatSnapshot,
 } from "./engine.ts";
@@ -42,7 +43,7 @@ export function publicSnapshot(snapshot: CombatSnapshot): CombatSnapshot {
         {
           ...p,
           currentAnswer: null,
-          lastAnswerCorrect: ["question", "waiting"].includes(
+          lastAnswerCorrect: ["question", "actions", "waiting"].includes(
             snapshot.currentPhase,
           )
             ? undefined
@@ -156,6 +157,7 @@ export class CombatSessionObject {
       state: publicSnapshot(room.snapshot),
       question: [
         "question",
+        "actions",
         "abilities",
         "question_resolution",
         "enemy_ai",
@@ -432,6 +434,14 @@ export class CombatSessionObject {
             actor.sessionId,
             "active",
           );
+        } else if (command.type === "resurrect") {
+          if (actor.role !== "teacher") throw new Error("Teacher role required");
+          const live = await this.repository.findLiveCombatSession(actor.sessionId);
+          if (live?.teacherId !== actor.actorId || live.status === "superseded")
+            throw new Error("Only the host can resurrect players");
+          if (command.round !== room.snapshot.round) throw new Error("Command belongs to another round");
+          if (typeof command.targetId !== "string") throw new Error("Invalid player");
+          room.snapshot = resurrectPlayer(room.snapshot, command.targetId);
         } else if (command.type === "end_fight") {
           if (actor.role !== "teacher")
             throw new Error("Teacher role required");
@@ -502,7 +512,7 @@ export class CombatSessionObject {
           revision: room.snapshot.revision,
         });
         if (
-          ["question", "abilities"].includes(room.snapshot.currentPhase) &&
+          ["question", "actions", "abilities"].includes(room.snapshot.currentPhase) &&
           allLivingPlayersAnswered(room.snapshot)
         )
           await this.advance(room);

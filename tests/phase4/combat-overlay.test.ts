@@ -64,6 +64,11 @@ test("student question, action, waiting, and resolution share a focused non-dism
     assert.equal(socket.sent.at(-1).answer, "4");
     state.players[student().id].hasAnswered = true;
     await emit();
+    assert.match(dialog().textContent!, /Answer submitted/);
+    assert.equal(button("Confirm Attack & Ready"), undefined);
+    state.currentPhase = "actions";
+    state.phaseDeadline = Date.now() + 20000;
+    await emit();
     assert.match(dialog().textContent!, /Choose your combat action/);
     assert.equal(document.activeElement?.textContent, "Choose your combat action");
     await act(async () => button("Confirm Attack & Ready").click());
@@ -108,6 +113,7 @@ test("student question, action, waiting, and resolution share a focused non-dism
     state.players[student().id].hasAnswered = true;
     await emit();
     assert.equal(keyboard.container, document.body, "keyboard container is restored when the math question closes");
+    state.currentPhase = "actions";
     // Empty stock changes the usable action to Create potion; selection sends crafting, not healing.
     state.players[student().id].healingPotions = 0;
     await emit();

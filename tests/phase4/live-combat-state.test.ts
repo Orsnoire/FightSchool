@@ -4,6 +4,7 @@ import {
   CombatSessionObject,
   publicSnapshot,
 } from "../../worker/combat/session-object.ts";
+import { applyAnswer } from "../../worker/combat/engine.ts";
 import { started, fight, student } from "./fixtures.ts";
 function harness(initial?: unknown) {
   const data = new Map<string, any>();
@@ -112,7 +113,7 @@ test("early alarm is harmless and expired alarm resumes one phase after a new ob
     receipts: [],
   });
   await restored.object.alarm();
-  assert.equal(restored.data.get("room").snapshot.currentPhase, "abilities");
+  assert.equal(restored.data.get("room").snapshot.currentPhase, "actions");
   assert.ok(restored.alarm()! > Date.now());
 });
 test("database failure retries completion without announcing unsaved rewards", async () => {
@@ -158,4 +159,72 @@ test("confirming an action and readiness is atomic, including rejection and retr
   assert.equal(room.snapshot.players[student().id].ready, true);
   assert.equal(room.snapshot.players[student().id].questionAction.ability, "attack");
   assert.equal(room.receipts.length, 1);
+});
+
+test("question expiry gives a fresh action clock, survives reconnect, then opens a separate support clock", async () => {
+  const s = started("wizard");
+  s.phaseDeadline = Date.now() - 1;
+  const h = harness({ fight, snapshot: s, receipts: [] });
+  await h.object.alarm();
+  const actions = h.data.get("room").snapshot;
+  assert.equal(actions.currentPhase, "actions");
+  assert.equal(actions.phaseDeadline - actions.phaseStartTime, 20000);
+  assert.equal(actions.players[student().id].lastAnswerCorrect, false);
+  assert.equal(publicSnapshot(actions).players[student().id].lastAnswerCorrect, undefined);
+  assert.throws(() => applyAnswer(actions, student().id, "4", fight.questions[0]), /unavailable/);
+  const restored = harness(h.data.get("room"));
+  await restored.object.alarm();
+  assert.equal(restored.data.get("room").snapshot.phaseDeadline, actions.phaseDeadline);
+  const late = harness({ fight, snapshot: { ...actions, phaseDeadline: Date.now() - 1 }, receipts: [] });
+  await late.object.alarm();
+  const support = late.data.get("room").snapshot;
+  assert.equal(support.currentPhase, "abilities");
+  assert.equal(support.phaseDeadline - support.phaseStartTime, 20000);
+});
+
+test("an answer at the question deadline leaves twenty seconds to confirm an action", async () => {
+  const s = started("wizard");
+  s.phaseDeadline = Date.now() + 1000;
+  const h = harness({ fight, snapshot: s, receipts: [] });
+  await h.object.webSocketMessage(h.socket as any, JSON.stringify({ type: "answer", commandId: "late-answer-001", round: 1, questionId: "q1", answer: "4" }));
+  const room = h.data.get("room");
+  assert.equal(room.snapshot.currentPhase, "actions");
+  assert.ok(room.snapshot.phaseDeadline > s.phaseDeadline + 18000);
+  await h.object.webSocketMessage(h.socket as any, JSON.stringify({ type: "action", commandId: "late-choice-001", round: 1, ability: "fireball", targetId: "e1", ready: true }));
+  assert.equal(h.data.get("room").snapshot.currentPhase, "abilities");
+  assert.equal(h.data.get("room").snapshot.players[student().id].questionAction.ability, "fireball");
+  assert.equal(h.data.get("room").snapshot.phaseDeadline - h.data.get("room").snapshot.phaseStartTime, 20000);
+});
+
+test("only the room host can resurrect; retries restore exactly one HP without resetting resources or deadlines", async () => {
+  const s = started("wizard");
+  s.phaseDeadline = Date.now() + 100000;
+  s.players[student().id].health = 0;
+  s.players[student().id].isDead = true;
+  s.players[student().id].mp = 1;
+  s.players[student().id].totals.deaths = 2;
+  for (const [role, actorId, permitted] of [["student", student().id, false], ["teacher", "other-teacher", false], ["teacher", fight.teacherId, true]] as const) {
+    const h = harness({ fight, snapshot: s, receipts: [] });
+    const teacherSocket = { ...h.socket, deserializeAttachment: () => ({ actorId, role, sessionId: "ABC234", tokenHash: "test-session-hash" }) };
+    h.object.setRepository({
+      findActiveSession: async () => ({ actorId, actorType: role }),
+      findLiveCombatSession: async () => ({ teacherId: fight.teacherId, status: "active" }),
+    } as any);
+    const command = JSON.stringify({ type: "resurrect", commandId: "host-revive-001", round: 1, targetId: student().id });
+    await h.object.webSocketMessage(teacherSocket as any, command);
+    await h.object.webSocketMessage(teacherSocket as any, command);
+    const room = h.data.get("room");
+    assert.equal(room.snapshot.players[student().id].health, permitted ? 1 : 0);
+    assert.equal(room.snapshot.players[student().id].isDead, !permitted);
+    assert.equal(room.snapshot.players[student().id].mp, 1);
+    assert.equal(room.snapshot.players[student().id].totals.deaths, 2);
+    assert.equal(room.snapshot.phaseDeadline, s.phaseDeadline);
+    assert.equal(room.receipts.length, permitted ? 1 : 0);
+    assert.equal(room.snapshot.events.filter((e: any) => e.actorId === "host").length, permitted ? 1 : 0);
+    if (permitted) {
+      const restored = harness(room);
+      await restored.object.alarm();
+      assert.equal(restored.data.get("room").snapshot.players[student().id].health, 1);
+    } else assert.match(h.messages.at(-1).error, /Teacher role required|Only the host/);
+  }
 });

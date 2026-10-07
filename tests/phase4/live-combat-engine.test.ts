@@ -27,7 +27,7 @@ import { getUnlockedJobs } from "../../shared/jobSystem.ts";
 import type { FightRecord, StudentRecord } from "../../worker/db/schema.ts";
 import { fight, student, started } from "./fixtures.ts";
 const resolution = (s: ReturnType<typeof started>) =>
-  advancePhase(advancePhase(s, fight, 200), fight, 300);
+  advancePhase(advancePhase(advancePhase(s, fight, 150), fight, 200), fight, 300);
 test("correct answers damage enemies; question exhaustion cycles and never grants victory", () => {
   let s = applyAnswer(
     started(),
@@ -90,7 +90,7 @@ test("answer retries and late joins reject; pure rules do not mutate input", () 
 });
 test("a one-vitality warrior can block a real amount and healing cannot exceed missing HP", () => {
   let s = applyAnswer(started(), student().id, "wrong", fight.questions[0]);
-  s = advancePhase(s, fight, 200);
+  s = advancePhase(advancePhase(s, fight, 150), fight, 200);
   s = selectAction(s, student().id, "warrior_block", student().id);
   s = advancePhase(s, fight, 300);
   assert.equal(s.players[student().id].totals.damageBlocked, 1);
@@ -145,7 +145,7 @@ test("every unlocked ability has an executable rule and can only run in its docu
       s.enemies[0].health = 10000;
       s.enemies[0].maxHealth = 10000;
       s = applyAnswer(s, student().id, "4", fight.questions[0]);
-      if (SUPPORT.has(ability)) s = advancePhase(s, fight, 200);
+      if (SUPPORT.has(ability)) s = advancePhase(advancePhase(s, fight, 150), fight, 200);
       const target = [
         "warrior_block",
         "shield_bash",
@@ -163,7 +163,7 @@ test("every unlocked ability has an executable rule and can only run in its docu
         ? student().id
         : "e1";
       s = selectAction(s, student().id, ability, target);
-      if (s.currentPhase === "question") s = advancePhase(s, fight, 200);
+      if (s.currentPhase === "question") s = advancePhase(advancePhase(s, fight, 150), fight, 200);
       assert.doesNotThrow(
         () => advancePhase(s, fight, 300),
         `${job}: ${ability}`,

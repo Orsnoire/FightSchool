@@ -17,6 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 const names: Record<string, string> = {
   waiting: "Waiting for your teacher",
   question: "Question",
+  actions: "Combat action selection",
   abilities: "Block, heal, and support",
   question_resolution: "Answer resolution",
   enemy_ai: "Enemy counterattack",
@@ -97,8 +98,8 @@ export default function Combat() {
     return [c.mp ? (id === "fireblast" ? `All MP (${c.mp})` : `${c.mp} MP`) : "", c.combo ? `${c.combo} combo` : "", c.healing ? "1 healing potion" : "", c.shield ? "1 shield potion" : ""].filter(Boolean).join(" · ") || "No cost";
   };
   const needsTarget = ALLIES.has(ability) || (!SUPPORT.has(ability) && !["craft_healing_potion", "craft_shield_potion", "pact_surge", "holy_light", "finale"].includes(ability));
-  const view = intro ? "intro" : p?.isDead && ["question", "abilities"].includes(phase) ? "knocked-out" : p?.ready && ["question", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "action" : phase;
-  const title = view === "intro" ? (state.round === 1 ? "Question" : "Next question") : view === "knocked-out" ? "Your party is still fighting" : view === "ready" ? "Ready — waiting for your party" : view === "action" ? "Choose your combat action" : phase === "question" ? `Question ${state.currentQuestionIndex + 1}` : names[phase];
+  const view = intro ? "intro" : p?.isDead && ["question", "actions", "abilities"].includes(phase) ? "knocked-out" : p?.ready && ["question", "actions", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "answered" : phase === "actions" ? "action" : phase;
+  const title = view === "answered" ? "Answer submitted" : view === "intro" ? (state.round === 1 ? "Question" : "Next question") : view === "knocked-out" ? "Your party is still fighting" : view === "ready" ? "Ready — waiting for your party" : view === "action" ? "Choose your combat action" : phase === "question" ? `Question ${state.currentQuestionIndex + 1}` : names[phase];
   const claim = async (itemId?: string) => {
     try {
       await apiRequest(
@@ -135,6 +136,7 @@ export default function Combat() {
       <CombatOverlay title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
       {phase === "waiting" && <p>Your teacher will start the fight when everyone has joined.</p>}
       {intro && <p className="text-center py-8 text-lg">Get ready…</p>}
+      {view === "answered" && <p>Your answer is saved. Combat action selection will begin when everyone has answered or the question timer ends. You will have a fresh 20 seconds to choose.</p>}
       {view === "ready" && <div className="text-center space-y-3 py-4"><p>Your choices are saved. Waiting for the remaining players or the timer.</p><p className="text-sm text-muted-foreground">Resources update when actions resolve.</p></div>}
       {phase === "question" && !intro && !question && <p>Loading the question…</p>}
       {phase === "question" && !intro && question && p && !p.isDead && !p.hasAnswered && (
@@ -190,10 +192,10 @@ export default function Combat() {
         !p.isDead &&
         !p.ready &&
         p.hasAnswered &&
-        ["question", "abilities"].includes(phase) && (
+        ["actions", "abilities"].includes(phase) && (
           <div className="space-y-4">
             <h2 className="font-semibold">
-              {phase === "question"
+              {phase === "actions"
                 ? "Choose an attack or question ability"
                 : "Choose support actions"}
             </h2>
@@ -241,17 +243,17 @@ export default function Combat() {
                 </label>}
                 <Button
                   variant="secondary"
-                  onClick={() => send("action", { ability, targetId: chosen, ready: phase === "question" })}
+                  onClick={() => send("action", { ability, targetId: chosen, ready: phase === "actions" })}
                   disabled={
                     !canAct || !!selectionProblem(p, ability)
                   }
                 >
-                  {phase === "question" ? `Confirm ${label(ability)} & Ready` : `Add ${label(ability)}`}
+                  {phase === "actions" ? `Confirm ${label(ability)} & Ready` : `Add ${label(ability)}`}
                 </Button>
               </>
             )}
             <p className="text-sm">
-              {phase === "question"
+              {phase === "actions"
                 ? `Selected: ${label(p.questionAction?.ability || "attack")}`
                 : `Selected: ${p.supportActions.map((a) => label(a.ability)).join(", ") || "none"}`}
             </p>

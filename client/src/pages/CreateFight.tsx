@@ -635,7 +635,7 @@ export default function CreateFight() {
                         onValueChange={(vals) => field.onChange(vals[0])}
                         data-testid="slider-base-enemy-damage"
                       />
-                      <p className="text-sm text-muted-foreground">Difficulty scaling: higher values mean enemies deal more damage (1 = easy, 10 = very hard)</p>
+                      <p className="text-sm text-muted-foreground">Enemy attack strength (1 = gentle, 10 = very dangerous). Difficulty adds gradual scaling; armor and blocking reduce damage.</p>
                       <FormMessage />
                     </FormItem>
                   )}
