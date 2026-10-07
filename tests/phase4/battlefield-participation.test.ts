@@ -143,3 +143,18 @@ test("pending applicants may withdraw, and host completion releases remaining ap
   assert.equal(h.room().snapshot.endedByHost,true);
   assert.ok(host.messages.some((m:any)=>m.type === "game_over"));
 });
+
+
+test("removing a selected ally before resolution cancels the action without charging resources or losing the correct answer", () => {
+  const s = started("herbalist");
+  s.players.other = {...structuredClone(s.players[id]),studentId:"other"};
+  s.currentPhase="abilities";
+  Object.assign(s.players[id], {hasAnswered:true,lastAnswerCorrect:true,questionAction:{ability:"healing_potion",targetId:"other"}});
+  const before=s.players[id].healingPotions;
+  const removed=removeStudent(s,"other");
+  assert.equal(removed.players[id].questionAction,null);
+  const resolved=advancePhase(removed,fight);
+  assert.equal(resolved.currentPhase,"question_resolution");
+  assert.equal(resolved.players[id].healingPotions,before);
+  assert.equal(resolved.players[id].totals.questionsCorrect,1);
+});

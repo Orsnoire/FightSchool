@@ -970,9 +970,10 @@ export function advancePhase(
       if (p.lastAnswerCorrect) {
         p.totals.questionsCorrect++;
         p.consecutiveCorrectAnswers = (p.consecutiveCorrectAnswers || 0) + 1;
-        const a = p.questionAction!;
-        applyAbility(s, p, a.ability, a.targetId);
-        if (p.buffs.abyssal_drain) {
+        const a = p.questionAction;
+        // Departure can cancel a saved ally-targeted action before resolution.
+        if (a) applyAbility(s, p, a.ability, a.targetId);
+        if (a && p.buffs.abyssal_drain) {
           const amount = baseDamage(p);
           s.enemies
             .filter((e) => e.health > 0 && e.id !== a.targetId)

@@ -288,7 +288,7 @@ export default function Combat() {
                   ? "available as a reward choice"
                   : "awarded"}
               </p>
-              {result.xpMultiplier !== undefined && <p className="text-sm text-muted-foreground">{Math.round(result.xpMultiplier * 1000) / 10}% XP rate applied to {result.baseXp} base XP. Fractional XP carries forward.</p>}
+              {result.xpMultiplier !== undefined && <p className="text-sm text-muted-foreground">{Math.round(result.xpMultiplier * 1000) / 10}% XP rate applied to {Math.round((result.baseXp || 0) * 100) / 100} XP before stamina. Fractional XP carries forward.</p>}
               {result.lootTable.length > 0 && !claimed && (
                 <>
                   <p>Choose one reward:</p>
