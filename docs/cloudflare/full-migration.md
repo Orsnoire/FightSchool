@@ -238,3 +238,42 @@ combat resources, reconnect deadlines, durable rewards, authorization, R2,
 The new departure path is covered by the automated and browser suites above.
 This release adds no schema migration or student-data reset. Hosts and students
 should refresh existing browser tabs to load the updated client.
+
+## Battlefield and participation — 7 October 2026 (awaiting deployment)
+
+[PR #36](https://github.com/Orsnoire/FightSchool/pull/36) merged as
+`5f16dc2a4661b917441d946d192ed9201351c339`. The release introduces the shared
+grassland battlefield, saved player avatars, private student resources, minimal
+waiting strip, host fullscreen and floating combat log, threat/damage leaders,
+moderated removal/rejoining and proportionate completion rewards. See the
+[approved behavior](../combat-facelift.md#october-7-battlefield-and-participation-approval).
+
+Final PR head `d58bd4048ae5c24fcda65876c05874b64af2267d` passed all 99 tests,
+TypeScript and production builds in
+[CI run 37688923550](https://github.com/Orsnoire/FightSchool/actions/runs/37688923550).
+[Combat UI Acceptance run 37688923553](https://github.com/Orsnoire/FightSchool/actions/runs/37688923553)
+passed at 1366×768, 390×844 and 3840×2160, including formations from 1 to 30,
+fullscreen, combat-log controls, removal and rejoin moderation. The reviewed
+[host](../releases/2026-10-07-battlefield-host.png) and
+[student waiting](../releases/2026-10-07-battlefield-student.png) previews come
+from the passing browser fixture run `37688335333`; subsequent changes covered
+ally-target cancellation and live acceptance timing without changing the layout.
+
+**Not deployed yet.** Automatic approval review rejected the workflow dispatch
+because implementation authorization was not considered explicit authorization
+for a live deployment and database migration. The
+[pending dispatch](../releases/2026-10-07-battlefield-deployment-awaiting-approval.jpg)
+targets `main`; no deployment was started and no migration was applied by this
+attempt. The previous live Worker remains
+`4ba61e1d-374d-4224-a0d4-cda88a62e442` from run `37681816536`.
+
+After explicit approval, dispatch **Deploy Cloudflare Staging** from `main`.
+The workflow applies `0010_fractional_participation_xp.sql` before publishing:
+it widens the existing base-XP audit field and the award function input to retain
+fractional completion XP, preserving students and prior results. Record the
+resulting Worker version and both smoke checks, then dispatch **Live Combat
+Staging Acceptance** from `main` against
+`https://questacademy.bookwyrminteractive.studio`. Its operational suite now
+includes late entry, moderated rejoin/blocking, and fractional host-ended rewards.
+Those new live checks remain pending; local and browser success do not substitute
+for them. Keep the additive schema if a Worker rollback is needed.
