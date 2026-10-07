@@ -144,6 +144,8 @@ try {
     assert.equal(await page.evaluate(() => window.mathVirtualKeyboard.container === document.body), true);
     // A long rich question must scroll internally while the header stays visible.
     state.round++;
+    state.currentPhase = 'question';
+    state.phaseDeadline = Date.now() + 120000;
     state.players[id].hasAnswered = false;
     question = { ...question, type: 'multiple_choice', question: '<p>Long question</p>' + '<p>Read this supporting information.</p>'.repeat(40) };
     await emit();
