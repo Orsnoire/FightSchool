@@ -178,7 +178,8 @@ try {
     assert.equal(returned.state.pendingPlayers[aId].health, first.players[aId].health);
     assert.equal(returned.state.pendingPlayers[aId].totals.damageDealt, first.players[aId].totals.damageDealt);
     const late = await open(2); await late.wait(m => m.type === "combat_state" && m.state.pendingPlayers?.[lateId]);
-    for (let step = 0; step < 2; step++) await api(`/api/combat/${room.room}/force-question`, {method:"POST",cookie:teacher.cookie});
+    // Let the authoritative resolution/counterattack deadlines open round two.
+    // Forcing twice can race a natural phase transition during moderation.
     const second = await resolve([a,b,late], 2);
     assert.equal(second.players[lateId].roundsParticipated, 1);
     assert.equal(second.players[aId].roundsParticipated, 2);
