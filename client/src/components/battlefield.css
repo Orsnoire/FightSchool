@@ -44,3 +44,10 @@
 .battlefield { container-type:size; }
 .battlefield.is-crowded .battle-player:not([data-self]) { width:min(var(--avatar-size),10cqh,7cqw); }
 .battlefield.is-crowded .battle-player:not([data-self]) .battle-avatar { height:min(var(--avatar-size),10cqh,7cqw); }
+/* The host stage uses the space left by the banner and optional question. */
+.battle-host { display:flex; flex-direction:column; height:100dvh; }
+.battle-host-banner,.battle-host .battle-question { flex-shrink:0; }
+.battle-host .battlefield { flex:1; height:auto; min-height:360px; }
+/* Keep the local character's feet clear of the private resource panel. */
+.battle-player[data-self] { top:auto!important; bottom:155px; transform:translateX(-50%); }
+@media(max-width:760px) { .battle-player[data-self] { top:auto!important; bottom:190px; } }
