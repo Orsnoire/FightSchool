@@ -3,7 +3,7 @@ import type { CombatEvent } from "@shared/combat/model";
 import { GripHorizontal, Minus } from "lucide-react";
 import { CombatLog } from "./CombatLog";
 export function FloatingCombatLog({ events }: { events: CombatEvent[] }) {
-  const [minimized, setMinimized] = useState(false);
+  const [minimized, setMinimized] = useState(true);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const panel = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null);
@@ -35,7 +35,7 @@ export function FloatingCombatLog({ events }: { events: CombatEvent[] }) {
         <span className="flex items-center gap-2"><GripHorizontal size={16} />Combat log</span>
         <button aria-label="Minimize combat log" className="p-1 rounded hover:bg-black/10" onClick={() => setMinimized(true)}><Minus size={17} /></button>
       </div>
-      <CombatLog events={events} />
+      <CombatLog events={events} visible={!minimized} />
     </div>
     {minimized && <button className="battle-log-tab" onClick={() => { setMinimized(false); constrain(position.x, position.y); }}>Combat log ↗</button>}
   </>;

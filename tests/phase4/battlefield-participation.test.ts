@@ -128,3 +128,18 @@ test("only the host can remove/review; removals, one pending request, approval a
   assert.equal(h.room().snapshot.pendingPlayers?.[id], undefined);
   assert.equal(h.room().removals[id].requestedAt, undefined);
 });
+
+
+test("pending applicants may withdraw, and host completion releases remaining approval waiters", async () => {
+  const h = moderationHarness(), host = h.makeSocket(fight.teacherId, "teacher");
+  await h.send(host, "remove_player", {targetId:id});
+  const withdrawn = h.makeSocket(id); await h.send(withdrawn,"join");
+  await h.send(withdrawn,"leave_fight");
+  assert.equal(h.room().removals[id].requestedAt, undefined);
+  assert.equal(withdrawn.messages.at(-1).type,"fight_left");
+  const waiting = h.makeSocket(id); await h.send(waiting,"join");
+  await h.send(host,"end_fight");
+  assert.equal(waiting.messages.at(-1).status,"ended");
+  assert.equal(h.room().snapshot.endedByHost,true);
+  assert.ok(host.messages.some((m:any)=>m.type === "game_over"));
+});

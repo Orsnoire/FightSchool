@@ -198,6 +198,9 @@ export class CombatSessionObject {
     };
   }
   private async publish(room: StoredRoom) {
+    if (room.snapshot.currentPhase === "game_over") for (const [id, request] of Object.entries(room.removals || {})) {
+      if (request.requestedAt) this.notifyStudent(id, { type: "join_status", status: "ended", sessionId: room.snapshot.sessionId }, true);
+    }
     for (const ws of this.state.getWebSockets()) {
       const actor = ws.deserializeAttachment() as SocketAttachment;
       if (actor.role !== "teacher" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) continue;
@@ -470,6 +473,7 @@ export class CombatSessionObject {
           // Identity comes from the authenticated socket, never a supplied target.
           // Completed rosters stay intact until their rewards have been persisted.
           room.snapshot = removeStudent(room.snapshot, actor.actorId);
+          if (room.removals?.[actor.actorId]) room.removals[actor.actorId].requestedAt = undefined;
           room.snapshot.revision++;
           room.receipts = [...room.receipts, key].slice(-512);
           await this.save(room);

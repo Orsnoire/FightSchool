@@ -4,7 +4,7 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 
 /** Keep recent feedback across round changes without growing the battlefield. */
-export function CombatLog({ events }: { events: CombatEvent[] }) {
+export function CombatLog({ events, visible = true }: { events: CombatEvent[]; visible?: boolean }) {
   const [history, setHistory] = useState<CombatEvent[]>([]);
   const [following, setFollowing] = useState(true);
   const feed = useRef<HTMLDivElement>(null);
@@ -16,8 +16,8 @@ export function CombatLog({ events }: { events: CombatEvent[] }) {
     });
   }, [events]);
   useEffect(() => {
-    if (following && feed.current) feed.current.scrollTop = feed.current.scrollHeight;
-  }, [history, following]);
+    if (visible && following && feed.current) feed.current.scrollTop = feed.current.scrollHeight;
+  }, [history, following, visible]);
   return (
     <Card className="flex min-w-0 flex-col overflow-hidden h-72 lg:h-auto lg:min-h-64 lg:max-h-96" data-testid="combat-log">
       <div className="flex min-h-14 shrink-0 items-center justify-between gap-2 border-b px-4">

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { started, student, fight } from '../phase4/fixtures.ts';
+import { initialAppearance } from '../../shared/avatar/appearance.ts';
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
@@ -33,7 +34,10 @@ try {
     state.enemies[0].name = 'Goblins';
     state.phaseDeadline = null;
     state.currentPhase = 'waiting';
-    for (let i = 1; i < 30; i++) state.players['student-' + i] = { ...structuredClone(state.players[student().id]), studentId: 'student-' + i, nickname: 'Player ' + i };
+    for (let i = 1; i < 30; i++) state.players['student-' + i] = { ...structuredClone(state.players[student().id]), studentId: 'student-' + i, nickname: 'Player ' + i, characterClass: ['warrior','wizard','scout','herbalist'][i % 4], gender: i % 2 ? 'B' : 'A', appearance: initialAppearance(null, i % 2 ? 'human-female-v1' : 'human-male-v1', () => (i % 8) / 8) };
+    state.damageLeaderId = student().id;
+    state.players[student().id].totals.damageDealt = 12;
+    state.players['student-3'].health = 3;
     state.players['student-1'].isDead = true;
     state.players['student-1'].health = 0;
     const question = { id: 'q1', type: 'multiple_choice', question: '<p>Which expression is equivalent to <span class="math-inline" data-latex="\\frac{x^2-9}{x-3}"></span>, for x ≠ 3?</p>', options: ['x+3', 'x−3'], timeLimit: 60 };
@@ -47,6 +51,7 @@ try {
     assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).type), 'start_fight');
     assert.match(await page.getByTestId('host-status').innerText(), /30 players joined/);
     assert.match(await panel.innerText(), /ABC234/);
+    assert.equal(await page.getByLabel('Damage leader', {exact:true}).count(), 1);
     await page.screenshot({ path: `${output}/${viewport.width}-host-waiting.png` });
     state.currentPhase = 'question';
     state.phaseDeadline = Date.now() + 45000;
@@ -57,6 +62,7 @@ try {
     assert.match(await page.getByTestId('host-status').innerText(), /1\/29 answered/);
     await page.getByTestId('host-question').waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'no horizontal overflow');
+    await page.getByRole('button', { name: 'Combat log ↗' }).click();
     const log = page.getByTestId('combat-log');
     const feed = page.getByRole('region', { name: 'Combat log entries' });
     await feed.getByText(/Player 20 dealt/).first().waitFor();
@@ -73,6 +79,7 @@ try {
     await page.getByRole('button', { name: 'Hide question' }).click();
     assert.equal(await page.getByTestId('host-question').count(), 0);
     await page.getByRole('button', { name: 'Show question' }).click();
+    await page.getByRole('button', { name: 'Minimize combat log' }).click();
     // Removal requires confirmation and does not trigger resurrection.
     page.once('dialog', dialog => dialog.dismiss());
     const remove = page.getByRole('button', { name: 'Remove Player 1 from fight', exact: true });
@@ -85,6 +92,7 @@ try {
     await page.waitForFunction(() => !!document.fullscreenElement);
     await page.getByRole('button', { name: 'Exit fullscreen' }).click();
     await page.waitForFunction(() => !document.fullscreenElement);
+    await page.getByRole('button', { name: 'Combat log ↗' }).click();
     await page.screenshot({ path: `${output}/${viewport.width}-host-question.png` });
     await feed.evaluate(el => { el.scrollTop = 0; el.dispatchEvent(new Event('scroll')); });
     await page.getByRole('button', { name: 'Jump to latest' }).waitFor();

@@ -67,12 +67,12 @@ export default function Combat() {
   if (!state)
     return (
       <main className="p-6">
-        <h1 className="text-xl font-bold">{admission === "removed" ? "You were removed from this fight" : admission === "pending" ? "Waiting for your host’s approval" : admission === "blocked" ? "Rejoin requests are blocked for this fight" : admission === "denied" ? "Your rejoin request was declined" : "Connecting to combat…"}</h1>
+        <h1 className="text-xl font-bold">{admission === "ended" ? "This fight has ended" : admission === "removed" ? "You were removed from this fight" : admission === "pending" ? "Waiting for your host’s approval" : admission === "blocked" ? "Rejoin requests are blocked for this fight" : admission === "denied" ? "Your rejoin request was declined" : "Connecting to combat…"}</h1>
         {["removed", "denied"].includes(admission) && <><p className="mt-2 text-sm">{admission === "denied" ? "You can request again after 30 seconds." : "Your host must approve your return."}</p><Button className="mt-4 mr-3" onClick={requestRejoin}>Request to rejoin</Button></>}
         {admission === "pending" && <p className="mt-2">Your host has your request. You will join the next round if approved.</p>}
         <p role="alert">{error}</p>
-        <Button className="mt-4" onClick={returnToLobby}>
-          Back to lobby
+        <Button className="mt-4" disabled={isLeaving} onClick={() => admission === "pending" ? leave() : returnToLobby()}>
+          {isLeaving ? "Leaving…" : "Back to lobby"}
         </Button>
       </main>
     );

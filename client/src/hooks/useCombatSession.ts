@@ -15,7 +15,7 @@ export function useCombatSession(
   role: "teacher" | "student",
 ) {
   const [connectionEpoch, setConnectionEpoch] = useState(0);
-  const [admission, setAdmission] = useState<"joining" | "admitted" | "removed" | "pending" | "denied" | "blocked">("joining");
+  const [admission, setAdmission] = useState<"joining" | "admitted" | "removed" | "pending" | "denied" | "blocked" | "ended">("joining");
   const [rejoinRequests, setRejoinRequests] = useState<Array<{ studentId: string; nickname: string }>>([]);
   const [state, setState] = useState<CombatSnapshot | null>(null),
     [hasLeft, setHasLeft] = useState(false),
@@ -78,12 +78,14 @@ export function useCombatSession(
         }
         if ((message.type === "fight_removed" || message.type === "join_status") && message.sessionId === sessionId) {
           const next = message.type === "fight_removed" ? "removed" : message.status;
-          if (!["removed", "pending", "denied", "blocked"].includes(next)) return;
+          if (!["removed", "pending", "denied", "blocked", "ended"].includes(next)) return;
           setAdmission(next);
           setState(null);
           setQuestion(null);
           pending.current.clear();
           if (next !== "pending") {
+            leaveCommand.current = null;
+            setIsLeaving(false);
             disposed = true;
             clearTimeout(retry);
             ws.close();

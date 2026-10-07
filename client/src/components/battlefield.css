@@ -51,3 +51,12 @@
 /* Keep the local character's feet clear of the private resource panel. */
 .battle-player[data-self] { top:auto!important; bottom:155px; transform:translateX(-50%); }
 @media(max-width:760px) { .battle-player[data-self] { top:auto!important; bottom:190px; } }
+
+.battle-self-bars progress { appearance:none; border:0; border-radius:4px; overflow:hidden; background:#486451; }
+.battle-self-bars progress::-webkit-progress-bar { background:#486451; }
+.battle-self-bars progress::-webkit-progress-value { background:#bcd886; }
+.battle-self-bars .self-mp progress::-webkit-progress-value { background:#95bef1; }
+.battle-self-bars .self-cp progress::-webkit-progress-value { background:#edc56d; }
+.battle-self-bars progress::-moz-progress-bar { background:#bcd886; }
+.battle-self-bars .self-mp progress::-moz-progress-bar { background:#95bef1; }
+.battle-self-bars .self-cp progress::-moz-progress-bar { background:#edc56d; }
