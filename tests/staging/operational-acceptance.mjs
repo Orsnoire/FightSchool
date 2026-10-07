@@ -120,10 +120,13 @@ try {
     times.sort((a, b) => a - b);
     console.log(`Answer acknowledgement ms: p50=${times[14]}, p95=${times[28]}, max=${times[29]}`);
     assert.ok(times[29] < 15000, "Classroom answer burst should finish within 15 seconds");
+    const actions = await players[0].state("actions");
+    assert.notEqual(actions.state.phaseDeadline, opened.state.phaseDeadline, "Action selection must have its own deadline");
+    assert.ok(actions.state.phaseDeadline > Date.now(), "Action selection must still be open after the answer burst");
     players[0].socket.close();
     const restored = new Actor(students[0].cookie, main.room); await restored.open(); restored.send("join");
-    const state = await restored.state("question");
-    assert.equal(state.state.phaseDeadline, opened.state.phaseDeadline);
+    const state = await restored.state("actions");
+    assert.equal(state.state.phaseDeadline, actions.state.phaseDeadline);
     assert.equal(Object.keys(state.state.players).length, 30);
     players[0] = restored;
     assert.equal(separate.messages.filter(m => m.type === "combat_state").at(-1).state.currentPhase, "waiting");
