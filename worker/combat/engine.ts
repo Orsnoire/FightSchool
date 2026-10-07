@@ -219,7 +219,7 @@ export function applyAnswer(
 }
 export function allLivingPlayersAnswered(state: CombatSnapshot): boolean {
   const p = Object.values(state.players).filter((p) => !p.isDead);
-  return p.length > 0 && p.every((p) => p.hasAnswered && p.ready);
+  return p.length > 0 && p.every((p) => p.hasAnswered && (state.currentPhase === "question" || p.ready));
 }
 export function selectAction(
   state: CombatSnapshot,
@@ -231,7 +231,8 @@ export function selectAction(
   if (!p || p.isDead || !p.hasAnswered)
     throw new Error("Submit an answer first");
   const support = state.currentPhase === "abilities";
-  if (!support && state.currentPhase !== "question")
+  // Accept early selections from clients opened before the independent action phase shipped.
+  if (!support && !["question", "actions"].includes(state.currentPhase))
     throw new Error("Actions are closed");
   if (SUPPORT.has(ability) !== support)
     throw new Error("Ability belongs to another phase");
@@ -272,13 +273,34 @@ export function setReady(state: CombatSnapshot, id: string): CombatSnapshot {
     !p ||
     p.isDead ||
     !p.hasAnswered ||
-    !["question", "abilities"].includes(state.currentPhase)
+    !["question", "actions", "abilities"].includes(state.currentPhase)
   )
     throw new Error("Cannot finish actions now");
   return {
     ...state,
     players: { ...state.players, [id]: { ...p, ready: true } },
   };
+}
+export function resurrectPlayer(state: CombatSnapshot, id: string): CombatSnapshot {
+  if (["waiting", "game_over"].includes(state.currentPhase))
+    throw new Error("Fight is not active");
+  const player = state.players[id];
+  if (!player) throw new Error("Player is not in this fight");
+  if (!player.isDead) throw new Error("Player is already alive");
+  const next = structuredClone(state);
+  const revived = next.players[id];
+  revived.health = 1;
+  revived.isDead = false;
+  // Death can leave an unanswered player behind after the question has closed.
+  if (next.currentPhase !== "question" && !revived.hasAnswered) {
+    revived.hasAnswered = true;
+    revived.currentAnswer = "";
+    revived.lastAnswerCorrect = false;
+    revived.questionAction = { ability: "attack", targetId: next.enemies.find(e => e.health > 0)?.id || "" };
+  }
+  event(next, "heal", "host", id, 1, `Host resurrected ${revived.nickname} with 1 HP`);
+  leader(next);
+  return next;
 }
 function event(
   s: CombatSnapshot,
@@ -826,8 +848,13 @@ export function advancePhase(
           ability: "attack",
           targetId: s.enemies.find((e) => e.health > 0)?.id || "",
         };
-        p.ready = false;
       }
+    s.currentPhase = "actions";
+    s.phaseDeadline = now + 20000;
+    return s;
+  }
+  if (s.currentPhase === "actions") {
+    for (const p of Object.values(s.players)) p.ready = false;
     s.currentPhase = "abilities";
     s.phaseDeadline = now + 20000;
     return s;
@@ -951,7 +978,8 @@ export function advancePhase(
       );
       if (s.threatLeaderId && soloDamageRemaining > 0) {
         const target = s.players[s.threatLeaderId];
-        const raw = Math.max(0, Math.round(fight.baseEnemyDamage * enemy.difficultyMultiplier) - reduction);
+        // Difficulty 10 is the baseline; square-root scaling keeps +1 survivable.
+        const raw = Math.max(0, Math.ceil(fight.baseEnemyDamage * Math.sqrt(enemy.difficultyMultiplier / 10)) - reduction);
         // Cap total counterattack damage for solo encounters, including simultaneous enemies.
         const capped = Math.min(raw, soloDamageRemaining + target.stats.def + integer(target.stats.vit / 2));
         const taken = damagePlayer(

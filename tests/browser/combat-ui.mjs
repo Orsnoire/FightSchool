@@ -64,6 +64,8 @@ try {
     await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
     assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).answer), 'x² + 4x + 4');
     state.players[id].hasAnswered = true;
+    state.currentPhase = "actions";
+    state.phaseDeadline = Date.now() + 20000;
     await emit();
     await page.getByRole('heading', { name: 'Choose your combat action', exact: true }).waitFor();
     await screenshot('choices');
@@ -79,7 +81,7 @@ try {
     await emit();
     await page.getByRole('button', { name: 'Ready — no support actions', exact: true }).waitFor();
     await screenshot('support');
-    state.currentPhase = 'question';
+    state.currentPhase = 'actions';
     state.players[id].healingPotions = 0;
     await emit();
     await page.getByRole('button', { name: /^Create potion/ }).click();
@@ -134,12 +136,16 @@ try {
     await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
     assert.match(await page.evaluate(() => window.combatTest.sent.at(-1).answer), /7/);
     state.players[id].hasAnswered = true;
+    state.currentPhase = "actions";
+    state.phaseDeadline = Date.now() + 20000;
     await emit();
     await page.getByRole('heading', { name: 'Choose your combat action', exact: true }).waitFor();
     assert.equal(await page.locator('[data-math-keyboard-host] .ML__keyboard.is-visible').count(), 0);
     assert.equal(await page.evaluate(() => window.mathVirtualKeyboard.container === document.body), true);
     // A long rich question must scroll internally while the header stays visible.
     state.round++;
+    state.currentPhase = 'question';
+    state.phaseDeadline = Date.now() + 120000;
     state.players[id].hasAnswered = false;
     question = { ...question, type: 'multiple_choice', question: '<p>Long question</p>' + '<p>Read this supporting information.</p>'.repeat(40) };
     await emit();

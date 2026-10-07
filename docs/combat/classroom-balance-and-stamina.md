@@ -177,3 +177,33 @@ MND for 1 MP; starting First Aid would heal 1 HP. This is not implemented yet.
 When it is, add a solo warning for loadouts without offensive abilities, provide
 a real partner/group entry path (current solo rooms are private), and exclude a
 pure healer's former basic attack from encounter damage estimates.
+
+
+## October 7 classroom corrections
+
+The owner reported repeated caster/healer one-shots at damage +1, difficulty 15.
+Enemy counterattacks now use `ceil(damageLevel * sqrt(difficulty / 10))` before
+Dread Aura, armor, vitality, Block and shields. Difficulty 10 is the baseline;
+difficulty 15 at +1 produces 2 raw damage instead of 15 (1 after starter armor).
+At +10 it produces 13 raw damage, retaining a dangerous upper end. At +1 even
+difficulty 100 produces only 4 raw damage, so full-health starting casters survive
+one hit. This does not grant death immunity to wounded characters or cap a whole
+classroom round's multiple enemy attacks. Wrong-answer penalties and the existing
+solo total-counterattack cap are unchanged.
+
+Combat now advances through question → action selection → support → answer
+resolution → enemy counterattack. The question retains its configured time limit.
+When all living players have submitted answers, or that timer expires, action
+selection starts with a fresh 20-second server deadline. Support then gets its
+own 20-second deadline. Both choice phases end early once everyone is ready.
+Missing answers remain incorrect; the additional action time cannot extend the
+answer deadline. Deadlines and choices persist through refresh/hibernation.
+Previously opened clients can still submit early action choices during questions.
+
+The host can click a knocked-out player's card, or focus it and press Enter/Space,
+to resurrect that participant with exactly 1 HP during any active phase. The
+server verifies the host's current session and ownership of this room. Students,
+other teachers, unknown/living targets, stale rounds, and completed fights cannot
+use it. Retried commands are idempotent. Resurrection preserves resources,
+statistics, choices and phase deadlines; it does not replay resolved turns.
+Students should refresh after this release to load the separate action phase UI.

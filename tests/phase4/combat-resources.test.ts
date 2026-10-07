@@ -10,7 +10,7 @@ function answered(job: CharacterClass, level = 1, answer = "4") {
   s.enemies[0].health = s.enemies[0].maxHealth = 10000;
   return applyAnswer(s, id, answer, fight.questions[0]);
 }
-const resolve = (s: ReturnType<typeof answered>) => advancePhase(advancePhase(s, fight, 200), fight, 300);
+const resolve = (s: ReturnType<typeof answered>) => advancePhase(advancePhase(advancePhase(s, fight, 150), fight, 200), fight, 300);
 
 test("Fireball queues without spending, spends exactly one MP on a correct answer, and survives storage", () => {
   const s = answered("wizard");
@@ -37,7 +37,7 @@ test("Fireblast consumes all MP and cannot be queued with a competing Frost Bolt
   let s = answered("wizard", 12);
   s.players[id].mp = 1;
   s = selectAction(s, id, "fireblast", "e1");
-  s = advancePhase(s, fight, 200);
+  s = advancePhase(advancePhase(s, fight, 150), fight, 200);
   assert.throws(() => selectAction(s, id, "frostbolt", "e1"), /MP reserved/);
   s = advancePhase(s, fight, 300);
   assert.equal(s.players[id].mp, 0);
@@ -48,7 +48,7 @@ test("Frost Bolt spends one MP, while replacing a question choice does not charg
   const mp = s.players[id].mp;
   s = selectAction(s, id, "fireball", "e1");
   s = selectAction(s, id, "attack", "e1");
-  s = advancePhase(s, fight, 200);
+  s = advancePhase(advancePhase(s, fight, 150), fight, 200);
   s = selectAction(s, id, "frostbolt", "e1");
   s = advancePhase(s, fight, 300);
   assert.equal(s.players[id].mp, mp - 1);
@@ -77,7 +77,7 @@ test("shield potions craft up to three, then one is spent to protect the target"
   s.players[id].shieldPotions = 2;
   s = resolve(selectAction(s, id, "craft_shield_potion", id));
   assert.equal(s.players[id].shieldPotions, 3);
-  let use = advancePhase(answered("herbalist", 10), fight, 200);
+  let use = advancePhase(advancePhase(answered("herbalist", 10), fight, 150), fight, 200);
   use.players[id].shieldPotions = 1;
   use = advancePhase(selectAction(use, id, "shield_potion", id), fight, 300);
   assert.equal(use.players[id].shieldPotions, 0);
@@ -87,13 +87,13 @@ test("the last healing potion cannot fund both a question heal and a diffuser", 
   let s = answered("herbalist", 12);
   s.players[id].healingPotions = 1;
   s = selectAction(s, id, "healing_potion", id);
-  s = advancePhase(s, fight, 200);
+  s = advancePhase(advancePhase(s, fight, 150), fight, 200);
   assert.throws(() => selectAction(s, id, "potion_diffuser", id), /Healing potions reserved/);
   s.players[id].healingPotions = 0;
   assert.equal(selectionProblem(s.players[id], "potion_diffuser"), "No healing potions");
 });
 test("support actions share a budget and resolution events identify their phase", () => {
-  let s = advancePhase(answered("priest", 15), fight, 200);
+  let s = advancePhase(advancePhase(answered("priest", 15), fight, 150), fight, 200);
   s.players[id].mp = 5;
   s = selectAction(s, id, "purify", id);
   assert.throws(() => selectAction(s, id, "divine_grace", id), /MP reserved/);
@@ -107,7 +107,7 @@ test("a failed question action releases its reservation for support spells", () 
   let s = answered("wizard", 12, "wrong");
   s.players[id].mp = 1;
   s = selectAction(s, id, "fireblast", "e1");
-  s = advancePhase(s, fight, 200);
+  s = advancePhase(advancePhase(s, fight, 150), fight, 200);
   s = selectAction(s, id, "frostbolt", "e1");
   s = advancePhase(s, fight, 300);
   assert.equal(s.players[id].mp, 0);

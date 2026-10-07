@@ -3,6 +3,7 @@ import type { CharacterClass, Gender, CharacterStats } from "../schema";
 export type CombatPhase =
   | "waiting"
   | "question"
+  | "actions"
   | "abilities"
   | "question_resolution"
   | "enemy_ai"
