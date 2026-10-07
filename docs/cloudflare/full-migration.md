@@ -239,7 +239,7 @@ The new departure path is covered by the automated and browser suites above.
 This release adds no schema migration or student-data reset. Hosts and students
 should refresh existing browser tabs to load the updated client.
 
-## Battlefield and participation — 7 October 2026 (awaiting deployment)
+## Battlefield and participation — 7 October 2026
 
 [PR #36](https://github.com/Orsnoire/FightSchool/pull/36) merged as
 `5f16dc2a4661b917441d946d192ed9201351c339`. The release introduces the shared
@@ -259,21 +259,32 @@ fullscreen, combat-log controls, removal and rejoin moderation. The reviewed
 from the passing browser fixture run `37688335333`; subsequent changes covered
 ally-target cancellation and live acceptance timing without changing the layout.
 
-**Not deployed yet.** Automatic approval review rejected the workflow dispatch
-because implementation authorization was not considered explicit authorization
-for a live deployment and database migration. The
-[pending dispatch](../releases/2026-10-07-battlefield-deployment-awaiting-approval.jpg)
-targets `main`; no deployment was started and no migration was applied by this
-attempt. The previous live Worker remains
-`4ba61e1d-374d-4224-a0d4-cda88a62e442` from run `37681816536`.
+The owner explicitly approved deployment and the fractional-XP migration on
+October 7. [Deployment run 37694702056](https://github.com/Orsnoire/FightSchool/actions/runs/37694702056),
+job `113043450125`, successfully published revision
+`5fa124afa1621a49003250d83d6c2abf5e5abc5f` at 22:14 UTC (16:14 MDT).
+All 99 tests, TypeScript, production builds, image storage verification, additive
+migrations and both hostname smoke checks passed. Immutable Worker version:
+`d0d8563e-43f2-44b7-9fb7-8b4822d45be6`.
+See the [successful deployment](../releases/2026-10-07-battlefield-deployed.jpg).
 
-After explicit approval, dispatch **Deploy Cloudflare Staging** from `main`.
-The workflow applies `0010_fractional_participation_xp.sql` before publishing:
-it widens the existing base-XP audit field and the award function input to retain
-fractional completion XP, preserving students and prior results. Record the
-resulting Worker version and both smoke checks, then dispatch **Live Combat
-Staging Acceptance** from `main` against
-`https://questacademy.bookwyrminteractive.studio`. Its operational suite now
-includes late entry, moderated rejoin/blocking, and fractional host-ended rewards.
-Those new live checks remain pending; local and browser success do not substitute
-for them. Keep the additive schema if a Worker rollback is needed.
+Migration `0010_fractional_participation_xp.sql` was applied before publication.
+It widens the existing base-XP audit field and award function input to retain
+fractional completion XP; existing students and historical results are preserved.
+The earlier [pending-dispatch snapshot](../releases/2026-10-07-battlefield-deployment-awaiting-approval.jpg)
+is historical evidence of the approval pause, not the current deployment status.
+
+[Live acceptance run 37694892042](https://github.com/Orsnoire/FightSchool/actions/runs/37694892042),
+job `113044085188`, passed against the canonical domain at 22:16 UTC (16:16 MDT).
+Both scripts passed: live combat/resources/reconnect/economy, R2 authorization and
+ranges, 30-participant concurrency, room isolation, exactly-once results, and
+logout revocation. The new live case also passed late entry at the next question,
+host-approved rejoin after removal with preserved resources/activity, blocked
+future requests, unchanged enemy scaling, and fractional host-ended completion
+XP plus full earned activity XP. Test fixtures were archived by the harness.
+
+Previous Worker `4ba61e1d-374d-4224-a0d4-cda88a62e442` from deployment
+`37681816536` remains the rollback checkpoint. Keep the additive schema if a
+Worker rollback is needed. Hosts and students should refresh existing browser
+tabs to load the new client. Static avatar art remains intentional; animation rigs
+are a separate, unfinished release.
