@@ -7,6 +7,7 @@ on:
       - 'client/**'
       - 'shared/combat/**'
       - 'tests/browser/combat-ui.mjs'
+      - 'tests/browser/host-ui.mjs'
       - '.github/workflows/combat-ui-acceptance.yml'
 
 permissions:
@@ -36,6 +37,7 @@ jobs:
             sleep 1
           done
           node --import tsx tests/browser/combat-ui.mjs
+          node --import tsx tests/browser/host-ui.mjs
       - name: Preserve browser screenshots
         if: always()
         uses: actions/upload-artifact@v7

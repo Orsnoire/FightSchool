@@ -96,6 +96,10 @@ supersede older conflicting rules for these systems. Priest First Aid remains de
 The October 7 corrections in the same document supersede raw enemy-difficulty
 multiplication and the shared question/action clock, and restore host resurrection.
 
+The [October 7 host panel and departure rules](combat/student-overlays.md#october-7-host-controls-and-student-departure)
+record the consolidated host controls, attendance, temporary log placement,
+and explicit student Leave fight behavior.
+
 ## Combat Flow Refactor
 
 This document is authoritative primarily for **player experience and presentation**, including:

@@ -228,3 +228,54 @@ test("only the room host can resurrect; retries restore exactly one HP without r
     } else assert.match(h.messages.at(-1).error, /Teacher role required|Only the host/);
   }
 });
+
+test("student leave removes only the authenticated player and unblocks each input phase; retries survive recovery", async () => {
+  for (const phase of ["question", "actions", "abilities"] as const) {
+    const s = started();
+    s.currentPhase = phase;
+    s.phaseDeadline = Date.now() + 100000;
+    s.players.other = { ...structuredClone(s.players[student().id]), studentId: "other", nickname: "Remaining", hasAnswered: true, ready: true };
+    const h = harness({ fight, snapshot: s, receipts: [] });
+    const command = JSON.stringify({ type: "leave_fight", commandId: "leave-command-001", round: 999, targetId: "other" });
+    await h.object.webSocketMessage(h.socket as any, command);
+    const room = h.data.get("room");
+    assert.equal(room.snapshot.players[student().id], undefined);
+    assert.ok(room.snapshot.players.other, "payload cannot remove another student");
+    assert.equal(room.snapshot.currentPhase, phase === "question" ? "actions" : phase === "actions" ? "abilities" : "question_resolution");
+    assert.equal(room.receipts.length, 1);
+    assert.ok(h.messages.some(m => m.type === "fight_left"));
+    const restored = harness(room);
+    await restored.object.webSocketMessage(restored.socket as any, command);
+    assert.equal(restored.data.get("room").snapshot.currentPhase, room.snapshot.currentPhase);
+    assert.equal(restored.messages.at(-1).type, "fight_left");
+    await restored.object.webSocketMessage(restored.socket as any, JSON.stringify({ type: "join", commandId: "rejoin-command-1" }));
+    assert.match(restored.messages.at(-1).error, /Fight already started/);
+  }
+});
+
+test("leave preserves completed rewards, ends an empty active fight, and leaves an empty waiting lobby open", async () => {
+  for (const phase of ["waiting", "question", "game_over"] as const) {
+    const s = started();
+    s.currentPhase = phase;
+    s.phaseDeadline = phase === "question" ? Date.now() + 100000 : null;
+    const h = harness({ fight, snapshot: s, receipts: [], ...(phase === "game_over" ? { resultsPersisted: true, results: [{ studentId: student().id, xpEarned: 10 }] } : {}) });
+    await h.object.webSocketMessage(h.socket as any, JSON.stringify({ type: "leave_fight", commandId: "leave-final-001" }));
+    const room = h.data.get("room");
+    assert.equal(room.snapshot.currentPhase, phase === "waiting" ? "waiting" : "game_over");
+    assert.equal(h.alarm(), null);
+    if (phase === "game_over") {
+      assert.equal(room.results[0].xpEarned, 10);
+      assert.ok(room.snapshot.players[student().id]);
+    } else assert.equal(Object.keys(room.snapshot.players).length, 0);
+    if (phase === "question") assert.equal(room.resultsPersisted, true);
+  }
+});
+
+test("a teacher cannot issue a student departure", async () => {
+  const h = harness({ fight, snapshot: started(), receipts: [] });
+  const socket = { ...h.socket, deserializeAttachment: () => ({ actorId: fight.teacherId, role: "teacher", sessionId: "ABC234", tokenHash: "test-session-hash" }) };
+  h.object.setRepository({ findActiveSession: async () => ({ actorId: fight.teacherId, actorType: "teacher" }) } as any);
+  await h.object.webSocketMessage(socket as any, JSON.stringify({ type: "leave_fight", commandId: "teacher-leave-001" }));
+  assert.match(h.messages.at(-1).error, /Student role required/);
+  assert.ok(h.data.get("room").snapshot.players[student().id]);
+});

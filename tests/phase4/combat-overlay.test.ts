@@ -9,7 +9,7 @@ import { started, student } from "./fixtures.ts";
 
 test("student question, action, waiting, and resolution share a focused non-dismissible overlay", async () => {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: "https://qa.example/student/combat", pretendToBeVisual: true });
-  const keys = ["window", "document", "addEventListener", "removeEventListener", "requestAnimationFrame", "cancelAnimationFrame", "location", "localStorage", "navigator", "MutationObserver", "HTMLElement", "HTMLInputElement", "Node", "NodeFilter", "CustomEvent", "Event", "getComputedStyle", "WebSocket", "IS_REACT_ACT_ENVIRONMENT"];
+  const keys = ["window", "document", "addEventListener", "removeEventListener", "dispatchEvent", "requestAnimationFrame", "cancelAnimationFrame", "location", "history", "localStorage", "navigator", "MutationObserver", "HTMLElement", "HTMLInputElement", "Node", "NodeFilter", "CustomEvent", "Event", "getComputedStyle", "WebSocket", "IS_REACT_ACT_ENVIRONMENT"];
   const saved = keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
   const sockets: any[] = [];
   class Socket {
@@ -24,7 +24,7 @@ test("student question, action, waiting, and resolution share a focused non-dism
     emit(message: unknown) { this.onmessage?.({ data: JSON.stringify(message) }); }
   }
   for (const key of keys) Object.defineProperty(globalThis, key, { configurable: true, writable: true,
-    value: key === "WebSocket" ? Socket : key === "IS_REACT_ACT_ENVIRONMENT" ? true : ["addEventListener", "removeEventListener", "requestAnimationFrame", "cancelAnimationFrame", "getComputedStyle"].includes(key) ? (dom.window as any)[key].bind(dom.window) : (dom.window as any)[key] });
+    value: key === "WebSocket" ? Socket : key === "IS_REACT_ACT_ENVIRONMENT" ? true : ["addEventListener", "removeEventListener", "dispatchEvent", "requestAnimationFrame", "cancelAnimationFrame", "getComputedStyle"].includes(key) ? (dom.window as any)[key].bind(dom.window) : (dom.window as any)[key] });
   const dir = await mkdtemp(join(process.cwd(), ".combat-ui-test-"));
   const outfile = join(dir, "Combat.mjs");
   let root: ReturnType<typeof import("react-dom/client").createRoot> | undefined;
@@ -55,6 +55,7 @@ test("student question, action, waiting, and resolution share a focused non-dism
     const button = (text: string) => [...dialog().querySelectorAll("button")].find((b) => b.textContent === text)!;
     await emit();
     assert.equal(document.querySelectorAll('[role="dialog"]').length, 1);
+    assert.ok(button("Leave fight"), "leave is accessible in the phase window");
     assert.match(dialog().textContent!, /Healing potions 5\/5/);
     assert.equal(dialog().querySelector("b")?.textContent, "2 + 2");
     assert.ok(document.querySelector("main")?.textContent?.includes("herbalist"), "battlefield remains mounted behind the portal");
@@ -140,6 +141,16 @@ test("student question, action, waiting, and resolution share a focused non-dism
     state.players[student().id].consecutiveCorrectAnswers = 4;
     await emit();
     assert.match(dialog().textContent!, /Correct streak 4/);
+    dom.window.confirm = () => false;
+    await act(async () => button("Leave fight").click());
+    assert.equal(socket.sent.some((message: any) => message.type === "leave_fight"), false);
+    dom.window.confirm = () => true;
+    await act(async () => button("Leave fight").click());
+    assert.equal(socket.sent.at(-1).type, "leave_fight");
+    assert.ok(button("Leaving…").disabled);
+    await act(async () => socket.emit({ type: "fight_left", sessionId: "ABC234" }));
+    assert.equal(localStorage.getItem("sessionId"), null);
+    assert.equal(location.pathname, "/student");
 
   } finally {
     if (root) await act(async () => root!.unmount());

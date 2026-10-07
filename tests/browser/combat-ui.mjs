@@ -54,6 +54,7 @@ try {
       assert.ok(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= viewport.width + 1 && rect.y + rect.height <= viewport.height + 1, `${name}: dialog must fit viewport`);
       assert.ok(Math.abs(rect.x + rect.width / 2 - viewport.width / 2) < 2 && Math.abs(rect.y + rect.height / 2 - viewport.height / 2) < 2, `${name}: dialog must be centered`);
       assert.equal(await page.getByRole('dialog').count(), 1);
+      await page.getByRole('button', { name: 'Leave fight', exact: true }).waitFor();
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${name}: no horizontal page overflow`);
       await page.screenshot({ path: `${output}/${viewport.width}-${name}.png` });
     }
@@ -152,6 +153,18 @@ try {
     await page.getByText('Long question', { exact: true }).waitFor();
     await screenshot('long-question');
     assert.ok(await page.getByTestId('combat-overlay-body').evaluate((e) => e.scrollHeight > e.clientHeight));
+    // Cancellation is harmless; confirmation waits for the server before exiting.
+    page.once('dialog', dialog => dialog.dismiss());
+    await page.getByRole('button', { name: 'Leave fight', exact: true }).click();
+    assert.equal(await page.evaluate(() => window.combatTest.sent.some(m => m.type === 'leave_fight')), false);
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: 'Leave fight', exact: true }).click();
+    assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).type), 'leave_fight');
+    await page.getByRole('button', { name: 'Leaving…', exact: true }).waitFor();
+    await page.route('**/api/**', route => route.fulfill({ json: {} }));
+    await page.evaluate(() => window.combatTest.sockets.at(-1).onmessage({ data: JSON.stringify({ type: 'fight_left', sessionId: 'ABC234' }) }));
+    await page.waitForURL('**/student');
+    assert.equal(await page.evaluate(() => localStorage.getItem('sessionId')), null);
     assert.deepEqual(errors, []);
     console.log(`PASS ${viewport.width}x${viewport.height}: centered overlays, actions, resources, rich content, MathLive key clicks and scrolling`);
     await page.close();

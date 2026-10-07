@@ -1,8 +1,9 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Button } from "./ui/button";
 
 /** One phase-controlled dialog. Closing it must never advance combat. */
-export function CombatOverlay({ title, view, seconds, children, resources, error, status }: {
+export function CombatOverlay({ title, view, seconds, children, resources, error, status, onLeave, isLeaving }: {
   title: string;
   view: string;
   seconds: number | null;
@@ -10,6 +11,8 @@ export function CombatOverlay({ title, view, seconds, children, resources, error
   resources?: ReactNode;
   error: string | null;
   status: string;
+  onLeave?: () => void;
+  isLeaving?: boolean;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, [view]);
@@ -26,6 +29,7 @@ export function CombatOverlay({ title, view, seconds, children, resources, error
           data-testid="combat-overlay"
         >
           <div className="shrink-0 border-b p-4 sm:p-5 space-y-3">
+            {onLeave && <div className="flex justify-end"><Button size="sm" variant="ghost" className="text-muted-foreground" onClick={onLeave} disabled={isLeaving}>{isLeaving ? "Leaving…" : "Leave fight"}</Button></div>}
             <div className="flex items-center justify-between gap-4">
               <Dialog.Title ref={heading} tabIndex={-1} className="text-xl sm:text-2xl font-bold outline-none">
                 {title}

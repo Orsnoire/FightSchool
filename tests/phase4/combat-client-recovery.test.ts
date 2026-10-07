@@ -52,6 +52,15 @@ test("combat client keeps questions in sync and resets state when changing rooms
     assert.equal(current.state?.sessionId, "DEF234");
     assert.equal(current.question?.id, "fresh");
     assert.equal(next.sent.filter(m => m.type === "answer").length, 0, "commands from the previous room must never be replayed in the new room");
+    await act(async () => current.leave());
+    assert.equal(current.isLeaving, true);
+    assert.equal(next.sent.at(-1).type, "leave_fight");
+    await act(async () => next.onopen?.());
+    assert.equal(next.sent.at(-1).type, "leave_fight", "reconnect retries departure instead of joining");
+    await act(async () => next.emit({ type: "fight_left", sessionId: "DEF234" }));
+    assert.equal(current.hasLeft, true);
+    assert.equal(current.isLeaving, false);
+    assert.equal(next.readyState, 3);
   } finally {
     await act(async () => root.unmount());
     dom.window.close();

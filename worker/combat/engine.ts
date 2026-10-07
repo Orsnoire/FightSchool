@@ -221,6 +221,25 @@ export function allLivingPlayersAnswered(state: CombatSnapshot): boolean {
   const p = Object.values(state.players).filter((p) => !p.isDead);
   return p.length > 0 && p.every((p) => p.hasAnswered && (state.currentPhase === "question" || p.ready));
 }
+/** An intentional departure removes participation; a dropped socket never does. */
+export function removeStudent(state: CombatSnapshot, id: string): CombatSnapshot {
+  if (!state.players[id] || state.currentPhase === "game_over") return state;
+  const next = structuredClone(state);
+  delete next.players[id];
+  for (const player of Object.values(next.players)) {
+    if (player.questionAction?.targetId === id) player.questionAction = null;
+    player.supportActions = player.supportActions.filter(action => action.targetId !== id);
+    delete player.buffs[`guard:${id}`];
+  }
+  leader(next);
+  if (next.currentPhase !== "waiting" && !Object.keys(next.players).length) {
+    next.currentPhase = "game_over";
+    next.victory = false;
+    next.endReason = "All players left the fight";
+    next.phaseDeadline = null;
+  }
+  return next;
+}
 export function selectAction(
   state: CombatSnapshot,
   id: string,
