@@ -173,10 +173,18 @@ try {
     body: { itemId: item.payload.id },
     status: 409,
   });
+  // Tier 1 now requires job level 2. Verify the gate, then use the Tier 0
+  // staff with the same +1 MAT for this level-1 combat fixture.
   await api(`/api/student/${studentId}/equipment`, {
     method: "PATCH",
     cookie: student.cookie,
     body: { weapon: item.payload.id },
+    status: 400,
+  });
+  await api(`/api/student/${studentId}/equipment`, {
+    method: "PATCH",
+    cookie: student.cookie,
+    body: { weapon: "basic_staff" },
   });
   const fight = await api("/api/fights", {
     method: "POST",
@@ -352,6 +360,13 @@ try {
   const stamina = await api(`/api/student/${studentId}/stamina`, { cookie: student.cookie });
   assert.equal(stamina.payload.completedCombats, 1);
   assert.ok(Math.abs(stamina.payload.xpMultiplier - 0.9) < 1e-10);
+  const personalQuests = await api(`/api/student/${studentId}/quests`, { cookie: student.cookie });
+  const questGold = personalQuests.payload
+    .filter((quest) => quest.isCompleted)
+    .reduce((gold, quest) => gold + (quest.rewards.gold || 0), 0);
+  const goldBeforeClaim = (await api(`/api/student/${studentId}`, { cookie: student.cookie })).payload.gold;
+  assert.equal(goldBeforeClaim, 1 + questGold, "Personal quest rewards are separate from combat gold");
+  assert.equal(stats.payload[0].goldReward, 10);
   const body = { fightId: fight.payload.id, resultId: stats.payload[0].id };
   await api(`/api/student/${studentId}/claim-gold`, {
     method: "POST",
@@ -366,7 +381,8 @@ try {
   assert.equal(
     (await api(`/api/student/${studentId}`, { cookie: student.cookie })).payload
       .gold,
-    11,
+    goldBeforeClaim + stats.payload[0].goldReward,
+    "Repeated claims award combat gold exactly once, preserving personal quest rewards",
   );
   await api(`/api/student/${studentId}/claim-loot`, {
     method: "POST",

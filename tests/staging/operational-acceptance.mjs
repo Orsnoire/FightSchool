@@ -150,6 +150,28 @@ try {
       assert.equal(stats.payload[0].questionsAnswered, 1, "The saved result must contain the resolved answer");
     }
   });
+  await check("dashboard discovery, explicit end, concurrent launch and stale end isolation", async () => {
+    const fixture = await fight("Acceptance host session controls");
+    const path = `/api/fights/${fixture.fight.id}/sessions`;
+    const discover = () => api("/api/fights/hosted-sessions", {cookie:teacher.cookie});
+    assert.ok((await discover()).payload.some(r => r.sessionId === fixture.room));
+    assert.equal((await api(path, {cookie:teacher.cookie})).payload.sessionId, fixture.room);
+    await api(`/api/combat/${fixture.room}/end`, {method:"POST",cookie:students[0].cookie,status:401});
+    await api(`/api/combat/${fixture.room}/end`, {method:"POST",cookie:teacher.cookie});
+    await fixture.host.wait(m => m.type === "game_over");
+    assert.equal((await api(path, {cookie:teacher.cookie})).payload, null);
+    assert.equal((await api(`${path}?sessionId=${fixture.room}`, {cookie:teacher.cookie})).payload.status,"completed");
+    assert.ok(!(await discover()).payload.some(r => r.sessionId === fixture.room));
+    const launches = await Promise.all(Array.from({length:5}, () => api(path, {method:"POST",cookie:teacher.cookie,status:[200,201]})));
+    const next = launches[0].payload.sessionId;
+    assert.equal(new Set(launches.map(r => r.payload.sessionId)).size,1);
+    assert.notEqual(next,fixture.room);
+    await api(`/api/combat/${fixture.room}/end`, {method:"POST",cookie:teacher.cookie});
+    assert.equal((await api(path, {cookie:teacher.cookie})).payload.sessionId,next);
+    // The replacement has no host socket: an unopened lobby must end too.
+    await api(`/api/combat/${next}/end`, {method:"POST",cookie:teacher.cookie});
+    assert.equal((await api(path, {cookie:teacher.cookie})).payload,null);
+  });
   await check("late entry, moderated rejoin, blocked requests and fractional host-end rewards", async () => {
     const room = await fight("Acceptance battlefield participation", 4);
     const open = async (index) => { const actor = new Actor(students[index].cookie, room.room); await actor.open(); actor.send("join"); return actor; };
