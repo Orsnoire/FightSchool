@@ -1,8 +1,10 @@
+import { useStudentLoadout } from "@/hooks/useStudentLoadout";
+import { saveStudentLoadout } from "@/lib/studentLoadout";
 import { fetchEquipmentItems } from "@/lib/equipment";
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
 import { equipmentExclusion } from "@shared/equipment-rules";
 import type { EquipmentSlot } from "@shared/schema";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Shield as ShieldIcon, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getCrossClassAbilities } from "@shared/jobSystem";
 import { type Student, type StudentJobLevel, type CharacterClass, type EquipmentItemDb } from "@shared/schema";
 import type { Ability } from "@shared/jobSystem";
@@ -19,14 +20,8 @@ export default function StudentEquipment() {
   const { toast } = useToast();
   const studentId = localStorage.getItem("studentId");
 
-  const { data: student, isLoading: studentLoading } = useQuery<Student>({
-    queryKey: [`/api/student/${studentId}`],
-  });
-
-  const { data: jobLevels = [], isLoading: levelsLoading } = useQuery<StudentJobLevel[]>({
-    queryKey: [`/api/student/${studentId}/job-levels`],
-    enabled: !!studentId,
-  });
+  const client = useQueryClient();
+  const {student,jobLevels,isLoading:studentLoading} = useStudentLoadout(studentId);
 
   // Fetch equipped items
   const equippedItemIds = EQUIPMENT_SLOTS.map(slot => student?.[slot]).filter(Boolean) as string[];
@@ -58,10 +53,9 @@ export default function StudentEquipment() {
 
   const updateEquipmentMutation = useMutation({
     mutationFn: async (data: Partial<Record<EquipmentSlot,string|null>> & { crossClassAbility1?: string | null; crossClassAbility2?: string | null }) => {
-      return apiRequest("PATCH", `/api/student/${studentId}/equipment`, data);
+      return saveStudentLoadout(client, studentId!, "equipment", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}`] });
       toast({ title: "Equipment updated!" });
     },
     onError: () => {
@@ -92,7 +86,7 @@ export default function StudentEquipment() {
     return inventoryItems.filter(item => item.slot === slot && !equipmentExclusion(student?.characterClass || 'warrior',item));
   };
 
-  if (studentLoading || levelsLoading) {
+  if (studentLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading equipment...</div>

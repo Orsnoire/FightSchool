@@ -92,3 +92,22 @@ Validation covers migration preservation on an existing student, every job's
 starter compatibility and Tier 0 metadata, equip/unequip, wrong-slot and
 unowned/job/tier rejection, same-job upgrade preservation, all eight slots'
 combat bonuses, and the actual React equipment screen's labels and Tier 0 text.
+
+
+## October 7 Tier 0 completion — implemented for review, not deployed
+
+The starter catalog now includes zero-stat linen gloves, linen pants and cloth
+shoes, plus +1 ATK claws and a +1 RTK spoon for supported alternate weapons.
+The existing +2 ATK claymore is labeled “Starter Claymore (Two-Handed Sword)”;
+its ID, Tier 0 status, compatibility and Blood Knight default remain unchanged.
+Every armor category now covers Head, Chest, Arms, Hands, Pants and Feet, and
+all nine supported weapon families have a Tier 0 option. Cloth jobs default to
+the new matching limb pieces. Existing off-hand compatibility remains unchanged;
+not every job uses an off-hand item.
+
+These are permanent catalog entitlements, automatically included in inventory
+responses for existing and new students. No duplicated item rows, live seeding,
+additional migration, forced replacement of existing gear or balance changes
+are involved. Per-item visuals and animation are still pending. The shared
+loadout synchronization and this catalog completion await the combined release;
+see [release queue](combat/release-queue.md).

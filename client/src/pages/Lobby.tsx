@@ -1,3 +1,5 @@
+import { useStudentLoadout } from "@/hooks/useStudentLoadout";
+import { saveStudentLoadout } from "@/lib/studentLoadout";
 import { abilityPreview, type AbilityContext } from "@shared/combat/abilityValues";
 import { fetchEquipmentItems } from "@/lib/equipment";
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
@@ -23,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { getTotalPassiveBonuses, getTotalMechanicUpgrades, getCrossClassAbilities, getUnlockedJobs, type Ability } from "@shared/jobSystem";
 import { calculateCharacterStats } from "@shared/schema";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragEndEvent, DragStartEvent, useDraggable, useDroppable, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
@@ -164,8 +166,6 @@ function AbilitySlot({
 export default function Lobby() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [student, setStudent] = useState<Student | null>(null);
-  const [jobLevels, setJobLevels] = useState<StudentJobLevel[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<EquipmentSlot>("weapon");
   const [sessionCode, setSessionCode] = useState("");
   const [showClassModal, setShowClassModal] = useState(false);
@@ -175,6 +175,8 @@ export default function Lobby() {
   const [draggedAbility, setDraggedAbility] = useState<Ability | null>(null);
   const [abilityFilter, setAbilityFilter] = useState<"all" | "healing" | "spell" | "physical" | "ultimate">("all");
   const studentId = localStorage.getItem("studentId");
+  const client = useQueryClient();
+  const {student,jobLevels,isFetching:loadoutFetching,isError:loadoutError} = useStudentLoadout(studentId);
   const savedAppearance = useAvatarAppearance(studentId);
   const [appearanceDraft, setAppearanceDraft] = useState(() => initialAppearance());
   const [previewJob, setPreviewJob] = useState<AvatarJob>('warrior');
@@ -199,29 +201,8 @@ export default function Lobby() {
   );
 
   useEffect(() => {
-    const loadStudent = async () => {
-      const response = await fetch(`/api/student/${studentId}`);
-      if (response.ok) {
-        const data = await response.json();
-        // Redirect to character selection if not completed
-        if (!data.characterClass || !data.gender) {
-          navigate("/student/character-select");
-          return;
-        }
-        setStudent(data);
-      }
-    };
-    
-    const loadJobLevels = async () => {
-      const response = await fetch(`/api/student/${studentId}/job-levels`);
-      if (response.ok) {
-        setJobLevels(await response.json());
-      }
-    };
-    
-    loadStudent();
-    loadJobLevels();
-  }, [studentId, navigate]);
+    if (student && (!student.characterClass || !student.gender)) navigate('/student/character-select');
+  }, [student, navigate]);
 
   // Fetch equipped items
   const equippedItemIds = EQUIPMENT_SLOTS.map(slot => student?.[slot]).filter(Boolean) as string[];
@@ -286,55 +267,22 @@ export default function Lobby() {
   };
 
   const updateEquipment = async (slot: EquipmentSlot, itemId: string | null) => {
-    const studentId = localStorage.getItem("studentId");
-    const response = await fetch(`/api/student/${studentId}/equipment`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ [slot]: itemId }),
-    });
-
-    if (response.ok) {
-      setStudent(await response.json());
-      toast({ title: "Equipment updated!" });
-    } else {
-      const result = await response.json().catch(() => ({}));
-      toast({ title: 'Equipment could not be changed', description: result.error || 'Please try again.', variant: 'destructive' });
+    if (!studentId) return;
+    try {
+      await saveStudentLoadout(client, studentId, 'equipment', {[slot]:itemId});
+      toast({title:'Equipment updated!'});
+    } catch (error) {
+      toast({title:'Equipment could not be changed',description:error instanceof Error ? error.message : 'Please try again.',variant:'destructive'});
     }
   };
 
-  const updateCrossClassAbility = async (slotNumber: 1 | 2, abilityId: string | null) => {
+  const updateCrossClassAbility = async (slotNumber:1|2, abilityId:string|null) => {
+    if (!studentId) return;
     try {
-      const studentId = localStorage.getItem("studentId");
-      const field = slotNumber === 1 ? "crossClassAbility1" : "crossClassAbility2";
-      const response = await fetch(`/api/student/${studentId}/equipment`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: abilityId }),
-      });
-
-      if (response.ok) {
-        setStudent(await response.json());
-        toast({ title: abilityId ? `Cross-class ability equipped to slot ${slotNumber}!` : "Cross-class ability removed!" });
-      } else {
-        let errorMessage = "Please try again";
-        try {
-          const error = await response.json();
-          errorMessage = error.error || errorMessage;
-        } catch {
-          // Failed to parse JSON error, use default message
-        }
-        toast({ 
-          title: "Failed to update ability", 
-          description: errorMessage,
-          variant: "destructive" 
-        });
-      }
+      await saveStudentLoadout(client, studentId, 'equipment', {[`crossClassAbility${slotNumber}`]:abilityId});
+      toast({title:abilityId ? 'Cross-class ability equipped!' : 'Cross-class ability removed!'});
     } catch (error) {
-      toast({ 
-        title: "Network error", 
-        description: "Failed to connect to server",
-        variant: "destructive" 
-      });
+      toast({title:'Failed to update ability',description:error instanceof Error ? error.message : 'Please try again.',variant:'destructive'});
     }
   };
 
@@ -377,31 +325,12 @@ export default function Lobby() {
       return;
     }
     
-    const response = await fetch(`/api/student/${studentId}/character`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ characterClass: newClass, gender: student.gender }),
-    });
-
-    if (response.ok) {
-      const updatedStudent = await response.json();
-      setStudent(updatedStudent);
+    try {
+      await saveStudentLoadout(client, studentId!, 'character', {characterClass:newClass,gender:student.gender});
       setShowClassModal(false);
-      toast({ 
-        title: "Class changed!", 
-        description: `You are now a ${newClass}` 
-      });
-      
-      // Reload job levels to reflect new current class
-      const jobResponse = await fetch(`/api/student/${studentId}/job-levels`);
-      if (jobResponse.ok) {
-        setJobLevels(await jobResponse.json());
-      }
-    } else {
-      toast({ 
-        title: "Failed to change class", 
-        variant: "destructive" 
-      });
+      toast({title:'Class changed!',description:`You are now a ${newClass}`});
+    } catch(error) {
+      toast({title:'Failed to change class',description:error instanceof Error ? error.message : 'Please try again.',variant:'destructive'});
     }
   };
 
@@ -417,7 +346,7 @@ export default function Lobby() {
     health: previewStats.maxHp, maxHealth: previewStats.maxHp,
     mp: student.characterClass === "wizard" ? Math.floor(previewStats.maxMp / 2) : previewStats.maxMp,
     healingPotions: 5, shieldPotions: 0, consecutiveCorrectAnswers: 0};
-  const showAbilityValues = !equipmentFetching && !equipmentError && jobLevels.length > 0;
+  const showAbilityValues = !loadoutFetching && !loadoutError && !equipmentFetching && !equipmentError && jobLevels.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-black">
