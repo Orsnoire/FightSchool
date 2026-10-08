@@ -53,7 +53,7 @@ const itemSchema = z.object({
     "helmet",
     "cap",
     "hat",
-    "consumable", "shield", "potion", "quiver", "gloves", "leggings", "boots",
+    "consumable", "shield", "potion", "quiver", "bracers", "gloves", "leggings", "boots",
   ]),
   quality: z.enum(["common", "rare", "epic", "legendary"]),
   tier: z.number().int().min(1).max(10).default(1),
@@ -758,7 +758,7 @@ export async function handleGame(
       if (ids.length > 100) throw new ApiError("Too many items");
       const builtin = ids
         .filter((id) => EQUIPMENT_ITEMS[id])
-        .map((id) => ({ ...EQUIPMENT_ITEMS[id], tier: 1, quality: "common" }));
+        .map((id) => ({ ...EQUIPMENT_ITEMS[id], tier: EQUIPMENT_ITEMS[id].tier ?? 1, quality: "common" }));
       const custom = ids.filter((id) => !EQUIPMENT_ITEMS[id]);
       custom.forEach((id) => uuid.parse(id));
       if (!custom.length) return json(builtin);
@@ -854,13 +854,7 @@ export async function handleGame(
       if (tail === "equipment" && method(request, "PATCH")) {
         const input = z
           .object({
-            weapon: z.string().max(100).nullable().optional(),
-            headgear: z.string().max(100).nullable().optional(),
-            armor: z.string().max(100).nullable().optional(),
-            offhand: z.string().max(100).nullable().optional(),
-            hands: z.string().max(100).nullable().optional(),
-            legs: z.string().max(100).nullable().optional(),
-            feet: z.string().max(100).nullable().optional(),
+            ...Object.fromEntries(EQUIPMENT_SLOTS.map(slot => [slot, z.string().max(100).nullable().optional()])) as Record<typeof EQUIPMENT_SLOTS[number], z.ZodOptional<z.ZodNullable<z.ZodString>>>,
             crossClassAbility1: z.string().max(100).nullable().optional(),
             crossClassAbility2: z.string().max(100).nullable().optional(),
           })
@@ -901,9 +895,9 @@ export async function handleGame(
             !ownedEquipment([...student.inventory, ...EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id)]).includes(itemId)
           )
             throw new ApiError("Equipment is not owned or has the wrong slot");
-          const tier = (item as any).tier || 1;
+          const tier = item.tier ?? 1;
           const level = levels[student.characterClass || "warrior"] || 1;
-          if (level < [1, 2, 4, 6, 8, 10, 11, 12, 13, 15][tier - 1])
+          if (tier > 0 && level < [1, 2, 4, 6, 8, 10, 11, 12, 13, 15][tier - 1])
             throw new ApiError("Job level is too low for this tier");
 
         }

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sword, Shield as ShieldIcon, Crown, Sparkles, X } from "lucide-react";
+import { Shield as ShieldIcon, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -144,139 +144,21 @@ export default function StudentEquipment() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Weapon */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <Sword className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Weapon</p>
-                    <p className="text-sm text-muted-foreground">
-                      {student.weapon ? equippedItemsMap[student.weapon]?.name || "None" : "None"}
-                    </p>
-                  </div>
+              {EQUIPMENT_SLOTS.map(slot => <div key={slot} className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <label htmlFor={`equipment-${slot}`} className="font-medium">{SLOT_LABELS[slot]}</label>
+                  <p className="text-sm text-muted-foreground">{student[slot] ? (equippedItemsMap[student[slot]] ? `${equippedItemsMap[student[slot]].name} · Tier ${equippedItemsMap[student[slot]].tier}` : 'Loading item…') : 'None'}</p>
                 </div>
-                <div className="flex gap-2">
-                  <Select
-                    value={student.weapon || "none"}
-                    onValueChange={(value) => handleEquipmentChange("weapon", value)}
-                  >
-                    <SelectTrigger className="w-48" data-testid="select-weapon">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {getEquipmentOptions("weapon").map(item => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {student.weapon && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => updateEquipmentMutation.mutate({ weapon: null as any })}
-                      data-testid="button-unequip-weapon"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Headgear */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <Crown className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Headgear</p>
-                    <p className="text-sm text-muted-foreground">
-                      {student.headgear ? equippedItemsMap[student.headgear]?.name || "None" : "None"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Select
-                    value={student.headgear || "none"}
-                    onValueChange={(value) => handleEquipmentChange("headgear", value)}
-                  >
-                    <SelectTrigger className="w-48" data-testid="select-headgear">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {getEquipmentOptions("headgear").map(item => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {student.headgear && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => updateEquipmentMutation.mutate({ headgear: null as any })}
-                      data-testid="button-unequip-headgear"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* Armor */}
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <ShieldIcon className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Armor</p>
-                    <p className="text-sm text-muted-foreground">
-                      {student.armor ? equippedItemsMap[student.armor]?.name || "None" : "None"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Select
-                    value={student.armor || "none"}
-                    onValueChange={(value) => handleEquipmentChange("armor", value)}
-                  >
-                    <SelectTrigger className="w-48" data-testid="select-armor">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {getEquipmentOptions("armor").map(item => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {student.armor && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => updateEquipmentMutation.mutate({ armor: null as any })}
-                      data-testid="button-unequip-armor"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
+                <Select value={student[slot] || 'none'} onValueChange={value => handleEquipmentChange(slot, value)} disabled={updateEquipmentMutation.isPending}>
+                  <SelectTrigger id={`equipment-${slot}`} className="w-48" data-testid={`select-${slot}`}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {getEquipmentOptions(slot).map(item => <SelectItem key={item.id} value={item.id}>{item.name} · Tier {item.tier}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>)}
             </CardContent>
           </Card>
-
-          <Card><CardHeader><CardTitle>Hands, legs, feet & off hand</CardTitle><CardDescription>Starter items remain yours when you change jobs. Quivers pair with bows; potions pair with herbs.</CardDescription></CardHeader><CardContent className="space-y-4">
-            {(['hands','legs','feet','offhand'] as const).map(slot => <div key={slot} className="flex items-center justify-between gap-4">
-              <label htmlFor={`equipment-${slot}`}>{SLOT_LABELS[slot]}</label>
-              <select id={`equipment-${slot}`} className="rounded border p-2 bg-background max-w-[65%]" value={student[slot] || 'none'} onChange={e => handleEquipmentChange(slot,e.target.value)}>
-                <option value="none">None</option>{getEquipmentOptions(slot).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-            </div>)}
-          </CardContent></Card>
 
           {/* Cross-Class Abilities Section */}
           <Card data-testid="card-cross-class-abilities">

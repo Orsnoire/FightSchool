@@ -9,7 +9,8 @@ and deployment. No deployment is authorized for this intermediate checkpoint.
 | October 7 battlefield, host controls, join/rejoin, participation rewards | Completed in main; live release recorded in `docs/cloudflare/full-migration.md` | Already released; reuse the existing session-code group entry |
 | Priest First Aid, no-offense solo warning, healer encounter estimates | Implemented and tested in [PR #37](https://github.com/Orsnoire/FightSchool/pull/37) | Awaiting combined merge/deployment; uses MND / 3, floor, minimum 1 |
 | 1. Calculated ability values | Implemented and tested in [PR #38](https://github.com/Orsnoire/FightSchool/pull/38), based on PR #37 | Awaiting review and combined merge/deployment |
-| 2. Informative loot choices | Implemented and locally tested in `feat/loot-reward-details`, based on PR #38 | Awaiting review and combined merge/deployment; names, icons, slot, rarity, tier and signed stats shown before claiming |
+| 2. Informative loot choices | Implemented and tested in [PR #39](https://github.com/Orsnoire/FightSchool/pull/39), based on PR #38 | Awaiting review and combined merge/deployment; names, icons, slot, rarity, tier and signed stats shown before claiming |
+| Gear expansion and Tier 0 starters | Implemented and tested in `feat/expanded-equipment-slots`, based on PR #39 | Awaiting review and combined release; migration 0011 required before Worker activation |
 | 3. Loadout display synchronization | Pending | Refresh/invalidate student, equipment and job-level data consistently after class/equipment changes; the First Aid solo-entry freshness check is only a scoped safeguard |
 | Combined release | Pending | Finish the individual items, check the combined changes, merge, deploy and verify live behavior; update this table with release evidence |
 
@@ -69,6 +70,20 @@ separate review check; this branch has not been deployed.
 Coverage includes the real React result view sending the exact result/item IDs,
 rapid repeated clicks, failed claim/retry/success, names with markup characters,
 signed stats, unearned/duplicate IDs, metadata retries and broken-icon fallback.
+
+## Gear expansion and Tier 0 starters
+
+All gear screens expose Head, Chest, Arms, Hands, Pants, Feet, Weapon and Off hand.
+A shared slot registry drives UI, validation and stat collection, with nullable
+storage and starter-default hooks for later slots. Existing equipment is retained;
+new starter arms have no stats. Low-stat starter gear is explicitly Tier 0, with
+unchanged stats and compatibility. Upgrade tiers and gates remain unchanged.
+See [starter wardrobe](../starter-wardrobe.md#october-7-expansion--implemented-for-review-not-deployed)
+for migration, extension and pending-art boundaries.
+
+Validation: `npm run check`, all 113 tests in `npm test`,
+`npm run build:cloudflare` and `git diff --check` pass. Hosted browser CI and
+live deployment checks remain separate; this branch is not deployed.
 
 ## Larger work outside this batch
 

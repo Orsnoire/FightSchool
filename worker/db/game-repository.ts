@@ -9,7 +9,7 @@ import * as s from "./schema.ts";
 import { calculateXP, calculateNewLevel } from "../../shared/jobSystem.ts";
 import {
   calculateGoldReward,
-  calculateEquipmentStats,
+  calculateLoadoutEquipmentStats,
   EQUIPMENT_ITEMS,
   getStartingEquipment,
   type CharacterClass,
@@ -29,7 +29,7 @@ export async function combatProfile(
     .where(eq(s.studentJobLevels.studentId, student.id));
   const levels = Object.fromEntries(jobs.map((j) => [j.jobClass, j.level]));
   const ids = EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id);
-  const equipment = calculateEquipmentStats(student.weapon, student.headgear, student.armor, student.hands, student.legs, student.feet, student.offhand);
+  const equipment = calculateLoadoutEquipmentStats(student);
   const custom = await db
     .select()
     .from(s.equipmentItems)

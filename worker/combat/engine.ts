@@ -9,7 +9,7 @@ import { answersMatch } from "../../shared/combat/phaseRules.ts";
 import {
   calculatePlayerBaseDamage,
   calculateCharacterStats,
-  calculateEquipmentStats,
+  calculateLoadoutEquipmentStats,
   getStartingEquipment,
   type CharacterClass,
   type EquipmentStats,
@@ -103,11 +103,7 @@ export function addStudent(
   const stats = calculateCharacterStats(
     job,
     profile.equipment ||
-      calculateEquipmentStats(
-        starting.weapon,
-        starting.headgear,
-        starting.armor,
-      ),
+      calculateLoadoutEquipmentStats(starting),
     getTotalPassiveBonuses(levels as Record<CharacterClass, number>),
     getTotalMechanicUpgrades(levels as Record<CharacterClass, number>),
   );

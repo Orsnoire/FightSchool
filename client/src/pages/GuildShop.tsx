@@ -1,3 +1,5 @@
+import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
+import type { EquipmentSlot } from "@shared/schema";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -29,7 +31,7 @@ interface EquipmentItemDb {
   itemType: string;
   quality: string;
   tier: number;
-  slot: string;
+  slot: EquipmentSlot;
   shopPrice: number | null;
   isPurchasable: boolean;
   stats: EquipmentItemStats;
@@ -210,11 +212,9 @@ export default function GuildShop() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <Tabs value={selectedSlot} onValueChange={setSelectedSlot}>
-            <TabsList data-testid="tabs-slot-filter">
+            <TabsList className="flex h-auto flex-wrap justify-start" data-testid="tabs-slot-filter">
               <TabsTrigger value="all" data-testid="tab-all">All Items</TabsTrigger>
-              <TabsTrigger value="weapon" data-testid="tab-weapon">Weapons</TabsTrigger>
-              <TabsTrigger value="armor" data-testid="tab-armor">Armor</TabsTrigger>
-              <TabsTrigger value="headgear" data-testid="tab-headgear">Headgear</TabsTrigger>
+              {EQUIPMENT_SLOTS.map(slot => <TabsTrigger key={slot} value={slot} data-testid={`tab-${slot}`}>{SLOT_LABELS[slot]}</TabsTrigger>)}
             </TabsList>
           </Tabs>
         </div>
@@ -261,7 +261,7 @@ export default function GuildShop() {
                               {item.quality}
                             </Badge>
                           </div>
-                          <CardDescription className="capitalize">{item.slot}</CardDescription>
+                          <CardDescription className="capitalize">{SLOT_LABELS[item.slot]}</CardDescription>
                         </CardHeader>
                         <CardContent>
                           <div className="grid grid-cols-2 gap-2 text-sm">

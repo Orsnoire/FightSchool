@@ -1,4 +1,4 @@
-import { EQUIPMENT_SLOTS as ALL_EQUIPMENT_SLOTS } from "@shared/equipment-catalog";
+import { SLOT_LABELS, EQUIPMENT_SLOTS as ALL_EQUIPMENT_SLOTS } from "@shared/equipment-catalog";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
@@ -34,7 +34,7 @@ const itemFormSchema = insertEquipmentItemSchema.extend({
 
 type ItemFormData = z.infer<typeof itemFormSchema>;
 
-const ITEM_TYPES: ItemType[] = ["sword", "wand", "bow", "staff", "herbs", "two-handed-sword", "fist", "claws", "harp", "spoon", "light_armor", "leather_armor", "armor", "helmet", "cap", "hat", "consumable", "shield", "potion", "quiver", "gloves", "leggings", "boots"];
+const ITEM_TYPES: ItemType[] = ["sword", "wand", "bow", "staff", "herbs", "two-handed-sword", "fist", "claws", "harp", "spoon", "light_armor", "leather_armor", "armor", "helmet", "cap", "hat", "consumable", "shield", "potion", "quiver", "bracers", "gloves", "leggings", "boots"];
 const ITEM_QUALITIES: ItemQuality[] = ["common", "rare", "epic", "legendary"];
 const EQUIPMENT_SLOTS = ALL_EQUIPMENT_SLOTS;
 
@@ -63,7 +63,7 @@ export default function ItemManagement() {
   // Filter items based on active filter
   const filteredItems = items?.filter(item => {
     if (activeFilter === 'all') return true;
-    if (activeFilter === 'weapon' || activeFilter === 'headgear' || activeFilter === 'armor') {
+    if ((EQUIPMENT_SLOTS as readonly string[]).includes(activeFilter)) {
       return item.slot === activeFilter;
     }
     return item.itemType === activeFilter;
@@ -297,7 +297,7 @@ export default function ItemManagement() {
                             <SelectContent>
                               {EQUIPMENT_SLOTS.map((slot) => (
                                 <SelectItem key={slot} value={slot}>
-                                  {slot}
+                                  {SLOT_LABELS[slot]}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -500,31 +500,8 @@ export default function ItemManagement() {
               
               {/* Slot filters */}
               <div className="w-px h-8 bg-border mx-2" />
-              <Button
-                variant={activeFilter === 'weapon' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveFilter('weapon')}
-                data-testid="filter-weapon-slot"
-              >
-                Weapons
-              </Button>
-              <Button
-                variant={activeFilter === 'headgear' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveFilter('headgear')}
-                data-testid="filter-headgear-slot"
-              >
-                Headgear
-              </Button>
-              <Button
-                variant={activeFilter === 'armor' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveFilter('armor')}
-                data-testid="filter-armor-slot"
-              >
-                Body Armor
-              </Button>
-              
+              {EQUIPMENT_SLOTS.map(slot => <Button key={slot} variant={activeFilter === slot ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter(slot)} data-testid={`filter-${slot}-slot`}>{SLOT_LABELS[slot]}</Button>)}
+
               {/* Weapon type filters */}
               <div className="w-px h-8 bg-border mx-2" />
               {(['sword', 'staff', 'bow', 'herbs', 'two-handed-sword', 'fist', 'claws', 'harp', 'spoon'] as const).map((type) => (
@@ -589,7 +566,7 @@ export default function ItemManagement() {
                       <Badge className={QUALITY_COLORS[item.quality]} data-testid={`item-quality-${item.id}`}>
                         {item.quality}
                       </Badge>
-                      <Badge variant="outline" data-testid={`item-slot-${item.id}`}>{item.slot}</Badge>
+                      <Badge variant="outline" data-testid={`item-slot-${item.id}`}>{SLOT_LABELS[item.slot]}</Badge>
                     </div>
                     <div className="text-sm space-y-1">
                       {item.stats && Object.entries(item.stats).map(([stat, value]) => {
