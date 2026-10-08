@@ -1,3 +1,4 @@
+import { handleCombatSessions } from "../routes/combat-sessions.ts";
 import { instanceLoot } from "../../shared/combat/instance-loot";
 import type { IdentityRepository } from "../db/repository.ts";
 import type { FightRecord } from "../db/schema.ts";
@@ -19,6 +20,9 @@ import {
 } from "./engine.ts";
 interface CombatEnv {
   DATABASE_URL: string;
+  SESSION_COOKIE_NAME?: string;
+  SESSION_SECRET?: string;
+  SESSION_TTL_SECONDS?: string;
 }
 interface SocketAttachment {
   actorId: string;
@@ -268,6 +272,35 @@ export class CombatSessionObject {
           },
         );
       });
+    if (request.method === "POST" && /^\/api\/fights\/[0-9a-f-]+\/sessions$/i.test(url.pathname))
+      return this.serialized(async () => (await handleCombatSessions(request, url, this.repository!, {
+        cookieName: this.env.SESSION_COOKIE_NAME!, secret: this.env.SESSION_SECRET!,
+        ttlSeconds: Number(this.env.SESSION_TTL_SECONDS),
+      }, this.env.DATABASE_URL))!);
+    if (request.method === "POST" && url.pathname === "/end")
+      return this.serialized(async () => {
+        const sessionId = request.headers.get("x-questacademy-session-id") || "";
+        const live = await this.repository!.findLiveCombatSession(sessionId);
+        if (!live || live.teacherId !== request.headers.get("x-questacademy-actor-id") || live.soloStudentId)
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        if (live.status === "superseded") return Response.json({ error: "Session unavailable" }, { status: 409 });
+        const room = await this.room();
+        if (!room) {
+          // A launch can be abandoned before its first host socket opens.
+          if (live.status !== "waiting" && live.status !== "completed")
+            return Response.json({ error: "Active room unavailable; try again" }, { status: 503 });
+          await this.repository!.updateLiveCombatSessionStatus(sessionId, "completed");
+          return Response.json({ success: true });
+        }
+        if (room.snapshot.currentPhase !== "game_over") {
+          room.snapshot = { ...room.snapshot, currentPhase: "game_over", victory: false,
+            endedByHost: true, endReason: "Fight ended by teacher", phaseDeadline: null,
+            revision: room.snapshot.revision + 1 };
+          await this.save(room);
+        }
+        await this.complete(room);
+        return Response.json({ success: !!room.resultsPersisted }, { status: room.resultsPersisted ? 200 : 503 });
+      });
     if (url.pathname === "/force-question")
       return this.serialized(async () => {
         const room = await this.room();
@@ -375,6 +408,7 @@ export class CombatSessionObject {
             live.status === "superseded"
           )
             throw new Error("Session unavailable");
+          if (!room && live.status === "completed") throw new Error("Fight has ended");
           if (!room) {
             const fight = await this.repository.findFightById(live.fightId);
             if (!fight) throw new Error("Fight unavailable");

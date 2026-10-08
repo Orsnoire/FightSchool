@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Maximize, Minimize, ChevronDown, ChevronUp } from "lucide-react";
 import { useCombatSession } from "@/hooks/useCombatSession";
@@ -9,7 +9,7 @@ import { FloatingCombatLog } from "@/components/FloatingCombatLog";
 import { CombatBoard } from "@/components/CombatBoard";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { Button } from "@/components/ui/button";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Fight } from "@shared/schema";
 export default function HostFight() {
   const [, params] = useRoute("/teacher/host/:id"), [, navigate] = useLocation();
@@ -18,6 +18,8 @@ export default function HostFight() {
   const [hostingGuild,setHostingGuild]=useState<string>(new URLSearchParams(window.location.search).get("guild")||"");
   const {data:hostGuilds,isError:guildError}=useQuery<Array<{id:string;name:string;limitTier:number}>>({queryKey:[`/api/fights/${fightId}/host-guilds`],enabled:!!fightId&&isAuthenticated});
   const chosenGuild=hostingGuild || (hostGuilds?.length===1?hostGuilds[0].id:"");
+  const [requestedSession] = useState(() => new URLSearchParams(window.location.search).get("session"));
+  const launchPending = useRef(false);
   const [sessionId, setSessionId] = useState<string | null>(null), [hostingError, setHostingError] = useState("");
   const [questionOpen, setQuestionOpen] = useState(true), [fullscreen, setFullscreen] = useState(false), [blockRejoin, setBlockRejoin] = useState(false);
   const shell = useRef<HTMLElement>(null);
@@ -26,12 +28,26 @@ export default function HostFight() {
   useEffect(() => setBlockRejoin(false), [request?.studentId]);
   useEffect(() => { const update = () => setFullscreen(document.fullscreenElement === shell.current); document.addEventListener("fullscreenchange", update); return () => document.removeEventListener("fullscreenchange", update); }, []);
   const { data: fight } = useQuery<Fight>({ queryKey: [`/api/fights/${fightId}`], enabled: !!fightId && isAuthenticated });
+  const sessionLookup = useQuery<{sessionId: string; status: string} | null>({
+    queryKey: [`/api/fights/${fightId}/sessions${requestedSession ? `?sessionId=${encodeURIComponent(requestedSession)}` : ""}`],
+    enabled: !!fightId && isAuthenticated && !sessionId,
+    retry: false, staleTime: 0, gcTime: 0, refetchOnMount: "always",
+  });
+  const connect = (id: string) => {
+    setSessionId(id);
+    const url = new URL(window.location.href);
+    url.searchParams.set("session", id);
+    window.history.replaceState(window.history.state, "", url);
+  };
   useEffect(() => {
-    if (!fightId || !isAuthenticated || !hostGuilds || (hostGuilds.length>1&&!chosenGuild)) return;
-    let disposed = false;
-    apiRequest("POST", `/api/fights/${fightId}/sessions`,chosenGuild?{guildId:chosenGuild}:{}).then(r => r.json()).then(room => { if (!disposed) setSessionId(room.sessionId); }).catch(e => setHostingError(e.message));
-    return () => { disposed = true; };
-  }, [fightId, isAuthenticated, chosenGuild, hostGuilds]);
+    if (!sessionId && !sessionLookup.isFetching && sessionLookup.data?.sessionId) connect(sessionLookup.data.sessionId);
+  }, [sessionLookup.data?.sessionId, sessionLookup.isFetching, sessionId]);
+  const launch = useMutation({
+    mutationFn: async () => (await apiRequest("POST", `/api/fights/${fightId}/sessions`, chosenGuild ? {guildId: chosenGuild} : {})).json(),
+    onSuccess: room => { connect(room.sessionId); queryClient.invalidateQueries({queryKey: ["/api/fights/hosted-sessions"]}); },
+    onError: (error: Error) => setHostingError(error.message),
+    onSettled: () => { launchPending.current = false; },
+  });
   if (isChecking) return <p className="p-6">Checking your session…</p>;
   if (!isAuthenticated) return <p className="p-6">Sign in to host a fight.</p>;
   const players = Object.values(state?.players || {}), queued = Object.values(state?.pendingPlayers || {});
@@ -48,6 +64,10 @@ export default function HostFight() {
   };
   return <main ref={shell} className="battle-shell battle-host">
     {!sessionId&&hostGuilds&&hostGuilds.length>1&&<label className="p-4">Hosting guild<select aria-label="Hosting guild" className="ml-3 border rounded p-2" value={hostingGuild} onChange={e=>setHostingGuild(e.target.value)}><option value="">Choose the class for quest credit and limits</option>{hostGuilds.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select></label>}
+    {!sessionId && !sessionLookup.isPending && !sessionLookup.isFetching && !sessionLookup.isError && !requestedSession && <div className="p-4"><Button
+      disabled={launch.isPending || !hostGuilds || (hostGuilds.length > 1 && !chosenGuild)}
+      onClick={() => { if (!launchPending.current) { launchPending.current = true; setHostingError(""); launch.mutate(); } }}>Launch Host</Button></div>}
+    {sessionLookup.isError && <p role="alert" className="p-4">Could not reconnect to this session. <Button variant="outline" onClick={() => sessionLookup.refetch()}>Retry</Button></p>}
     {guildError&&<p role="alert" className="p-4">Could not load hosting guilds. Reload to try again.</p>}
     <section aria-label="Host fight controls" className="battle-host-banner" data-testid="host-controls">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -65,7 +85,9 @@ export default function HostFight() {
         <div className="flex flex-wrap items-center gap-2">{phase === "waiting" && <Button disabled={status !== "connected" || !players.length} onClick={() => send("start_fight")}>Start fight</Button>}{active && <>
           <Button size="sm" disabled={status !== "connected"} onClick={() => apiRequest("POST", `/api/combat/${sessionId}/force-question`).catch(e => setHostingError(e.message))}>Advance current phase</Button>
           <Button size="sm" variant="outline" className="text-destructive border-destructive/30" disabled={status !== "connected"} onClick={() => { if (window.confirm("End this fight? Students receive activity XP plus base XP proportional to enemy damage and their participation. Victory gold and loot require defeating the enemies.")) send("end_fight"); }}>End fight</Button>
-        </>}</div>
+        </>}{phase === "waiting" && <Button size="sm" variant="outline" disabled={status !== "connected"} onClick={() => {
+          if (window.confirm("End this waiting session?")) send("end_fight");
+        }}>End fight</Button>}</div>
       </div>}
       {(error || hostingError) && <p role="alert" className="mt-2 text-sm text-destructive">{error || hostingError}</p>}
     </section>

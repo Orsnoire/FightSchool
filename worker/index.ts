@@ -198,7 +198,7 @@ export default {
           ttlSeconds: Number(env.SESSION_TTL_SECONDS),
         };
         const force = url.pathname.match(
-          /^\/api\/combat\/([A-Za-z0-9_-]{1,64})\/force-question$/,
+          /^\/api\/combat\/([A-Za-z0-9_-]{1,64})\/(force-question|end)$/,
         );
         if (force && request.method === "POST") {
           const actor = await authenticateSession(
@@ -214,15 +214,16 @@ export default {
               currentRequestId,
             );
           const live = await repository.findLiveCombatSession(force[1]);
-          if (live?.teacherId !== actor.actorId)
+          if (live?.teacherId !== actor.actorId || (force[2] === "end" && live.soloStudentId))
             return json({ error: "Forbidden" }, 403, currentRequestId);
           return env.COMBAT_SESSIONS.get(
             env.COMBAT_SESSIONS.idFromName(force[1]),
-          ).fetch("https://combat-session.internal/force-question", {
+          ).fetch(`https://combat-session.internal/${force[2]}`, {
             method: "POST",
             headers: {
               "x-questacademy-internal": "1",
               "x-questacademy-actor-id": actor.actorId,
+              "x-questacademy-session-id": force[1],
             },
           });
         }
@@ -383,6 +384,18 @@ export default {
           secret: env.SESSION_SECRET,
           ttlSeconds,
         };
+        // One coordinator per fight serializes launches across tabs and retries.
+        const launch = url.pathname.match(/^\/api\/fights\/([0-9a-f-]+)\/sessions$/i);
+        if (request.method === "POST" && launch) {
+          const actor = await authenticateSession(request, repository, sessionConfig, "teacher");
+          if (!actor) return json({ error: "Authentication required" }, 401);
+          const fight = await repository.findFightById(launch[1]);
+          if (fight?.teacherId !== actor.actorId) return json({ error: "Forbidden" }, 403);
+          const headers = new Headers(request.headers);
+          headers.set("x-questacademy-internal", "1");
+          return env.COMBAT_SESSIONS.get(env.COMBAT_SESSIONS.idFromName(`host:${fight.id}`))
+            .fetch(new Request(request, { headers }));
+        }
         const combatResponse = await handleCombatSessions(
           request,
           url,

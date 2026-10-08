@@ -1,5 +1,5 @@
 import { gameDatabase } from "../db/game-repository.ts";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import {
   guilds,
   guildFights,
@@ -37,6 +37,17 @@ export async function handleCombatSessions(
   sessionConfig: SessionConfig,
   databaseUrl?: string,
 ): Promise<Response | null> {
+  if (request.method === "GET" && url.pathname === "/api/fights/hosted-sessions" && databaseUrl) {
+    const actor = await authenticateSession(request, repository, sessionConfig, "teacher");
+    if (!actor) return json({ error: "Authentication required" }, 401);
+    return json(await gameDatabase(databaseUrl).select({
+      sessionId: liveCombatSessions.sessionId, fightId: liveCombatSessions.fightId,
+      status: liveCombatSessions.status, guildId: liveCombatSessions.guildId,
+    }).from(liveCombatSessions).where(and(
+      eq(liveCombatSessions.teacherId, actor.actorId), isNull(liveCombatSessions.soloStudentId),
+      inArray(liveCombatSessions.status, ["waiting", "active"]),
+    )).orderBy(desc(liveCombatSessions.createdAt)));
+  }
   const soloMatch = url.pathname.match(
     /^\/api\/fights\/([0-9a-f-]+)\/solo-sessions$/i,
   );
@@ -91,6 +102,20 @@ export async function handleCombatSessions(
   const createMatch = url.pathname.match(
     /^\/api\/fights\/([0-9a-f-]+)\/sessions$/i,
   );
+  if (request.method === "GET" && createMatch) {
+    const actor = await authenticateSession(request, repository, sessionConfig, "teacher");
+    if (!actor) return json({ error: "Authentication required" }, 401);
+    const fight = await repository.findFightById(createMatch[1]);
+    if (!fight || fight.teacherId !== actor.actorId) return json({ error: "Forbidden" }, 403);
+    const requested = url.searchParams.get("sessionId");
+    const room = requested ? await repository.findLiveCombatSession(requested)
+      : await repository.findOpenLiveCombatSessionForFight(fight.id, actor.actorId);
+    if (!room) return requested ? json({ error: "Session not found" }, 404) : json(null);
+    if (room.teacherId !== actor.actorId || room.fightId !== fight.id || room.soloStudentId)
+      return json({ error: "Forbidden" }, 403);
+    if (!["waiting", "active", "completed"].includes(room.status)) return json({ error: "Session unavailable" }, 404);
+    return json({ sessionId: room.sessionId, fightId: room.fightId, status: room.status, guildId: room.guildId });
+  }
   if (request.method === "POST" && createMatch) {
     const actor = await authenticateSession(
       request,
