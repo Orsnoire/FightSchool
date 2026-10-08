@@ -6,6 +6,6 @@ export function EquipmentPermissions({job}:{job:CharacterClass}) {
   <p><strong>Allowed weapons:</strong> {permissions.weapons.join(', ')}</p>
   <p><strong>Allowed armor:</strong> {permissions.armor.join(', ')}</p>
   <p><strong>Allowed off hands:</strong> {permissions.offhands.length ? permissions.offhands.join(', ') : 'None'}</p>
-  <p className="text-xs text-muted-foreground">Armor rules apply to head, chest, arms, hands, pants and feet. Shields pair with swords, quivers with bows, and potion off hands with herbs. Two-handed swords cannot use an off hand.</p>
+  <p className="text-xs text-muted-foreground">Armor rules apply to head, chest, arms, hands, pants and feet. Shields pair with swords, quivers with bows, potion off hands with herbs, and spell books with wands. Two-handed swords cannot use an off hand.</p>
  </section>;
 }

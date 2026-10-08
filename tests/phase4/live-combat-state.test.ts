@@ -296,3 +296,34 @@ test("restored Durable Object persists the Priest action upgrade before acceptin
   assert.equal(recovered.players[student().id].mp, s.players[student().id].mp);
   assert.deepEqual(recovered.enemies, s.enemies);
 });
+
+
+test("hosted and solo openings persist four fallback choices; recovery and teacher edits do not reroll them", async () => {
+  for (const role of ['teacher','student'] as const) {
+    const h = harness();
+    const actorId = role === 'teacher' ? fight.teacherId : student().id;
+    h.socket.deserializeAttachment = () => ({actorId,role,sessionId:'ABC234',tokenHash:'test-session-hash'});
+    let source = structuredClone(fight);
+    const repository = {
+      findActiveSession: async () => ({actorId,actorType:role}),
+      findLiveCombatSession: async () => ({teacherId:fight.teacherId,status:'waiting',soloStudentId:role==='student'?actorId:null}),
+      findFightById: async () => structuredClone(source),
+      findStudentById: async () => student(),
+      updateLiveCombatSessionStatus: async () => {},
+      persistResults: async () => [],
+    };
+    h.object.setRepository(repository as any);
+    const command = JSON.stringify({type:role==='teacher'?'host':'join',commandId:'open-room-command'});
+    await h.object.webSocketMessage(h.socket as any,command);
+    const room=h.data.get('room');
+    assert.ok(room,JSON.stringify(h.messages));
+    assert.equal(room.fight.lootTable.length,4);
+    assert.deepEqual(source.lootTable,[],'template remains unassigned');
+    source={...source,lootTable:[{itemId:'later-template-change'}]};
+    const recovered=harness(JSON.parse(JSON.stringify(room)));
+    recovered.socket.deserializeAttachment=h.socket.deserializeAttachment;
+    recovered.object.setRepository(repository as any);
+    await recovered.object.webSocketMessage(recovered.socket as any,command);
+    assert.deepEqual(recovered.data.get('room').fight.lootTable,room.fight.lootTable);
+  }
+});

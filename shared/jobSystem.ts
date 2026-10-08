@@ -138,7 +138,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "shield_bash",
           name: "Shield Bash",
-          description: "Blocks for an ally, transfers half their threat to you, and deals VIT/2 melee damage upon a successful block. CD 2.",
+          description: "Blocks for an ally, transfers half their threat to you, and deals VIT/4 melee damage upon a successful block. CD 2.",
           isCrossClass: false,
         }]
       },
@@ -586,7 +586,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "sacred_strike",
           name: "Sacred Strike",
-          description: "Deals ATK*(STR+MND+VIT) heal damage (if answer is incorrect, no damage is dealt – treat as a miss). Paladin takes no damage on wrong answer this round. 5 round cooldown.",
+          description: "Deals ATK*(STR+MND+VIT/2) heal damage (if answer is incorrect, no damage is dealt – treat as a miss). Paladin takes no damage on wrong answer this round. 5 round cooldown.",
           isCrossClass: false,
         }]
       },
@@ -596,7 +596,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "holy_judgment",
           name: "Holy Judgment",
-          description: "Cross-class unlock. Heals all current players for (VIT+MND) HP and deals (STR+VIT+MND)/3 healing damage to all current enemies.",
+          description: "Cross-class unlock. Heals all current players for (VIT+MND) HP and deals (STR+VIT/2+MND)/3 healing damage to all current enemies.",
           isCrossClass: true,
         }]
       },
@@ -615,7 +615,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "ruin_strike",
           name: "Ruin Strike",
-          description: "Deals ATK*(STR + VIT + INT) melee dmg. Costs 1 MP.",
+          description: "Deals ATK*(STR + VIT/2 + INT) melee dmg. Costs 1 MP.",
           isCrossClass: false,
         }]
       },
@@ -636,7 +636,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "ruin_strike_crossclass",
           name: "Ruin Strike",
-          description: "Cross-class unlock. Deals ATK*(STR + VIT + INT) melee dmg. Costs 1 MP.",
+          description: "Cross-class unlock. Deals ATK*(STR + VIT/2 + INT) melee dmg. Costs 1 MP.",
           isCrossClass: true,
         }]
       },
@@ -645,7 +645,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "blood_price",
           name: "Blood Price",
-          description: "Deals ATK*(STR+VIT+INT)*2 melee dmg. Deals ATK dmg to the Dark Knight who used the ability.",
+          description: "Deals ATK*(STR+VIT/2+INT)*2 melee dmg. Deals ATK dmg to the Dark Knight who used the ability.",
           isCrossClass: false,
         }]
       },
@@ -664,7 +664,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "shadow_requiem",
           name: "Shadow Requiem",
-          description: "Cross-class unlock. Deals ATK*(STR+VIT+INT) melee dmg to all current enemies. Dark Knight is healed for all damage done in this way. Once per fight.",
+          description: "Cross-class unlock. Deals ATK*(STR+VIT/2+INT) melee dmg to all current enemies. Dark Knight is healed for all damage done in this way. Once per fight.",
           isCrossClass: true,
         }]
       },
@@ -683,7 +683,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "crimson_slash",
           name: "Crimson Slash",
-          description: "Deals ATK * (VIT + STR)/2 melee damage to one target. Heal for 50% of the damage dealt. Active (choose in phase 1). Costs 1 MP.",
+          description: "Deals ATK * (VIT/2 + STR)/2 melee damage to one target. Heal for 50% of the damage dealt. Active (choose in phase 1). Costs 1 MP.",
           isCrossClass: false,
         }]
       },
@@ -704,7 +704,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "crimson_slash_crossclass",
           name: "Crimson Slash",
-          description: "Cross-class unlock. Deals ATK * (VIT + STR)/2 melee damage to one target. Heal for 50% of the damage dealt. Costs 1 MP.",
+          description: "Cross-class unlock. Deals ATK * (VIT/2 + STR)/2 melee damage to one target. Heal for 50% of the damage dealt. Costs 1 MP.",
           isCrossClass: true,
         }]
       },
@@ -732,7 +732,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "raining_blood",
           name: "Raining Blood",
-          description: "Cross-class unlock. Deal ATK*(STR+VIT+INT) magic damage to all current enemies. Heal all allies for 50% of the damage dealt in this way.",
+          description: "Cross-class unlock. Deal ATK*(STR+VIT/2+INT) magic damage to all current enemies. Heal all allies for 50% of the damage dealt in this way.",
           isCrossClass: true,
         }]
       },

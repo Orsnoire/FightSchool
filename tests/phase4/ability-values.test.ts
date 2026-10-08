@@ -17,8 +17,8 @@ function setup() {
 
 test("calculated damage matches real resolution across direct, group and multi-hit abilities", () => {
   const cases: [string, number][] = [["fireball",15], ["frostbolt",5], ["fireblast",300], ["manabomb",10], ["headshot",10],
-    ["aim",10], ["killshot",12], ["crushing_blow",7], ["siphon",5], ["sacred_strike",60], ["holy_judgment",6],
-    ["ruin_strike",48], ["blood_price",96], ["shadow_requiem",48], ["crimson_slash",16], ["raining_blood",48],
+    ["aim",10], ["killshot",12], ["crushing_blow",7], ["siphon",5], ["sacred_strike",49], ["holy_judgment",5],
+    ["ruin_strike",37], ["blood_price",75], ["shadow_requiem",37], ["crimson_slash",11], ["raining_blood",37],
     ["focused_palm",27], ["twin_shot",20], ["hunters_volley",50], ["arrowstorm",50], ["finale",56], ["crescendo",56]];
   for (const [ability, expected] of cases) {
     let s = setup();

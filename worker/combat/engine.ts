@@ -1,4 +1,4 @@
-import { abilityDamage, abilityHealing } from "../../shared/combat/abilityValues.ts";
+import { abilityDamage, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
 import type { AvatarAppearance } from "../../shared/avatar/appearance.ts";
 import type {
   FightQuestion,
@@ -43,6 +43,7 @@ export type {
   CombatPhase,
 } from "../../shared/combat/model.ts";
 export interface CombatProfile {
+  equipmentEffects?: CombatPlayer["equipmentEffects"];
   appearance?: AvatarAppearance | null;
   levels: Partial<Record<CharacterClass, number>>;
   equipment?: EquipmentStats;
@@ -108,6 +109,7 @@ export function addStudent(
     getTotalMechanicUpgrades(levels as Record<CharacterClass, number>),
   );
   const p: CombatPlayer = {
+    equipmentEffects: {...profile.equipmentEffects, healingBonus:profile.equipmentEffects?.healingBonus || 0, potionAttackBonus:profile.equipmentEffects?.potionAttackBonus || 0},
     roundsParticipated: 0,
     studentId: student.id,
     nickname: student.nickname,
@@ -398,7 +400,7 @@ function heal(
 ) {
   const t = s.players[id];
   if (!t || (t.isDead && !revive)) return 0;
-  const actual = Math.min(t.maxHealth - t.health, integer(amount));
+  const actual = Math.min(t.maxHealth - t.health, integer(amount) + (p.equipmentEffects?.healingBonus || 0));
   t.health += actual;
   t.isDead = t.health <= 0;
   p.totals.healingDone += actual;
@@ -459,7 +461,7 @@ function damagePlayer(
         s,
         guard,
         s.enemies.find((e) => e.health > 0)?.id || "",
-        guard.stats.vit / 2,
+        guard.stats.vit / 4,
       );
   }
   for (const key of ["shield", "manaShield"])
@@ -572,11 +574,19 @@ function applyAbility(
   const buff = (name: string, rounds: number, amount = 0) => {
     p.buffs[name] = { rounds, amount };
   };
+  const potionBuff = (target: CombatPlayer) => {
+    const amount = p.equipmentEffects?.potionAttackBonus || 0;
+    if (!amount || target.isDead) return;
+    const previous = target.buffs['stat:atk']?.amount || 0;
+    target.stats.atk += amount - previous;
+    target.buffs['stat:atk'] = {rounds:3,amount};
+    event(s,'ability',p.studentId,target.studentId,amount,'Potion: +1 ATK for 3 rounds');
+  };
   const groupHeal = (n: number, revive = false) =>
     party().forEach((t) => heal(s, p, t.studentId, n, revive));
   let damage = 0;
   const damageValue = abilityDamage(p, id) ?? 0;
-  const healingValue = abilityHealing(p, id) ?? 0;
+  const healingValue = baseAbilityHealing(p, id) ?? 0;
   const problem = abilityProblem(p, id);
   if (problem) {
     event(s, "ability", p.studentId, targetId, 0, `${id}: ${problem}`);
@@ -659,6 +669,7 @@ function applyAbility(
     }
     case "healing_potion":
       heal(s, p, targetId, healingValue);
+      if (s.players[targetId]) potionBuff(s.players[targetId]);
       p.healingPotions--;
       break;
     case "craft_healing_potion":
@@ -681,6 +692,7 @@ function applyAbility(
     case "potion_diffuser":
       if (p.healingPotions > 0) {
         groupHeal(healingValue);
+        party().forEach(potionBuff);
         p.healingPotions--;
       }
       break;

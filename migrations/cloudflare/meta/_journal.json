@@ -92,6 +92,13 @@
       "when": 1791426000000,
       "tag": "0012_remembered_job_loadouts",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791428400000,
+      "tag": "0013_spellbook_offhand",
+      "breakpoints": true
     }
   ]
 }

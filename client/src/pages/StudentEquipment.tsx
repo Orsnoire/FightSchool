@@ -1,3 +1,4 @@
+import { equipmentEffectText } from "@shared/tier-one-equipment";
 import { EquipmentPermissions } from "@/components/EquipmentPermissions";
 import { useStudentLoadout } from "@/hooks/useStudentLoadout";
 import { saveStudentLoadout } from "@/lib/studentLoadout";
@@ -144,6 +145,7 @@ export default function StudentEquipment() {
                 <div>
                   <label htmlFor={`equipment-${slot}`} className="font-medium">{SLOT_LABELS[slot]}</label>
                   <p className="text-sm text-muted-foreground">{student[slot] ? (equippedItemsMap[student[slot]] ? `${equippedItemsMap[student[slot]].name} · Tier ${equippedItemsMap[student[slot]].tier}` : 'Loading item…') : 'None'}</p>
+                  {equipmentEffectText(student[slot] || "") && <p className="text-sm">{equipmentEffectText(student[slot] || "")}</p>}
                 </div>
                 <Select value={student[slot] || 'none'} onValueChange={value => handleEquipmentChange(slot, value)} disabled={updateEquipmentMutation.isPending}>
                   <SelectTrigger id={`equipment-${slot}`} className="w-48" data-testid={`select-${slot}`}><SelectValue /></SelectTrigger>

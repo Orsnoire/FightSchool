@@ -24,6 +24,7 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  equipmentEffects?: { healingBonus:number; potionAttackBonus:number };
   roundsParticipated?: number;
   appearance?: AvatarAppearance | null;
   studentId: string;
