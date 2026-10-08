@@ -472,6 +472,11 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     levelRewards: {
       1: { 
         abilities: [{
+          id: "first_aid",
+          name: "First Aid",
+          description: "Heal a living ally for max(1, floor(Mend healing / 3)) HP. No MP cost. Requires a correct answer.",
+          isCrossClass: false,
+        }, {
           id: "mend",
           name: "Mend",
           description: "Heals target for MND HP. Costs 1 MP.",

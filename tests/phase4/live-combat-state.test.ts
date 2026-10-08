@@ -279,3 +279,20 @@ test("a teacher cannot issue a student departure", async () => {
   assert.match(h.messages.at(-1).error, /Student role required/);
   assert.ok(h.data.get("room").snapshot.players[student().id]);
 });
+
+test("restored Durable Object persists the Priest action upgrade before accepting the next answer", async () => {
+  const s = started("priest");
+  s.players[student().id].availableAbilities = ["attack", "mend"];
+  s.players[student().id].questionAction = { ability: "attack", targetId: "e1" };
+  s.players[student().id].health--;
+  s.phaseDeadline = Date.now() + 100000;
+  const h = harness({ fight, snapshot: s, receipts: [] });
+  await h.object.webSocketMessage(h.socket as any, JSON.stringify({ type: "answer", commandId: "priest-recovered-answer", round: 1, questionId: "q1", answer: "4" }));
+  const recovered = h.data.get("room").snapshot;
+  assert.deepEqual(recovered.players[student().id].availableAbilities, ["first_aid", "mend"]);
+  assert.deepEqual(recovered.players[student().id].questionAction, { ability: "first_aid", targetId: student().id });
+  assert.equal(recovered.players[student().id].hasAnswered, true);
+  assert.equal(recovered.players[student().id].health, s.players[student().id].health);
+  assert.equal(recovered.players[student().id].mp, s.players[student().id].mp);
+  assert.deepEqual(recovered.enemies, s.enemies);
+});

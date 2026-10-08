@@ -50,6 +50,7 @@ export const SUPPORT = new Set([
   "crescendo",
 ]);
 export const ALLIES = new Set([
+  "first_aid",
   "warrior_block",
   "shield_bash",
   "healing_potion",
@@ -124,7 +125,7 @@ export function availableAbilities(
   levels: Partial<Record<CharacterClass, number>>,
   equipped: string[] = [],
 ): string[] {
-  const result = ["attack"];
+  const result = [defaultQuestionAbility(job)];
   for (const [level, reward] of Object.entries(JOB_TREE[job].levelRewards))
     if (+level <= (levels[job] || 1))
       for (const ability of reward.abilities || [])
@@ -145,6 +146,8 @@ export function availableAbilities(
   return [...new Set(result)];
 }
 export function abilityProblem(p: CombatPlayer, id: string): string | null {
+  if (p.characterClass === "priest" && id === "attack")
+    return "Priests use First Aid instead of Attack";
   if (!p.availableAbilities.includes(id))
     return "Ability is not unlocked or equipped";
   if ((p.cooldowns[id] || 0) > 0) return "Ability is cooling down";
@@ -161,6 +164,27 @@ export function abilityProblem(p: CombatPlayer, id: string): string | null {
   if (id === "frostbolt" && p.questionAction?.ability === "fireball")
     return "Frostbolt cannot follow Fireball";
   return null;
+}
+
+export function defaultQuestionAbility(job: CharacterClass): string {
+  return job === "priest" ? "first_aid" : "attack";
+}
+
+// Damage-capable actions, including support-phase attacks and equipped cross-class skills.
+// Healing, crafting and buffs alone cannot defeat an enemy.
+const OFFENSIVE = new Set([
+  "attack", "shield_bash", "crushing_blow", "fireball", "frostbolt", "fireblast",
+  "manabomb", "headshot", "killshot", "hex", "siphon", "abyssal_drain",
+  "sacred_strike", "holy_judgment", "ruin_strike", "blood_price", "shadow_requiem",
+  "crimson_slash", "hemorrhage", "raining_blood", "flurry", "focused_palm",
+  "twin_shot", "hunters_volley", "arrowstorm", "finale", "crescendo",
+]);
+export function hasOffensiveAbility(abilities: readonly string[]): boolean {
+  return abilities.some(id => OFFENSIVE.has(canonicalAbility(id)));
+}
+
+export function firstAidHealing(mendHealing: number): number {
+  return Math.max(1, Math.floor(mendHealing / 3));
 }
 
 // Selection reserves resources; only the authoritative resolution spends them.

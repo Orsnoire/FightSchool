@@ -169,15 +169,34 @@ other abilities, and knockouts also affect the comparison. Regression tests run
 the actual engine through the perfect ten-question sequence, misses, timeouts,
 cross-class Headshot, and storage round-trips.
 
-## Deferred Priest direction
+## Priest First Aid (review branch, not deployed)
 
-Replace Priest's basic attack with free First Aid at
-`max(1, floor(Mend healing / 3))`. The current level-one spell is Mend and heals
-MND for 1 MP; starting First Aid would heal 1 HP. This is not implemented yet.
-When it is, add a solo warning for loadouts without offensive abilities, provide
-a real partner/group entry path (current solo rooms are private), and exclude a
-pure healer's former basic attack from encounter damage estimates.
+Priest's basic attack is replaced by free **First Aid**, an ally-targeted question
+ability healing `max(1, floor(Mend healing / 3))`. Mend still heals MND for 1 MP;
+First Aid uses the same MND stat, so a starting Priest heals 1 HP. Both require a
+correct answer. First Aid can target any living participant, including self,
+cannot resurrect, and grants healing totals and threat only for actual restored HP.
 
+The default action is self First Aid, including unanswered questions and host
+resurrection. Wrong/missing answers do no healing and retain the wrong-answer
+penalty. The server rejects Priest Attack commands. Saved active, queued, and
+departed Priest loadouts replace obsolete Attack with First Aid on recovery,
+including retargeting an old Attack choice to self. HP, MP, totals, question state,
+phase deadlines and enemy HP are preserved; finished receipts are unchanged.
+
+Encounter estimates contribute zero damage for a loadout without an offensive
+ability; an equipped offensive cross-class ability restores a damage estimate.
+The current basic-damage proxy is retained for damage-capable loadouts. Minimum
+enemy HP remains one; an all-healer party still needs an offensive loadout.
+
+Before creating a solo room, the Fight Library warns when the loaded job and
+validated cross-class unlocks contain no offensive ability. Students can change
+equipment, join a teacher-hosted group, or explicitly continue solo anyway.
+Solo rooms remain private. Group entry reuses the existing student lobby's real
+six-character session-code flow and the October 7 join/rejoin behavior: students
+can join waiting or active teacher-hosted rooms, enter at a question boundary,
+and receive participation-based rewards. Intentionally removed students still
+need host approval. No second room type or duplicate join implementation is added.
 
 ## October 7 classroom corrections
 

@@ -27,6 +27,9 @@ import {
   COMBOS,
   COOLDOWNS,
   ULTIMATES,
+  defaultQuestionAbility,
+  firstAidHealing,
+  hasOffensiveAbility,
 } from "../../shared/combat/abilities.ts";
 import type {
   CombatSnapshot,
@@ -183,7 +186,7 @@ export function participatedRounds(state: CombatSnapshot, player: CombatPlayer):
 export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo = false): CombatSnapshot {
   if (state.currentPhase !== "waiting") return state;
   const players = Object.values(state.players);
-  const damage = players.reduce((sum, p) => sum + Math.max(1, baseDamage(p)), 0);
+  const damage = players.reduce((sum, p) => sum + encounterDamageEstimate(p), 0);
   const questions = Math.max(1, fight.questions.length);
   let budget = Math.max(1, Math.ceil(damage * questions * 0.9));
   let soloEnemyDamageCap: number | undefined;
@@ -192,7 +195,7 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
     soloEnemyDamageCap = Math.max(1, Math.floor(p.maxHealth / questions));
     // A perfect basic-attack run must finish before unavoidable counterattacks KO a solo player.
     const rounds = Math.ceil(p.health / soloEnemyDamageCap);
-    budget = Math.min(budget, Math.max(1, baseDamage(p)) * rounds);
+    budget = Math.min(budget, Math.max(1, encounterDamageEstimate(p)) * rounds);
   }
   const weight = state.enemies.reduce((sum, e) => sum + e.difficultyMultiplier, 0) || 1;
   let enemies = state.enemies.map((e) => {
@@ -202,7 +205,7 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   if (solo && players.length === 1) {
     // Whole basic attacks are the useful unit: rounding each enemy up in HP
     // can otherwise require extra fatal counterattack rounds in a multi-enemy fight.
-    const attack = Math.max(1, baseDamage(players[0]));
+    const attack = Math.max(1, encounterDamageEstimate(players[0]));
     const rounds = Math.max(enemies.length, Math.floor(budget / attack));
     const allocated = enemies.map(() => 1);
     for (let remaining = rounds - enemies.length; remaining > 0; remaining--) {
@@ -244,10 +247,7 @@ export function applyAnswer(
   player.hasAnswered = true;
   player.currentAnswer = answer;
   player.lastAnswerCorrect = answersMatch(answer, q.correctAnswer, "trimmed");
-  player.questionAction ||= {
-    ability: "attack",
-    targetId: next.enemies.find((e) => e.health > 0)?.id || "",
-  };
+  player.questionAction ||= defaultQuestionAction(player, next);
   return next;
 }
 export function allLivingPlayersAnswered(state: CombatSnapshot): boolean {
@@ -352,7 +352,7 @@ export function resurrectPlayer(state: CombatSnapshot, id: string): CombatSnapsh
     revived.hasAnswered = true;
     revived.currentAnswer = "";
     revived.lastAnswerCorrect = false;
-    revived.questionAction = { ability: "attack", targetId: next.enemies.find(e => e.health > 0)?.id || "" };
+    revived.questionAction = defaultQuestionAction(revived, next);
   }
   event(next, "heal", "host", id, 1, `Host resurrected ${revived.nickname} with 1 HP`);
   leader(next);
@@ -537,6 +537,32 @@ export function baseDamage(p: CombatPlayer): number {
   return calculatePlayerBaseDamage(p.stats, p.characterClass);
 }
 
+export function encounterDamageEstimate(p: CombatPlayer): number {
+  return hasOffensiveAbility(p.availableAbilities) ? Math.max(1, baseDamage(p)) : 0;
+}
+
+function defaultQuestionAction(p: CombatPlayer, state: CombatSnapshot) {
+  return { ability: defaultQuestionAbility(p.characterClass),
+    targetId: p.characterClass === "priest" ? p.studentId : state.enemies.find(e => e.health > 0)?.id || "" };
+}
+
+/** Upgrade saved Priest loadouts and obsolete default choices without resetting combat. */
+export function upgradePriestActions(state: CombatSnapshot): CombatSnapshot {
+  if (state.currentPhase === "game_over") return state;
+  const players = [...Object.values(state.players), ...Object.values(state.pendingPlayers || {}), ...Object.values(state.departedPlayers || {})];
+  if (!players.some(p => p.characterClass === "priest" && (
+    p.availableAbilities.includes("attack") || !p.availableAbilities.includes("first_aid") || p.questionAction?.ability === "attack"
+  ))) return state;
+  const next = structuredClone(state);
+  for (const p of [...Object.values(next.players), ...Object.values(next.pendingPlayers || {}), ...Object.values(next.departedPlayers || {})]) {
+    if (p.characterClass !== "priest") continue;
+    p.availableAbilities = [...new Set(["first_aid", ...p.availableAbilities.filter(id => id !== "attack")])];
+    if (p.questionAction?.ability === "attack") p.questionAction = defaultQuestionAction(p, next);
+  }
+  next.revision++;
+  return next;
+}
+
 function applyAbility(
   s: CombatSnapshot,
   p: CombatPlayer,
@@ -704,6 +730,9 @@ function applyAbility(
       break;
     case "mend":
       heal(s, p, targetId, mnd);
+      break;
+    case "first_aid":
+      heal(s, p, targetId, firstAidHealing(mnd));
       break;
     case "purify":
       if (s.players[targetId]) delete s.players[targetId].buffs.poison;
@@ -904,10 +933,7 @@ export function advancePhase(
           p.lastAnswerCorrect = false;
           p.currentAnswer = "";
         }
-        p.questionAction ||= {
-          ability: "attack",
-          targetId: s.enemies.find((e) => e.health > 0)?.id || "",
-        };
+        p.questionAction ||= defaultQuestionAction(p, s);
       }
     s.currentPhase = "actions";
     s.phaseDeadline = now + 20000;

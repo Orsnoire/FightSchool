@@ -76,6 +76,7 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "abyssal_drain": { id: "abyssal_drain", icon: "Waves", name: "Abyssal Drain", description: "Unleash void energy to drain all enemies", abilityClass: ["spell", "healing"] },
   
   // PRIEST
+  "first_aid": { id: "first_aid", icon: "Heart", name: "First Aid", description: "Heal a living ally for one third of Mend, rounded down (minimum 1 HP). No MP cost.", abilityClass: ["healing"], opensHealingWindow: true, mpCost: 0 },
   "mend": { id: "mend", icon: "Sparkles", name: "Mend", description: "Heal an ally with holy magic", abilityClass: ["healing", "spell"], opensHealingWindow: true, mpCost: 1 },
   "purify": { id: "purify", icon: "Wind", name: "Purify", description: "Remove negative effects from an ally", abilityClass: ["spell", "support"], requiresTarget: true, mpCost: 1 },
   "bless": { id: "bless", icon: "Sun", name: "Bless", description: "Grant divine protection to an ally", abilityClass: ["spell", "support"], requiresTarget: true },

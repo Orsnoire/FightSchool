@@ -152,6 +152,7 @@ test("every unlocked ability has an executable rule and can only run in its docu
         "healing_potion",
         "shield_potion",
         "mend",
+        "first_aid",
         "purify",
         "bless",
         "healing_guard",
