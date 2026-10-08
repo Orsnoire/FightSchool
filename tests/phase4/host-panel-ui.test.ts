@@ -29,7 +29,7 @@ test("host panel keeps controls with the code and updates attendance, eligibilit
   const { act, createElement } = await import("react");
   const { createRoot } = await import("react-dom/client");
   const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
-  const cache = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0, queryFn: async ({queryKey}) => String(queryKey[0]).endsWith("host-guilds")?[]:fight } } });
+  const cache = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0, queryFn: async ({queryKey}) => String(queryKey[0]).endsWith("host-guilds") ? [] : String(queryKey[0]).includes("/sessions") ? {sessionId:"ABC234"} : fight } } });
   const root = createRoot(document.getElementById("root")!);
   try {
     const outfile = join(dir, "host.mjs");

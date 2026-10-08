@@ -594,3 +594,11 @@ limit-break/job rewards, permanent progression with encounter-specific caps,
 AA overflow banking, shop tier browsing and tier/role fight authoring. Initial
 scaling presets require classroom balance review. AA upgrade purchases remain
 future work. This implementation is not deployed.
+
+## Explicit host-session controls and team-race feasibility
+
+The [October 8 host-session rules](combat/host-sessions-and-team-race.md) supersede
+implicit session creation on page load and the proposed automatic end-on-launch.
+Use explicit Join / End / Launch controls and session-specific reconnect URLs.
+The same document records the code-level team-race feasibility review; team race
+and party-scaled swarm counts remain future implementation, not released features.

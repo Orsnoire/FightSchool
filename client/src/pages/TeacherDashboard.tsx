@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,33 @@ export default function TeacherDashboard() {
     refetchOnMount: true,
     refetchInterval: 5000,
   });
+
+  const hostedKey = ["/api/fights/hosted-sessions"];
+  const hosted = useQuery<Array<{sessionId: string; fightId: string; status: string}>>({
+    queryKey: [...hostedKey, teacherId], queryFn: async () => (await apiRequest("GET", hostedKey[0])).json(), enabled: isAuthenticated && !isChecking,
+    refetchInterval: 5000, refetchOnWindowFocus: true, refetchOnMount: "always",
+  });
+  const hostActionPending = useRef(false);
+  const hostAction = useMutation({
+    mutationFn: async ({ fightId, endIds }: {fightId: string; endIds?: string[]}) => {
+      if (endIds) {
+        // Use the displayed room IDs: a concurrent new room must never be ended.
+        for (const id of endIds) await apiRequest("POST", `/api/combat/${id}/end`);
+        return;
+      }
+      const guilds = await (await apiRequest("GET", `/api/fights/${fightId}/host-guilds`)).json();
+      if (guilds.length > 1) { navigate(`/teacher/host/${fightId}`); return; }
+      const room = await (await apiRequest("POST", `/api/fights/${fightId}/sessions`, {})).json();
+      navigate(`/teacher/host/${fightId}?session=${room.sessionId}`);
+    },
+    onError: (error: Error) => toast({title: "Hosting action failed", description: error.message, variant: "destructive"}),
+    onSettled: () => { hostActionPending.current = false; queryClient.invalidateQueries({queryKey: hostedKey}); },
+  });
+  const runHostAction = (fightId: string, endIds?: string[]) => {
+    if (hostActionPending.current) return;
+    hostActionPending.current = true;
+    hostAction.mutate({fightId, endIds});
+  };
 
   const deleteFightMutation = useMutation({
     mutationFn: async (fightId: string) => {
@@ -81,11 +108,11 @@ export default function TeacherDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950">
       <header className="sticky top-0 z-50 border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex flex-wrap gap-3 items-center justify-between">
           <h1 className="text-2xl font-serif font-bold text-primary" data-testid="text-title">
             Quest Master
           </h1>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Link href="/teacher/items">
               <Button variant="outline" size="default" data-testid="button-manage-items">
                 <Swords className="mr-2 h-5 w-5" />
@@ -154,6 +181,7 @@ export default function TeacherDashboard() {
           </p>
         </div>
 
+        {hosted.isError && <p role="alert" className="mb-4 text-white">Could not check ongoing sessions. <Button variant="outline" onClick={() => hosted.refetch()}>Retry session check</Button></p>}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -167,7 +195,11 @@ export default function TeacherDashboard() {
           </div>
         ) : fights && fights.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {fights.map((fight) => (
+            {fights.map((fight) => {
+              const sessions = (hosted.data || []).filter(room => room.fightId === fight.id);
+              const current = sessions.find(room => room.status === "active") || sessions[0];
+              const unavailable = hosted.isPending || hosted.isError || hostAction.isPending;
+              return (
               <Card key={fight.id} className="hover-elevate" data-testid={`card-fight-${fight.id}`}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -202,19 +234,26 @@ export default function TeacherDashboard() {
                     <span>{fight.enemies.length} Enemies</span>
                   </div>
                 </CardContent>
-                <CardFooter className="flex gap-2">
+                <CardFooter className="flex flex-wrap gap-2">
                   <Link href={`/teacher/edit/${fight.id}`} className="flex-1">
                     <Button variant="outline" className="w-full" data-testid={`button-edit-${fight.id}`}>
                       <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </Button>
                   </Link>
-                  <Link href={`/teacher/host/${fight.id}`} className="flex-1">
-                    <Button variant="default" className="w-full" data-testid={`button-host-${fight.id}`}>
-                      <Users className="mr-2 h-4 w-4" />
-                      Launch Host
-                    </Button>
-                  </Link>
+                  <Button variant="default" className="flex-1 whitespace-normal h-auto min-h-10" disabled={unavailable}
+                    data-testid={`button-host-${fight.id}`} onClick={() => current
+                      ? navigate(`/teacher/host/${fight.id}?session=${current.sessionId}`)
+                      : runHostAction(fight.id)}>
+                    <Users className="mr-2 h-4 w-4 shrink-0" />
+                    {hosted.isPending ? "Checking sessions…" : current ? "Join fight in progress" : "Launch Host"}
+                  </Button>
+                  {sessions.length > 0 && <Button variant="outline" className="w-full order-last text-destructive"
+                    disabled={unavailable} data-testid={`button-end-session-${fight.id}`}
+                    onClick={() => {
+                      if (window.confirm("End the existing hosted session? Students keep earned activity XP plus proportional base XP. Victory-only gold and loot are not awarded."))
+                        runHostAction(fight.id, sessions.map(room => room.sessionId));
+                    }}>End existing session{sessions.length > 1 ? "s" : ""}</Button>}
                   <Button 
                     variant="destructive" 
                     size="icon" 
@@ -227,7 +266,7 @@ export default function TeacherDashboard() {
                   </Button>
                 </CardFooter>
               </Card>
-            ))}
+            );})}
           </div>
         ) : (
           <Card className="border-dashed bg-card/90">

@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { neonConfig } from "@neondatabase/serverless";
 import { combatProfile, gameDatabase } from "../../worker/db/game-repository.ts";
-import worker from "../../worker/index.ts";
+import worker, { CombatSession } from "../../worker/index.ts";
 import { EQUIPMENT_SLOTS, STARTER_ITEM_IDS } from "../../shared/equipment-catalog.ts";
 import { initialAppearance, PALETTES } from "../../shared/avatar/appearance.ts";
 
@@ -60,6 +60,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
         return Response.json({ message: error.message, code: error.code }, { status: 400 });
       }
     };
+    const combatObjects = new Map<string, CombatSession>();
     const objects = new Map<string, { bytes: Uint8Array; type: string }>();
     const env = {
       DATABASE_URL: "postgresql://test:test@local.example/test",
@@ -73,7 +74,17 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
       ASSETS: { fetch: async () => new Response("SPA") },
       COMBAT_SESSIONS: {
         idFromName: (name: string) => name,
-        get: () => ({ fetch: async () => Response.json({ status: "ready", allowed: true }) }),
+        get: (name: string) => ({ fetch: async (input: Request | string, init?: RequestInit): Promise<Response> => {
+          if (name.startsWith("rate:") || name === "__readiness__") return Response.json({status:"ready",allowed:true});
+          if (!combatObjects.has(name)) {
+            const data = new Map();
+            const state = {storage: {get: async (key: string) => structuredClone(data.get(key)),
+              put: async (key: string, value: unknown) => { data.set(key, structuredClone(value)); },
+              setAlarm: async () => {}, deleteAlarm: async () => {}}, getWebSockets: () => []};
+            combatObjects.set(name, new CombatSession(state as any, env as any));
+          }
+          return combatObjects.get(name)!.fetch(input instanceof Request ? input : new Request(input, init));
+        } }),
       },
       OBJECTS: {
         head: async (key: string) => {
@@ -295,6 +306,35 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     const resumed = await api(`/api/fights/${fight.payload.id}/sessions`, "POST", teacher.cookie);
     assert.equal(resumed.payload.sessionId, room.payload.sessionId);
     await api(`/api/sessions/${room.payload.sessionId}`, "GET", student.cookie);
+    const lookup = `/api/fights/${fight.payload.id}/sessions`;
+    assert.equal((await api(lookup, "GET", teacher.cookie)).payload.sessionId, room.payload.sessionId);
+    await api(lookup, "GET", other.cookie, undefined, 403);
+    await api(lookup, "GET", student.cookie, undefined, 401);
+    assert.equal((await api("/api/fights/hosted-sessions", "GET", teacher.cookie)).payload.length, 1);
+    assert.equal((await api("/api/fights/hosted-sessions", "GET", other.cookie)).payload.length, 0);
+    await api("/api/fights/hosted-sessions", "GET", student.cookie, undefined, 401);
+    const endPath = `/api/combat/${room.payload.sessionId}/end`;
+    await api(endPath, "POST", other.cookie, undefined, 403);
+    await api(endPath, "POST", student.cookie, undefined, 401);
+    await api(endPath, "POST", teacher.cookie);
+    await api(endPath, "POST", teacher.cookie); // Safe retry of an unopened lobby.
+    assert.equal((await api(lookup, "GET", teacher.cookie)).payload, null);
+    await api(`/api/sessions/${room.payload.sessionId}`, "GET", student.cookie, undefined, 404);
+    const launches = await Promise.all(Array.from({length: 5}, () => worker.fetch(new Request(env.PUBLIC_ORIGIN + lookup, {
+      method:"POST", headers:{Origin:env.PUBLIC_ORIGIN,Cookie:teacher.cookie!},
+    }), env as any).then(async response => ({status: response.status, body: await response.json() as any}))));
+    assert.equal(new Set(launches.map(r => r.body.sessionId)).size, 1, JSON.stringify(launches));
+    assert.equal(launches.filter(r => r.status === 201).length, 1);
+    assert.equal((await api("/api/fights/hosted-sessions", "GET", teacher.cookie)).payload.length, 1);
+    assert.equal((await api(`${lookup}?sessionId=${room.payload.sessionId}`, "GET", teacher.cookie)).payload.status, "completed");
+    // A stale end request cannot close the new session.
+    await api(endPath, "POST", teacher.cookie);
+    assert.equal((await api(lookup, "GET", teacher.cookie)).payload.sessionId, launches[0].body.sessionId);
+    await pg.query("INSERT INTO live_combat_sessions (session_id,fight_id,teacher_id,solo_student_id) VALUES ('SOLO23',$1,$2,$3)", [fight.payload.id,teacher.payload.id,student.payload.id]);
+    assert.equal((await api("/api/fights/hosted-sessions", "GET", teacher.cookie)).payload.length, 1);
+    await api(`/api/combat/SOLO23/end`, "POST", teacher.cookie, undefined, 403);
+    await api(`${lookup}?sessionId=SOLO23`, "GET", teacher.cookie, undefined, 403);
+
     await api(`/api/student/${student.payload.id}/award-xp`, "POST", student.cookie, { xp: 100000 }, 403);
     const stamina = await api(`/api/student/${student.payload.id}/stamina`, "GET", student.cookie);
     assert.equal(stamina.payload.xpMultiplier, 1);

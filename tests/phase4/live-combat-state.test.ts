@@ -327,3 +327,48 @@ test("hosted and solo openings persist four fallback choices; recovery and teach
     assert.deepEqual(recovered.data.get('room').fight.lootTable,room.fight.lootTable);
   }
 });
+
+test("dashboard end is host-only, persists earned rewards once, broadcasts, and preserves a finished victory", async () => {
+  const s = started();
+  s.enemies[0].health = s.enemies[0].maxHealth * .3;
+  s.players[student().id].totals.questionsAnswered = 2;
+  const h = harness({fight, snapshot:s, receipts:[]});
+  let writes = 0;
+  h.object.setRepository({
+    findLiveCombatSession: async () => ({teacherId:fight.teacherId,status:"active"}),
+    persistResults: async (snapshot: any) => {
+      writes++;
+      assert.equal(snapshot.endedByHost,true);
+      assert.equal(snapshot.players[student().id].totals.questionsAnswered,2);
+      assert.equal(snapshot.enemies[0].health,s.enemies[0].health);
+      return [{studentId:student().id,xpEarned:9,goldReward:0}];
+    },
+  } as any);
+  const end = (actor = fight.teacherId) => h.object.fetch(new Request("https://internal/end", {method:"POST",headers:{
+    "x-questacademy-internal":"1","x-questacademy-actor-id":actor,"x-questacademy-session-id":"ABC234",
+  }}));
+  assert.equal((await end("other-teacher")).status,403);
+  await Promise.all([end(),end()]);
+  assert.equal(writes,1);
+  assert.equal(h.data.get("room").snapshot.currentPhase,"game_over");
+  assert.equal(h.alarm(),null);
+  assert.ok(h.messages.some(m=>m.type==="game_over"));
+  const won = h.data.get("room"); won.snapshot.victory=true;won.snapshot.endReason="Victory";
+  h.data.set("room",won);
+  await end();
+  assert.equal(h.data.get("room").snapshot.victory,true);
+  assert.equal(h.data.get("room").snapshot.endReason,"Victory");
+  assert.equal(writes,1);
+});
+
+test("dashboard end reports unfinished persistence and retries saved results without resuming combat", async () => {
+  const h=harness({fight,snapshot:started(),receipts:[]});let writes=0;
+  h.object.setRepository({findLiveCombatSession:async()=>({teacherId:fight.teacherId,status:"active"}),
+    persistResults:async()=>{if(++writes===1)throw new Error("offline");return [];}} as any);
+  const response=await h.object.fetch(new Request("https://internal/end",{method:"POST",headers:{
+    "x-questacademy-internal":"1","x-questacademy-actor-id":fight.teacherId,"x-questacademy-session-id":"ABC234",
+  }}));
+  assert.equal(response.status,503);assert.ok(h.alarm());
+  assert.equal(h.data.get("room").snapshot.currentPhase,"game_over");
+  await h.object.alarm();assert.equal(writes,2);assert.equal(h.data.get("room").resultsPersisted,true);
+});
