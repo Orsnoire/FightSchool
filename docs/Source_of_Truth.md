@@ -109,7 +109,9 @@ eight equipment slots, complete Tier 0 starters, loadout synchronization and
 visible equipment permissions with explicit new-armor classification were
 released October 7 in PRs #37–42. Migration 0011 preserves existing equipment.
 See [the release record](cloudflare/full-migration.md) for deployment evidence and
-[starter wardrobe](starter-wardrobe.md) for future slot extension hooks.
+[starter wardrobe](starter-wardrobe.md) for future slot extension hooks. Per-job remembered equipment and cross-class
+ability loadouts are implemented for review with migration 0012, not yet deployed;
+see the same wardrobe document for restoration and concurrency rules.
 
 
 ## Combat Flow Refactor

@@ -962,7 +962,7 @@ export default function Lobby() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-serif">Select Your Class</DialogTitle>
             <DialogDescription>
-              Preview your starter outfit, then select a class below to save. Your appearance is shared across jobs. Unfinished weapons display empty hands.
+              Preview your starter outfit, then select a class below to save. Gear and cross-class ability choices are remembered for each job. Your appearance is shared across jobs. Unfinished weapons display empty hands.
             </DialogDescription>
           </DialogHeader>
           

@@ -1,3 +1,4 @@
+import { getCrossClassAbilities } from "../../shared/jobSystem";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -15,6 +16,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
   const previousFetch = neonConfig.fetchFunction;
   const databaseErrors: string[] = [];
   let subrequests = 0;
+  let beforeLoadoutWrite: (() => Promise<void>) | undefined;
   try {
     const journal = JSON.parse(readFileSync(new URL("../../migrations/cloudflare/meta/_journal.json", import.meta.url), "utf8"));
     let legacyLoadout: Record<string, unknown> | undefined;
@@ -29,7 +31,9 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     }
     const migrated = (await pg.query<Record<string, unknown>>('SELECT * FROM students WHERE id=$1', [legacyId])).rows[0];
     assert.equal(migrated.arms, null);
-    const { arms: _arms, ...preserved } = migrated;
+    assert.deepEqual(migrated.job_loadouts, {});
+    assert.equal(migrated.loadout_revision, 0);
+    const { arms: _arms, job_loadouts: _saved, loadout_revision: _revision, ...preserved } = migrated;
     assert.deepEqual(preserved, legacyLoadout, 'arms migration preserves every existing student field');
     await pg.query('DELETE FROM students WHERE id=$1', [legacyId]);
     neonConfig.fetchFunction = async (_url, init) => {
@@ -39,6 +43,11 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
       }
       const { query, params } = JSON.parse(init!.body as string);
       try {
+        if (beforeLoadoutWrite && query.startsWith('update "students"') && query.includes('"loadout_revision"')) {
+          const hook = beforeLoadoutWrite;
+          beforeLoadoutWrite = undefined;
+          await hook();
+        }
         const result = await pg.query<any[]>(query, params, { rowMode: "array" });
         const rows = result.rows.map(row => row.map(value =>
           value === null ? null : value instanceof Date ? value.toISOString() :
@@ -178,6 +187,41 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     const profile = await combatProfile(gameDatabase(env.DATABASE_URL), sameJob);
     assert.equal(profile.equipment?.str, 36);
     assert.equal(profile.equipment?.agi, 8);
+    // Switching away snapshots all eight upgrades plus abilities; returning restores them from SQL.
+    const characterPath = `/api/student/${student.payload.id}/character`;
+    await pg.query("UPDATE student_job_levels SET level=15 WHERE student_id=$1 AND job_class='wizard'", [student.payload.id]);
+    const cross = getCrossClassAbilities('warrior', {wizard:15} as any);
+    await api(equipPath, 'PATCH', student.cookie, {crossClassAbility1:cross[0].id,crossClassAbility2:cross[1].id});
+    await api(equipPath, 'PATCH', student.cookie, {crossClassAbility2:cross[0].id},400);
+    const wizardAgain = (await api(characterPath,'PATCH',student.cookie,{characterClass:'wizard',gender:'B'})).payload;
+    assert.equal(wizardAgain.arms,null,'deliberately empty wizard arms are remembered');
+    assert.equal(wizardAgain.headgear,'basic_laurel');
+    assert.equal(wizardAgain.crossClassAbility1,null,'warrior abilities do not leak to wizard');
+    const back = (await api(characterPath,'PATCH',student.cookie,{characterClass:'warrior',gender:'B'})).payload;
+    for (const slot of EQUIPMENT_SLOTS) assert.equal(back[slot],customLoadout[slot]);
+    assert.equal(back.crossClassAbility1,cross[0].id);
+    assert.equal(back.crossClassAbility2,cross[1].id);
+    assert.equal(back.jobLoadouts,undefined,'internal saved maps are not exposed or client writable');
+    const relogin = await api('/api/student/login','POST',undefined,{nickname:'Test student',password});
+    assert.equal(relogin.payload.crossClassAbility1,cross[0].id);
+    assert.equal(relogin.payload.weapon,customLoadout.weapon);
+    // A concurrent equipment edit wins; the stale switch fails without saving a partial outgoing snapshot.
+    const beforeRace = (await pg.query<any>('SELECT job_loadouts FROM students WHERE id=$1',[student.payload.id])).rows[0];
+    beforeLoadoutWrite = async () => { await pg.query('UPDATE students SET arms=NULL,loadout_revision=loadout_revision+1 WHERE id=$1',[student.payload.id]); };
+    await api(characterPath,'PATCH',student.cookie,{characterClass:'wizard',gender:'A'},409);
+    const raced = (await api(`/api/student/${student.payload.id}`,'GET',student.cookie)).payload;
+    assert.equal(raced.characterClass,'warrior');
+    assert.equal(raced.arms,null);
+    assert.deepEqual((await pg.query<any>('SELECT job_loadouts FROM students WHERE id=$1',[student.payload.id])).rows[0],beforeRace);
+    beforeLoadoutWrite = async () => { await pg.query('UPDATE students SET cross_class_ability_2=NULL,loadout_revision=loadout_revision+1 WHERE id=$1',[student.payload.id]); };
+    await api(equipPath,'PATCH',student.cookie,{arms:customLoadout.arms},409);
+    await api(equipPath,'PATCH',student.cookie,{arms:customLoadout.arms});
+    // Editing a remembered item's permissions is honored when it is restored.
+    await api(characterPath,'PATCH',student.cookie,{characterClass:'wizard',gender:'A'});
+    await api(`/api/equipment-items/${customLoadout.arms}`,'PATCH',teacher.cookie,{tier:10});
+    const sanitized = (await api(characterPath,'PATCH',student.cookie,{characterClass:'warrior',gender:'A'})).payload;
+    assert.equal(sanitized.arms,'basic_plate_arms');
+    assert.equal(sanitized.weapon,customLoadout.weapon);
     await api('/api/equipment-items', 'POST', teacher.cookie, {name:'Not a starter',slot:'arms',itemType:'bracers',quality:'common',tier:0,stats:{}},400);
     await api(`/api/equipment-items/${customLoadout.arms}`, 'PATCH', teacher.cookie, {tier:2});
     await api(equipPath, 'PATCH', student.cookie, {arms:null});
@@ -188,6 +232,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(claymoreSave.payload.weapon,'basic_claymore');
     assert.equal(claymoreSave.payload.offhand,null);
     await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
+    await pg.query("UPDATE student_job_levels SET level=1 WHERE student_id=$1 AND job_class='wizard'", [student.payload.id]);
     const guild = await api("/api/guilds", "POST", teacher.cookie, { name: "Test guild" }, 201);
     await api(`/api/guilds/${guild.payload.id}/members`, "POST", student.cookie, { studentId: student.payload.id });
     await api(`/api/guilds/${guild.payload.id}/members`, "GET", other.cookie, undefined, 403);
