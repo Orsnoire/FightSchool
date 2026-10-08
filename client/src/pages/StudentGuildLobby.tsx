@@ -1,9 +1,11 @@
+import { useStudentLoadout } from "@/hooks/useStudentLoadout";
+import { saveStudentLoadout } from "@/lib/studentLoadout";
 import { useAvatarAppearance } from "@/hooks/useAvatarAppearance";
 import { StaminaBar } from "@/components/StaminaBar";
 import { apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -44,12 +46,12 @@ export default function StudentGuildLobby() {
   const guildId = params?.id;
   const { toast } = useToast();
   const studentId = localStorage.getItem("studentId");
+  const client = useQueryClient();
+  const {student,jobLevels} = useStudentLoadout(studentId);
   const savedAppearance = useAvatarAppearance(studentId);
   const [hostingFightId, setHostingFightId] = useState<string | null>(null);
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
   const [showClassModal, setShowClassModal] = useState(false);
-  const [student, setStudent] = useState<Student | null>(null);
-  const [jobLevels, setJobLevels] = useState<StudentJobLevel[]>([]);
 
   // Validate guild ID exists in URL - redirect to student dashboard if missing
   useEffect(() => {
@@ -68,26 +70,6 @@ export default function StudentGuildLobby() {
     queryKey: [`/api/guilds/${guildId}`],
     enabled: !!guildId,
   });
-
-  // Fetch student data
-  const { data: studentData } = useQuery<Student>({
-    queryKey: [`/api/student/${studentId}`],
-    enabled: !!studentId,
-  });
-
-  // Fetch job levels
-  const { data: jobLevelsData } = useQuery<StudentJobLevel[]>({
-    queryKey: [`/api/student/${studentId}/job-levels`],
-    enabled: !!studentId,
-  });
-
-  // Update student and jobLevels when data is fetched
-  if (studentData && student?.id !== studentData.id) {
-    setStudent(studentData);
-  }
-  if (jobLevelsData && jobLevelsData.length !== jobLevels.length) {
-    setJobLevels(jobLevelsData);
-  }
 
   // Fetch guild members
   const { data: members = [] } = useQuery<GuildMemberWithStudent[]>({
@@ -121,31 +103,12 @@ export default function StudentGuildLobby() {
       return;
     }
     
-    const response = await fetch(`/api/student/${studentId}/character`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ characterClass: newClass, gender: student.gender }),
-    });
-
-    if (response.ok) {
-      const updatedStudent = await response.json();
-      setStudent(updatedStudent);
+    try {
+      await saveStudentLoadout(client, studentId!, 'character', {characterClass:newClass,gender:student.gender});
       setShowClassModal(false);
-      toast({ 
-        title: "Class changed!", 
-        description: `You are now a ${newClass}` 
-      });
-      
-      // Reload job levels to reflect new current class
-      const jobResponse = await fetch(`/api/student/${studentId}/job-levels`);
-      if (jobResponse.ok) {
-        setJobLevels(await jobResponse.json());
-      }
-    } else {
-      toast({ 
-        title: "Failed to change class", 
-        variant: "destructive" 
-      });
+      toast({title:'Class changed!',description:`You are now a ${newClass}`});
+    } catch(error) {
+      toast({title:'Failed to change class',description:error instanceof Error ? error.message : 'Please try again.',variant:'destructive'});
     }
   };
 

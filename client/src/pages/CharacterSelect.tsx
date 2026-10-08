@@ -1,3 +1,5 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { saveStudentLoadout } from "@/lib/studentLoadout";
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -19,16 +21,13 @@ export default function CharacterSelect() {
   const [saving, setSaving] = useState(false);
   // Only a saved appearance update replaces shared values. Changing job never does.
   useEffect(() => { if (saved.data) setAppearance({ ...saved.data }); }, [saved.data]);
+  const client = useQueryClient();
   const handleConfirm = async () => {
     if (!studentId || saved.isLoading || saved.isError || saving) return;
     setSaving(true);
     try {
       const persisted = await saved.save(appearance);
-      const response = await fetch(`/api/student/${studentId}/character`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ characterClass: job, gender: persisted.modelId === 'human-female-v1' ? 'B' : 'A' }),
-      });
-      if (!response.ok) throw new Error('Failed to save character');
+      await saveStudentLoadout(client, studentId!, 'character', {characterClass:job,gender:persisted.modelId === 'human-female-v1' ? 'B' : 'A'});
       navigate('/student/lobby');
     } catch {
       toast({ title: 'Unable to save your character. Please try again.', variant: 'destructive' });

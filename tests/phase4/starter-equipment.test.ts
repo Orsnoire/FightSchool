@@ -39,3 +39,24 @@ test('eight equipment slots include distinct arms and hands, with Tier 0 starter
  assert.equal(calculateLoadoutEquipmentStats(getStartingEquipment('priest')).mat, 1);
  assert.equal(calculateLoadoutEquipmentStats({arms:null}).str, 0);
 });
+
+test('Tier 0 completes every armor material and supported weapon family without changing starter balance', () => {
+ for (const category of ['heavy_armor','leather_armor','light_armor']) {
+  for (const slot of ['headgear','armor','arms','hands','legs','feet']) {
+   assert.ok(STARTER_ITEM_IDS.some(id => EQUIPMENT_ITEMS[id].slot === slot && EQUIPMENT_ITEMS[id].armorCategory === category), `${category} ${slot}`);
+  }
+ }
+ for (const weapon of ['sword','staff','bow','herbs','two-handed-sword','fist','claws','harp','spoon']) {
+  assert.ok(STARTER_ITEM_IDS.some(id=>EQUIPMENT_ITEMS[id].weaponType===weapon && EQUIPMENT_ITEMS[id].tier===0),weapon);
+ }
+ const claymore=EQUIPMENT_ITEMS.basic_claymore;
+ assert.equal(claymore.name,'Starter Claymore (Two-Handed Sword)');
+ assert.equal(claymore.weaponType,'two-handed-sword');
+ assert.equal(equipmentExclusion('blood_knight',claymore),null);
+ assert.equal(getStartingEquipment('blood_knight').weapon,claymore.id);
+ assert.deepEqual(claymore.stats,{atk:2});
+ for (const job of ALL_CHARACTER_CLASSES) {
+  const loadout=getStartingEquipment(job);
+  for (const slot of ['headgear','armor','arms','hands','legs','feet'] as const) assert.ok(loadout[slot],`${job} ${slot}`);
+ }
+});

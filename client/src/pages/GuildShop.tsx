@@ -1,3 +1,4 @@
+import { refreshStudentLoadout } from "@/lib/studentLoadout";
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
 import type { EquipmentSlot } from "@shared/schema";
 import { useState } from "react";
@@ -99,7 +100,7 @@ export default function GuildShop() {
       if (!studentId) return;
 
       try {
-        await apiRequest("POST", `/api/student/${studentId}/purchase-item`, {
+        const response = await apiRequest("POST", `/api/student/${studentId}/purchase-item`, {
           itemId,
           price,
         });
@@ -110,8 +111,7 @@ export default function GuildShop() {
         });
 
         // Invalidate relevant queries
-        queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}`] });
-        queryClient.invalidateQueries({ queryKey: [`/api/student/${studentId}/currency`] });
+        await refreshStudentLoadout(queryClient, studentId!, await response.json());
       } catch (error: any) {
         toast({
           title: "Purchase Failed",

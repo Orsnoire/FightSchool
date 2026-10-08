@@ -10,8 +10,8 @@ and deployment. No deployment is authorized for this intermediate checkpoint.
 | Priest First Aid, no-offense solo warning, healer encounter estimates | Implemented and tested in [PR #37](https://github.com/Orsnoire/FightSchool/pull/37) | Awaiting combined merge/deployment; uses MND / 3, floor, minimum 1 |
 | 1. Calculated ability values | Implemented and tested in [PR #38](https://github.com/Orsnoire/FightSchool/pull/38), based on PR #37 | Awaiting review and combined merge/deployment |
 | 2. Informative loot choices | Implemented and tested in [PR #39](https://github.com/Orsnoire/FightSchool/pull/39), based on PR #38 | Awaiting review and combined merge/deployment; names, icons, slot, rarity, tier and signed stats shown before claiming |
-| Gear expansion and Tier 0 starters | Implemented and tested in `feat/expanded-equipment-slots`, based on PR #39 | Awaiting review and combined release; migration 0011 required before Worker activation |
-| 3. Loadout display synchronization | Pending | Refresh/invalidate student, equipment and job-level data consistently after class/equipment changes; the First Aid solo-entry freshness check is only a scoped safeguard |
+| Gear expansion and Tier 0 starters | Implemented and tested in [PR #40](https://github.com/Orsnoire/FightSchool/pull/40), based on PR #39 | Awaiting review and combined release; migration 0011 required before Worker activation |
+| 3. Loadout display synchronization and Tier 0 completion | Implemented and tested in `feat/loadout-sync-starter-completion`, based on PR #40 | Awaiting review and combined release; shared cache refresh and complete starter catalog |
 | Combined release | Pending | Finish the individual items, check the combined changes, merge, deploy and verify live behavior; update this table with release evidence |
 
 ## Item 1: calculated values
@@ -27,7 +27,7 @@ Lobby ability cards show starting-encounter values for the currently loaded
 class, equipment and progression, including the First Aid card for Priests.
 Wizard previews use half maximum MP, consistent with new encounters. Temporary
 combat buffs, spent resources, current streaks and target effects belong to the
-combat view. General cache synchronization remains item 3.
+combat view. General cache synchronization is implemented in item 3 below.
 
 Fixed damage and healing magnitudes are shared with the engine. Damage previews
 are base values before target bonuses, critical hits and enemy HP caps; healing
@@ -84,6 +84,39 @@ for migration, extension and pending-art boundaries.
 Validation: `npm run check`, all 113 tests in `npm test`,
 `npm run build:cloudflare` and `git diff --check` pass. Hosted browser CI and
 live deployment checks remain separate; this branch is not deployed.
+
+## Item 3: loadout display synchronization and complete Tier 0 catalog
+
+The main lobby, guild lobby and equipment screen now subscribe to the same
+student/job-level queries. They no longer keep separate copies that ignore
+same-student or same-length progression updates. Opening or returning focus to
+these screens refreshes the current loadout and progression. Lobby calculated
+ability values wait for loadout and equipment refreshes to finish.
+
+Character creation, class changes, equipment changes and cross-class ability
+changes share a save path: serialize edits per student, use the authoritative
+response, cancel older student reads and invalidate student, job-level, equipment,
+currency and guild-member displays. Failed saves preserve the last confirmed
+loadout and refresh server state. Purchases use the same refresh path; combat
+completion and reward claims already invalidate cached queries. Inactive screens
+refresh on their next visit. No active combat snapshot or resource reset is added.
+
+Tier 0 additions are linen gloves, linen pants, cloth shoes, claws (+1 ATK) and
+a spoon (+1 RTK). The existing +2 ATK `basic_claymore` is clearly labeled
+“Starter Claymore (Two-Handed Sword).” All three armor categories cover six body
+slots, all nine supported weapon types have a starter, and shield/potion/quiver
+remain available. Cloth job defaults now include the three new zero-stat pieces.
+Permanent catalog entitlements provide these items to existing and new students
+without duplicated database inventory rows or replacing existing equipped gear.
+No additional migration or live database seeding is needed for these additions.
+
+Validation: `npm run check`, all 117 tests in `npm test`,
+`npm run build:cloudflare` and `git diff --check` pass. Coverage includes same-ID
+and same-count cache updates, inactive cache invalidation, older in-flight reads,
+serialized edits, failure/retry, actual mounted equipment UI updates, complete
+starter compatibility and real API claymore equip/metadata. All individual batch
+items are implemented; combined review, merge, migration, deployment and live
+acceptance remain pending.
 
 ## Larger work outside this batch
 

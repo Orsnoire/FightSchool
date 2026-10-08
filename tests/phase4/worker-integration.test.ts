@@ -183,6 +183,11 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     await api(equipPath, 'PATCH', student.cookie, {arms:null});
     await api(equipPath, 'PATCH', student.cookie, {arms:customLoadout.arms},400);
     await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
+    await pg.query("UPDATE students SET character_class='blood_knight',offhand=NULL WHERE id=$1", [student.payload.id]);
+    const claymoreSave = await api(equipPath, 'PATCH', student.cookie, {weapon:'basic_claymore'});
+    assert.equal(claymoreSave.payload.weapon,'basic_claymore');
+    assert.equal(claymoreSave.payload.offhand,null);
+    await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
     const guild = await api("/api/guilds", "POST", teacher.cookie, { name: "Test guild" }, 201);
     await api(`/api/guilds/${guild.payload.id}/members`, "POST", student.cookie, { studentId: student.payload.id });
     await api(`/api/guilds/${guild.payload.id}/members`, "GET", other.cookie, undefined, 403);
