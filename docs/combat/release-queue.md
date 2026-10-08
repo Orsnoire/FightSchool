@@ -1,19 +1,21 @@
 # Classroom polish release queue
 
-Status: October 7, 2026. Implemented does **not** mean deployed. The owner wants
-these items completed and reviewed one at a time, followed by a combined merge
-and deployment. No deployment is authorized for this intermediate checkpoint.
+Status: October 7, 2026. PRs #37–42 are reviewed, merged and deployed as
+`41a372c039d00421882e37044830abaa9218b427`. Deployment run
+[37717016937](https://github.com/Orsnoire/FightSchool/actions/runs/37717016937)
+passed the migration gate and both hostname smoke checks. Live acceptance evidence
+is recorded in [the release record](../cloudflare/full-migration.md).
 
 | Item | Implementation status | Release status / next action |
 | --- | --- | --- |
 | October 7 battlefield, host controls, join/rejoin, participation rewards | Completed in main; live release recorded in `docs/cloudflare/full-migration.md` | Already released; reuse the existing session-code group entry |
-| Priest First Aid, no-offense solo warning, healer encounter estimates | Implemented and tested in [PR #37](https://github.com/Orsnoire/FightSchool/pull/37) | Awaiting combined merge/deployment; uses MND / 3, floor, minimum 1 |
-| 1. Calculated ability values | Implemented and tested in [PR #38](https://github.com/Orsnoire/FightSchool/pull/38), based on PR #37 | Awaiting review and combined merge/deployment |
-| 2. Informative loot choices | Implemented and tested in [PR #39](https://github.com/Orsnoire/FightSchool/pull/39), based on PR #38 | Awaiting review and combined merge/deployment; names, icons, slot, rarity, tier and signed stats shown before claiming |
-| Gear expansion and Tier 0 starters | Implemented and tested in [PR #40](https://github.com/Orsnoire/FightSchool/pull/40), based on PR #39 | Awaiting review and combined release; migration 0011 required before Worker activation |
-| 3. Loadout display synchronization and Tier 0 completion | Implemented and tested in [PR #41](https://github.com/Orsnoire/FightSchool/pull/41), based on PR #40 | Awaiting review and combined release; shared cache refresh and complete starter catalog |
-| Equipment permissions and explicit armor classification | Implemented and tested in `feat/equipment-permissions`, based on PR #41 | Awaiting review and combined release; no extra migration |
-| Combined release | Pending | Finish the individual items, check the combined changes, merge, deploy and verify live behavior; update this table with release evidence |
+| Priest First Aid, no-offense solo warning, healer encounter estimates | Implemented and tested in [PR #37](https://github.com/Orsnoire/FightSchool/pull/37) | Released October 7; see release evidence above |
+| 1. Calculated ability values | Implemented and tested in [PR #38](https://github.com/Orsnoire/FightSchool/pull/38), based on PR #37 | Released October 7; see release evidence above |
+| 2. Informative loot choices | Implemented and tested in [PR #39](https://github.com/Orsnoire/FightSchool/pull/39), based on PR #38 | Released October 7; see release evidence above |
+| Gear expansion and Tier 0 starters | Implemented and tested in [PR #40](https://github.com/Orsnoire/FightSchool/pull/40), based on PR #39 | Released October 7; see release evidence above |
+| 3. Loadout display synchronization and Tier 0 completion | Implemented and tested in [PR #41](https://github.com/Orsnoire/FightSchool/pull/41), based on PR #40 | Released October 7; see release evidence above |
+| Equipment permissions and explicit armor classification | Implemented and tested in [PR #42](https://github.com/Orsnoire/FightSchool/pull/42), based on PR #41 | Released October 7; see release evidence above |
+| Combined release | Deployed | Migration 0011 applied; existing data preserved; see release record for live validation |
 
 ## Item 1: calculated values
 
@@ -41,8 +43,8 @@ Validation for item 1: `npm run check`, all 110 tests in `npm test`,
 `npm run build:cloudflare`, and `git diff --check` pass. Regression coverage
 compares displayed magnitudes with real engine resolution, checks Headshot's
 upcoming streak, verifies resource-dependent values, and renders the actual
-React combat view through a stat update. Hosted browser CI remains a separate
-review check; no live deployment validation has been run for this branch.
+React combat view through a stat update. Hosted browser CI passed for the implementation PR; see the combined release
+record above for deployment and live validation.
 
 ## Item 2: informative loot choices
 
@@ -65,8 +67,7 @@ result ownership and exactly-once reward claim remain authoritative. Reward
 amounts, loot eligibility and claim endpoints are unchanged.
 
 Local validation: `npm run check`, all 111 tests in `npm test`,
-`npm run build:cloudflare`, and `git diff --check` pass. Hosted browser CI is a
-separate review check; this branch has not been deployed.
+`npm run build:cloudflare`, and `git diff --check` pass. Hosted browser CI passed; the combined release is now deployed.
 
 Coverage includes the real React result view sending the exact result/item IDs,
 rapid repeated clicks, failed claim/retry/success, names with markup characters,
@@ -83,8 +84,7 @@ See [starter wardrobe](../starter-wardrobe.md#october-7-expansion--implemented-f
 for migration, extension and pending-art boundaries.
 
 Validation: `npm run check`, all 113 tests in `npm test`,
-`npm run build:cloudflare` and `git diff --check` pass. Hosted browser CI and
-live deployment checks remain separate; this branch is not deployed.
+`npm run build:cloudflare` and `git diff --check` pass. Hosted browser CI passed; the combined release is now deployed.
 
 ## Item 3: loadout display synchronization and complete Tier 0 catalog
 
@@ -115,9 +115,8 @@ Validation: `npm run check`, all 117 tests in `npm test`,
 `npm run build:cloudflare` and `git diff --check` pass. Coverage includes same-ID
 and same-count cache updates, inactive cache invalidation, older in-flight reads,
 serialized edits, failure/retry, actual mounted equipment UI updates, complete
-starter compatibility and real API claymore equip/metadata. All individual batch
-items are implemented; combined review, merge, migration, deployment and live
-acceptance remain pending.
+starter compatibility and real API claymore equip/metadata. All individual batch items are implemented and deployed; see the release
+record above for combined review and live acceptance evidence.
 
 ## Equipment permissions and explicit armor classification
 

@@ -104,13 +104,13 @@ and explicit student Leave fight behavior.
 
 The [classroom polish release queue](combat/release-queue.md) distinguishes
 implemented review branches from deployed behavior and records the remaining
-ordered tasks. First Aid and calculated ability values await the combined
-release. Informative loot choices and the eight-slot gear expansion with Tier 0
-starters, general loadout synchronization and the completed Tier 0 catalog are
-also implemented in review. Equipment permissions are visible on the loadout
-views, and new custom armor requires explicit classification; see the release queue.
-Combined merge, migration and deployment remain pending. See [starter wardrobe](starter-wardrobe.md) for the additive Arms migration
-and future slot extension hooks.
+ordered tasks. First Aid, calculated ability values, informative loot choices,
+eight equipment slots, complete Tier 0 starters, loadout synchronization and
+visible equipment permissions with explicit new-armor classification were
+released October 7 in PRs #37–42. Migration 0011 preserves existing equipment.
+See [the release record](cloudflare/full-migration.md) for deployment evidence and
+[starter wardrobe](starter-wardrobe.md) for future slot extension hooks.
+
 
 ## Combat Flow Refactor
 

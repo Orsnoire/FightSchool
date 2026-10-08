@@ -48,7 +48,7 @@ Migration `0009_starter_wardrobe.sql` adds nullable hands/legs/feet/offhand colu
 The owner approved the static collection and requested live release on October 5. The release went live at 18:31 MDT on October 5 (00:31 UTC October 6), with migration, CI, saved-avatar API, combat and classroom acceptance checks passing. See the [deployment record](cloudflare/full-migration.md#static-avatars-and-starter-wardrobe--5-october-2026). The independent [workshop](workshop-routing.md) can publish previews without deploying this database or game change.
 
 
-## October 7 expansion — implemented for review, not deployed
+## October 7 expansion — released October 7, 2026
 
 The lobby summary and equipment picker, dedicated loadout screen, teacher item
 editor and shop filters now use eight player-facing slots: **Head, Chest, Arms,
@@ -70,7 +70,7 @@ loadouts, inventory, progression, gold and appearance are preserved. Existing
 students start with Arms empty and can equip any compatible starter arms from
 their permanent inventory; selecting a different job uses the new defaults.
 Apply this migration before activating the new Worker during the combined
-release. No production migration or deployment has been performed for this work.
+release. Migration 0011 and the combined release are deployed; see the release record.
 
 ### Extension hooks
 
@@ -94,7 +94,7 @@ unowned/job/tier rejection, same-job upgrade preservation, all eight slots'
 combat bonuses, and the actual React equipment screen's labels and Tier 0 text.
 
 
-## October 7 Tier 0 completion — implemented for review, not deployed
+## October 7 Tier 0 completion — released October 7, 2026
 
 The starter catalog now includes zero-stat linen gloves, linen pants and cloth
 shoes, plus +1 ATK claws and a +1 RTK spoon for supported alternate weapons.
@@ -109,11 +109,11 @@ These are permanent catalog entitlements, automatically included in inventory
 responses for existing and new students. No duplicated item rows, live seeding,
 additional migration, forced replacement of existing gear or balance changes
 are involved. Per-item visuals and animation are still pending. The shared
-loadout synchronization and this catalog completion await the combined release;
+loadout synchronization and this catalog completion are released;
 see [release queue](combat/release-queue.md).
 
 
-## Equipment permissions — implemented for review, not deployed
+## Equipment permissions — released October 7, 2026
 
 Both loadout views now list allowed weapons, armor categories and usable off-hand
 types. Owned incompatible gear stays visible with a reason, including job, tier

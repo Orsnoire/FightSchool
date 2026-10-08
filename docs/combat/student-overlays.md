@@ -74,7 +74,7 @@ then passed combat, storage and 30-participant classroom checks against that
 deployment. Departure-specific behavior is covered by automated and browser
 tests; the live acceptance harness checks the established combat flows.
 
-## Calculated ability values (implemented in review, not deployed)
+## Calculated ability values (released October 7, 2026)
 
 Action cards now display current base damage, healing capacity and quantitative
 support effects alongside costs and unavailable reasons. Values follow the
@@ -84,7 +84,7 @@ effects are labeled explicitly. The lobby shows equivalent starting-encounter
 values from its loaded gear and progression. See the [release queue](release-queue.md)
 for validation/review status and remaining polish work.
 
-## Loot choice details (implemented in review, not deployed)
+## Loot choice details (released October 7, 2026)
 
 Earned equipment is displayed as named cards with item icons, slot, rarity, tier
 and signed stat modifiers. Students choose gold or one item, which goes into

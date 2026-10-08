@@ -288,3 +288,45 @@ Previous Worker `4ba61e1d-374d-4224-a0d4-cda88a62e442` from deployment
 Worker rollback is needed. Hosts and students should refresh existing browser
 tabs to load the new client. Static avatar art remains intentional; animation rigs
 are a separate, unfinished release.
+
+## Classroom polish, First Aid and expanded gear — 7 October 2026
+
+The owner authorized combined review, merge and deployment. PRs #37–42 were
+merged in order into `main`, ending at `41a372c039d00421882e37044830abaa9218b427`.
+The merge tree matches the reviewed PR #42 tree
+`7fb86f6e2c0667a3eff764ae572629983dfbac15`. Each implementation PR passed CI
+and Combat UI Acceptance. The final combined build passed all 118 tests,
+TypeScript and client/Worker builds again in the deployment workflow.
+
+[Deployment run 37717016937](https://github.com/Orsnoire/FightSchool/actions/runs/37717016937)
+published immutable Worker `8776783b-ea00-4ffa-979c-e42415856d0a` and passed
+smoke checks on both the workers.dev and canonical hostnames. Additive migration
+`0011_equipment_arms.sql` ran before Worker activation, adding only a nullable
+Arms column and preserving existing equipment, inventory and student progression.
+
+This release includes free scaling Priest First Aid and solo-loadout guidance,
+calculated ability values, informative loot choices, eight equipment slots,
+complete Tier 0 starter entitlements, synchronized loadout displays, visible
+class equipment permissions and explicit classification for new custom armor.
+The existing October 7 session-code join/rejoin flow remains the group entry.
+
+The focused `static-avatar-acceptance.mjs` check also passed against the canonical
+domain using isolated male/female student fixtures. It checked all eight slots
+across the four base-job defaults, all permanent starter IDs without duplication,
+same-job gear retention, appearance persistence across relogin/job switches,
+armor exclusions, owner/origin enforcement and unchanged progression. Sessions
+were signed out afterward; real classroom students were not modified.
+
+Previous immutable Worker `d0d8563e-43f2-44b7-9fb7-8b4822d45be6` from deployment
+`37694702056` remains the rollback checkpoint. Retain the additive schema during
+a Worker rollback. Hosts and students should refresh existing tabs for the new
+client. Individual gear overlays, animation, per-job remembered loadouts and the
+separate infrastructure recovery drills remain outside this release.
+
+[Live acceptance run 37717180059](https://github.com/Orsnoire/FightSchool/actions/runs/37717180059),
+job `113116240926`, passed against the canonical domain after deployment.
+Both live combat/resources/reconnect/economy and storage/classroom-concurrency
+scripts succeeded, including 30 participants, isolated rooms, exactly-once rewards,
+late entry, moderated rejoin and fractional host-ended completion rewards.
+This closes the combined release gate; infrastructure failure/rollback drills
+remain a separate acceptance track.

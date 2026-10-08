@@ -169,7 +169,7 @@ other abilities, and knockouts also affect the comparison. Regression tests run
 the actual engine through the perfect ten-question sequence, misses, timeouts,
 cross-class Headshot, and storage round-trips.
 
-## Priest First Aid (review branch, not deployed)
+## Priest First Aid (released October 7, 2026)
 
 Priest's basic attack is replaced by free **First Aid**, an ally-targeted question
 ability healing `max(1, floor(Mend healing / 3))`. Mend still heals MND for 1 MP;
