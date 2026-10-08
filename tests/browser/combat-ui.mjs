@@ -1,3 +1,4 @@
+import { EQUIPMENT_ITEMS } from "../../shared/schema.ts";
 import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
@@ -161,6 +162,37 @@ try {
     await page.getByText('Long question', { exact: true }).waitFor();
     await screenshot('long-question');
     assert.ok(await page.getByTestId('combat-overlay-body').evaluate((e) => e.scrollHeight > e.clientHeight));
+    // Reward comparisons use saved gear, include displaced offhand stats and never claim on hover/tap.
+    let claims = 0;
+    await page.route('**/api/**', route => {
+      const url=new URL(route.request().url());
+      if(url.pathname==='/api/equipment-items')return route.fulfill({json:(url.searchParams.get('ids') || '').split(',').filter(Boolean).map(id=>({...EQUIPMENT_ITEMS[id],quality:'common'}))});
+      if(url.pathname.endsWith('/job-levels'))return route.fulfill({json:[{jobClass:'paladin',level:2}]});
+      if(url.pathname===`/api/student/${id}`)return route.fulfill({json:{...student('paladin'),weapon:'t1_fighter_sword',offhand:'t1_fighter_shield'}});
+      if(url.pathname.includes('/claim-')){claims++;return route.fulfill({json:{success:true}});}
+      return route.fulfill({json:{}});
+    });
+    state.currentPhase='game_over';state.victory=true;
+    await page.evaluate(({state,id})=>window.combatTest.sockets.filter(s=>s.url.includes('sessionId=ABC234')).at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,results:[{id:'comparison-result',studentId:id,xpEarned:10,goldReward:10,lootTable:[{itemId:'t1_fighter_claymore'}]}]})}),{state,id});
+    const compare=page.getByRole('button',{name:"Compare Fighter's Claymore",exact:true});
+    await compare.waitFor();
+    if(viewport.width>600)await page.getByRole('article',{name:"Fighter's Claymore",exact:true}).hover();
+    else await compare.click();
+    const comparison=page.getByRole('dialog',{name:"Comparison for Fighter's Claymore",exact:true});
+    await comparison.getByText("Equipped: Fighter's Sword",{exact:true}).waitFor();
+    assert.match(await comparison.textContent(),/Requires removing Fighter's Shield/);
+    assert.match(await comparison.textContent(),/-2/);
+    const box=await comparison.boundingBox();
+    assert.ok(box.x>=0 && box.y>=0 && box.x+box.width<=viewport.width+1 && box.y+box.height<=viewport.height+1,'comparison fits viewport');
+    assert.equal(claims,0,'comparison never claims or equips');
+    await page.screenshot({path:`${output}/${viewport.width}-gear-comparison.png`});
+    await page.keyboard.press('Escape');
+    await comparison.waitFor({state:'hidden'});
+    await compare.focus();
+    await compare.press("Enter");
+    await comparison.waitFor();
+    await page.keyboard.press('Escape');
+    await comparison.waitFor({state:'hidden'});
     // Cancellation is harmless; confirmation waits for the server before exiting.
     page.once('dialog', dialog => dialog.dismiss());
     await page.getByRole('button', { name: 'Leave fight', exact: true }).click();

@@ -1,3 +1,6 @@
+import { GearComparison } from "./GearComparison";
+import { useEquipmentComparison } from "@/hooks/useEquipmentComparison";
+import type { ComparisonLoadout } from "@shared/equipment-comparison";
 import { equipmentEffectText } from "@shared/tier-one-equipment";
 import { useEffect, useState } from "react";
 import { Coins, Gift, Shield, Sword } from "lucide-react";
@@ -15,12 +18,21 @@ function RewardIcon({ item }: { item: EquipmentItemDb }) {
     : <Icon aria-hidden="true" className="h-12 w-12 shrink-0 p-2 text-muted-foreground" />;
 }
 
-export function LootRewardChoices({ lootTable, goldReward, claiming, onClaim }: {
-  lootTable: readonly { itemId: string }[];
-  goldReward: number;
-  claiming: boolean;
-  onClaim: (itemId?: string) => void;
-}) {
+interface LootProps {
+  lootTable: readonly {itemId:string}[];
+  goldReward:number;
+  claiming:boolean;
+  onClaim:(itemId?:string)=>void;
+  studentId?:string|null;
+}
+export function LootRewardChoices(props:LootProps) {
+  return props.studentId ? <RewardsWithComparison {...props} studentId={props.studentId}/> : <RewardChoicesContent {...props}/>;
+}
+function RewardsWithComparison(props:LootProps & {studentId:string}) {
+  const comparison=useEquipmentComparison(props.studentId);
+  return <RewardChoicesContent {...props} comparison={comparison}/>;
+}
+function RewardChoicesContent({lootTable,goldReward,claiming,onClaim,comparison}:LootProps & {comparison?:ComparisonLoadout}) {
   const idsKey = JSON.stringify([...new Set(lootTable.map(item => item.itemId))]);
   const [loaded, setLoaded] = useState<{ key: string; items: EquipmentItemDb[] } | null>(null);
   const [error, setError] = useState("");
@@ -50,12 +62,13 @@ export function LootRewardChoices({ lootTable, goldReward, claiming, onClaim }: 
         const item = items.get(id);
         if (!item) return <div key={id} className="rounded-lg border p-4 text-sm text-muted-foreground">{loading ? "Equipment details loading…" : "Equipment details unavailable"}</div>;
         const stats = Object.entries(item.stats || {}).filter(([, value]) => typeof value === "number" && Number.isFinite(value) && value !== 0);
-        return <article key={id} className="min-w-0 rounded-lg border bg-card p-4 space-y-3" aria-label={item.name}>
+        const card = <article key={id} className="min-w-0 rounded-lg border bg-card p-4 space-y-3" aria-label={item.name}>
           <div className="flex items-center gap-3"><RewardIcon item={item} /><div className="min-w-0"><h3 className="font-semibold break-words">{item.name}</h3><p className="text-xs text-muted-foreground capitalize">{item.quality} · Tier {item.tier} · {SLOT_LABELS[item.slot] || item.slot}</p></div></div>
           {equipmentEffectText(item.id) && <p className="text-sm">{equipmentEffectText(item.id)}</p>}
           {stats.length ? <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">{stats.map(([stat, value]) => <div className="flex gap-1" key={stat}><dt>{stat.toUpperCase()}</dt><dd className="font-semibold">{value! > 0 ? "+" : ""}{value}</dd></div>)}</dl> : <p className="text-sm text-muted-foreground">No stat bonuses</p>}
           <Button className="w-full h-auto min-h-9 whitespace-normal" variant="outline" onClick={() => onClaim(id)} disabled={claiming}>Claim {item.name}</Button>
         </article>;
+        return comparison ? <GearComparison key={id} item={item} context={comparison} disabled={claiming}>{card}</GearComparison> : card;
       })}
     </div>
     {claiming && <p role="status">Saving your reward…</p>}

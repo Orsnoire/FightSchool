@@ -1,3 +1,4 @@
+import { GearComparison } from "@/components/GearComparison";
 import { equipmentEffectText } from "@shared/tier-one-equipment";
 import { EquipmentPermissions } from "@/components/EquipmentPermissions";
 import { useStudentLoadout } from "@/hooks/useStudentLoadout";
@@ -23,11 +24,11 @@ export default function StudentEquipment() {
   const studentId = localStorage.getItem("studentId");
 
   const client = useQueryClient();
-  const {student,jobLevels,isLoading:studentLoading} = useStudentLoadout(studentId);
+  const {student,jobLevels,isLoading:studentLoading,isFetching:loadoutFetching,isError:loadoutError} = useStudentLoadout(studentId);
 
   // Fetch equipped items
   const equippedItemIds = EQUIPMENT_SLOTS.map(slot => student?.[slot]).filter(Boolean) as string[];
-  const { data: equippedItems = [] } = useQuery<EquipmentItemDb[]>({
+  const { data: equippedItems = [], isFetching:equipmentFetching, isError:equipmentError } = useQuery<EquipmentItemDb[]>({
     queryKey: ['equipment-items', { ids: equippedItemIds.sort() }],
     queryFn: async () => {
       if (equippedItemIds.length === 0) return [];
@@ -157,6 +158,7 @@ export default function StudentEquipment() {
                     })}
                   </SelectContent>
                 </Select>
+                <details className="basis-full"><summary className="cursor-pointer text-sm">Compare {SLOT_LABELS[slot]} options</summary><div className="grid gap-2 sm:grid-cols-2 mt-2">{getEquipmentOptions(slot).map(item=><GearComparison key={item.id} item={item} context={{student,items:equippedItemsMap,level:jobLevelMap[student.characterClass || 'warrior'] || 1,loading:loadoutFetching || equipmentFetching,error:loadoutError || equipmentError}}><p className="text-sm">{item.name}</p></GearComparison>)}</div></details>
               </div>)}
             </CardContent>
           </Card>

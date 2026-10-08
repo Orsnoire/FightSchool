@@ -304,7 +304,7 @@ export default function Combat() {
               </p>
               {result.xpMultiplier !== undefined && <p className="text-sm text-muted-foreground">{Math.round(result.xpMultiplier * 1000) / 10}% XP rate applied to {Math.round((result.baseXp || 0) * 100) / 100} XP before stamina. Fractional XP carries forward.</p>}
               {result.lootTable.length > 0 && !claimed && (
-                <LootRewardChoices key={result.id} lootTable={result.lootTable} goldReward={result.goldReward} claiming={claiming} onClaim={claim} />
+                <LootRewardChoices studentId={studentId} key={result.id} lootTable={result.lootTable} goldReward={result.goldReward} claiming={claiming} onClaim={claim} />
               )}
               {claimError && <p role="alert">{claimError}</p>}
               {claimed && <p>Reward saved.</p>}
