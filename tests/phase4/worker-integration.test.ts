@@ -180,6 +180,8 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     }
     await api(equipPath, 'PATCH', student.cookie, {arms:customLoadout.arms},400);
     await pg.query('UPDATE students SET inventory = inventory || $1::jsonb WHERE id=$2', [JSON.stringify(Object.values(customLoadout)), student.payload.id]);
+    await api(equipPath, 'PATCH', student.cookie, customLoadout,400);
+    await pg.query("UPDATE student_job_levels SET level=2 WHERE student_id=$1 AND job_class='warrior'",[student.payload.id]);
     await api(equipPath, 'PATCH', student.cookie, customLoadout);
     const sameJob = (await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'warrior',gender:'A'})).payload;
     for (const slot of EQUIPMENT_SLOTS) assert.equal(sameJob[slot], customLoadout[slot]);
@@ -223,7 +225,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(sanitized.arms,'basic_plate_arms');
     assert.equal(sanitized.weapon,customLoadout.weapon);
     await api('/api/equipment-items', 'POST', teacher.cookie, {name:'Not a starter',slot:'arms',itemType:'bracers',quality:'common',tier:0,stats:{}},400);
-    await api(`/api/equipment-items/${customLoadout.arms}`, 'PATCH', teacher.cookie, {tier:2});
+    await api(`/api/equipment-items/${customLoadout.arms}`, 'PATCH', teacher.cookie, {tier:3});
     await api(equipPath, 'PATCH', student.cookie, {arms:null});
     await api(equipPath, 'PATCH', student.cookie, {arms:customLoadout.arms},400);
     await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
@@ -232,7 +234,19 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(claymoreSave.payload.weapon,'basic_claymore');
     assert.equal(claymoreSave.payload.offhand,null);
     await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
-    await pg.query("UPDATE student_job_levels SET level=1 WHERE student_id=$1 AND job_class='wizard'", [student.payload.id]);
+    await pg.query("UPDATE student_job_levels SET level=1 WHERE student_id=$1 AND job_class IN ('wizard','warrior')", [student.payload.id]);
+    // Tier 1 acquisition is required, and level 2 is enforced by the real equip API.
+    await api(equipPath,'PATCH',student.cookie,{weapon:'t1_caster_wand'},400);
+    await pg.query('UPDATE students SET inventory=inventory || $1::jsonb WHERE id=$2',[JSON.stringify(['t1_caster_wand','t1_caster_staff','t1_caster_book','t1_healer_ankh']),student.payload.id]);
+    await api(equipPath,'PATCH',student.cookie,{weapon:'t1_caster_wand',offhand:'t1_caster_book'},400);
+    await pg.query("UPDATE student_job_levels SET level=2 WHERE student_id=$1 AND job_class='wizard'",[student.payload.id]);
+    await api(equipPath,'PATCH',student.cookie,{weapon:'t1_caster_wand',offhand:'t1_caster_book'});
+    await api(equipPath,'PATCH',student.cookie,{weapon:'t1_caster_staff'},400);
+    await api(equipPath,'PATCH',student.cookie,{weapon:'t1_healer_ankh',offhand:null},400);
+    const book = await api('/api/equipment-items','POST',teacher.cookie,{name:'Custom spell book',itemType:'spellbook',offhandType:'spellbook',slot:'offhand',tier:1,quality:'common',stats:{int:1}},201);
+    assert.equal(book.payload.offhandType,'spellbook','migration accepts the new offhand type');
+    await api(equipPath,'PATCH',student.cookie,{weapon:'basic_staff',offhand:null});
+    await pg.query("UPDATE student_job_levels SET level=1 WHERE student_id=$1 AND job_class='wizard'",[student.payload.id]);
     const guild = await api("/api/guilds", "POST", teacher.cookie, { name: "Test guild" }, 201);
     await api(`/api/guilds/${guild.payload.id}/members`, "POST", student.cookie, { studentId: student.payload.id });
     await api(`/api/guilds/${guild.payload.id}/members`, "GET", other.cookie, undefined, 403);

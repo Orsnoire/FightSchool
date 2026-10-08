@@ -3,7 +3,7 @@ import { getTotalMechanicUpgrades } from "../jobSystem";
 import { canonicalAbility, firstAidHealing } from "./abilities";
 import type { CombatPlayer } from "./model";
 
-export type AbilityContext = Pick<CombatPlayer, "stats" | "characterClass" | "jobLevels" | "mp" | "health" | "maxHealth" | "healingPotions" | "shieldPotions" | "consecutiveCorrectAnswers">;
+export type AbilityContext = Pick<CombatPlayer, "stats" | "characterClass" | "jobLevels" | "mp" | "health" | "maxHealth" | "healingPotions" | "shieldPotions" | "consecutiveCorrectAnswers" | "equipmentEffects">;
 const whole = (n: number) => Math.max(0, Math.floor(n));
 
 /** Raw magnitudes before hit/heal rounding, target modifiers and missing-HP caps. */
@@ -20,11 +20,11 @@ export function abilityDamage(p: AbilityContext, ability: string, streak = p.con
     case "aim": return (rtk + agi) * 2;
     case "killshot": return rtk * agi * 2;
     case "hemorrhage": return atk;
-    case "sacred_strike": return atk * (str + mnd + vit);
-    case "holy_judgment": return (str + vit + mnd) / 3;
-    case "ruin_strike": case "shadow_requiem": case "raining_blood": return atk * (str + vit + int);
-    case "blood_price": return atk * (str + vit + int) * 2;
-    case "crimson_slash": return (atk * (vit + str)) / 2;
+    case "sacred_strike": return atk * (str + mnd + vit / 2);
+    case "holy_judgment": return (str + vit / 2 + mnd) / 3;
+    case "ruin_strike": case "shadow_requiem": case "raining_blood": return atk * (str + vit / 2 + int);
+    case "blood_price": return atk * (str + vit / 2 + int) * 2;
+    case "crimson_slash": return (atk * (vit / 2 + str)) / 2;
     case "flurry": return calculatePlayerBaseDamage(p.stats, p.characterClass) * 3;
     case "focused_palm": return atk + 4 * str + 4 * agi;
     case "twin_shot": return (rtk + agi) * 4;
@@ -35,7 +35,7 @@ export function abilityDamage(p: AbilityContext, ability: string, streak = p.con
   }
 }
 
-export function abilityHealing(p: AbilityContext, ability: string): number | undefined {
+export function baseAbilityHealing(p: AbilityContext, ability: string): number | undefined {
   const { mnd, vit } = p.stats;
   switch (canonicalAbility(ability)) {
     case "first_aid": return firstAidHealing(mnd);
@@ -49,6 +49,11 @@ export function abilityHealing(p: AbilityContext, ability: string): number | und
     case "crescendo": return (p.jobLevels.bard || 1) / 2;
     default: return undefined;
   }
+}
+
+export function abilityHealing(p: AbilityContext, ability: string): number | undefined {
+  const base = baseAbilityHealing(p, ability);
+  return base === undefined ? undefined : Math.floor(base) + (p.equipmentEffects?.healingBonus || 0);
 }
 
 /** Public-state-only previews. Question damage assumes this answer succeeds. */
@@ -76,13 +81,14 @@ export function abilityPreview(p: AbilityContext, ability: string, upcomingAnswe
     case "crimson_slash": return `${base}; self-healing is half damage dealt, rounded down`;
     case "blood_price": return `${base}; costs ${whole(atk)} HP`;
     case "life_potion": return `Revives each knocked-out ally with up to ${whole(healing || 0)} HP`;
-    case "holy_light": case "potion_diffuser": case "cleansing_chorus": return `${heal} per living ally`;
+    case "holy_light": case "cleansing_chorus": return `${heal} per living ally`;
     case "divine_grace": return "Fully heals and revives the party";
     case "inner_peace": return "Fully heals you and grants immunity this round";
     case "warrior_block": case "aegis": case "deflect": return `Blocks up to ${Math.ceil(vit / 2)} damage per hit`;
-    case "shield_bash": return `Blocks up to ${Math.ceil(vit / 2)} per hit; retaliates for ${whole(vit / 2)} base damage per guarded hit`;
+    case "shield_bash": return `Blocks up to ${Math.ceil(vit / 2)} per hit; retaliates for ${whole(vit / 4)} base damage per guarded hit`;
     case "healing_guard": return `${heal}; blocks up to ${Math.ceil(vit / 2)} damage per hit`;
     case "manashield": return `Absorbs up to ${whole(int)} damage`;
+    case "healing_potion": case "potion_diffuser": return `${heal}${id === "potion_diffuser" ? " per living ally" : ""}${p.equipmentEffects?.potionAttackBonus ? '; +1 ATK for 3 rounds (refreshes, does not stack)' : ''}`;
     case "shield_potion": return `Grants a ${whole(mnd)} HP shield`;
     case "craft_healing_potion": {
       const bonus = getTotalMechanicUpgrades(p.jobLevels as Record<CharacterClass, number>).potionCraftBonus || 0;

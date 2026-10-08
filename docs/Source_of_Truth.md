@@ -114,6 +114,13 @@ ability loadouts are implemented for review with migration 0012, not yet deploye
 see the same wardrobe document for restoration and concurrency rules.
 
 
+## Tier 1 gear and instance loot
+
+The [October 7 Tier 1 specification](combat/tier-one-equipment.md) records the
+owner's level-2 equipment collection, revised tank VIT damage weighting and
+fallback instance loot rules. It supersedes older conflicting equipment level
+gates and VIT damage formulas. Implementation is in review, not deployed.
+
 ## Combat Flow Refactor
 
 This document is authoritative primarily for **player experience and presentation**, including:

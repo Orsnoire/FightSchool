@@ -62,7 +62,7 @@ test('Tier 0 completes every armor material and supported weapon family without 
 });
 
 test('permissions match enforcement and unavailable gear explains job, tier and hand conflicts',()=>{
- assert.deepEqual(equipmentPermissions('priest'),{weapons:['Staff'],armor:['Cloth / light'],offhands:[]});
+ assert.deepEqual(equipmentPermissions('priest'),{weapons:['Staff','Wand'],armor:['Cloth / light'],offhands:[]});
  assert.deepEqual(equipmentPermissions('blood_knight').offhands,[]);
  assert.deepEqual(equipmentPermissions('ranger').offhands,['quiver']);
  assert.equal(equipmentUnavailable('paladin',EQUIPMENT_ITEMS.basic_claymore,1,EQUIPMENT_ITEMS.basic_sword,EQUIPMENT_ITEMS.basic_shield),'Remove the incompatible off-hand item first.');

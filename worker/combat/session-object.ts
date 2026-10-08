@@ -1,3 +1,4 @@
+import { instanceLoot } from "../../shared/combat/instance-loot";
 import type { IdentityRepository } from "../db/repository.ts";
 import type { FightRecord } from "../db/schema.ts";
 import {
@@ -370,6 +371,7 @@ export class CombatSessionObject {
           if (!room) {
             const fight = await this.repository.findFightById(live.fightId);
             if (!fight) throw new Error("Fight unavailable");
+            fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
             if (fight.randomizeQuestions)
               fight.questions = deterministicShuffle(
                 fight.questions,
@@ -397,12 +399,14 @@ export class CombatSessionObject {
           );
           if (live?.soloStudentId === actor.actorId) {
             const fight = await this.repository.findFightById(live.fightId);
-            if (fight)
+            if (fight) {
+              fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
               room = {
                 fight,
                 snapshot: initialCombatState(actor.sessionId, fight),
                 receipts: [],
               };
+            }
           }
         }
         if (!room) throw new Error("Host has not opened this session");

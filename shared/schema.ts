@@ -1,3 +1,4 @@
+import { TIER_ONE_EQUIPMENT } from "./tier-one-equipment";
 import { EQUIPMENT_SLOTS, type EquipmentSlot } from "./equipment-slots";
 import { z } from "zod";
 import { STARTER_EQUIPMENT, STARTER_LOADOUTS } from "./equipment-catalog";
@@ -28,9 +29,9 @@ export const HEALER_CLASSES: CharacterClass[] = ["herbalist", "priest", "paladin
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
 export type { EquipmentSlot } from "./equipment-slots";
-export type ItemType = "shield" | "potion" | "quiver" | "bracers" | "gloves" | "leggings" | "boots" | "sword" | "wand" | "bow" | "staff" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
+export type ItemType = "shield" | "potion" | "quiver" | "spellbook" | "bracers" | "gloves" | "leggings" | "boots" | "sword" | "wand" | "bow" | "staff" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
 export type ItemQuality = "common" | "rare" | "epic" | "legendary";
-export type WeaponType = "sword" | "staff" | "bow" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon";
+export type WeaponType = "wand" | "sword" | "staff" | "bow" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon";
 
 // Teachers table
 
@@ -352,18 +353,18 @@ export interface EquipmentItem {
   };
   classRestriction?: CharacterClass[]; // undefined = available to all
   weaponType?: WeaponType; // Weapon type for class weapon restrictions
-  offhandType?: "shield" | "potion" | "quiver";
+  offhandType?: "shield" | "potion" | "quiver" | "spellbook";
   armorCategory?: "heavy_armor" | "leather_armor" | "light_armor"; // Armor category (optional)
 }
 
 // Weapon type restrictions by character class
 export const WEAPON_RESTRICTIONS: Record<CharacterClass, WeaponType[]> = {
   warrior: ["sword"],
-  wizard: ["staff"],
+  wizard: ["staff", "wand"],
   scout: ["bow"],
   herbalist: ["herbs"],
-  warlock: ["staff"],
-  priest: ["staff"],
+  warlock: ["staff", "wand"],
+  priest: ["staff", "wand"],
   paladin: ["sword", "two-handed-sword"],
   dark_knight: ["sword", "two-handed-sword"],
   blood_knight: ["two-handed-sword"],
@@ -562,7 +563,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
 };
 
 // Universal ownership; each job selects a compatible starter loadout.
-Object.assign(EQUIPMENT_ITEMS, STARTER_EQUIPMENT);
+Object.assign(EQUIPMENT_ITEMS, STARTER_EQUIPMENT, TIER_ONE_EQUIPMENT);
 export function getStartingEquipment(characterClass: CharacterClass) {
   return { ...STARTER_LOADOUTS[characterClass] };
 }
@@ -755,7 +756,7 @@ export function calculateDamageReduction(def: number, vit: number): number {
 // Calculate base damage for a player (without critical hit variance)
 export function calculatePlayerBaseDamage(stats: CharacterStats, job: CharacterClass): number {
   const {atk,mat,rtk,str,int,agi,mnd,vit}=stats;
-  return {warrior:atk+str,wizard:mat+int,scout:rtk+agi,herbalist:mat+agi+mnd,warlock:mat+int,priest:mat+mnd,paladin:atk+str+mnd,dark_knight:atk+str+vit,blood_knight:atk+str+int,monk:atk+str+agi,ranger:rtk+2*agi,bard:rtk+str+int+agi+mnd+vit}[job];
+  return {warrior:atk+str,wizard:mat+int,scout:rtk+agi,herbalist:mat+agi+mnd,warlock:mat+int,priest:mat+mnd,paladin:atk+str+mnd,dark_knight:atk+str+vit/2,blood_knight:atk+str+int,monk:atk+str+agi,ranger:rtk+2*agi,bard:rtk+str+int+agi+mnd+vit}[job];
 }
 
 // Calculate solo mode enemy scaling
@@ -957,11 +958,11 @@ export type InsertGuildMembership = typeof DB.guildMemberships.$inferInsert;
 export type InsertGuildFight = typeof DB.guildFights.$inferInsert;
 export const insertEquipmentItemSchema = z.object({
  teacherId:z.string(),name:z.string().min(1),iconUrl:z.string().nullable().optional(),
- itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable','shield','potion','quiver','bracers','gloves','leggings','boots']),
+ itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable','spellbook','shield','potion','quiver','bracers','gloves','leggings','boots']),
  quality:z.enum(['common','rare','epic','legendary']),tier:z.number().int().min(1).max(10).default(1),slot:z.enum(EQUIPMENT_SLOTS),
  armorCategory:z.enum(['heavy_armor','leather_armor','light_armor']).nullable().optional(),
- offhandType:z.enum(['shield','potion','quiver']).nullable().optional(),
- weaponType:z.enum(['sword','staff','bow','herbs','two-handed-sword','fist','claws','harp','spoon']).nullable().optional(),
+ offhandType:z.enum(['shield','potion','quiver','spellbook']).nullable().optional(),
+ weaponType:z.enum(['wand','sword','staff','bow','herbs','two-handed-sword','fist','claws','harp','spoon']).nullable().optional(),
  stats:z.object({str:z.number().optional(),int:z.number().optional(),agi:z.number().optional(),mnd:z.number().optional(),vit:z.number().optional(),def:z.number().optional(),atk:z.number().optional(),mat:z.number().optional(),rtk:z.number().optional()}).default({}),
  shopPrice:z.number().nullable().optional(),isPurchasable:z.boolean().default(true)
 });

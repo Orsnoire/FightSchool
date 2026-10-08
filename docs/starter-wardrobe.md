@@ -157,3 +157,12 @@ older snapshots treat newly added fields as empty.
 
 Pending: review, migration and deployment of this change; individual equipment
 art/overlays, animation, separate limb sides and future stat/acquisition balance.
+
+
+## Tier 1 progression — implemented for review, not deployed
+
+The [Tier 1 specification](combat/tier-one-equipment.md) adds 37 acquired items,
+job-level-2 gates, wand/book pairing, ankh healing and potion buffs. Tier 0 remains
+permanently owned and available at level 1. The new color/trim briefs are recorded;
+individual equipped-item art and animation remain pending. Migration 0013 extends
+the off-hand constraint for spell books and follows remembered-loadout migration 0012.

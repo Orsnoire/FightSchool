@@ -1,5 +1,5 @@
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
-import { armorClassificationError, equipmentExclusion, handConflict } from "../../shared/equipment-rules.ts";
+import { armorClassificationError, equipmentExclusion, handConflict, equipmentRequiredLevel } from "../../shared/equipment-rules.ts";
 import { mountainDay, nextMountainMidnight, xpMultiplier, STAMINA_TIME_ZONE } from "../../shared/combat/stamina.ts";
 import { z } from "zod";
 import { and, eq, inArray, desc, sql } from "drizzle-orm";
@@ -53,15 +53,16 @@ const itemSchema = z.object({
     "helmet",
     "cap",
     "hat",
-    "consumable", "shield", "potion", "quiver", "bracers", "gloves", "leggings", "boots",
+    "consumable", "spellbook", "shield", "potion", "quiver", "bracers", "gloves", "leggings", "boots",
   ]),
   quality: z.enum(["common", "rare", "epic", "legendary"]),
   tier: z.number().int().min(1).max(10).default(1),
   slot: z.enum(EQUIPMENT_SLOTS),
   armorCategory: z.enum(["heavy_armor", "leather_armor", "light_armor"]).nullable().optional(),
-  offhandType: z.enum(["shield", "potion", "quiver"]).nullable().optional(),
+  offhandType: z.enum(["shield", "potion", "quiver", "spellbook"]).nullable().optional(),
   weaponType: z
     .enum([
+      "wand",
       "sword",
       "staff",
       "bow",
@@ -908,7 +909,7 @@ export async function handleGame(
             throw new ApiError("Equipment is not owned or has the wrong slot");
           const tier = item.tier ?? 1;
           const level = levels[student.characterClass || "warrior"] || 1;
-          if (tier > 0 && level < [1, 2, 4, 6, 8, 10, 11, 12, 13, 15][tier - 1])
+          if (level < equipmentRequiredLevel(tier))
             throw new ApiError("Job level is too low for this tier");
 
         }

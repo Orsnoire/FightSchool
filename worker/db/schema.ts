@@ -220,7 +220,7 @@ export const equipmentItems = pgTable("equipment_items", {
   tier: integer("tier").notNull().default(1), // Equipment tier (1-10)
   slot: text("slot").notNull().$type<EquipmentSlot>(),
   armorCategory: text("armor_category").$type<"heavy_armor" | "leather_armor" | "light_armor">(),
-  offhandType: text("offhand_type").$type<"shield" | "potion" | "quiver">(),
+  offhandType: text("offhand_type").$type<"shield" | "potion" | "quiver" | "spellbook">(),
   weaponType: text("weapon_type").$type<WeaponType>(), // Nullable for backwards compatibility
   stats: jsonb("stats").notNull().$type<EquipmentItemStats>().default({}),
   shopPrice: integer("shop_price"), // Gold price in guild shop (null = not available for purchase)

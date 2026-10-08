@@ -1,3 +1,4 @@
+import { equipmentEffectText } from "@shared/tier-one-equipment";
 import { useEffect, useState } from "react";
 import { Coins, Gift, Shield, Sword } from "lucide-react";
 import type { EquipmentItemDb } from "@shared/schema";
@@ -51,6 +52,7 @@ export function LootRewardChoices({ lootTable, goldReward, claiming, onClaim }: 
         const stats = Object.entries(item.stats || {}).filter(([, value]) => typeof value === "number" && Number.isFinite(value) && value !== 0);
         return <article key={id} className="min-w-0 rounded-lg border bg-card p-4 space-y-3" aria-label={item.name}>
           <div className="flex items-center gap-3"><RewardIcon item={item} /><div className="min-w-0"><h3 className="font-semibold break-words">{item.name}</h3><p className="text-xs text-muted-foreground capitalize">{item.quality} · Tier {item.tier} · {SLOT_LABELS[item.slot] || item.slot}</p></div></div>
+          {equipmentEffectText(item.id) && <p className="text-sm">{equipmentEffectText(item.id)}</p>}
           {stats.length ? <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">{stats.map(([stat, value]) => <div className="flex gap-1" key={stat}><dt>{stat.toUpperCase()}</dt><dd className="font-semibold">{value! > 0 ? "+" : ""}{value}</dd></div>)}</dl> : <p className="text-sm text-muted-foreground">No stat bonuses</p>}
           <Button className="w-full h-auto min-h-9 whitespace-normal" variant="outline" onClick={() => onClaim(id)} disabled={claiming}>Claim {item.name}</Button>
         </article>;

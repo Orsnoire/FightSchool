@@ -1,3 +1,5 @@
+import { equipmentEffectText } from "@shared/tier-one-equipment";
+import { equipmentEffects } from "@shared/tier-one-equipment";
 import { EquipmentPermissions } from "@/components/EquipmentPermissions";
 import { useStudentLoadout } from "@/hooks/useStudentLoadout";
 import { saveStudentLoadout } from "@/lib/studentLoadout";
@@ -343,7 +345,7 @@ export default function Lobby() {
   const previewEquipment: EquipmentStats = {str: 0, int: 0, agi: 0, mnd: 0, vit: 0, def: 0, atk: 0, mat: 0, rtk: 0};
   for (const item of equippedItems) for (const key of Object.keys(previewEquipment) as (keyof EquipmentStats)[]) previewEquipment[key] += item.stats[key] || 0;
   const previewStats = calculateCharacterStats(student.characterClass, previewEquipment, getTotalPassiveBonuses(previewLevels), getTotalMechanicUpgrades(previewLevels));
-  const previewPlayer: AbilityContext = {characterClass: student.characterClass, stats: previewStats, jobLevels: previewLevels,
+  const previewPlayer: AbilityContext = {equipmentEffects: equipmentEffects(student), characterClass: student.characterClass, stats: previewStats, jobLevels: previewLevels,
     health: previewStats.maxHp, maxHealth: previewStats.maxHp,
     mp: student.characterClass === "wizard" ? Math.floor(previewStats.maxMp / 2) : previewStats.maxMp,
     healingPotions: 5, shieldPotions: 0, consecutiveCorrectAnswers: 0};
@@ -761,6 +763,7 @@ export default function Lobby() {
                                 )}
                               </div>
                               <p className="font-semibold text-sm">{item.name}</p>
+                              {equipmentEffectText(item.id) && <p className="text-xs">{equipmentEffectText(item.id)}</p>}
                               {unavailable && <p className="text-xs text-destructive">{unavailable}</p>}
                               <p className="text-xs text-muted-foreground">Tier {item.tier}</p>
                               <p className="text-xs text-muted-foreground capitalize">{item.quality}</p>

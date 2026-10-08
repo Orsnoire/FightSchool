@@ -16,6 +16,7 @@ is recorded in [the release record](../cloudflare/full-migration.md).
 | 3. Loadout display synchronization and Tier 0 completion | Implemented and tested in [PR #41](https://github.com/Orsnoire/FightSchool/pull/41), based on PR #40 | Released October 7; see release evidence above |
 | Equipment permissions and explicit armor classification | Implemented and tested in [PR #42](https://github.com/Orsnoire/FightSchool/pull/42), based on PR #41 | Released October 7; see release evidence above |
 | Remembered loadouts per job | Implemented and tested on `feat/remembered-job-loadouts` | Review pending; migration 0012 required; not deployed |
+| Tier 1 gear, reduced VIT damage scaling and fallback loot | Implemented for review on `feat/tier-one-gear`, based on PR #43 | Review/deployment pending; migrations 0012 and 0013 required |
 | Combined release | Deployed | Migration 0011 applied; existing data preserved; see release record for live validation |
 
 ## Item 1: calculated values
@@ -161,3 +162,12 @@ Review and deployment are pending; this is separate from the completed release.
 Individual equipment artwork/overlays and full avatar animations remain pending.
 The existing starter appearance and approved static battlefield remain the
 released baseline. See `docs/starter-wardrobe.md` and `docs/avatar-art-direction.md`.
+
+
+## Tier 1 gear and fallback loot — review pending
+
+See [the Tier 1 specification](tier-one-equipment.md) for all 37 items, exact
+budgets, level-2 gate, wand/book rules, ankh/potion effects, halved tank VIT damage
+weighting, and four stable random reward choices for new unassigned instances.
+Implementation is complete for review; deployment and individual equipment art
+remain pending. Existing assigned loot tables and defensive VIT benefits remain.

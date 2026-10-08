@@ -38,7 +38,7 @@ const itemFormSchema = insertEquipmentItemSchema.extend({
 
 type ItemFormData = z.infer<typeof itemFormSchema>;
 
-const ITEM_TYPES: ItemType[] = ["sword", "wand", "bow", "staff", "herbs", "two-handed-sword", "fist", "claws", "harp", "spoon", "light_armor", "leather_armor", "armor", "helmet", "cap", "hat", "consumable", "shield", "potion", "quiver", "bracers", "gloves", "leggings", "boots"];
+const ITEM_TYPES: ItemType[] = ["spellbook","sword", "wand", "bow", "staff", "herbs", "two-handed-sword", "fist", "claws", "harp", "spoon", "light_armor", "leather_armor", "armor", "helmet", "cap", "hat", "consumable", "shield", "potion", "quiver", "bracers", "gloves", "leggings", "boots"];
 const ITEM_QUALITIES: ItemQuality[] = ["common", "rare", "epic", "legendary"];
 const EQUIPMENT_SLOTS = ALL_EQUIPMENT_SLOTS;
 
@@ -313,7 +313,7 @@ export default function ItemManagement() {
                   </div>
 
                   <FormField control={form.control} name="armorCategory" render={({field}) => <FormItem><FormLabel>Armor category</FormLabel><FormControl><select className="block w-full rounded border p-2 bg-background" value={field.value || ''} onChange={e => field.onChange(e.target.value || null)}><option value="">Select a category for armor</option><option value="heavy_armor">Plate / heavy</option><option value="leather_armor">Leather</option><option value="light_armor">Linen / unarmored clothing</option></select></FormControl><FormMessage /></FormItem>} />
-                  <FormField control={form.control} name="offhandType" render={({field}) => <FormItem><FormLabel>Off-hand type</FormLabel><FormControl><select className="block w-full rounded border p-2 bg-background" value={field.value || ''} onChange={e => field.onChange(e.target.value || null)}><option value="">Infer from item type</option><option value="shield">Shield</option><option value="potion">Potion</option><option value="quiver">Quiver</option></select></FormControl><FormMessage /></FormItem>} />
+                  <FormField control={form.control} name="offhandType" render={({field}) => <FormItem><FormLabel>Off-hand type</FormLabel><FormControl><select className="block w-full rounded border p-2 bg-background" value={field.value || ''} onChange={e => field.onChange(e.target.value || null)}><option value="">Infer from item type</option><option value="shield">Shield</option><option value="potion">Potion</option><option value="quiver">Quiver</option><option value="spellbook">Spell book</option></select></FormControl><FormMessage /></FormItem>} />
 
                   <FormField
                     control={form.control}

@@ -226,3 +226,13 @@ other teachers, unknown/living targets, stale rounds, and completed fights canno
 use it. Retried commands are idempotent. Resurrection preserves resources,
 statistics, choices and phase deadlines; it does not replay resolved turns.
 Students should refresh after this release to load the separate action phase UI.
+
+
+## October 7 Tier 1 follow-up — implemented for review, not deployed
+
+See [Tier 1 gear and instance loot](tier-one-equipment.md) for the latest approved
+changes: halve tank VIT contributions to damaging abilities/basic attacks while
+preserving defensive benefits and direct healing; add the level-2 gear collection;
+apply the Priest ankh's +1 healing after First Aid's normal rounding; and select
+four fallback loot choices when an otherwise unassigned new instance opens.
+This follow-up is separate from the released PRs #37–42.
