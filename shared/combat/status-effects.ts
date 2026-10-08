@@ -49,6 +49,16 @@ export function addStatus(s: CombatSnapshot, p: CombatPlayer, status: CombatStat
   statuses.push(status);
   return true;
 }
+function refreshActionBlock(s: CombatSnapshot, p: CombatPlayer, webEscape = false): void {
+  const statuses = p.statuses || [];
+  const hard = statuses.find(x => ["web", "stun", "hypnosis", "stare", "suffocate"].includes(x.type));
+  const paralysis = statuses.find(x => x.type === "paralysis");
+  const reason = webEscape ? "web" : hard?.type ||
+    (paralysis?.actionFailure?.round === s.round && paralysis.actionFailure.skip ? "paralysis" : undefined);
+  if (reason) p.actionBlocked = { round: s.round, reason };
+  else if (statuses.some(x => x.type === "fear")) p.actionBlocked = { round: s.round, reason: "fear", attacksOnly: true };
+  else delete p.actionBlocked;
+}
 /** Called before actions and after source death. Healing an enemy never reinstates control. */
 export function releaseInvalidStatuses(s: CombatSnapshot): void {
   for (const p of Object.values(s.players)) {
@@ -58,7 +68,7 @@ export function releaseInvalidStatuses(s: CombatSnapshot): void {
     if (before.some(x => controlTypes.has(x.type) && !p.statuses!.includes(x))) grantControlRecovery(s, p);
     if (!p.statuses.some(x => x.type === "stun" || x.type === "paralysis")) p.recoveryCorrectAnswers = 0;
     if (p.actionBlocked && ["hypnosis", "stare", "stun", "paralysis", "fear"].includes(p.actionBlocked.reason) &&
-      !p.statuses.some(x => x.type === p.actionBlocked!.reason)) delete p.actionBlocked;
+      !p.statuses.some(x => x.type === p.actionBlocked!.reason)) refreshActionBlock(s, p);
   }
 }
 /** Recovery is counted once, when answer resolution starts, before support/actions execute. */
@@ -89,11 +99,12 @@ export function prepareStatusActions(s: CombatSnapshot, random: () => number): v
       p.statuses = p.statuses.filter(x => x !== web);
       grantControlRecovery(s, p);
     }
-    let reason = web ? "web" : p.statuses.find(x => ["stun", "hypnosis", "stare", "suffocate"].includes(x.type))?.type;
     const paralysis = p.statuses.find(x => x.type === "paralysis");
-    if (!reason && paralysis && random() < (paralysis.chance ?? 0.3)) reason = "paralysis";
-    if (reason) p.actionBlocked = { round: s.round, reason };
-    else if (p.statuses.some(x => x.type === "fear")) p.actionBlocked = { round: s.round, reason: "fear", attacksOnly: true };
+    // Resolve independent effects once, even while another effect takes priority.
+    // A source dying mid-turn cannot erase an unrelated stun or reroll paralysis.
+    if (paralysis && paralysis.actionFailure?.round !== s.round)
+      paralysis.actionFailure = { round: s.round, skip: random() < (paralysis.chance ?? 0.3) };
+    refreshActionBlock(s, p, !!web);
   }
 }
 export function cleansePlayer(s: CombatSnapshot, p: CombatPlayer): void {
@@ -101,5 +112,5 @@ export function cleansePlayer(s: CombatSnapshot, p: CombatPlayer): void {
   const paralyzed = p.statuses?.some(x => x.type === "paralysis");
   p.statuses = (p.statuses || []).filter(x => x.type !== "poison" && x.type !== "paralysis");
   if (paralyzed) grantControlRecovery(s, p);
-  if (p.actionBlocked?.reason === "paralysis") delete p.actionBlocked;
+  if (p.actionBlocked?.reason === "paralysis") refreshActionBlock(s, p);
 }

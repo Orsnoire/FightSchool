@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { addStudent, advancePhase, applyAnswer, initialCombatState, startQuestion, selectAction } from "../../worker/combat/engine";
 import { resolveEnemyTurn } from "../../worker/combat/enemy-turn";
-import { addStatus, effectiveDefense, prepareStatusActions } from "../../shared/combat/status-effects";
+import { addStatus, cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
 import { chooseEnemyRule, DEFAULT_ENEMY_RULES, ENEMY_MOVES, enemyAISchema, enemyTargets, inferEnemyType, ruleFor, validEnemyAI, type EnemyMove, type EnemyType } from "../../shared/combat/enemy-ai";
 import { publicSnapshot } from "../../worker/combat/session-object";
 import { enemySchema } from "../../shared/schema";
@@ -111,6 +111,8 @@ test("paralysis rolls once per turn without spending blocked resources; stun alw
   const { s } = state(); const p = s.players[id]; p.lastAnswerCorrect = false;
   p.statuses = [effect("paralysis", { chance: 0.3 })];
   prepareStatusActions(s, () => 0.2); assert.equal(p.actionBlocked?.reason, "paralysis");
+  prepareStatusActions(s, () => { throw new Error("Must not reroll in the same round"); });
+  s.round++;
   prepareStatusActions(s, () => 0.5); assert.equal(p.actionBlocked, undefined);
   p.statuses.push(effect("stun", { throughRound: 2 }));
   prepareStatusActions(s, () => 0.9); assert.equal(p.actionBlocked?.reason, "stun");
@@ -162,6 +164,23 @@ test("killing a hypnotizing source releases its victims immediately", () => {
   s = turn(s, f, { [id]: "4", p1: "4" });
   assert.equal(s.enemies[0].health, 0);
   assert.equal(s.players.p1.statuses!.length, 0);
+});
+test("source death and cleansing retain unrelated control effects and the saved paralysis roll", () => {
+  for (const other of ["stun", "suffocate", "fear", "paralysis"] as const) {
+    const { s } = state("hypnosis"); const p = s.players[id];
+    p.statuses = [effect("hypnosis"), effect(other, { sourceId: "another", throughRound: 5, chance: 1 })];
+    prepareStatusActions(s, () => 0);
+    assert.equal(p.actionBlocked?.reason, "hypnosis");
+    s.enemies[0].health = 0;
+    releaseInvalidStatuses(s);
+    assert.equal(p.actionBlocked?.reason, other);
+    assert.equal(!!p.actionBlocked?.attacksOnly, other === "fear");
+  }
+  const { s } = state(); const p = s.players[id];
+  p.statuses = [effect("paralysis", { chance: 1 }), effect("fear", { throughRound: 3 })];
+  prepareStatusActions(s, () => 0); cleansePlayer(s, p);
+  assert.equal(p.actionBlocked?.reason, "fear");
+  assert.equal(p.actionBlocked?.attacksOnly, true);
 });
 test("Trip fails combat only: academic accuracy, mastery, streak and resources remain correct", () => {
   let { s, f } = state("attack", "wizard"); s.players[id].statuses = [effect("trip")];

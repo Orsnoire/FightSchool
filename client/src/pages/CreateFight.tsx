@@ -992,7 +992,7 @@ export default function CreateFight() {
                             }`}
                             data-testid={`button-select-${enemy.id}`}
                           >
-                            <img src={enemy.img} alt={enemy.name} className="w-full h-20 object-cover rounded" />
+                            <img src={enemy.img} alt={enemy.name} className="w-full h-20 object-contain rounded" />
                             <p className="text-xs mt-1 truncate">{enemy.name}</p>
                           </button>
                         ))}

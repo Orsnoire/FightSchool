@@ -77,6 +77,9 @@ counters and the appropriate escape rule.
 A hypnotizing source cannot act while any living participant remains hypnotized
 by it. Players who escape can act while others continue recovering. Death of the
 source releases its victims; damage alone no longer breaks hypnosis. A player
+with another disabling effect remains subject to that effect. Paralysis rolls
+once per round, including when another effect also prevents action; that saved
+roll is retained if hypnosis ends or another effect is cleansed mid-turn. A player
 leaving or being knocked out cannot indefinitely keep the source channeling.
 Late entrants are not retroactively affected by an earlier AoE. Correct-answer
 escape works with a lone player too. A recovered player receives protection from

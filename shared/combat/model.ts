@@ -11,6 +11,7 @@ export interface CombatStatus {
   amount?: number;
   carry?: number;
   chance?: number;
+  actionFailure?: { round: number; skip: boolean };
   correctAnswers?: number;
 }
 export interface EnemyAIState {

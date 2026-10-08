@@ -3,12 +3,15 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { started, student, fight } from '../phase4/fixtures.ts';
 import { initialAppearance } from '../../shared/avatar/appearance.ts';
+import { ENEMY_CATALOG } from '../../shared/combat/enemy-catalog.ts';
+import { verifyEnemyAuthoring } from './enemy-ai.mjs';
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
 const enemyImage = 'data:image/png;base64,' + (await readFile('client/public/enemies/goblin-v1.png')).toString('base64');
 try {
+  await verifyEnemyAuthoring(browser, origin);
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }, { width: 3840, height: 2160 }]) {
     const page = await browser.newPage({ viewport });
     const errors = [];
@@ -120,6 +123,19 @@ try {
     }
     state.encounterRules = 2;
     state.activeWave = 1;
+    state.enemyDisplayMode = 'simultaneous';
+    state.enemies = Object.entries(ENEMY_CATALOG).map(([type,definition])=>({...structuredClone(state.enemies[0]),id:`portrait-${type}`,name:definition.name,image:definition.image,enemyType:type,species:type==='goblin'?'goblin':'other',wave:1}));
+    state.players[student().id].statuses=[{type:'paralysis',sourceId:'portrait-zombie',appliedRound:0}];
+    state.players[student().id].recoveryCorrectAnswers=1;
+    state.players['student-3'].statuses=[{type:'hypnosis',sourceId:'portrait-ghost',appliedRound:0,correctAnswers:2}];
+    await emit();
+    await page.waitForFunction(()=>document.querySelectorAll('.battle-enemy-field img').length===7);
+    await page.locator('.battle-enemy-field img').evaluateAll(imgs=>Promise.all(imgs.map(img=>img.decode())));
+    await page.getByText('Recovery 1/2',{exact:true}).waitFor();
+    await page.getByText('Hypnotized 2/3',{exact:true}).waitFor();
+    await page.getByText('Maintaining hypnosis · cannot act',{exact:true}).waitFor();
+    await page.screenshot({path:`${output}/${viewport.width}-seven-enemies-recovery.png`});
+    state.enemyDisplayMode = 'consecutive';
     const templateEnemy = structuredClone(state.enemies[0]);
     for (const count of [1, 10, 30, 60]) {
       state.enemies = Array.from({length:count}, (_,i) => ({...templateEnemy,id:`g${i}`,name:`Goblin ${i+1}`,species:'goblin',role:'trash',wave:1,health:.5,maxHealth:1}));

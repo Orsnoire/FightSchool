@@ -9,14 +9,25 @@ Draft implementation; not deployed.
 - `npm run build:cloudflare`: client and Worker bundles pass. Vite reports the
   existing large-bundle advisory.
 - Phase 2: 5 tests pass. Phase 3: 7 tests pass. Rich content: 5 tests pass.
-- Phase 4: all 167 tests pass, including all seven artwork checks. The complete
-  `npm test` gate now passes: 184 tests, zero failures. Gameplay, authoring API,
+- Phase 4: all 168 tests pass, including all seven artwork checks and the review
+  regression for overlapping control effects. The complete `npm test` gate now
+  passes: 185 tests, zero failures. Gameplay, authoring API,
   React DOM controls and recovery indicators pass.
 - Vampire, Slime and Samhain replacement sprites are complete, visually inspected
   and integrated into the existing catalog paths. All are 1254×1254 transparent
   PNGs with unclipped, left-facing silhouettes; transparent pixels account for
   67%, 51% and 55% of their canvases respectively.
 - `git diff --check`: passes.
+
+Review identified and fixed source death incorrectly clearing another active
+control effect's action restriction. Remaining stun, suffocation, fear and the
+round's saved paralysis roll now remain effective. Sprite thumbnails also use
+contain sizing so tall and wide creatures are visible without cropping.
+
+PR #52's initial CI and Combat UI Acceptance runs passed. The final review update
+adds browser coverage of all seven sprite loads, phone-width authoring, custom
+priority save/reload, goblin minimum quantity, default reset, visible recovery
+counters and the source's hypnosis channel label. Final-run results are pending.
 
 Coverage includes seven-type roster enforcement, default AI validity, rejecting
 undefined types and cross-species moves, custom-priority persistence, cooldowns,
