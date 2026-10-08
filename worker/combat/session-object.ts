@@ -48,6 +48,9 @@ export function publicSnapshot(snapshot: CombatSnapshot): CombatSnapshot {
   const { departedPlayers: _, ...visible } = snapshot;
   return {
     ...visible,
+    seed: 0,
+    enemies: snapshot.enemies.map(e => ({ ...e, ai: undefined,
+      aiState: e.aiState ? { readyRounds: {}, buffs: e.aiState.buffs.filter(b => b.type !== "flatten") } : undefined })),
     pendingPlayers: Object.fromEntries(Object.entries(snapshot.pendingPlayers||{}).map(([id,p])=>[id,{...p,correctQuestionKeys:undefined,currentAnswer:null,lastAnswerCorrect:undefined}])),
     players: Object.fromEntries(
       Object.entries(snapshot.players).map(([id, p]) => [

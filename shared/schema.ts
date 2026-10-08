@@ -1,3 +1,4 @@
+import { enemyAISchema, ENEMY_TYPES, validEnemyAI } from "./combat/enemy-ai";
 import { TIER_ONE_EQUIPMENT } from "./tier-one-equipment";
 import { EQUIPMENT_SLOTS, type EquipmentSlot } from "./equipment-slots";
 import { z } from "zod";
@@ -186,6 +187,8 @@ export const questionSchema = z.object({
 
 // Enemy schema
 export interface Enemy {
+  enemyType?: import("./combat/enemy-ai").EnemyType;
+  ai?: import("./combat/enemy-ai").EnemyAI;
   role?: import("./encounter-tiers").EnemyRole;
   id: string;
   name: string;
@@ -194,12 +197,14 @@ export interface Enemy {
 }
 
 export const enemySchema = z.object({
+  enemyType: z.enum(ENEMY_TYPES).optional(),
+  ai: enemyAISchema.optional(),
   role:z.enum(["trash","normal","leader","boss"]).optional(),
   id: z.string(),
   name: z.string().min(1),
   image: z.string(),
   difficultyMultiplier: z.number().min(1).max(100).default(10),
-});
+}).refine(validEnemyAI, "Invalid enemy AI rules");
 
 // Fight schema (teacher creates)
 export interface Fight {

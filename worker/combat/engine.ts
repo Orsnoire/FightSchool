@@ -1,3 +1,6 @@
+import { enemyAISchema, inferEnemyType } from "../../shared/combat/enemy-ai";
+import { cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
+import { resolveEnemyTurn } from "./enemy-turn";
 import { enemyTuning } from "../../shared/encounter-tiers";
 import { questionKey } from "../progression/question-key";
 import { abilityDamage, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
@@ -79,6 +82,11 @@ export function initialCombatState(
     damageLeaderId: null,
     enemies: fight.enemies.map((e) => ({
       ...e,
+      enemyType: e.enemyType || inferEnemyType(e.image),
+      ai: enemyAISchema.parse(e.ai || {}),
+      aiState: { readyRounds: {}, buffs: [] },
+      attackPower: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 1,
+      defense: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 0,
       health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
       maxHealth: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
       effects: [],
@@ -430,6 +438,7 @@ function damagePlayer(
   raw: number,
   source: string,
   ignoreDefense = false,
+  limit = Infinity,
 ) {
   const p = s.players[id];
   if (!p || p.isDead) return 0;
@@ -437,9 +446,8 @@ function damagePlayer(
     ? integer(raw)
     : Math.max(
         1,
-        integer(raw) -
-          p.stats.def -
-          (p.buffs.vampiric_guard ? 0 : integer(p.stats.vit / 2)),
+        Math.ceil(integer(raw) - effectiveDefense(p) -
+          (p.buffs.vampiric_guard ? 0 : integer(p.stats.vit / 2))),
       );
   if (p.buffs.immunity || (p.buffs.dodge && source === "wrong_answer")) {
     event(s, "block", id, id, damage, `${p.nickname} avoided ${damage}`);
@@ -488,7 +496,7 @@ function damagePlayer(
         `${p.nickname}'s shield prevented ${prevented}`,
       );
     }
-  const actual = Math.min(p.health, damage);
+  const actual = Math.min(p.health, damage, limit);
   p.health -= actual;
   p.totals.damageTaken += actual;
   if (p.characterClass === "monk" && actual)
@@ -522,11 +530,20 @@ function hit(
 ) {
   const e = s.enemies.find((e) => e.id === id);
   if (!e || e.health <= 0) return 0;
+  const protection = (e.aiState?.buffs || []).filter(b => b.throughRound >= s.round);
+  if (protection.some(b => b.type === "fade" || b.type === "flatten")) {
+    event(s, "block", e.id, p.studentId, 0, protection.some(b => b.type === "flatten")
+      ? `${e.name} reveals Flatten: the attack misses` : `${e.name} has faded out and is immune`);
+    return 0;
+  }
   let amount = integer(raw);
   if (e.effects.some((x) => ["mark", "prey"].includes(x.type))) amount *= 2;
   if (p.buffs.doubleDamage) amount *= 2;
+  const defense = (e.defense || 0) * (1 + 0.5 * protection.filter(b => b.type === "defense").length);
+  amount = Math.max(0, Math.ceil(amount - defense));
   const actual = Math.min(e.health, amount);
   e.health -= actual;
+  if (e.health <= 0) releaseInvalidStatuses(s);
   p.totals.damageDealt += actual;
   if (bonus) p.totals.bonusDamage += actual;
   p.threat += Math.max(0, actual - p.stats.agi);
@@ -570,7 +587,19 @@ export function upgradePriestActions(state: CombatSnapshot): CombatSnapshot {
   return next;
 }
 
-function applyAbility(
+function applyAbility(s: CombatSnapshot, p: CombatPlayer, id: string, targetId: string) {
+  const lock = p.actionBlocked?.round === s.round ? p.actionBlocked : undefined;
+  if (lock && (!lock.attacksOnly || hasOffensiveAbility([id]) || abilityDamage(p, id) !== undefined)) {
+    event(s, "ability", p.studentId, targetId, 0, `${p.nickname} cannot use ${id.replaceAll("_", " ")}: ${lock.reason}`);
+    return;
+  }
+  const bleedPenalty = p.statuses?.some(x => x.type === "bleed") ? Math.min(1, p.stats.atk) : 0;
+  p.stats.atk -= bleedPenalty;
+  try { executeAbility(s, p, id, targetId); }
+  finally { p.stats.atk += bleedPenalty; }
+}
+
+function executeAbility(
   s: CombatSnapshot,
   p: CombatPlayer,
   id: string,
@@ -753,7 +782,7 @@ function applyAbility(
       heal(s, p, targetId, healingValue);
       break;
     case "purify":
-      if (s.players[targetId]) delete s.players[targetId].buffs.poison;
+      if (s.players[targetId]) cleansePlayer(s, s.players[targetId]);
       break;
     case "bless":
       if (s.players[targetId])
@@ -892,7 +921,7 @@ function applyAbility(
     }
     case "cleansing_chorus":
       groupHeal(healingValue);
-      party().forEach((t) => delete t.buffs.poison);
+      party().forEach((t) => cleansePlayer(s, t));
       break;
     case "finale":
       all().forEach((e) => hit(s, p, e.id, damageValue, true));
@@ -903,7 +932,7 @@ function applyAbility(
         .forEach((t) => heal(s, p, t.studentId, 1, true));
       all().forEach((e) => hit(s, p, e.id, damageValue, true));
       groupHeal(healingValue);
-      party().forEach((t) => delete t.buffs.poison);
+      party().forEach((t) => cleansePlayer(s, t));
       buff("doubleDamage", 1);
       break;
     default:
@@ -968,6 +997,7 @@ export function advancePhase(
     for (const p of Object.values(s.players)) p.roundsParticipated = participatedRounds(s, p) + 1;
     s.completedRounds = completed + 1;
     s.events = [];
+    prepareStatusActions(s, () => rng(s));
     // Support resolves before answer damage so blocks protect wrong answers, as specified.
     const ordered = Object.values(s.players).sort(
       (a, b) =>
@@ -1008,7 +1038,7 @@ export function advancePhase(
       const before = p.totals.damageDealt;
       if (
         p.questionAction?.ability === "sacred_strike" &&
-        !abilityProblem(p, "sacred_strike")
+        !abilityProblem(p, "sacred_strike") && !p.actionBlocked
       )
         p.buffs.immunity = { rounds: 1, amount: 0 };
       if (p.lastAnswerCorrect) {
@@ -1017,8 +1047,14 @@ export function advancePhase(
         p.consecutiveCorrectAnswers = (p.consecutiveCorrectAnswers || 0) + 1;
         const a = p.questionAction;
         // Departure can cancel a saved ally-targeted action before resolution.
-        if (a) applyAbility(s, p, a.ability, a.targetId);
-        if (a && p.buffs.abyssal_drain) {
+        const tripped = p.statuses?.some(x => x.type === "trip");
+        if (tripped) {
+          p.statuses = p.statuses?.filter(x => x.type !== "trip");
+          event(s, "ability", p.studentId, p.studentId, 0, `${p.nickname} tripped: answer credit preserved, combat action failed`);
+          const provoke = ordered.find(x => !x.isDead && x.buffs.provoke);
+          damagePlayer(s, provoke?.studentId || p.studentId, fight.baseEnemyDamage, "trip");
+        } else if (a) applyAbility(s, p, a.ability, a.targetId);
+        if (a && !tripped && !p.actionBlocked && p.buffs.abyssal_drain) {
           const amount = baseDamage(p);
           s.enemies
             .filter((e) => e.health > 0 && e.id !== a.targetId)
@@ -1077,30 +1113,30 @@ export function advancePhase(
   if (s.currentPhase === "question_resolution") {
     s.currentPhase = "enemy_ai";
     leader(s);
-    let soloDamageRemaining = s.soloEnemyDamageCap ?? Infinity;
-    for (const enemy of s.enemies
-      .filter((e) => e.health > 0)
-      .slice(0, fight.enemyDisplayMode === "simultaneous" ? undefined : 1)) {
-      const reduction = Object.values(s.players).reduce(
-        (n, p) => n + (p.buffs.dread_aura?.amount || 0),
-        0,
-      );
-      if (s.threatLeaderId && soloDamageRemaining > 0) {
-        const target = s.players[s.threatLeaderId];
-        // Difficulty 10 is the baseline; square-root scaling keeps +1 survivable.
-        const raw = Math.max(0, Math.ceil(fight.baseEnemyDamage * Math.sqrt(enemy.difficultyMultiplier / 10)) - reduction);
-        // Cap total counterattack damage for solo encounters, including simultaneous enemies.
-        const capped = Math.min(raw, soloDamageRemaining + target.stats.def + integer(target.stats.vit / 2));
-        const taken = damagePlayer(
-          s,
-          s.threatLeaderId,
-          capped,
-          enemy.id,
-        );
-        soloDamageRemaining -= taken;
-      }
-      leader(s);
-    }
+    resolveEnemyTurn(s, fight, {
+      random: () => rng(s),
+      damage: (id, raw, source, ignoreDefense, limit) => damagePlayer(s, id, raw, source, ignoreDefense, limit),
+      say: (actor, target, message, amount = 0) => event(s, "ability", actor, target, amount, message),
+      possess: (enemy, copied, target, damage) => {
+        const abilities = copied.availableAbilities.filter(id =>
+          (abilityDamage(copied, id) || 0) > 0 && !ULTIMATES.has(id) && !abilityProblem(copied, id));
+        if (!abilities.length) return false;
+        const ability = abilities[Math.floor(rng(s) * abilities.length)];
+        // Resolve the borrowed attack on isolated targets through the same player rules.
+        // Only its damage is mirrored back; real player resources, totals and loadouts are untouched.
+        const borrowed = structuredClone(copied);
+        borrowed.statuses = []; delete borrowed.actionBlocked;
+        const projection: CombatSnapshot = { ...structuredClone(s), events: [], players: { [borrowed.studentId]: borrowed },
+          enemies: Object.values(s.players).filter(p => !p.isDead).map(p => ({ id: p.studentId, name: p.nickname,
+            image: "", difficultyMultiplier: 1, health: 1e9, maxHealth: 1e9, effects: [] })) };
+        applyAbility(projection, borrowed, ability, target.studentId);
+        s.seed = projection.seed;
+        event(s, "ability", enemy.id, copied.studentId, 0, `${enemy.name} copies ${copied.nickname}'s ${ability.replaceAll("_", " ")}`);
+        for (const attack of projection.events.filter(e => e.type === "damage")) damage(attack.targetId, attack.amount);
+        return true;
+      },
+    });
+    leader(s);
     s.phaseDeadline = now + 3000;
     return s;
   }
@@ -1145,6 +1181,7 @@ export function advancePhase(
     s.pendingPlayers = {};
     leader(s);
     s.round++;
+    releaseInvalidStatuses(s);
     s.currentQuestionIndex =
       (s.currentQuestionIndex + 1) % fight.questions.length;
     s.currentPhase = "question";

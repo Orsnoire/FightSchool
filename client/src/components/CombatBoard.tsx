@@ -1,3 +1,4 @@
+import { isHypnosis, statusSummary } from "@shared/combat/status-effects";
 import { useState, type CSSProperties } from "react";
 import type { CombatPlayer, CombatSnapshot } from "@shared/combat/model";
 import { initialAppearance } from "@shared/avatar/appearance";
@@ -50,6 +51,7 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove }: {
         <StaticAvatar appearance={p.appearance || initialAppearance(null, p.gender === "B" ? "human-female-v1" : "human-male-v1", () => .35)} job={p.characterClass} loadout={p.equipmentLoadout} className="battle-paperdoll" />
       </button>
       <span className="battle-name">{p.nickname}{isSelf ? " · You" : ""}{queued ? " · Next round" : p.isDead ? " · KO" : ""}</span>
+      {!!p.statuses?.length && <span className="rounded bg-black/80 px-1 text-[10px] text-amber-200" title={statusSummary(p).join("; ")} aria-label={`${p.nickname}: ${statusSummary(p).join("; ")}`}>{p.statuses.some(isHypnosis) ? `Hypnotized ${p.statuses.find(isHypnosis)?.correctAnswers || 0}/3` : p.statuses.some(x => x.type === "stun" || x.type === "paralysis") ? `Recovery ${p.recoveryCorrectAnswers || 0}/2` : "Status effect"}</span>}
       {onRemove && <button className="battle-remove" aria-label={`Remove ${p.nickname} from fight`} onClick={event => { event.stopPropagation(); onRemove(p.studentId); }}><XCircle size={23} /></button>}
     </div>;
   };
@@ -62,6 +64,8 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove }: {
     {shownEnemies.map((e, i) => <div key={e.id} className={`battle-enemy ${e.health <= 0 ? "is-ko" : ""}`} style={{ left: `${shownEnemies.length === 1 ? 76 : 66 + (i % 2) * 20}%`, top: `${shownEnemies.length === 1 ? 72 : 48 + Math.floor(i / 2) * 21}%`, "--enemy-size": shownEnemies.length === 1 ? "230px" : "150px" } as CSSProperties}>
       <div className="battle-enemy-name">{e.name}</div><Bar current={e.health} max={e.maxHealth} label={`${e.name} HP`} />
       <span className="battle-enemy-hp">{e.health} / {e.maxHealth}</span>
+      {Object.values(state.players).some(p => !p.isDead && p.statuses?.some(x => isHypnosis(x) && x.sourceId === e.id)) && <span className="rounded bg-black/80 px-2 text-xs text-amber-200">Maintaining hypnosis · cannot act</span>}
+      {e.aiState?.buffs.filter(b => b.type !== "flatten" && b.throughRound >= state.round).map((b, index) => <span className="rounded bg-black/80 px-1 text-xs text-amber-200" key={`${b.type}:${index}`}>{b.type === "attack" ? "Soul inflamed · +100% ATK" : b.type === "defense" ? "+50% DEF" : "Faded · immune"}</span>)}
       <img src={e.image} alt={e.name} />
     </div>)}
     <details className="battle-roster"><summary>Party · {all.length}</summary><div className="battle-roster-list">{all.map(p => <button key={p.studentId} onClick={() => setSelected(p.studentId)}>{p.nickname}<span>{p.isDead ? "KO" : `${p.health}/${p.maxHealth} HP`}{state.pendingPlayers?.[p.studentId] ? " · Next round" : ""}</span></button>)}</div></details>

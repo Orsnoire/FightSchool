@@ -1,6 +1,23 @@
 import type { EquipmentLoadout } from '../equipment-catalog';
 import type { AvatarAppearance } from "../avatar/appearance";
 import type { CharacterClass, Gender, CharacterStats } from "../schema";
+import type { EnemyAI, EnemyMove, EnemyType } from "./enemy-ai";
+export type StatusType = "stun" | "paralysis" | "web" | "poison" | "bleed" | "hypnosis" | "stare" | "fear" | "corrosion" | "suffocate" | "trip";
+export interface CombatStatus {
+  type: StatusType;
+  sourceId: string;
+  appliedRound: number;
+  throughRound?: number;
+  amount?: number;
+  carry?: number;
+  chance?: number;
+  correctAnswers?: number;
+}
+export interface EnemyAIState {
+  readyRounds: Partial<Record<EnemyMove, number>>;
+  buffs: Array<{ type: "defense" | "attack" | "fade" | "flatten"; throughRound: number }>;
+  lastMove?: EnemyMove;
+}
 export type CombatPhase =
   | "waiting"
   | "question"
@@ -25,6 +42,10 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  statuses?: CombatStatus[];
+  recoveryCorrectAnswers?: number;
+  controlImmuneThroughRound?: number;
+  actionBlocked?: { round: number; reason: string; attacksOnly?: boolean };
   questGuildId?: string | null;
   limitTier?: number;
   correctQuestionKeys?: string[];
@@ -62,6 +83,11 @@ export interface CombatPlayer {
   totals: CombatTotals;
 }
 export interface CombatEnemy {
+  enemyType?: EnemyType;
+  ai?: EnemyAI;
+  aiState?: EnemyAIState;
+  attackPower?: number;
+  defense?: number;
   id: string;
   name: string;
   image: string;

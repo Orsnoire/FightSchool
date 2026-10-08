@@ -128,6 +128,14 @@ Tier 1 branch, not yet deployed.
 
 ## Combat Flow Refactor
 
+The [October 8 enemy AI and recovery specification](combat/enemy-ai.md) records
+species defaults, teacher-editable conditional priorities, the six enemy move
+sets, and answer-based status recovery. Two nonconsecutive correct answers clear
+stun/paralysis; three release each player from single-target Hypnotic Stare or
+party-wide Hypnosis. Hypnotizing sources cannot act until their victims are free.
+This supersedes the initial damage-threshold and fixed-turn hypnosis proposals.
+Implementation is prepared for review; this entry does not claim deployment.
+
 This document is authoritative primarily for **player experience and presentation**, including:
 
 - combat phase order

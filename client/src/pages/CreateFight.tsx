@@ -1,3 +1,5 @@
+import { EnemyAIEditor } from "@/components/EnemyAIEditor";
+import { inferEnemyType, enemyAISchema } from "@shared/combat/enemy-ai";
 import { ENCOUNTER_TIERS, ENEMY_ROLES, ENEMY_ROLE_LABELS, enemyTuning, inferEnemyRole, type EnemyRole } from "@shared/encounter-tiers";
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useRoute } from "wouter";
@@ -353,6 +355,8 @@ export default function CreateFight() {
         id: enemies[editingEnemyIndex].id,
         name: currentEnemy.name,
         image: currentEnemy.image || dragonImg,
+        enemyType: currentEnemy.enemyType || inferEnemyType(currentEnemy.image),
+        ai: enemyAISchema.parse(currentEnemy.ai || {}),
         difficultyMultiplier: encounterTier ? enemyTuning(encounterTier,currentEnemy.role||"normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
         ...(encounterTier?{role:currentEnemy.role||"normal"}:{}),
       };
@@ -365,6 +369,8 @@ export default function CreateFight() {
         id: Date.now().toString(),
         name: currentEnemy.name,
         image: currentEnemy.image || dragonImg,
+        enemyType: currentEnemy.enemyType || inferEnemyType(currentEnemy.image),
+        ai: enemyAISchema.parse(currentEnemy.ai || {}),
         difficultyMultiplier: encounterTier ? enemyTuning(encounterTier,currentEnemy.role||"normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
         ...(encounterTier?{role:currentEnemy.role||"normal"}:{}),
       };
@@ -384,6 +390,8 @@ export default function CreateFight() {
       image: enemy.image,
       difficultyMultiplier: enemy.difficultyMultiplier,
       role:enemy.role,
+      enemyType: enemy.enemyType || inferEnemyType(enemy.image),
+      ai: enemy.ai,
     });
     setEditingEnemyIndex(index);
     // Check if this is an uploaded image (starts with http)
@@ -1003,7 +1011,7 @@ export default function CreateFight() {
                           <button
                             key={enemy.id}
                             type="button"
-                            onClick={() => setCurrentEnemy({ ...currentEnemy, image: enemy.img })}
+                            onClick={() => setCurrentEnemy({ ...currentEnemy, image: enemy.img, enemyType: inferEnemyType(enemy.img), ai: undefined })}
                             className={`p-2 border-2 rounded-md hover-elevate ${
                               currentEnemy.image === enemy.img ? "border-primary" : "border-border"
                             }`}
@@ -1021,6 +1029,7 @@ export default function CreateFight() {
                       {encounterTier&&currentEnemy.role?<p className="text-sm text-muted-foreground">{ENEMY_ROLE_LABELS[currentEnemy.role]} · tier {encounterTier}: {enemyTuning(encounterTier,currentEnemy.role).hpMultiplier.toFixed(2)}× standard HP budget; counterattack up to {enemyTuning(encounterTier,currentEnemy.role).rawCounterattack} before defense. Solo safety limits still apply.</p>:<p className="text-sm text-muted-foreground">Legacy difficulty {currentEnemy.difficultyMultiplier||10}. Selecting a role switches this fight to tier presets.</p>}
                     </fieldset>
 
+                    <EnemyAIEditor enemy={currentEnemy} onChange={setCurrentEnemy} />
                     <Button type="button" onClick={addEnemy} className="w-full" data-testid={editingEnemyIndex !== null ? "button-update-enemy" : "button-add-enemy"}>
                       <PlusCircle className="mr-2 h-4 w-4" />
                       {editingEnemyIndex !== null ? 'Update Enemy' : 'Add Enemy'}

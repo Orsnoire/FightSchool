@@ -91,6 +91,8 @@ export interface FightQuestion {
 }
 
 export interface FightEnemy {
+  enemyType?: import("../../shared/combat/enemy-ai").EnemyType;
+  ai?: import("../../shared/combat/enemy-ai").EnemyAI;
   role?: import("../../shared/encounter-tiers").EnemyRole;
   id: string;
   name: string;
