@@ -1,14 +1,21 @@
 # Classroom polish release queue
 
-**October 8 release status:** PRs #43–46 are merged into main but not deployed.
-Deployment passed all 133 tests and builds, then stopped on Cloudflare's R2 HTTP
-403 before any migration or Worker change. See the
-[release attempt](../cloudflare/full-migration.md#gear-release-attempt--8-october-2026-blocked-before-migration).
-Review-pending headings below describe the implementation checkpoints; their
-code review is now complete. Deployment/live acceptance remain blocked on R2.
+**October 8 release status:** PRs #43–46 are merged and deployed. The original
+R2 HTTP 403 was limited to attempt 1 of run `37773374205`;
+[attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/attempts/2)
+passed at 12:21 UTC, including migrations, Worker publication and both hostnames.
+The latest verified [deployment 37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746)
+published runtime `764cd2fe2d544733c8e10fdace84084cbbfe94aa`, Worker
+`926af6a1-eb8b-4fd0-8c3b-9941ece77aad`, at 17:12 UTC. It also includes PRs #47
+and #49. [Canonical live acceptance 37816148964, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37816148964/attempts/2)
+passed at 17:28 UTC with PR #50's corrected fixtures. See the
+[release and migration record](../cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026)
+for evidence that migrations 0012/0013 were covered by the successful 12:21 gate,
+0014 by the 15:31 gate, and all three by the 17:12 gate. This is migrator/journal
+evidence, not an independent query of live schema or migration-ledger rows.
 
 
-Status: October 7, 2026. PRs #37–42 are reviewed, merged and deployed as
+Previous release: October 7, 2026. PRs #37–42 were reviewed, merged and deployed as
 `41a372c039d00421882e37044830abaa9218b427`. Deployment run
 [37717016937](https://github.com/Orsnoire/FightSchool/actions/runs/37717016937)
 passed the migration gate and both hostname smoke checks. Live acceptance evidence
@@ -23,10 +30,13 @@ is recorded in [the release record](../cloudflare/full-migration.md).
 | Gear expansion and Tier 0 starters | Implemented and tested in [PR #40](https://github.com/Orsnoire/FightSchool/pull/40), based on PR #39 | Released October 7; see release evidence above |
 | 3. Loadout display synchronization and Tier 0 completion | Implemented and tested in [PR #41](https://github.com/Orsnoire/FightSchool/pull/41), based on PR #40 | Released October 7; see release evidence above |
 | Equipment permissions and explicit armor classification | Implemented and tested in [PR #42](https://github.com/Orsnoire/FightSchool/pull/42), based on PR #41 | Released October 7; see release evidence above |
-| Remembered loadouts per job | Implemented and tested on `feat/remembered-job-loadouts` | Review pending; migration 0012 required; not deployed |
-| Tier 1 gear, reduced VIT damage scaling and fallback loot | Implemented for review on `feat/tier-one-gear`, based on PR #43 | Review/deployment pending; migrations 0012 and 0013 required |
-| Gear comparisons, including loot and shop | Implemented for review on `feat/gear-comparisons`, based on PR #44 | Review/deployment pending; no additional migration |
-| Combined release | Deployed | Migration 0011 applied; existing data preserved; see release record for live validation |
+| Remembered loadouts per job | Merged in [PR #43](https://github.com/Orsnoire/FightSchool/pull/43) | Released October 8; migration 0012 covered by successful gate |
+| Tier 1 gear, reduced VIT damage scaling and fallback loot | Merged in [PR #44](https://github.com/Orsnoire/FightSchool/pull/44) | Released October 8; migrations 0012/0013 covered by successful gate |
+| Gear comparisons, including loot and shop | Merged in [PR #45](https://github.com/Orsnoire/FightSchool/pull/45) | Released October 8; no additional migration |
+| Equipped gear and Tier 1 art | Merged in [PR #46](https://github.com/Orsnoire/FightSchool/pull/46) | Released October 8; front-facing static artwork; no additional migration |
+| Guild quests and classroom tiers | Merged in [PR #47](https://github.com/Orsnoire/FightSchool/pull/47) | Released October 8; migration 0014 covered by successful gate; classroom tuning remains open |
+| Explicit hosted-session Join / End / Launch | Merged in [PR #49](https://github.com/Orsnoire/FightSchool/pull/49) | Released October 8; host-session live acceptance passed |
+| October 7 combined release (#37–42) | Deployed | Migration 0011 applied; existing data preserved; see release record for live validation |
 
 ## Item 1: calculated values
 
@@ -91,7 +101,7 @@ A shared slot registry drives UI, validation and stat collection, with nullable
 storage and starter-default hooks for later slots. Existing equipment is retained;
 new starter arms have no stats. Low-stat starter gear is explicitly Tier 0, with
 unchanged stats and compatibility. Upgrade tiers and gates remain unchanged.
-See [starter wardrobe](../starter-wardrobe.md#october-7-expansion--implemented-for-review-not-deployed)
+See [starter wardrobe](../starter-wardrobe.md#october-7-expansion--released-october-7-2026)
 for migration, extension and pending-art boundaries.
 
 Validation: `npm run check`, all 113 tests in `npm test`,
@@ -148,9 +158,10 @@ category choice. No existing items or stats are migrated or rebalanced.
 Validation: type checking, all 118 tests, production build and diff checks pass.
 Tests cover all six armor slots, omitted/null categories, merged PATCH checks,
 legacy preservation, permission display and job/tier/hand-pair explanations.
-Individual gear art and animation remain deferred. Per-job saved loadouts are implemented for review below.
+Individual gear art and per-job saved loadouts were released October 8 as recorded
+below. Full animation remains deferred.
 
-## Remembered loadouts per job — review pending
+## Remembered loadouts per job — released October 8, 2026
 
 Switching jobs now saves and restores eight gear slots and two cross-class
 ability slots, including deliberately empty selections. New jobs start with
@@ -158,43 +169,46 @@ starter gear and empty cross-class choices. Restoration revalidates current
 ownership and equipment/ability restrictions, with starter fallbacks for invalid
 gear. Shared revisions prevent concurrent character/equipment/ability writes
 from silently overwriting each other. Existing characters are preserved by
-additive migration 0012. See [starter wardrobe](../starter-wardrobe.md#remembered-job-loadouts--implemented-for-review-not-deployed).
+additive migration 0012. See [starter wardrobe](../starter-wardrobe.md#remembered-job-loadouts--released-october-8-2026).
 
 Validation covers real Worker/database round trips, all eight custom upgrades,
 ability restoration, empty slots, relogin, same-job preservation, changed item
 tiers, duplicate ability rejection and concurrent saves returning 409 atomically.
 Type checking, all 120 tests, the production build and diff checks pass.
-Review and deployment are pending; this is separate from the completed release.
+PR #43 is merged and deployed; migration-gate and live acceptance evidence are
+recorded in the October 8 release record above.
 
 ## Larger work outside this batch
 
-Individual equipment artwork/overlays and full avatar animations remain pending.
-The existing starter appearance and approved static battlefield remain the
-released baseline. See `docs/starter-wardrobe.md` and `docs/avatar-art-direction.md`.
+Front-facing static equipment artwork/overlays are released. Full avatar
+animations, near-profile fitting and custom-item artwork remain pending.
+The static battlefield remains the released baseline. See `docs/starter-wardrobe.md`
+and `docs/avatar-art-direction.md`. Team race and party-scaled swarm counts
+remain future implementation; this reconciliation does not release those features.
 
 
-## Tier 1 gear and fallback loot — review pending
+## Tier 1 gear and fallback loot — released October 8, 2026
 
 See [the Tier 1 specification](tier-one-equipment.md) for all 37 items, exact
 budgets, level-2 gate, wand/book rules, ankh/potion effects, halved tank VIT damage
 weighting, and four stable random reward choices for new unassigned instances.
-Implementation is complete for review; deployment and individual equipment art
-remain pending. Existing assigned loot tables and defensive VIT benefits remain.
+PR #44 is merged and deployed, with static equipment art released in PR #46.
+Existing assigned loot tables and defensive VIT benefits remain.
 
 
-## Gear comparisons — review pending
+## Gear comparisons — released October 8, 2026
 
 [Gear comparison behavior](equipment-comparisons.md) covers hover/focus/tap
 previews, signed stat differences, special effects and forced off-hand losses
-in gear pickers, the guild shop and loot rewards. This is implemented for review,
-not deployed. Art, overlays and animation remain pending.
+in gear pickers, the guild shop and loot rewards. PR #45 is merged and deployed.
+Static art and overlays were released in PR #46; animation remains pending.
 
 
-## Equipped gear and Tier 1 art — review pending
+## Equipped gear and Tier 1 art — released October 8, 2026
 
 [Static equipped visuals](../avatar-equipment-visuals.md) are implemented after
 gear comparisons, with independent slot choices, saved/combat loadout snapshots,
 both-body Tier 1 recolors and missing weapon props. Healer’s Laurel is renamed;
 previous head bonuses and set budgets are unchanged. No new migration.
-Pending: owner visual review, PR review, deployment and live acceptance.
+PR #46 is merged and deployed; subsequent canonical live acceptance passed.
 Animation rigs/clips, near-profile fitting and custom-item art remain pending.

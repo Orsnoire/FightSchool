@@ -2,7 +2,14 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Current status, 1 October 2026:** the recovered refactor, classroom fixes, daily XP stamina, and approved Wizard/Scout balance are merged and deployed to the canonical hostname. Functional live combat, R2, and 30-player classroom acceptance passed. Deployment identifiers and evidence are recorded below; full Phase 7 operational signoff remains open.
+**Current verified release, 8 October 2026:** equipment PRs #43–46, guild quests
+(#47) and explicit host-session controls (#49) are deployed at runtime commit
+`764cd2fe2d544733c8e10fdace84084cbbfe94aa`, Worker version
+`926af6a1-eb8b-4fd0-8c3b-9941ece77aad`. Deployment `37814586746` and subsequent
+canonical live acceptance `37816148964` (attempt 2, corrected PR #50 fixtures)
+passed. The original R2 403 is historical; it was overcome in attempt 2 of the
+earlier gear deployment. See the [October 8 evidence and migration record](#gear-release-recovered-and-verified--8-october-2026).
+Full Phase 7 operational signoff remains open.
 
 ## Root cause and corrected behavior
 
@@ -332,7 +339,12 @@ This closes the combined release gate; infrastructure failure/rollback drills
 remain a separate acceptance track.
 
 
-## Gear release attempt — 8 October 2026 (blocked before migration)
+<a id="gear-release-attempt--8-october-2026-blocked-before-migration"></a>
+
+## Gear release attempt — 8 October 2026 (historical R2 failure)
+
+**Historical attempt 1 only.** The successful retry and later deployment below
+supersede this failure; it is not an active release or migration blocker.
 
 The owner authorized deployment of the complete review stack. PRs #43–46 were
 merged in order into `main`, ending at
@@ -344,18 +356,94 @@ and both-body equipped static artwork. Previous head bonuses remain unchanged.
 All implementation PR checks passed. Merged-main
 [CI run 37773184867](https://github.com/Orsnoire/FightSchool/actions/runs/37773184867)
 passed type checking, all 133 tests and both production builds.
-[Deployment run 37773374205](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205),
+[Deployment run 37773374205, attempt 1](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/attempts/1),
 job `113298147189`, also passed those checks, then failed at **Ensure image storage
 bucket** at 11:58 UTC (05:58 MDT). Cloudflare returned HTTP 403:
 “Please enable R2 through the Cloudflare Dashboard.”
 
-No database migration, secret preparation, Worker deployment or smoke check ran.
-Migrations 0012 (remembered loadouts/revision) and 0013 (spell-book constraint)
-remain pending. The live Worker remains `8776783b-ea00-4ffa-979c-e42415856d0a`,
-from successful deployment `37717016937` and runtime commit
-`41a372c039d00421882e37044830abaa9218b427`.
+No database migration, secret preparation, Worker deployment or smoke check ran
+in attempt 1. At that checkpoint, migrations 0012 (remembered loadouts/revision)
+and 0013 (spell-book constraint) were pending, and the live Worker was still
+`8776783b-ea00-4ffa-979c-e42415856d0a` from deployment `37717016937`, runtime
+`41a372c039d00421882e37044830abaa9218b427`. These statements describe the failed
+attempt, not the current release.
 
-Next: resolve the R2 account/deployment-token issue, rerun the normal deployment
-workflow on the verified release revision, then run canonical-domain live
-acceptance. Do not bypass the storage gate or mark the stack deployed. Static
-animation/near-profile coverage and infrastructure recovery drills remain separate.
+## Gear release recovered and verified — 8 October 2026
+
+### Deployment timeline
+
+All times below are UTC on October 8. Each successful deployment passed R2,
+the additive migration gate, Worker publication and both the workers.dev and
+canonical-hostname smoke checks. The configured environment is named
+`cloudflare-staging`, but the published Worker also serves
+`https://questacademy.bookwyrminteractive.studio`.
+
+| Deployment evidence | Checked-out runtime commit | Worker version / publication | Scope |
+| --- | --- | --- | --- |
+| [37773374205, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/attempts/2), [job 113307281605](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/job/113307281605) | `14a58f14cf29e8a0ed33e8aa601e2e680dd77efc` | `73332986-23d4-4393-b22e-c96161f8ff4f`, 12:21:36 | First verified successful gear-stack deployment: PRs #43–46 |
+| [37801260340](https://github.com/Orsnoire/FightSchool/actions/runs/37801260340), [job 113393829996](https://github.com/Orsnoire/FightSchool/actions/runs/37801260340/job/113393829996) | `e3e1737a371e1d5d26d65b77e46f7f48684200f3` | `974a808d-07e5-48a7-aba3-2cf3dd4842b0`, 15:32:12 | Gear stack plus guild quests/progression/tier authoring, PR #47 |
+| [37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746), [job 113439828394](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746/job/113439828394) | `764cd2fe2d544733c8e10fdace84084cbbfe94aa` | `926af6a1-eb8b-4fd0-8c3b-9941ece77aad`, 17:12:46 | Latest verified deployment, additionally including explicit host-session controls, PR #49 |
+
+The 12:21 retry passed all 133 tests and both builds. The 17:12 deployment passed
+type checking, all 142 tests and both builds; R2 reported ready at 17:12:24,
+migrations succeeded at 17:12:25, and the two smoke checks passed at 17:12:50–51.
+The logs establish that the R2 gate succeeded; they do not identify the specific
+account or token change that resolved the earlier 403.
+
+### Migration verification record
+
+The deployed [package script](https://github.com/Orsnoire/FightSchool/blob/764cd2fe2d544733c8e10fdace84084cbbfe94aa/package.json)
+runs `drizzle-kit migrate --config drizzle.cloudflare.config.ts`.
+That [configuration](https://github.com/Orsnoire/FightSchool/blob/764cd2fe2d544733c8e10fdace84084cbbfe94aa/drizzle.cloudflare.config.ts)
+uses `migrations/cloudflare` and the deployment environment's `DATABASE_URL`.
+Each successful job logs `migrations applied successfully!` before publishing
+the Worker with the same environment's database connection.
+
+| Migration | Intended schema change | Verified release evidence |
+| --- | --- | --- |
+| `0012_remembered_job_loadouts.sql` | Adds `students.job_loadouts` and `students.loadout_revision` with defaults | Present in the [gear release journal](https://github.com/Orsnoire/FightSchool/blob/14a58f14cf29e8a0ed33e8aa601e2e680dd77efc/migrations/cloudflare/meta/_journal.json); migration gate succeeded by 12:21:16 in attempt 2 of `37773374205` |
+| `0013_spellbook_offhand.sql` | Extends `equipment_items_offhand_type_check` to allow `spellbook` | Same gear journal and successful 12:21:16 migration gate; no longer blocked on R2 |
+| `0014_guild_quests.sql` | Adds guild quest/progression, encounter context, tier and reward-ledger support | Present in the [PR #47 release journal](https://github.com/Orsnoire/FightSchool/blob/e3e1737a371e1d5d26d65b77e46f7f48684200f3/migrations/cloudflare/meta/_journal.json); migration gate succeeded by 15:31:50 in `37801260340` |
+
+The [17:12 deployed journal](https://github.com/Orsnoire/FightSchool/blob/764cd2fe2d544733c8e10fdace84084cbbfe94aa/migrations/cloudflare/meta/_journal.json)
+contains all three, and that migration gate succeeded again at 17:12:25.
+Release status is therefore **migration-gate verified through 0014**, including
+0012/0013, rather than blocked or awaiting a rerun. This conclusion follows from
+the successful migrator and checked-out journals. The logs do not enumerate
+individual applied/skipped migrations, database ledger rows, hashes or live
+column/constraint definitions. They establish a successful gate by these times,
+not the exact first execution time of each SQL file or an independent schema
+audit. No direct database inspection or mutation was performed for this
+documentation reconciliation; no migration SQL or journal entries were changed.
+
+### Canonical live acceptance
+
+[Live acceptance run 37816148964, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37816148964/attempts/2),
+[job 113446372770](https://github.com/Orsnoire/FightSchool/actions/runs/37816148964/job/113446372770),
+passed both scripts against `https://questacademy.bookwyrminteractive.studio`
+at 17:26–17:28. It checked out fixture commit
+`971d93a24b2e676569391ce0e7d389fd66e1f70c` from
+[PR #50](https://github.com/Orsnoire/FightSchool/pull/50), correcting the level-1
+Tier 1 equipment assumption and separating personal quest gold from combat gold.
+
+- Live combat, damage/resources, reconnect, stale/retried commands, durable XP,
+  guilds, quests, shop, reward claims, solo hosting, history and owner isolation.
+- R2 upload/readback, authorization, cache/type handling, byte ranges and metadata.
+- Thirty-player attendance, simultaneous answers, room isolation, reconnect and
+  exactly-once result persistence; answer acknowledgements p50 1,003ms,
+  p95 1,904ms, max 2,008ms for this single burst.
+- Hosted-session discovery, explicit end, concurrent launch and stale-end
+  isolation; late entry, moderated rejoin, blocked requests, fractional
+  host-ended rewards and open-socket logout revocation.
+
+PR #50 merged as `b601d8faddfb6f0e97ec3dfa85c9a0567a14f63f` at 17:29:24.
+The [comparison with the deployed commit](https://github.com/Orsnoire/FightSchool/compare/764cd2fe2d544733c8e10fdace84084cbbfe94aa...b601d8faddfb6f0e97ec3dfa85c9a0567a14f63f)
+changes only the two acceptance scripts. Its fixture SHA is not a new deployed
+runtime; no application redeployment was needed to obtain the passing result.
+
+This closes the recorded R2/deployment/live-acceptance blocker for the gear stack.
+It does not establish exhaustive manual equipment/visual acceptance, an approved
+animation rig, near-profile coverage, completed classroom balance tuning or full
+Phase 7 infrastructure recovery/rollback signoff. Team race and party-scaled
+swarm counts remain future work. This reconciliation changes documentation only
+and neither dispatches nor reruns deployment, migration or live acceptance jobs.

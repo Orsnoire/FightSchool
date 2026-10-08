@@ -1,5 +1,11 @@
 # Permanent starter wardrobe
 
+**Release status, October 8, 2026:** remembered job loadouts, Tier 1 equipment
+and front-facing equipped-item artwork are deployed (PRs #43–46). The October 5
+and October 7 sections retain their original release scope; the October 8
+sections below supersede their starter-only loadout/art boundaries. See the
+[release and migration evidence](cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026).
+
 October 5, 2026 owner direction: every student owns the starter collection, regardless of current job. Changing jobs selects compatible equipment without losing starter gear or acquired upgrades. Potion and quiver off hands are equipment; future variants may modify healing or other effects, but no such effect is defined in this release.
 
 ## October 5 released defaults
@@ -23,7 +29,7 @@ The October 5 release introduced seven data slots: weapon, off hand, head, body,
 - Linen robe, purple wizard cap and gold/green laurel.
 - Sword, staff, bow, and herb pouch with herbs.
 - Shield, potion and quiver off hands.
-- Existing basic fist wraps, claymore and harp are retained as advanced-job fallbacks. Until their weapon artwork is finished, those jobs render empty hands in the face-on rest pose. Their equipped stats remain in effect.
+- Existing basic fist wraps, claymore and harp are retained as advanced-job fallbacks. Those jobs originally rendered empty hands while artwork was unfinished; the October 8 static equipment release adds their representations. Their equipped stats remain in effect.
 
 The source catalog uses existing stable IDs such as `basic_sword`, `basic_staff`, `basic_helm` and `basic_armor`. Legacy class-specific starter restrictions are replaced by weapon/material compatibility, so a Priest can reuse the starter staff and a Paladin can reuse the starter sword. Blood Knight receives its permitted two-handed claymore rather than the previous incompatible sword fallback.
 
@@ -35,11 +41,14 @@ All equip requests require the owning student session and an allowed origin. The
 
 A shield pairs with a sword. A potion pairs with herbs. A quiver pairs with a bow; it is worn on the back, leaving the anatomical right hand available to draw arrows. A two-handed sword cannot retain a shield. Requests may change both weapon and off hand together, or explicitly unequip the off hand first. The potion prop is separate from combat's existing limited healing-potion action and adds no charges or effects.
 
-Switching to a different job selects that job's starter loadout. Reconfirming the same job preserves equipped upgrades. No job switch deletes inventory, colors, job levels, gold, unlocked abilities or learned passives. A player can re-equip any owned compatible upgrade after a switch. This describes the deployed October 5 behavior; the remembered-loadout implementation below supersedes it after its release.
+Switching to a different job originally selected that job's starter loadout. Reconfirming the same job preserved equipped upgrades. No job switch deletes inventory, colors, job levels, gold, unlocked abilities or learned passives. This describes the October 5 behavior; the remembered-loadout implementation below superseded it on October 8, restoring saved compatible gear and abilities on return to a job.
 
 Starter body/head defenses retain the prior +1 each; sword/staff/bow/herbs retain their existing +1 attack-type or MND bonus. New limb pieces and off hands have no bonus stats pending a balance decision. The seven released slots contribute declared equipment stats to the same server combat-profile calculation. Future stat-bearing potion/quiver variants require explicit design, acquisition and balance decisions.
 
 ## Art and rollout boundary
+
+The following paragraph records the October 5 release boundary. The October 8
+equipped-gear release below supersedes its combined-starter-only rendering limit.
 
 The static review covers all twelve jobs on both bodies, with separate head/headwear rendering and independent hair/eye/skin recoloring. Garments and held props within each source body sheet remain a combined starter illustration. **It is not yet an arbitrary item-by-item paperdoll renderer.** All placeholder job portraits and their imported PNGs are removed. Plate, leather and linen have empty-handed male/female bodies for missing weapons; hats are selected independently, so Priest can reuse the staff/robe with a laurel. Starter appearance is labeled in the lobby; purchased gear still affects stats even where its individual overlay art is not available. Do not mark equipment-fit or animation records ready based on these sheets.
 
@@ -84,9 +93,9 @@ stats, including teacher-created items.
 To add another slot, extend the registry, add a nullable student column through
 an additive migration and the Drizzle schema, then choose null or a compatible
 starter in each default loadout. Add acquisition content and tests as needed.
-Separate left/right gear, stat rebalancing and individual item art/animation
-remain pending. Per-job saved loadouts are implemented for review below. This change does not turn the static starter
-illustrations into item-by-item overlays.
+Separate left/right gear and full animation remain pending. Per-job saved loadouts
+and individual static item overlays were released October 8 as recorded below;
+the October 7 slot expansion itself did not add those overlays.
 
 Validation covers migration preservation on an existing student, every job's
 starter compatibility and Tier 0 metadata, equip/unequip, wrong-slot and
@@ -108,7 +117,8 @@ not every job uses an off-hand item.
 These are permanent catalog entitlements, automatically included in inventory
 responses for existing and new students. No duplicated item rows, live seeding,
 additional migration, forced replacement of existing gear or balance changes
-are involved. Per-item visuals and animation are still pending. The shared
+are involved. Per-item static visuals were released October 8; animation remains
+pending. The shared
 loadout synchronization and this catalog completion are released;
 see [release queue](combat/release-queue.md).
 
@@ -130,7 +140,9 @@ and may receive unrelated API edits; deliberate classification changes and full
 form saves require explicit selection. This requires no data migration.
 
 
-## Remembered job loadouts — implemented for review, not deployed
+<a id="remembered-job-loadouts--implemented-for-review-not-deployed"></a>
+
+## Remembered job loadouts — released October 8, 2026
 
 Each job remembers all eight equipment slots and both cross-class ability choices.
 Switching away snapshots the current selections; returning restores them. Empty
@@ -147,32 +159,39 @@ are retained. Inventory, shared appearance, progression and combat snapshots are
 not reset. Static starter artwork remains unchanged.
 
 Migration `0012_remembered_job_loadouts.sql` adds an empty saved-loadout map and
-revision counter without changing existing equipment. Apply it before releasing
-the Worker. One conditional student update saves the outgoing map and incoming
+revision counter without changing existing equipment. The successful deployment
+migration gate covered it before Worker activation; see the release record above.
+One conditional student update saves the outgoing map and incoming
 loadout together. Equipment, ability and character writes advance the shared
 revision; overlapping stale writes return 409 and the existing client refreshes.
 Saved maps are server-owned and cannot be submitted through equipment PATCH.
 Additional slots use the shared registry and nullable active student column;
 older snapshots treat newly added fields as empty.
 
-Pending: review, migration and deployment of this change; individual equipment
-art/overlays, animation, separate limb sides and future stat/acquisition balance.
+PR #43 is merged and deployed. Full animation, separate limb sides and future
+stat/acquisition balance remain separate work; static item art is released below.
 
 
-## Tier 1 progression — implemented for review, not deployed
+<a id="tier-1-progression--implemented-for-review-not-deployed"></a>
+
+## Tier 1 progression — released October 8, 2026
 
 The [Tier 1 specification](combat/tier-one-equipment.md) adds 37 acquired items,
 job-level-2 gates, wand/book pairing, ankh healing and potion buffs. Tier 0 remains
-permanently owned and available at level 1. The new color/trim briefs are recorded;
-individual equipped-item art and animation remain pending. Migration 0013 extends
-the off-hand constraint for spell books and follows remembered-loadout migration 0012.
+permanently owned and available at level 1. The color/trim briefs have released
+static artwork; animation remains pending. Migration 0013 extends the off-hand
+constraint for spell books and follows remembered-loadout migration 0012. Both
+are covered by the successful migration gate in the release record above.
 
 
-## Equipped gear art — implemented for review, not deployed
+<a id="equipped-gear-art--implemented-for-review-not-deployed"></a>
+
+## Equipped gear art — released October 8, 2026
 
 The [new static renderer](avatar-equipment-visuals.md) selects all eight slots
 from actual equipment, with Tier 1 recolors and static advanced weapons on both
-bodies. It supersedes the combined-starter-only visual boundary upon release.
+bodies. It supersedes the October 5 combined-starter-only visual boundary.
 Healer’s Laurel keeps the previous head bonus; all other head bonuses and set
 budgets remain unchanged. Unknown custom gear uses neutral fallback artwork.
-Owner visual review, deployment, animation and custom art remain pending.
+PR #46 is merged and deployed. Animation, near-profile fitting and custom-item
+art remain pending; the release does not establish a separate animation signoff.

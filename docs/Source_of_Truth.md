@@ -109,9 +109,10 @@ eight equipment slots, complete Tier 0 starters, loadout synchronization and
 visible equipment permissions with explicit new-armor classification were
 released October 7 in PRs #37–42. Migration 0011 preserves existing equipment.
 See [the release record](cloudflare/full-migration.md) for deployment evidence and
-[starter wardrobe](starter-wardrobe.md) for future slot extension hooks. Per-job remembered equipment and cross-class
-ability loadouts are implemented for review with migration 0012, not yet deployed;
-see the same wardrobe document for restoration and concurrency rules.
+[starter wardrobe](starter-wardrobe.md) for future slot extension hooks. Per-job
+remembered equipment and cross-class ability loadouts (PR #43) were released
+October 8 with successful migration-gate evidence for 0012; see the same wardrobe
+document for restoration and concurrency rules and the October 8 checkpoint below.
 
 
 ## Tier 1 gear and instance loot
@@ -119,12 +120,13 @@ see the same wardrobe document for restoration and concurrency rules.
 The [October 7 Tier 1 specification](combat/tier-one-equipment.md) records the
 owner's level-2 equipment collection, revised tank VIT damage weighting and
 fallback instance loot rules. It supersedes older conflicting equipment level
-gates and VIT damage formulas. Implementation is in review, not deployed.
+gates and VIT damage formulas. PR #44 was released October 8; migration 0013 is
+covered by the successful migration gate recorded below.
 
 The [equipment comparison specification](combat/equipment-comparisons.md) records
 hover, keyboard and touch comparisons in gear, shop and loot screens, including
-lost off-hand bonuses and special effects. It is implemented for review after the
-Tier 1 branch, not yet deployed.
+lost off-hand bonuses and special effects. PR #45 was released October 8 after
+the Tier 1 implementation, with no additional migration.
 
 ## Combat Flow Refactor
 
@@ -569,36 +571,53 @@ When making a development decision, ask:
 
 Prefer the former.
 
-## Equipped gear artwork — review pending
+## Equipped gear artwork — released October 8, 2026
 
 [Equipped gear visuals](avatar-equipment-visuals.md) records the October 7 owner
 direction: independent static slot rendering, Tier 0-based Tier 1 recolors and
 missing weapon art. The head-stat change was withdrawn; prior bonuses remain.
-This implementation is not deployed and does not satisfy the animation gate.
+PR #46 is deployed as front-facing static equipment artwork. This does not
+satisfy the separate animation gate.
 
 
 ## October 8 deployment checkpoint
 
 PRs #43–46 are merged at `14a58f14cf29e8a0ed33e8aa601e2e680dd77efc`.
 The remembered-loadout, Tier 1, comparison and equipped-art implementations above
-have completed review but are **not deployed**. The release workflow stopped at
-Cloudflare's R2 HTTP 403 before migrations 0012/0013 or Worker activation. See
-[the release record](cloudflare/full-migration.md#gear-release-attempt--8-october-2026-blocked-before-migration).
-The previous October 7 release remains live.
+are **deployed**. The R2 HTTP 403 occurred only in attempt 1 of run `37773374205`;
+[attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/attempts/2)
+passed at 12:21 UTC, including the migration gate with 0012/0013 in its journal.
 
-## Guild quests and classroom tiers — implementation pending release
+The latest verified deployment is
+[run 37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746)
+at 17:12 UTC, runtime commit `764cd2fe2d544733c8e10fdace84084cbbfe94aa`, Worker
+`926af6a1-eb8b-4fd0-8c3b-9941ece77aad`. It includes PRs #43–46, #47 and #49;
+R2, the migration gate through 0014 and both hostname smoke checks passed.
+[Live acceptance 37816148964, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37816148964/attempts/2)
+passed against the canonical domain at 17:28 UTC using PR #50's corrected fixtures.
+PR #50 changes acceptance tests only and does not require another runtime deployment.
+
+See [the reconciled release and migration record](cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026)
+for run/job evidence and migration verification limits. The successful migrator
+and committed journals establish the release gate; individual database ledger
+rows and live column/constraint definitions were not independently queried.
+The earlier R2 failure is historical context, not an active release blocker.
+
+## Guild quests and classroom tiers — released October 8, 2026
 
 [Guild quests and classroom tiers](guild-quests-and-tiers.md) records the October 8
-owner direction and this branch's implementation: teacher-authored quests and
+owner direction and PR #47's released implementation: teacher-authored quests and
 limit-break/job rewards, permanent progression with encounter-specific caps,
 AA overflow banking, shop tier browsing and tier/role fight authoring. Initial
 scaling presets require classroom balance review. AA upgrade purchases remain
-future work. This implementation is not deployed.
+future work. The release and migration-0014 evidence are recorded in the same
+October 8 release record.
 
 ## Explicit host-session controls and team-race feasibility
 
 The [October 8 host-session rules](combat/host-sessions-and-team-race.md) supersede
 implicit session creation on page load and the proposed automatic end-on-launch.
 Use explicit Join / End / Launch controls and session-specific reconnect URLs.
+These controls were released in PR #49 and exercised by the live acceptance above.
 The same document records the code-level team-race feasibility review; team race
 and party-scaled swarm counts remain future implementation, not released features.
