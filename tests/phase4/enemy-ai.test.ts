@@ -192,6 +192,21 @@ test("Trip fails combat only: academic accuracy, mastery, streak and resources r
   assert.equal(s.players[id].totals.damageDealt, 0); assert.equal(s.players[id].mp, mp);
   assert.ok(s.players[id].health < 100);
 });
+test("Possess tries another player when its preferred source has no eligible damaging ability", () => {
+  const { s, f } = state("possess", "priest", 2);
+  s.currentPhase = "question_resolution";
+  s.players[id].availableAbilities = ["first_aid", "bless"];
+  s.players[id].totals.damageDealt = 100;
+  s.players.p1.availableAbilities = ["attack"];
+  s.players.p1.characterClass = "warrior";
+  s.players.p1.stats.atk = 2;
+  s.players.p1.stats.str = 2;
+  s.players.p1.nickname = "Fighter";
+  const next = advancePhase(s, f);
+  assert.ok(next.events.some(e => e.message.includes("copies Fighter's attack")));
+  assert.equal(next.players[id].totals.damageDealt,100);
+  assert.equal(next.players.p1.totals.damageDealt,0);
+});
 test("Fear blocks offensive actions but permits healing and preserves answers", () => {
   let a = state("attack", "wizard"); a.s.players[id].statuses = [effect("fear", { throughRound: 1 })];
   assert.equal(turn(a.s, a.f).players[id].totals.damageDealt, 0);

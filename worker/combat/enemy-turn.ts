@@ -108,8 +108,8 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
       case "fade_out": ai.buffs.push({ type: "fade", throughRound: s.round + 1 }); break;
       case "possess": {
         const candidates = [...livingPlayers(s)].sort((a, b) => b.totals.damageDealt - a.totals.damageDealt || a.studentId.localeCompare(b.studentId));
-        const copied = candidates.find(p => p.availableAbilities.some(a => !["first_aid", "mend", "healing_potion", "craft_healing_potion"].includes(a)));
-        if (!copied || !target || !ports.possess(enemy, copied, target, (id, n) => damage(id, n, enemy.id))) strike();
+        const copied = target && candidates.some(p => ports.possess(enemy, p, target, (id, n) => damage(id, n, enemy.id)));
+        if (!copied) strike();
         break;
       }
       case "telekinesis": {
