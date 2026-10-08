@@ -12,11 +12,11 @@ export function GearComparison({item,context,children,disabled=false}:{item:Comp
  useEffect(()=>()=>clearTimeout(timer.current),[]);
  const result=compareEquipment(item,context);
  return <Popover open={open && !disabled} onOpenChange={setOpen}>
-  <div className="min-w-0" onPointerEnter={e=>{if(e.pointerType!=='touch')enter();}} onPointerLeave={leave}>
+  <PopoverAnchor asChild><div className="min-w-0" onPointerEnter={e=>{if(e.pointerType!=='touch')enter();}} onPointerLeave={leave}>
    {children}
-   <PopoverAnchor asChild><button aria-haspopup="dialog" aria-expanded={open && !disabled} aria-controls={open ? panelId : undefined} type="button" disabled={disabled} className="text-sm underline underline-offset-4 p-2 rounded focus-visible:ring-2 focus-visible:ring-primary" aria-label={`Compare ${item.name}`} onFocus={enter} onClick={e=>{e.stopPropagation();enter();}}>Compare</button></PopoverAnchor>
-  </div>
-  <PopoverContent id={panelId} aria-label={`Comparison for ${item.name}`} className="w-[min(24rem,calc(100vw-2rem))] max-h-[70vh] overflow-auto space-y-3 z-[100]" onOpenAutoFocus={e=>e.preventDefault()} onCloseAutoFocus={e=>e.preventDefault()} onPointerEnter={enter} onPointerLeave={leave} onClick={e=>e.stopPropagation()}>
+   <button aria-haspopup="dialog" aria-expanded={open && !disabled} aria-controls={open ? panelId : undefined} type="button" disabled={disabled} className="text-sm underline underline-offset-4 p-2 rounded focus-visible:ring-2 focus-visible:ring-primary" aria-label={`Compare ${item.name}`} onFocus={enter} onClick={e=>{e.stopPropagation();enter();}}>Compare</button>
+  </div></PopoverAnchor>
+  <PopoverContent side="right" align="start" collisionPadding={16} id={panelId} aria-label={`Comparison for ${item.name}`} className="w-[min(24rem,calc(100vw-2rem))] max-h-[70vh] overflow-auto space-y-3 z-[100]" onOpenAutoFocus={e=>e.preventDefault()} onCloseAutoFocus={e=>e.preventDefault()} onPointerEnter={enter} onPointerLeave={leave} onClick={e=>e.stopPropagation()}>
    <div className="flex justify-between gap-3"><p className="font-semibold">{item.name} · {SLOT_LABELS[item.slot]}</p><button type="button" aria-label="Close comparison" className="text-sm underline shrink-0" onClick={()=>setOpen(false)}>Close</button></div>
    {'unavailable' in result ? <p role="status">{result.unavailable}</p> : <>
     <p className="text-sm">Equipped: {result.current?.name || 'Nothing (empty slot)'}</p>
