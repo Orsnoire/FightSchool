@@ -15,6 +15,7 @@ is recorded in [the release record](../cloudflare/full-migration.md).
 | Gear expansion and Tier 0 starters | Implemented and tested in [PR #40](https://github.com/Orsnoire/FightSchool/pull/40), based on PR #39 | Released October 7; see release evidence above |
 | 3. Loadout display synchronization and Tier 0 completion | Implemented and tested in [PR #41](https://github.com/Orsnoire/FightSchool/pull/41), based on PR #40 | Released October 7; see release evidence above |
 | Equipment permissions and explicit armor classification | Implemented and tested in [PR #42](https://github.com/Orsnoire/FightSchool/pull/42), based on PR #41 | Released October 7; see release evidence above |
+| Remembered loadouts per job | Implemented and tested on `feat/remembered-job-loadouts` | Review pending; migration 0012 required; not deployed |
 | Combined release | Deployed | Migration 0011 applied; existing data preserved; see release record for live validation |
 
 ## Item 1: calculated values
@@ -137,7 +138,23 @@ category choice. No existing items or stats are migrated or rebalanced.
 Validation: type checking, all 118 tests, production build and diff checks pass.
 Tests cover all six armor slots, omitted/null categories, merged PATCH checks,
 legacy preservation, permission display and job/tier/hand-pair explanations.
-Individual gear art, animation and per-job saved loadouts remain deferred.
+Individual gear art and animation remain deferred. Per-job saved loadouts are implemented for review below.
+
+## Remembered loadouts per job — review pending
+
+Switching jobs now saves and restores eight gear slots and two cross-class
+ability slots, including deliberately empty selections. New jobs start with
+starter gear and empty cross-class choices. Restoration revalidates current
+ownership and equipment/ability restrictions, with starter fallbacks for invalid
+gear. Shared revisions prevent concurrent character/equipment/ability writes
+from silently overwriting each other. Existing characters are preserved by
+additive migration 0012. See [starter wardrobe](../starter-wardrobe.md#remembered-job-loadouts--implemented-for-review-not-deployed).
+
+Validation covers real Worker/database round trips, all eight custom upgrades,
+ability restoration, empty slots, relogin, same-job preservation, changed item
+tiers, duplicate ability rejection and concurrent saves returning 409 atomically.
+Type checking, all 120 tests, the production build and diff checks pass.
+Review and deployment are pending; this is separate from the completed release.
 
 ## Larger work outside this batch
 

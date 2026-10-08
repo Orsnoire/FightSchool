@@ -341,7 +341,7 @@ export default function StudentGuildLobby() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-serif">Select Your Class</DialogTitle>
             <DialogDescription>
-              Choose a class to change to. Your progress in all jobs is saved.
+              Choose a class to change to. Each job remembers its gear and cross-class ability choices, along with your progress.
             </DialogDescription>
           </DialogHeader>
           

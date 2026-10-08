@@ -1,6 +1,5 @@
-import { EQUIPMENT_SLOTS } from "../../shared/equipment-catalog.ts";
+import { switchStudentJob } from "./job-loadouts";
 import {
-  getStartingEquipment,
   type CharacterClass,
 } from "../../shared/schema.ts";
 import {
@@ -21,7 +20,6 @@ import {
   guildFights,
   liveCombatSessions,
   students,
-  studentJobLevels,
   teachers,
   type FightRecord,
   type NewFightRecord,
@@ -82,8 +80,7 @@ export interface IdentityRepository extends SessionRepository {
 export function createIdentityRepository(
   databaseUrl: string,
 ): IdentityRepository {
-  const client = neon(databaseUrl);
-  const database = drizzle(client);
+  const database = gameDatabase(databaseUrl);
 
   return {
     async validateLoot(teacherId, itemIds) {
@@ -202,24 +199,7 @@ export function createIdentityRepository(
     },
 
     async updateStudentCharacter(id, characterClass, gender) {
-      const [previous] = await database.select().from(students).where(eq(students.id,id));
-      if (!previous) return null;
-      const starting = previous.characterClass === characterClass ? {} : getStartingEquipment(characterClass as CharacterClass);
-      await database
-        .insert(studentJobLevels)
-        .values({ studentId: id, jobClass: characterClass as CharacterClass })
-        .onConflictDoNothing();
-      const [updated] = await database
-        .update(students)
-        .set({
-          ...starting,
-          inventory: sql`(SELECT COALESCE(jsonb_agg(DISTINCT value), '[]'::jsonb) FROM jsonb_array_elements(${students.inventory} || ${JSON.stringify(EQUIPMENT_SLOTS.map(slot => previous[slot]).filter(Boolean))}::jsonb))`,
-          characterClass: characterClass as StudentRecord["characterClass"],
-          gender: gender as StudentRecord["gender"],
-        })
-        .where(eq(students.id, id))
-        .returning();
-      return updated || null;
+      return switchStudentJob(database, id, characterClass as CharacterClass, gender as StudentRecord["gender"]);
     },
 
     async createLiveCombatSession(input) {

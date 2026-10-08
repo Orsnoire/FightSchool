@@ -157,6 +157,8 @@ function json(body: unknown, status = 200) {
 }
 export function safeStudent(student: s.StudentRecord) {
   const {
+    jobLoadouts: _remembered,
+    loadoutRevision: _revision,
     passwordHash: _,
     nicknameNormalized: __,
     createdAt: ___,
@@ -917,13 +919,12 @@ export async function handleGame(
           const weapon = await resolveItem(nextWeapon), offhand = await resolveItem(nextOffhand);
           if (handConflict(weapon, offhand)) throw new ApiError('The weapon and off-hand item are incompatible. Change or remove both together.');
         }
-        if (
-          input.crossClassAbility1 &&
-          input.crossClassAbility1 === input.crossClassAbility2
-        )
+        const nextAbilities = {...student, ...input};
+        if (nextAbilities.crossClassAbility1 && nextAbilities.crossClassAbility1 === nextAbilities.crossClassAbility2)
           throw new ApiError("Choose different cross-class abilities");
-        const [updated] = await db.update(s.students).set(input).where(and(
+        const [updated] = await db.update(s.students).set({...input, loadoutRevision: sql`${s.students.loadoutRevision} + 1`}).where(and(
           eq(s.students.id,id),
+          eq(s.students.loadoutRevision, student.loadoutRevision),
           sql`${s.students.characterClass} IS NOT DISTINCT FROM ${student.characterClass}`,
           ...EQUIPMENT_SLOTS.map(slot => sql`${s.students[slot]} IS NOT DISTINCT FROM ${student[slot]}`),
         )).returning();

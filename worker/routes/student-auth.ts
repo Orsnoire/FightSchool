@@ -1,3 +1,4 @@
+import { LoadoutConflict } from "../db/job-loadouts";
 import { safeStudent } from "./game.ts";
 import { getUnlockedJobs } from "../../shared/jobSystem.ts";
 import {
@@ -141,6 +142,7 @@ export async function handleStudentAuth(
         ? json(publicStudent(student))
         : json({ error: "Student not found" }, 404);
     } catch (error) {
+      if (error instanceof LoadoutConflict) return json({ error: error.message }, 409);
       return error instanceof z.ZodError || error instanceof SyntaxError
         ? json({ error: "Invalid character" }, 400)
         : json({ error: "Unable to update character" }, 500);

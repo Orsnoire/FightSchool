@@ -1,3 +1,4 @@
+import type { SavedJobLoadouts } from "../../shared/job-loadouts";
 import { sql } from "drizzle-orm";
 import type {
   CharacterClass,
@@ -149,6 +150,8 @@ export const students = pgTable(
     legs: text("legs"),
     feet: text("feet"),
     arms: text("arms"),
+    jobLoadouts: jsonb("job_loadouts").$type<SavedJobLoadouts>().notNull().default({}),
+    loadoutRevision: integer("loadout_revision").notNull().default(0),
     crossClassAbility1: text("cross_class_ability_1"),
     crossClassAbility2: text("cross_class_ability_2"),
     inventory: jsonb("inventory").$type<string[]>().notNull().default([]),

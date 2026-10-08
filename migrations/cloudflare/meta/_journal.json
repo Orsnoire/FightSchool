@@ -85,6 +85,13 @@
       "when": 1791410400000,
       "tag": "0011_equipment_arms",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791426000000,
+      "tag": "0012_remembered_job_loadouts",
+      "breakpoints": true
     }
   ]
 }

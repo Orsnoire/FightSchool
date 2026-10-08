@@ -35,7 +35,7 @@ All equip requests require the owning student session and an allowed origin. The
 
 A shield pairs with a sword. A potion pairs with herbs. A quiver pairs with a bow; it is worn on the back, leaving the anatomical right hand available to draw arrows. A two-handed sword cannot retain a shield. Requests may change both weapon and off hand together, or explicitly unequip the off hand first. The potion prop is separate from combat's existing limited healing-potion action and adds no charges or effects.
 
-Switching to a different job selects that job's starter loadout. Reconfirming the same job preserves equipped upgrades. No job switch deletes inventory, colors, job levels, gold, unlocked abilities or learned passives. A player can re-equip any owned compatible upgrade after a switch. Per-job remembered loadouts are not introduced here.
+Switching to a different job selects that job's starter loadout. Reconfirming the same job preserves equipped upgrades. No job switch deletes inventory, colors, job levels, gold, unlocked abilities or learned passives. A player can re-equip any owned compatible upgrade after a switch. This describes the deployed October 5 behavior; the remembered-loadout implementation below supersedes it after its release.
 
 Starter body/head defenses retain the prior +1 each; sword/staff/bow/herbs retain their existing +1 attack-type or MND bonus. New limb pieces and off hands have no bonus stats pending a balance decision. The seven released slots contribute declared equipment stats to the same server combat-profile calculation. Future stat-bearing potion/quiver variants require explicit design, acquisition and balance decisions.
 
@@ -84,8 +84,8 @@ stats, including teacher-created items.
 To add another slot, extend the registry, add a nullable student column through
 an additive migration and the Drizzle schema, then choose null or a compatible
 starter in each default loadout. Add acquisition content and tests as needed.
-Separate left/right gear, per-job saved loadouts, stat rebalancing and individual
-item art/animation remain pending. This change does not turn the static starter
+Separate left/right gear, stat rebalancing and individual item art/animation
+remain pending. Per-job saved loadouts are implemented for review below. This change does not turn the static starter
 illustrations into item-by-item overlays.
 
 Validation covers migration preservation on an existing student, every job's
@@ -128,3 +128,32 @@ a weapon to an armor slot without one is rejected. Category metadata is rejected
 on weapon/off-hand slots. Existing uncategorized items retain legacy inference
 and may receive unrelated API edits; deliberate classification changes and full
 form saves require explicit selection. This requires no data migration.
+
+
+## Remembered job loadouts — implemented for review, not deployed
+
+Each job remembers all eight equipment slots and both cross-class ability choices.
+Switching away snapshots the current selections; returning restores them. Empty
+slots stay empty. First-time jobs receive compatible starter gear and empty
+cross-class slots. Reconfirming the same job or saving appearance preserves the
+active loadout. Existing students retain their current gear until they switch;
+the first switch captures it. Saves persist across logout and devices.
+
+Restoration checks current ownership, slot, job/material permissions, tier gates,
+held-item compatibility and cross-class unlocks. Missing or unusable items fall
+back to that slot's starter; an incompatible off hand is cleared. Unavailable,
+native-job or duplicate cross-class abilities are cleared. Other valid choices
+are retained. Inventory, shared appearance, progression and combat snapshots are
+not reset. Static starter artwork remains unchanged.
+
+Migration `0012_remembered_job_loadouts.sql` adds an empty saved-loadout map and
+revision counter without changing existing equipment. Apply it before releasing
+the Worker. One conditional student update saves the outgoing map and incoming
+loadout together. Equipment, ability and character writes advance the shared
+revision; overlapping stale writes return 409 and the existing client refreshes.
+Saved maps are server-owned and cannot be submitted through equipment PATCH.
+Additional slots use the shared registry and nullable active student column;
+older snapshots treat newly added fields as empty.
+
+Pending: review, migration and deployment of this change; individual equipment
+art/overlays, animation, separate limb sides and future stat/acquisition balance.
