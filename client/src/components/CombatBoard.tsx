@@ -1,3 +1,4 @@
+import { activeEnemies, enemyImage, hpLabel } from "@shared/combat/encounters";
 import { useState, type CSSProperties } from "react";
 import type { CombatPlayer, CombatSnapshot } from "@shared/combat/model";
 import { initialAppearance } from "@shared/avatar/appearance";
@@ -19,7 +20,7 @@ export function formationSlots(count: number, self = false) {
 }
 function Bar({ current, max, label }: { current: number; max: number; label: string }) {
   return <div className="battle-health" role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={current}>
-    <span style={{ width: `${Math.max(0, Math.min(100, current / Math.max(1, max) * 100))}%` }} />
+    <span style={{ width: `${Math.max(0, Math.min(100, current / Math.max(.001, max) * 100))}%` }} />
   </div>;
 }
 export function CombatBoard({ state, selfId, onResurrect, onRemove }: {
@@ -32,8 +33,11 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove }: {
   const slots = formationSlots(others.length, !!self);
   const topDamage = Object.values(state.players).filter(p => p.totals.damageDealt > 0).sort((a,b) => b.totals.damageDealt-a.totals.damageDealt)[0]?.studentId;
   const damageLeader = state.damageLeaderId === undefined ? topDamage : state.damageLeaderId;
-  const enemies = state.enemyDisplayMode === "consecutive" ? state.enemies.filter(e => e.health > 0).slice(0,1) : state.enemies;
-  const shownEnemies = enemies.length ? enemies : state.enemies.slice(-1);
+  const shownEnemies=activeEnemies(state);
+  const columns=Math.max(1,Math.ceil(Math.sqrt(shownEnemies.length*1.15)));
+  const rows=Math.max(1,Math.ceil(shownEnemies.length/columns));
+  const spanX=1+(columns-1)*.78,spanY=1+(rows-1)*.7;
+  const groups=Object.entries(shownEnemies.reduce((a,e)=>{const name=e.templateId?e.name.replace(/ \d+$/,''):e.name;a[name]=(a[name]||0)+1;return a;},{} as Record<string,number>));
   const renderPlayer = (p: CombatPlayer, x: number, y: number, size: number, isSelf = false) => {
     const queued = !!state.pendingPlayers?.[p.studentId];
     const canRevive = !!onResurrect && p.isDead && !queued;
@@ -59,11 +63,14 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove }: {
     {others.map((p, i) => renderPlayer(p, slots[i].x, slots[i].y, slots[i].size))}
     {self && renderPlayer(self, 32, 89, 180, true)}
     {!all.length && <p className="battle-empty">The field is ready.<br/><span>Share the join code to gather your party.</span></p>}
-    {shownEnemies.map((e, i) => <div key={e.id} className={`battle-enemy ${e.health <= 0 ? "is-ko" : ""}`} style={{ left: `${shownEnemies.length === 1 ? 76 : 66 + (i % 2) * 20}%`, top: `${shownEnemies.length === 1 ? 72 : 48 + Math.floor(i / 2) * 21}%`, "--enemy-size": shownEnemies.length === 1 ? "230px" : "150px" } as CSSProperties}>
-      <div className="battle-enemy-name">{e.name}</div><Bar current={e.health} max={e.maxHealth} label={`${e.name} HP`} />
-      <span className="battle-enemy-hp">{e.health} / {e.maxHealth}</span>
-      <img src={e.image} alt={e.name} />
-    </div>)}
+    <div className="battle-enemy-summary">{state.encounterRules===2&&state.enemyDisplayMode==='consecutive'&&<strong>Wave {state.activeWave} · </strong>}{groups.map(([name,n])=>`${name} × ${n}`).join(' · ')}</div>
+    <div className={`battle-enemy-field ${shownEnemies.length>8?'is-swarm':''}`} aria-label="Enemy formation">
+      {shownEnemies.map((e,i)=><button type="button" key={e.id} data-enemy-id={e.id} className="battle-enemy" aria-label={`${e.name}, ${hpLabel(e.health)} of ${hpLabel(e.maxHealth)} HP`} title={`${e.name} · ${hpLabel(e.health)}/${hpLabel(e.maxHealth)} HP`}
+        style={{left:`${(.5+(i%columns)*.78)/spanX*100}%`,top:`${(.5+Math.floor(i/columns)*.7)/spanY*100}%`,width:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,height:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,zIndex:Math.floor(i/columns)+1} as CSSProperties}>
+        <img src={enemyImage(e)} alt={e.name}/>
+        <div className="battle-enemy-info"><div className="battle-enemy-name">{e.name}</div><Bar current={e.health} max={e.maxHealth} label={`${e.name} HP`}/><span className="battle-enemy-hp">{hpLabel(e.health)} / {hpLabel(e.maxHealth)}</span></div>
+      </button>)}
+    </div>
     <details className="battle-roster"><summary>Party · {all.length}</summary><div className="battle-roster-list">{all.map(p => <button key={p.studentId} onClick={() => setSelected(p.studentId)}>{p.nickname}<span>{p.isDead ? "KO" : `${p.health}/${p.maxHealth} HP`}{state.pendingPlayers?.[p.studentId] ? " · Next round" : ""}</span></button>)}</div></details>
     <div className="battle-legend"><Crown size={13}/> Threat <Star size={13}/> Damage</div>
   </section>;

@@ -186,6 +186,9 @@ export const questionSchema = z.object({
 
 // Enemy schema
 export interface Enemy {
+  quantity?: number;
+  wave?: number;
+  species?: "goblin" | "other";
   role?: import("./encounter-tiers").EnemyRole;
   id: string;
   name: string;
@@ -194,6 +197,9 @@ export interface Enemy {
 }
 
 export const enemySchema = z.object({
+  quantity:z.number().int().min(1).max(60).optional(),
+  wave:z.number().int().min(1).max(20).optional(),
+  species:z.enum(["goblin","other"]).optional(),
   role:z.enum(["trash","normal","leader","boss"]).optional(),
   id: z.string(),
   name: z.string().min(1),

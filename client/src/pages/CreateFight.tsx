@@ -1,3 +1,4 @@
+import { GOBLIN_IMAGE, enemyImage, ROLE_SHARES } from "@shared/combat/encounters";
 import { ENCOUNTER_TIERS, ENEMY_ROLES, ENEMY_ROLE_LABELS, enemyTuning, inferEnemyRole, type EnemyRole } from "@shared/encounter-tiers";
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useRoute } from "wouter";
@@ -40,7 +41,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { QuestionPreview } from "@/components/QuestionPreview";
 import { uploadImageToStorage } from "@/lib/imageUpload";
 import dragonImg from "@assets/generated_images/Dragon_enemy_illustration_328d8dbc.png";
-import goblinImg from "@assets/generated_images/Goblin_horde_enemy_illustration_550e1cc2.png";
+const goblinImg = GOBLIN_IMAGE;
 import wizardImg from "@assets/generated_images/Dark_wizard_enemy_illustration_a897a309.png";
 import spiderImg from "@assets/generated_images/Giant_spider_RPG_enemy_b9948cc9.png";
 import batImg from "@assets/generated_images/Vampire_bat_RPG_enemy_434d2140.png";
@@ -61,7 +62,7 @@ import lichImg from "@assets/generated_images/Lich_RPG_boss_enemy_e9dfa246.png";
 import mummyImg from "@assets/generated_images/Mummy_RPG_enemy_789d75d9.png";
 import headlessHorsemanImg from "@assets/generated_images/Headless_horseman_RPG_boss_398e4f17.png";
 import werewolfImg from "@assets/generated_images/Werewolf_RPG_enemy_576e9732.png";
-import goblinSwarmImg from "@assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png";
+
 import Papa from "papaparse";
 
 interface SortableEnemyItemProps {
@@ -104,9 +105,9 @@ function SortableEnemyItem({ enemy, index, onEdit, onDelete }: SortableEnemyItem
         >
           <GripVertical className="h-5 w-5 text-muted-foreground" />
         </button>
-        <img src={enemy.image} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
+        <img src={enemyImage(enemy)} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
         <div>
-          <p className="font-medium">{enemy.name}</p>
+          <p className="font-medium">{enemy.name} × {enemy.quantity||1} · Wave {enemy.wave||index+1}</p>
           <p className="text-sm text-muted-foreground">
             {enemy.role ? ENEMY_ROLE_LABELS[enemy.role] : `Legacy difficulty ${enemy.difficultyMultiplier}`}
           </p>
@@ -198,7 +199,7 @@ export default function CreateFight() {
   const encounterTier=form.watch('encounterTier');
   const changeTier=(tier:number)=>{
     form.setValue('encounterTier',tier);form.setValue('baseEnemyDamage',enemyTuning(tier,'normal').baseEnemyDamage);
-    const next=enemies.map(e=>({...e,role:e.role||inferEnemyRole(e.difficultyMultiplier),difficultyMultiplier:enemyTuning(tier,e.role||inferEnemyRole(e.difficultyMultiplier)).difficultyMultiplier}));
+    const next=enemies.map((e,i)=>({...e,quantity:e.quantity||1,wave:e.wave||i+1,species:e.species||(enemyImage(e)===GOBLIN_IMAGE?'goblin':'other'),role:e.role||inferEnemyRole(e.difficultyMultiplier),difficultyMultiplier:enemyTuning(tier,e.role||inferEnemyRole(e.difficultyMultiplier)).difficultyMultiplier}));
     setEnemies(next);form.setValue('enemies',next);
     setCurrentEnemy(e=>({...e,role:e.role||inferEnemyRole(e.difficultyMultiplier||10),difficultyMultiplier:enemyTuning(tier,e.role||inferEnemyRole(e.difficultyMultiplier||10)).difficultyMultiplier}));
   };
@@ -329,7 +330,7 @@ export default function CreateFight() {
       toast({ title: "Uploading image..." });
       const imageUrl = await resizeImage(file);
       setUploadedEnemyImage(imageUrl);
-      setCurrentEnemy({ ...currentEnemy, image: imageUrl });
+      setCurrentEnemy({ ...currentEnemy, image: imageUrl, species:"other" });
       toast({ title: "Image uploaded successfully (resized to 120x120px)" });
     } catch (error) {
       toast({ 
@@ -351,6 +352,7 @@ export default function CreateFight() {
       const updatedEnemies = [...enemies];
       updatedEnemies[editingEnemyIndex] = {
         id: enemies[editingEnemyIndex].id,
+        quantity:currentEnemy.quantity||1, wave:currentEnemy.wave||1, species:currentEnemy.species||"other",
         name: currentEnemy.name,
         image: currentEnemy.image || dragonImg,
         difficultyMultiplier: encounterTier ? enemyTuning(encounterTier,currentEnemy.role||"normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
@@ -363,6 +365,7 @@ export default function CreateFight() {
       // Add new enemy
       const newEnemy: Enemy = {
         id: Date.now().toString(),
+        quantity:currentEnemy.quantity||1, wave:currentEnemy.wave||1, species:currentEnemy.species||"other",
         name: currentEnemy.name,
         image: currentEnemy.image || dragonImg,
         difficultyMultiplier: encounterTier ? enemyTuning(encounterTier,currentEnemy.role||"normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
@@ -373,13 +376,14 @@ export default function CreateFight() {
       form.setValue("enemies", updatedEnemies);
     }
     
-    setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10, role:"normal" });
+    setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10, role:"normal", quantity:1, wave:currentEnemy.wave||1 });
     setUploadedEnemyImage(null);
   };
 
   const editEnemy = (index: number) => {
     const enemy = enemies[index];
     setCurrentEnemy({
+      quantity:enemy.quantity||1,wave:enemy.wave||index+1,species:enemy.species||(enemyImage(enemy)===GOBLIN_IMAGE?"goblin":"other"),
       name: enemy.name,
       image: enemy.image,
       difficultyMultiplier: enemy.difficultyMultiplier,
@@ -395,6 +399,10 @@ export default function CreateFight() {
   const onSubmit = (data: InsertFight) => {
     if (questions.length === 0) {
       toast({ title: "Add at least one question", variant: "destructive" });
+      return;
+    }
+    if (enemies.reduce((n, e) => n + (e.quantity || 1), 0) > 120) {
+      toast({ title: "Use at most 120 enemies across all waves", variant: "destructive" });
       return;
     }
     saveMutation.mutate({ ...data, teacherId, questions, enemies, lootTable });
@@ -632,7 +640,7 @@ export default function CreateFight() {
                   )}
                 />
                 <div className="space-y-3"><Label>Fight tier: {encounterTier||'Legacy tuning'}</Label>
-                  {encounterTier?<><input className="w-full" aria-label="Fight tier" type="range" min="1" max="4" step="1" value={encounterTier} onChange={e=>changeTier(+e.target.value)}/><div className="flex justify-between text-xs">{ENCOUNTER_TIERS.map(t=><span key={t.label}>{t.label} · up to Lv {t.level}</span>)}</div><p className="text-sm text-muted-foreground">Choose the intended progression tier. Enemy roles set the challenge within it; HP still adapts to party strength and quiz length.</p></>:<><p className="text-sm text-muted-foreground">This fight retains its existing tuning. Switch explicitly to use tier and role presets.</p><Button type="button" variant="outline" onClick={()=>changeTier(1)}>Use tier presets</Button></>}
+                  {encounterTier?<><input className="w-full" aria-label="Fight tier" type="range" min="1" max="4" step="1" value={encounterTier} onChange={e=>changeTier(+e.target.value)}/><div className="flex justify-between text-xs">{ENCOUNTER_TIERS.map(t=><span key={t.label}>{t.label} · up to Lv {t.level}</span>)}</div><p className="text-sm text-muted-foreground">Choose the intended progression tier. Enemy roles set the challenge within it; HP uses the tier reference party and quiz length; solo/duo fights use their entry loadouts.</p></>:<><p className="text-sm text-muted-foreground">This fight retains its existing tuning. Switch explicitly to use tier and role presets.</p><Button type="button" variant="outline" onClick={()=>changeTier(1)}>Use tier presets</Button></>}
                 </div>
                 <FormField
                   control={form.control}
@@ -647,7 +655,7 @@ export default function CreateFight() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="consecutive">Consecutive (One at a time)</SelectItem>
+                          <SelectItem value="consecutive">Consecutive waves</SelectItem>
                           <SelectItem value="simultaneous">Simultaneous (All at once)</SelectItem>
                         </SelectContent>
                       </Select>
@@ -673,7 +681,7 @@ export default function CreateFight() {
                           Randomize Question Order
                         </FormLabel>
                         <p className="text-sm text-muted-foreground">
-                          Present questions in random order each time the fight is hosted (prevents memorization)
+                          Shuffle questions at the start and each time a wave-based fight repeats its question bank.
                         </p>
                       </div>
                     </FormItem>
@@ -960,12 +968,12 @@ export default function CreateFight() {
                           </Button>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2">Choose from pre-defined sprites or upload your own (will be resized to 120x120px)</p>
+                      <p className="text-xs text-muted-foreground mb-2">Choose one creature sprite; quantity controls how many appear. Custom images are resized to 120×120px.</p>
                       <div className="grid grid-cols-5 gap-3 mt-2 max-h-96 overflow-y-auto pr-2">
                         {uploadedEnemyImage && (
                           <button
                             type="button"
-                            onClick={() => setCurrentEnemy({ ...currentEnemy, image: uploadedEnemyImage })}
+                            onClick={() => setCurrentEnemy({ ...currentEnemy, image: uploadedEnemyImage, species:"other" })}
                             className={`p-2 border-2 rounded-md hover-elevate ${
                               currentEnemy.image === uploadedEnemyImage ? "border-primary" : "border-border"
                             }`}
@@ -979,8 +987,7 @@ export default function CreateFight() {
                           { id: "spider", img: spiderImg, name: "Giant Spider" },
                           { id: "bat", img: batImg, name: "Vampire Bat" },
                           { id: "rat", img: ratImg, name: "Plague Rat" },
-                          { id: "goblin", img: goblinImg, name: "Goblin Horde" },
-                          { id: "goblin-swarm", img: goblinSwarmImg, name: "Goblin Swarm" },
+                          { id: "goblin", img: goblinImg, name: "Goblin" },
                           { id: "dragon", img: dragonImg, name: "Dragon" },
                           { id: "wizard", img: wizardImg, name: "Dark Wizard" },
                           { id: "ghost", img: ghostImg, name: "Ghost" },
@@ -1003,7 +1010,7 @@ export default function CreateFight() {
                           <button
                             key={enemy.id}
                             type="button"
-                            onClick={() => setCurrentEnemy({ ...currentEnemy, image: enemy.img })}
+                            onClick={() => setCurrentEnemy({ ...currentEnemy, image: enemy.img, species:enemy.id==="goblin"?"goblin":"other", name:currentEnemy.name||enemy.name })}
                             className={`p-2 border-2 rounded-md hover-elevate ${
                               currentEnemy.image === enemy.img ? "border-primary" : "border-border"
                             }`}
@@ -1016,9 +1023,14 @@ export default function CreateFight() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-4">
+                      <label>Quantity<input aria-label="Enemy quantity" type="number" min="1" max="60" value={currentEnemy.quantity||1} onChange={e=>setCurrentEnemy({...currentEnemy,quantity:Math.max(1,Math.min(60,+e.target.value))})} className="block w-full p-2 border rounded bg-background"/></label>
+                      {form.watch('enemyDisplayMode')==='consecutive'&&<label>Wave<input aria-label="Enemy wave" type="number" min="1" max="20" value={currentEnemy.wave||1} onChange={e=>setCurrentEnemy({...currentEnemy,wave:Math.max(1,Math.min(20,+e.target.value))})} className="block w-full p-2 border rounded bg-background"/></label>}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Enemies assigned to the same wave fight together. Hosted fights pause between waves; HP and MP carry forward.</p>
                     <fieldset className="space-y-3 border rounded-lg p-4"><legend className="px-2 font-medium">Enemy role</legend>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{ENEMY_ROLES.map(role=><label key={role} className={`flex items-center gap-2 rounded border p-3 cursor-pointer ${currentEnemy.role===role?'border-primary bg-primary/10':''}`}><input type="radio" name="enemy-role" value={role} checked={currentEnemy.role===role} onChange={()=>{if(!encounterTier)changeTier(1);setCurrentEnemy(e=>({...e,role,difficultyMultiplier:enemyTuning(encounterTier||1,role).difficultyMultiplier}));}}/>{ENEMY_ROLE_LABELS[role]}</label>)}</div>
-                      {encounterTier&&currentEnemy.role?<p className="text-sm text-muted-foreground">{ENEMY_ROLE_LABELS[currentEnemy.role]} · tier {encounterTier}: {enemyTuning(encounterTier,currentEnemy.role).hpMultiplier.toFixed(2)}× standard HP budget; counterattack up to {enemyTuning(encounterTier,currentEnemy.role).rawCounterattack} before defense. Solo safety limits still apply.</p>:<p className="text-sm text-muted-foreground">Legacy difficulty {currentEnemy.difficultyMultiplier||10}. Selecting a role switches this fight to tier presets.</p>}
+                      <p className="text-sm text-muted-foreground">{Math.round(ROLE_SHARES[currentEnemy.role||'normal']*100)}% of the full fight HP budget is shared by all enemies of this role across every wave. Missing roles leave their allocation unused. Goblin trash gets +1% of its allocation per three goblins.</p>
                     </fieldset>
 
                     <Button type="button" onClick={addEnemy} className="w-full" data-testid={editingEnemyIndex !== null ? "button-update-enemy" : "button-add-enemy"}>
@@ -1031,7 +1043,7 @@ export default function CreateFight() {
                         variant="outline" 
                         onClick={() => {
                           setEditingEnemyIndex(null);
-                          setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10, role:"normal" });
+                          setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10, role:"normal", quantity:1, wave:currentEnemy.wave||1 });
                           setUploadedEnemyImage(null);
                         }}
                         className="w-full"
@@ -1046,10 +1058,12 @@ export default function CreateFight() {
                 {enemies.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Enemies ({enemies.length})</CardTitle>
-                      <p className="text-sm text-muted-foreground">Drag to reorder • Enemies appear in this order during combat</p>
+                      <CardTitle>Enemies ({enemies.reduce((n,e)=>n+(e.quantity||1),0)}) · {enemies.length} groups</CardTitle>
+                      <p className="text-sm text-muted-foreground">Drag to set target-bounce order within each wave. Edit a group to change its quantity or wave.</p>
                     </CardHeader>
                     <CardContent className="space-y-2">
+                      {enemies.every(e => e.quantity === undefined) && <Button type="button" variant="outline" onClick={() => changeTier(encounterTier || 1)}>Convert to individual enemies and wave budgets</Button>}
+                      {form.watch('enemyDisplayMode') === 'consecutive' && enemies.some(e => e.quantity !== undefined) && <div className="grid gap-2 sm:grid-cols-2">{[...new Set(enemies.map((e,i) => e.wave || i+1))].sort((a,b) => a-b).map(wave => <div key={wave} className="rounded border p-2 text-sm"><strong>Wave {wave}</strong><p>{enemies.filter((e,i) => (e.wave || i+1) === wave).map(e => `${e.name} × ${e.quantity || 1}`).join(', ')}</p></div>)}</div>}
                       <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}

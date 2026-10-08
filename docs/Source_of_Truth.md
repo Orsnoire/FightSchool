@@ -594,3 +594,9 @@ limit-break/job rewards, permanent progression with encounter-specific caps,
 AA overflow banking, shop tier browsing and tier/role fight authoring. Initial
 scaling presets require classroom balance review. AA upgrade purchases remain
 future work. This implementation is not deployed.
+
+## Individual enemies and wave budgets
+
+The [October 8 enemy and goblin rules](combat/enemy-waves-and-goblins.md) record
+individual quantities, role HP shares, reference-party scaling, goblin targeting,
+wave pauses and the approved sprite. This implementation is in review, not deployed.

@@ -408,6 +408,7 @@ export class CombatSessionObject {
             const fight = await this.repository.findFightById(live.fightId);
             if (fight) {
               fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
+              if(fight.randomizeQuestions)fight.questions=deterministicShuffle(fight.questions,actor.sessionId);
               room = {
                 fight,
                 snapshot: initialCombatState(actor.sessionId, fight),

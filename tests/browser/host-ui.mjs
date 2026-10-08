@@ -7,7 +7,7 @@ const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch();
-const enemyImage = 'data:image/png;base64,' + (await readFile('attached_assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png')).toString('base64');
+const enemyImage = 'data:image/png;base64,' + (await readFile('client/public/enemies/goblin-v1.png')).toString('base64');
 try {
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }, { width: 3840, height: 2160 }]) {
     const page = await browser.newPage({ viewport });
@@ -118,6 +118,24 @@ try {
       await page.waitForTimeout(650);
       if ([1, 4, 30].includes(count)) await page.screenshot({ path: `${output}/${viewport.width}-formation-${count}.png` });
     }
+    state.encounterRules = 2;
+    state.activeWave = 1;
+    const templateEnemy = structuredClone(state.enemies[0]);
+    for (const count of [1, 10, 30, 60]) {
+      state.enemies = Array.from({length:count}, (_,i) => ({...templateEnemy,id:`g${i}`,name:`Goblin ${i+1}`,species:'goblin',role:'trash',wave:1,health:.5,maxHealth:1}));
+      await emit();
+      await page.waitForFunction(n => document.querySelectorAll('.battle-enemy-field .battle-enemy').length === n, count);
+      await page.locator('.battle-enemy-field img').first().evaluate(img => img.decode());
+      const contained = await page.locator('.battle-enemy-field').evaluate(field => {
+        const box = field.getBoundingClientRect();
+        return [...field.querySelectorAll('.battle-enemy')].every(el => {const r=el.getBoundingClientRect();return r.left>=box.left-1 && r.right<=box.right+1 && r.top>=box.top-1 && r.bottom<=box.bottom+1;});
+      });
+      assert.ok(contained, `${count} goblins fit their fixed field`);
+      await page.screenshot({path:`${output}/${viewport.width}-goblin-swarm-${count}.png`});
+    }
+    state.currentPhase = 'wave_break'; state.phaseDeadline = null;
+    await emit();
+    await panel.getByRole('button', {name:'Start next wave',exact:true}).waitFor();
     state.revision++;
     await page.evaluate(({ state, question }) => window.hostTest.sockets.filter(s => s.url.includes('sessionId=ABC234')).at(-1).onmessage({ data: JSON.stringify({ type:'combat_state', state, question, rejoinRequests:[{studentId:'removed',nickname:'Alex'}] }) }), {state,question});
     await page.getByRole('dialog').waitFor();

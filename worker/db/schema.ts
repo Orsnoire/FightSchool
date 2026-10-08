@@ -91,6 +91,9 @@ export interface FightQuestion {
 }
 
 export interface FightEnemy {
+  quantity?: number;
+  wave?: number;
+  species?: "goblin" | "other";
   role?: import("../../shared/encounter-tiers").EnemyRole;
   id: string;
   name: string;
