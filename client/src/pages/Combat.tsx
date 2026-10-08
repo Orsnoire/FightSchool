@@ -1,7 +1,8 @@
+import { LootRewardChoices } from "@/components/LootRewardChoices";
 import { abilityPreview } from "@shared/combat/abilityValues";
 import { AllyTargetGrid } from "@/components/AllyTargetGrid";
 import { StaminaBar } from "@/components/StaminaBar";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useCombatSession } from "@/hooks/useCombatSession";
 import { CombatBoard } from "@/components/CombatBoard";
@@ -35,7 +36,9 @@ export default function Combat() {
     [target, setTarget] = useState(""),
     [math, setMath] = useState(false),
     [claimed, setClaimed] = useState(false),
+    [claiming, setClaiming] = useState(false),
     [claimError, setClaimError] = useState("");
+  const claimInFlight = useRef(false);
   const p = studentId ? state?.players[studentId] || state?.pendingPlayers?.[studentId] : null;
   const queued = !!(studentId && state?.pendingPlayers?.[studentId]);
   const result = results.find((r) => r.studentId === studentId);
@@ -121,6 +124,10 @@ export default function Combat() {
   const minimal = ["waiting", "joining", "intro", "answered", "ready", "knocked-out"].includes(view);
   const waitMessage = view === "joining" ? "Joining next round" : view === "waiting" ? "Waiting for your teacher" : view === "intro" ? "Get ready…" : view === "knocked-out" ? "Knocked out · Your party is still fighting" : "Waiting for other players";
   const claim = async (itemId?: string) => {
+    if (claimInFlight.current || claimed) return;
+    claimInFlight.current = true;
+    setClaiming(true);
+    setClaimError("");
     try {
       await apiRequest(
         "POST",
@@ -135,6 +142,9 @@ export default function Combat() {
       await queryClient.invalidateQueries();
     } catch (e) {
       setClaimError(e instanceof Error ? e.message : "Unable to claim reward");
+    } finally {
+      claimInFlight.current = false;
+      setClaiming(false);
     }
   };
   return (
@@ -294,21 +304,7 @@ export default function Combat() {
               </p>
               {result.xpMultiplier !== undefined && <p className="text-sm text-muted-foreground">{Math.round(result.xpMultiplier * 1000) / 10}% XP rate applied to {Math.round((result.baseXp || 0) * 100) / 100} XP before stamina. Fractional XP carries forward.</p>}
               {result.lootTable.length > 0 && !claimed && (
-                <>
-                  <p>Choose one reward:</p>
-                  <Button onClick={() => claim()}>
-                    Claim {result.goldReward} gold
-                  </Button>
-                  {result.lootTable.map((item) => (
-                    <Button
-                      key={item.itemId}
-                      variant="outline"
-                      onClick={() => claim(item.itemId)}
-                    >
-                      Claim equipment
-                    </Button>
-                  ))}
-                </>
+                <LootRewardChoices key={result.id} lootTable={result.lootTable} goldReward={result.goldReward} claiming={claiming} onClaim={claim} />
               )}
               {claimError && <p role="alert">{claimError}</p>}
               {claimed && <p>Reward saved.</p>}

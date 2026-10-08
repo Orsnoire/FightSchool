@@ -8,8 +8,8 @@ and deployment. No deployment is authorized for this intermediate checkpoint.
 | --- | --- | --- |
 | October 7 battlefield, host controls, join/rejoin, participation rewards | Completed in main; live release recorded in `docs/cloudflare/full-migration.md` | Already released; reuse the existing session-code group entry |
 | Priest First Aid, no-offense solo warning, healer encounter estimates | Implemented and tested in [PR #37](https://github.com/Orsnoire/FightSchool/pull/37) | Awaiting combined merge/deployment; uses MND / 3, floor, minimum 1 |
-| 1. Calculated ability values | Implemented and locally tested in `feat/calculated-ability-previews`, based on PR #37 | Awaiting review and combined merge/deployment |
-| 2. Informative loot choices | Pending | Next item: show item name, icon and stats before claiming; current result buttons say “Claim equipment” |
+| 1. Calculated ability values | Implemented and tested in [PR #38](https://github.com/Orsnoire/FightSchool/pull/38), based on PR #37 | Awaiting review and combined merge/deployment |
+| 2. Informative loot choices | Implemented and locally tested in `feat/loot-reward-details`, based on PR #38 | Awaiting review and combined merge/deployment; names, icons, slot, rarity, tier and signed stats shown before claiming |
 | 3. Loadout display synchronization | Pending | Refresh/invalidate student, equipment and job-level data consistently after class/equipment changes; the First Aid solo-entry freshness check is only a scoped safeguard |
 | Combined release | Pending | Finish the individual items, check the combined changes, merge, deploy and verify live behavior; update this table with release evidence |
 
@@ -41,6 +41,34 @@ compares displayed magnitudes with real engine resolution, checks Headshot's
 upcoming streak, verifies resource-dependent values, and renders the actual
 React combat view through a stat update. Hosted browser CI remains a separate
 review check; no live deployment validation has been run for this branch.
+
+## Item 2: informative loot choices
+
+The result screen offers gold or one named equipment item. Each earned item card
+shows its icon (with a slot fallback for missing/broken images), name, rarity,
+tier, slot and all nonzero stat modifiers, including penalties. Zero-stat items
+explicitly say “No stat bonuses.” Claiming puts equipment into inventory and does
+not imply automatic equipping.
+
+Details load through the existing authenticated equipment metadata endpoint,
+which already allows students to inspect items in their saved earned loot tables.
+Only earned IDs become choices; duplicate IDs are displayed once. Loading/error
+and missing-item states offer retry and preserve the gold alternative. Items
+without available metadata cannot be blindly claimed from the new UI.
+
+All choices disable while a claim is in flight, with an immediate guard against
+rapid repeated clicks. A failed claim shows an error and permits retry; success
+shows the existing saved-reward confirmation. The server's existing authorization,
+result ownership and exactly-once reward claim remain authoritative. Reward
+amounts, loot eligibility and claim endpoints are unchanged.
+
+Local validation: `npm run check`, all 111 tests in `npm test`,
+`npm run build:cloudflare`, and `git diff --check` pass. Hosted browser CI is a
+separate review check; this branch has not been deployed.
+
+Coverage includes the real React result view sending the exact result/item IDs,
+rapid repeated clicks, failed claim/retry/success, names with markup characters,
+signed stats, unearned/duplicate IDs, metadata retries and broken-icon fallback.
 
 ## Larger work outside this batch
 
