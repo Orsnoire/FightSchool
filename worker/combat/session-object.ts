@@ -35,6 +35,8 @@ interface StoredRoom {
   receipts: string[];
   results?: unknown[];
   resultsPersisted?: boolean;
+  evidenceSignature?: string;
+  evidencePending?: boolean;
   removals?: Record<string, { nickname: string; blocked: boolean; requestedAt?: number; deniedAt?: number }>;
 }
 const ROOM_KEY = "room";
@@ -42,11 +44,12 @@ export function publicSnapshot(snapshot: CombatSnapshot): CombatSnapshot {
   const { departedPlayers: _, ...visible } = snapshot;
   return {
     ...visible,
+    pendingPlayers: Object.fromEntries(Object.entries(snapshot.pendingPlayers||{}).map(([id,p])=>[id,{...p,correctQuestionKeys:undefined,currentAnswer:null,lastAnswerCorrect:undefined}])),
     players: Object.fromEntries(
       Object.entries(snapshot.players).map(([id, p]) => [
         id,
         {
-          ...p,
+          ...Object.fromEntries(Object.entries(p).filter(([key])=>key!=="correctQuestionKeys")),
           currentAnswer: null,
           lastAnswerCorrect: ["question", "actions", "waiting"].includes(
             snapshot.currentPhase,
@@ -55,7 +58,7 @@ export function publicSnapshot(snapshot: CombatSnapshot): CombatSnapshot {
             : p.lastAnswerCorrect,
         },
       ]),
-    ),
+    ) as CombatSnapshot["players"],
   };
 }
 export class CombatSessionObject {
@@ -123,7 +126,7 @@ export class CombatSessionObject {
       upgraded = addStudent(
         upgraded,
         student,
-        await this.repository?.getCombatProfile?.(student),
+        await this.repository?.getCombatProfile?.(student, old.sessionId),
       );
       const player = upgraded.players[student.id];
       Object.assign(player, {
@@ -162,15 +165,19 @@ export class CombatSessionObject {
   }
   private async save(room: StoredRoom) {
     await this.state.storage.put(ROOM_KEY, room);
+    const entries=Object.values({...room.snapshot.players,...room.snapshot.departedPlayers}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0);
+    const signature=JSON.stringify([room.snapshot.victory,entries.map(p=>[p.studentId,p.totals.questionsAnswered,p.totals.questionsCorrect,!!room.snapshot.players[p.studentId]])]);
+    if(this.repository?.recordQuestEvidence && entries.length && signature!==room.evidenceSignature){
+      try {await this.repository.recordQuestEvidence(room.snapshot,room.fight);room.evidenceSignature=signature;room.evidencePending=false;}
+      catch {room.evidencePending=true;}
+      await this.state.storage.put(ROOM_KEY,room);
+      if(room.evidencePending)await this.syncAlarm(room);
+    }
   }
   private async syncAlarm(room: StoredRoom) {
-    if (room.snapshot.phaseDeadline)
-      await this.state.storage.setAlarm(room.snapshot.phaseDeadline);
-    else if (
-      room.snapshot.currentPhase === "game_over" &&
-      !room.resultsPersisted
-    )
-      await this.state.storage.setAlarm(Date.now() + 5000);
+    const retry=room.evidencePending||(room.snapshot.currentPhase==='game_over'&&!room.resultsPersisted)?Date.now()+5000:Infinity;
+    const deadline=Math.min(room.snapshot.phaseDeadline||Infinity,retry);
+    if(Number.isFinite(deadline))await this.state.storage.setAlarm(deadline);
     else await this.state.storage.deleteAlarm();
   }
   private snapshotMessage(room: StoredRoom, role = "student") {
@@ -444,7 +451,7 @@ export class CombatSessionObject {
           room.snapshot = addStudent(
             room.snapshot,
             student,
-            await this.repository.getCombatProfile?.(student),
+            await this.repository.getCombatProfile?.(student, actor.sessionId),
           );
           const live = await this.repository.findLiveCombatSession(
             actor.sessionId,
@@ -671,6 +678,7 @@ export class CombatSessionObject {
     return this.serialized(async () => {
       const room = await this.room();
       if (!room) return;
+      if(room.evidencePending){await this.save(room);await this.syncAlarm(room);}
       if (room.snapshot.currentPhase === "game_over") {
         await this.complete(room);
         return;

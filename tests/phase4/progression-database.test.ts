@@ -113,7 +113,7 @@ test("additive migrations preserve existing students; results and rewards are ex
     await seedGuildQuests(db as any, guild.id);
     await seedPersonalQuests(db as any, student().id, guild.id);
     await seedPersonalQuests(db as any, student().id, guild.id);
-    assert.equal((await db.select().from(schema.quests)).length, 59);
+    assert.equal((await db.select().from(schema.quests)).length, 79);
     const [quest] = await db
       .insert(schema.quests)
       .values({

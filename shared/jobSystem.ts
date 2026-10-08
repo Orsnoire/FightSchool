@@ -1039,12 +1039,12 @@ export function getTotalMechanicUpgrades(jobLevels: Record<CharacterClass, numbe
 }
 
 // Check which jobs a student can unlock
-export function getUnlockedJobs(jobLevels: Record<CharacterClass, number>): CharacterClass[] {
+export function getUnlockedJobs(jobLevels: Record<CharacterClass, number>, granted: CharacterClass[] = []): CharacterClass[] {
   const unlocked: CharacterClass[] = [];
   
   for (const jobConfig of Object.values(JOB_TREE)) {
     // Base classes are always unlocked
-    if (!jobConfig.unlockRequirements) {
+    if (!jobConfig.unlockRequirements || granted.includes(jobConfig.id)) {
       unlocked.push(jobConfig.id);
       continue;
     }

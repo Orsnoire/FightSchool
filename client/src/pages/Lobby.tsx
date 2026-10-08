@@ -994,7 +994,7 @@ export default function Lobby() {
               });
               
               // Get only unlocked jobs based on requirements
-              const unlockedJobs = getUnlockedJobs(jobLevelMap);
+              const unlockedJobs = getUnlockedJobs(jobLevelMap, student.grantedJobs || []);
               
               return unlockedJobs.map((classType) => {
                 const level = jobLevelMap[classType] || 0;

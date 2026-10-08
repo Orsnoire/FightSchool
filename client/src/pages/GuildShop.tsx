@@ -67,9 +67,7 @@ export default function GuildShop() {
   });
 
   // Calculate highest unlocked tier from completed guild quests
-  const unlockedTier = guildQuests
-    .filter((q) => q.questType === "guild" && q.completedAt && q.rewards?.unlockTier)
-    .reduce((max, q) => Math.max(max, q.rewards?.unlockTier || 0), 1);
+  const unlockedTier = guild?.unlockedTier || 1;
 
   // Fetch all purchasable equipment items (scoped to student's guild)
   const { data: shopItems = [], isLoading: itemsLoading } = useQuery<EquipmentItemDb[]>({

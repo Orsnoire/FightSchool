@@ -99,6 +99,13 @@
       "when": 1791428400000,
       "tag": "0013_spellbook_offhand",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791464400000,
+      "tag": "0014_guild_quests",
+      "breakpoints": true
     }
   ]
 }

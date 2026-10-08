@@ -25,6 +25,9 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  questGuildId?: string | null;
+  limitTier?: number;
+  correctQuestionKeys?: string[];
   equipmentLoadout?: EquipmentLoadout;
   equipmentEffects?: { healingBonus:number; potionAttackBonus:number };
   roundsParticipated?: number;

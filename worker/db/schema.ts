@@ -91,6 +91,7 @@ export interface FightQuestion {
 }
 
 export interface FightEnemy {
+  role?: import("../../shared/encounter-tiers").EnemyRole;
   id: string;
   name: string;
   image: string;
@@ -105,6 +106,7 @@ export const fights = pgTable(
       .notNull()
       .references(() => teachers.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
+    encounterTier: integer("encounter_tier"),
     isArchived: boolean("is_archived").notNull().default(false),
     guildCode: text("guild_code"),
     questions: jsonb("questions").notNull().$type<FightQuestion[]>(),
@@ -135,6 +137,8 @@ export const fights = pgTable(
 export const students = pgTable(
   "students",
   {
+    grantedJobs: jsonb("granted_jobs").$type<CharacterClass[]>().notNull().default([]),
+    aaExperience: integer("aa_experience").notNull().default(0),
     staminaDay: text("stamina_day"),
     dailyCombats: integer("daily_combats").notNull().default(0),
     xpRemainder: doublePrecision("xp_remainder").notNull().default(0),
@@ -188,6 +192,8 @@ export const liveCombatSessions = pgTable(
       .references(() => teachers.id, { onDelete: "cascade" }),
     status: text("status").notNull().default("waiting"),
     soloStudentId: uuid("solo_student_id").references(() => students.id),
+    guildLimitTier: integer("guild_limit_tier"),
+    guildId: uuid("guild_id").references(() => guilds.id),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -253,6 +259,7 @@ export const studentJobLevels = pgTable(
 );
 
 export const guilds = pgTable("guilds", {
+  limitTier: integer("limit_tier").notNull().default(1),
   id: uuid("id").primaryKey().defaultRandom(),
   teacherId: uuid("teacher_id")
     .notNull()
@@ -345,6 +352,7 @@ export const quests = pgTable(
     description: text("description").notNull(),
     criteria: jsonb("criteria").notNull().$type<QuestCriteria>(),
     rewards: jsonb("rewards").$type<QuestReward>().default({}),
+    isArchived: boolean("is_archived").notNull().default(false),
     isSeeded: boolean("is_seeded").notNull().default(false), // True for auto-generated quests
     isCompleted: boolean("is_completed").notNull().default(false),
     completedAt: bigint("completed_at", { mode: "number" }),

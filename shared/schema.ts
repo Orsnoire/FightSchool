@@ -110,6 +110,7 @@ export interface CustomQuestCriterion {
 
 // Quest criteria types for different quest goals
 export type QuestCriteriaType = 
+  | "manual" | "fight_accuracy" | "class_at_cap" | "unlock_job" | "unlock_license" | "solo_fights" | "perfect_clear" | "master_bank" | "try_solo"
   | "reach_job_level"           // Personal: Reach specific level in a job
   | "unlock_cross_class"        // Personal: Unlock an advanced class
   | "unlock_ultimate"           // Personal: Unlock ultimate ability
@@ -121,6 +122,11 @@ export type QuestCriteriaType =
 
 // Guild quests (achievements and group goals)
 export interface QuestCriteria {
+  fightId?: string;
+  accuracy?: number;
+  percentage?: number;
+  mode?: "solo" | "teacher" | "any";
+  performanceType?: "individual" | "class_average";
   type: QuestCriteriaType;
   
   // For reach_job_level quests
@@ -144,6 +150,8 @@ export interface QuestCriteria {
 
 // Quest rewards
 export interface QuestReward {
+  limitBreak?: number;
+  unlockJob?: CharacterClass;
   gold?: number;
   equipmentItemId?: string; // Reference to equipment_items table
   guildXP?: number;
@@ -178,6 +186,7 @@ export const questionSchema = z.object({
 
 // Enemy schema
 export interface Enemy {
+  role?: import("./encounter-tiers").EnemyRole;
   id: string;
   name: string;
   image: string;
@@ -185,6 +194,7 @@ export interface Enemy {
 }
 
 export const enemySchema = z.object({
+  role:z.enum(["trash","normal","leader","boss"]).optional(),
   id: z.string(),
   name: z.string().min(1),
   image: z.string(),
@@ -193,6 +203,7 @@ export const enemySchema = z.object({
 
 // Fight schema (teacher creates)
 export interface Fight {
+  encounterTier?: number | null;
   id: string;
   teacherId: string;
   title: string;
@@ -212,6 +223,7 @@ export interface Fight {
 }
 
 export const insertFightSchema = z.object({
+  encounterTier:z.number().int().min(1).max(4).nullable().optional(),
   teacherId: z.string().min(1),
   title: z.string().min(1),
   guildCode: z.string().optional().nullable(), // Deprecated: use guild_fights table

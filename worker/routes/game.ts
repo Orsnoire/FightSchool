@@ -1,8 +1,9 @@
+import { questInput } from "../../shared/quests";
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
 import { armorClassificationError, equipmentExclusion, handConflict, equipmentRequiredLevel } from "../../shared/equipment-rules.ts";
 import { mountainDay, nextMountainMidnight, xpMultiplier, STAMINA_TIME_ZONE } from "../../shared/combat/stamina.ts";
 import { z } from "zod";
-import { and, eq, inArray, desc, sql } from "drizzle-orm";
+import { and, or, isNull, eq, inArray, desc, sql } from "drizzle-orm";
 import { authenticateSession, type SessionConfig } from "../auth/session.ts";
 import type { IdentityRepository } from "../db/repository.ts";
 import {
@@ -90,51 +91,6 @@ const itemSchema = z.object({
     .default({}),
   shopPrice: z.number().int().min(1).max(1000000).nullable().optional(),
   isPurchasable: z.boolean().default(true),
-});
-const criterion = z.object({
-  fightId: uuid.optional(),
-  mode: z.enum(["solo", "teacher", "any"]).optional(),
-  accuracy: z.number().min(0).max(100).optional(),
-  performanceType: z.enum(["individual", "class_average"]).optional(),
-});
-const questSchema = z.object({
-  title: text,
-  description: z.string().max(5000),
-  questType: z
-    .enum(["personal", "guild", "weekly", "teacher_custom"])
-    .default("teacher_custom"),
-  criteria: z.object({
-    type: z.enum([
-      "reach_job_level",
-      "unlock_cross_class",
-      "unlock_ultimate",
-      "guild_level",
-      "total_correct_answers",
-      "total_damage",
-      "total_healing",
-      "custom",
-    ]),
-    targetJob: z
-      .enum(ALL_CHARACTER_CLASSES as [CharacterClass, ...CharacterClass[]])
-      .optional(),
-    targetClass: z
-      .enum(ALL_CHARACTER_CLASSES as [CharacterClass, ...CharacterClass[]])
-      .optional(),
-    targetLevel: z.number().int().min(1).max(15).optional(),
-    targetAmount: z.number().int().min(1).max(1000000).optional(),
-    customDescription: z.string().max(2000).optional(),
-    criteria1: criterion.optional(),
-    criteria2: criterion.optional(),
-    criteria3: criterion.optional(),
-  }),
-  rewards: z
-    .object({
-      gold: z.number().int().min(0).max(100000).optional(),
-      guildXP: z.number().int().min(0).max(100000).optional(),
-      unlockTier: z.number().int().min(1).max(10).optional(),
-      equipmentItemId: uuid.optional(),
-    })
-    .default({}),
 });
 class ApiError extends Error {
   constructor(
@@ -351,8 +307,10 @@ export async function handleGame(
           )[0],
         );
       if (tail === "progression" && method(request, "PATCH")) {
+        if(g.isArchived)throw new ApiError("Archived guilds are read-only.",409);
         const input = z
           .object({
+            limitTier: z.number().int().min(1).max(4).optional(),
             experience: z.number().int().min(0).max(10000000).optional(),
             unlockedTier: z.number().int().min(1).max(10).optional(),
           })
@@ -530,6 +488,8 @@ export async function handleGame(
           .where(
             and(
               eq(s.guildFights.guildId, id),
+              or(eq(s.liveCombatSessions.guildId, id), isNull(s.liveCombatSessions.guildId)),
+              ...(teacher ? [] : [or(isNull(s.liveCombatSessions.soloStudentId), eq(s.liveCombatSessions.soloStudentId, actor.actorId))]),
               inArray(s.liveCombatSessions.status, ["waiting", "active"]),
             ),
           );
@@ -542,67 +502,48 @@ export async function handleGame(
         );
       }
       if (tail === "quests" && method(request, "GET")) {
-        await evaluateQuests(db, id);
-        return json(
-          await db
-            .select()
-            .from(s.quests)
-            .where(
-              and(
-                eq(s.quests.guildId, id),
-                teacher
-                  ? sql`true`
-                  : sql`(student_id IS NULL OR student_id=${actor.actorId})`,
-              ),
-            ),
-        );
+        if(!g.isArchived){await seedGuildQuests(db,id);if(!teacher)await seedPersonalQuests(db,actor.actorId,id);}
+        const views=await evaluateQuests(db,id);
+        return json(views.filter(q=>teacher||!q.studentId||q.studentId===actor.actorId));
       }
-      if (tail === "quests" && method(request, "POST")) {
-        const input = questSchema.parse(await request.json());
-        if (input.rewards.equipmentItemId) {
-          const [item] = await db
-            .select()
-            .from(s.equipmentItems)
-            .where(eq(s.equipmentItems.id, input.rewards.equipmentItemId));
-          if (item?.teacherId !== actor.actorId)
-            throw new ApiError("Forbidden reward", 403);
-        }
-        return json(
-          (
-            await db
-              .insert(s.quests)
-              .values({ ...input, guildId: id })
-              .returning()
-          )[0],
-          201,
-        );
+      const validateQuest = async (body:unknown) => {
+        const input=questInput.parse(body);
+        if(g.isArchived)throw new ApiError('Archived guilds cannot award or change quests.',409);
+        if(input.studentId){const [member]=await db.select().from(s.guildMemberships).where(and(eq(s.guildMemberships.guildId,id),eq(s.guildMemberships.studentId,input.studentId)));if(!member)throw new ApiError('Choose a member of this guild.');}
+        const fightIds=[input.criteria.fightId,input.criteria.criteria1?.fightId,input.criteria.criteria2?.fightId,input.criteria.criteria3?.fightId].filter(Boolean) as string[];
+        if(fightIds.length){const assigned=await db.select({id:s.fights.id}).from(s.guildFights).innerJoin(s.fights,eq(s.fights.id,s.guildFights.fightId)).where(and(eq(s.guildFights.guildId,id),eq(s.fights.teacherId,actor.actorId),inArray(s.fights.id,fightIds)));if(fightIds.some(f=>!assigned.some(a=>a.id===f)))throw new ApiError('Choose a fight assigned to this guild.');}
+        const itemId=input.rewards.equipmentItemId;
+        if(itemId&&!EQUIPMENT_ITEMS[itemId]){uuid.parse(itemId);const [item]=await db.select().from(s.equipmentItems).where(eq(s.equipmentItems.id,itemId));if(item?.teacherId!==actor.actorId)throw new ApiError('Forbidden reward',403);}
+        return {...input,criteria:input.criteria as import("../../shared/schema").QuestCriteria};
+      };
+      if (tail === 'quests' && method(request,'POST')) {
+        requireTeacher();const input=await validateQuest(await request.json());
+        const {assignToAll,...fields}=input;
+        const recipients=assignToAll?await db.select({studentId:s.guildMemberships.studentId}).from(s.guildMemberships).where(eq(s.guildMemberships.guildId,id)):[];
+        if(assignToAll&&!recipients.length)throw new ApiError('Add guild members before assigning personal quests.');
+        const values=assignToAll?recipients.map(r=>({...fields,studentId:r.studentId,guildId:id})): [{...fields,guildId:id}];
+        const [created]=await db.insert(s.quests).values(values).returning();
+        await evaluateQuests(db,id);return json(created,201);
       }
-      const qm = tail.match(/^quests\/([^/]+)$/);
-      if (qm) {
-        uuid.parse(qm[1]);
-        const where = and(eq(s.quests.id, qm[1]), eq(s.quests.guildId, id));
-        if (method(request, "DELETE")) {
-          await db.delete(s.quests).where(where);
-          return json({ success: true });
-        }
-        if (method(request, "PATCH")) {
-          const body = (await request.json()) as any;
-          if (body.isCompleted === true) {
-            await evaluateQuests(db, id, qm[1]);
-            return json((await db.select().from(s.quests).where(where))[0]);
+      const qm=tail.match(/^quests\/([^/]+)$/);
+      if(qm){
+        requireTeacher();uuid.parse(qm[1]);
+        const where=and(eq(s.quests.id,qm[1]),eq(s.quests.guildId,id));
+        const [existing]=await db.select().from(s.quests).where(where);
+        if(!existing)throw new ApiError('Quest not found',404);
+        if(g.isArchived)throw new ApiError('Archived guilds are read-only.',409);
+        if(method(request,'DELETE')){await db.update(s.quests).set({isArchived:true}).where(where);return json({success:true});}
+        if(method(request,'PATCH')){
+          const body=await request.json() as Record<string,unknown>;
+          if(body.isCompleted===true){
+            if(existing.isArchived)throw new ApiError('Archived quests cannot be completed.',409);
+            await evaluateQuests(db,id,qm[1]);return json((await db.select().from(s.quests).where(where))[0]);
           }
-          const input = questSchema.partial().parse(body);
-          if (input.rewards?.equipmentItemId) {
-            const [item] = await db
-              .select()
-              .from(s.equipmentItems)
-              .where(eq(s.equipmentItems.id, input.rewards.equipmentItemId));
-            if (item?.teacherId !== actor.actorId)
-              throw new ApiError("Forbidden reward", 403);
-          }
-          return json(
-            (await db.update(s.quests).set(input).where(where).returning())[0],
-          );
+          if(existing.isCompleted)throw new ApiError('Completed quests retain their original rewards. Create another quest.',409);
+          const input=await validateQuest({...existing,...body,assignToAll:false,criteria:body.criteria||existing.criteria,rewards:body.rewards||existing.rewards});
+          // Recipient/schedule identity cannot be changed after publication.
+          if((input.studentId||null)!==existing.studentId||input.questType!==existing.questType)throw new ApiError('Create a new quest to change its audience or schedule.',409);
+          return json((await db.update(s.quests).set(input).where(where).returning())[0]);
         }
       }
       if (tail === "leaderboard") {

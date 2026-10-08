@@ -1,6 +1,6 @@
 import { armorClassificationError } from "@shared/equipment-rules";
 import { SLOT_LABELS, EQUIPMENT_SLOTS as ALL_EQUIPMENT_SLOTS } from "@shared/equipment-catalog";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,10 @@ export default function ItemManagement() {
   const { toast } = useToast();
   const { isAuthenticated, isChecking } = useTeacherAuth();
   const teacherId = localStorage.getItem("teacherId");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const params=new URLSearchParams(window.location.search);
+  const returnGuild=params.get("guild");
+  const initialTier=Math.max(1,Math.min(10,Number(params.get("tier"))||1));
+  const [createDialogOpen, setCreateDialogOpen] = useState(params.get("create")==="1");
   const [editingItem, setEditingItem] = useState<EquipmentItemDb | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
@@ -66,6 +69,7 @@ export default function ItemManagement() {
 
   // Filter items based on active filter
   const filteredItems = items?.filter(item => {
+    if(returnGuild&&item.tier!==initialTier)return false;
     if (activeFilter === 'all') return true;
     if ((EQUIPMENT_SLOTS as readonly string[]).includes(activeFilter)) {
       return item.slot === activeFilter;
@@ -77,6 +81,7 @@ export default function ItemManagement() {
     resolver: zodResolver(itemFormSchema),
     defaultValues: {
       teacherId: teacherId || "",
+      tier:initialTier,shopPrice:100,isPurchasable:true,
       name: "",
       itemType: "sword",
       quality: "common",
@@ -155,6 +160,7 @@ export default function ItemManagement() {
     setEditingItem(item);
     form.reset({
       teacherId: item.teacherId,
+      tier:item.tier,shopPrice:item.shopPrice,isPurchasable:item.isPurchasable,
       name: item.name,
       itemType: item.itemType,
       quality: item.quality,
@@ -182,6 +188,8 @@ export default function ItemManagement() {
     form.reset();
   };
 
+  const initialEdit=useRef(false);
+  useEffect(()=>{if(initialEdit.current||!items)return;const id=new URLSearchParams(window.location.search).get('edit');const item=items.find(i=>i.id===id);if(item){initialEdit.current=true;setEditingItem(item);form.reset({...item,teacherId:teacherId||''});}},[items,teacherId,form]);
   if (isChecking) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 flex items-center justify-center">
@@ -199,7 +207,7 @@ export default function ItemManagement() {
       <header className="sticky top-0 z-50 border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/teacher">
+            <Link href={returnGuild?`/teacher/guild/${returnGuild}?tab=shop`:"/teacher"}>
               <Button variant="ghost" size="icon" data-testid="button-back">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -221,7 +229,8 @@ export default function ItemManagement() {
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
+                  <div className="grid grid-cols-2 gap-3"><label className="text-sm">Item tier<input className="block w-full border rounded bg-background p-2" aria-label="Item tier" type="number" min="1" max="10" {...form.register('tier',{valueAsNumber:true})}/></label><label className="text-sm">Shop price (gold)<input className="block w-full border rounded bg-background p-2" type="number" min="1" max="1000000" {...form.register('shopPrice',{valueAsNumber:true})}/></label><label className="col-span-2 flex gap-2"><input type="checkbox" {...form.register('isPurchasable')}/>Available in guild shops when its tier unlocks</label></div>
+<FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (

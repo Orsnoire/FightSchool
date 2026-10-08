@@ -1,4 +1,11 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import {
+  questProgress,
+  type QuestContext,
+  type QuestEvidence,
+  type QuestProgress,
+} from "../../shared/quests";
+import { questionKey } from "./question-key";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { GameDatabase } from "../db/game-repository.ts";
 import * as s from "../db/schema.ts";
 import { JOB_TREE, getUnlockedJobs } from "../../shared/jobSystem.ts";
@@ -74,6 +81,30 @@ export async function seedPersonalQuests(
   await seed(
     db,
     ALL_CHARACTER_CLASSES.flatMap((job) => [
+      ...(JOB_TREE[job].unlockRequirements
+        ? [
+            {
+              guildId,
+              studentId,
+              questType: "personal" as const,
+              title: `Unlock ${JOB_TREE[job].name}`,
+              description: `Meet the requirements to unlock ${JOB_TREE[job].name}.`,
+              criteria: { type: "unlock_job" as const, targetJob: job },
+              rewards: { gold: 100 },
+              isSeeded: true,
+            },
+          ]
+        : []),
+      {
+        guildId,
+        studentId,
+        questType: "personal" as const,
+        title: `${JOB_TREE[job].name} cross-class license`,
+        description: `Unlock the first cross-class ability from ${JOB_TREE[job].name}.`,
+        criteria: { type: "unlock_license" as const, targetJob: job },
+        rewards: { gold: 100 },
+        isSeeded: true,
+      },
       ...[4, 8, 10].map((level) => ({
         guildId,
         studentId,
@@ -108,176 +139,184 @@ export async function seedPersonalQuests(
 export function criterionSatisfied(
   c: QuestCriteria,
   levels: Partial<Record<CharacterClass, number>>,
-  totals: { correct: number; damage: number; healing: number },
+  totals: QuestContext["totals"],
   guildLevel: number,
 ): boolean {
-  switch (c.type) {
-    case "reach_job_level":
-    case "unlock_ultimate":
-      return (
-        !!c.targetJob && (levels[c.targetJob] || 0) >= (c.targetLevel || 15)
-      );
-    case "unlock_cross_class":
-      return (
-        !!(c.targetClass || c.targetJob) &&
-        getUnlockedJobs(levels as Record<CharacterClass, number>).includes(
-          (c.targetClass || c.targetJob)!,
-        )
-      );
-    case "guild_level":
-      return guildLevel >= (c.targetAmount || 1);
-    case "total_correct_answers":
-      return totals.correct >= (c.targetAmount || 1);
-    case "total_damage":
-      return totals.damage >= (c.targetAmount || 1);
-    case "total_healing":
-      return totals.healing >= (c.targetAmount || 1);
-    default:
-      return false;
-  }
+  return questProgress(c, {
+    levels,
+    totals,
+    guildLevel,
+    limitTier: 4,
+    members: [],
+    unlockedJobs: [],
+    evidence: [],
+  }).complete;
 }
+export type QuestView = typeof s.quests.$inferSelect & {
+  progress: QuestProgress;
+};
+/** Read evidence once for a class; deterministic criteria are shared with tests and presentation. */
 export async function evaluateQuests(
   db: GameDatabase,
   guildId: string,
   manualQuestId?: string,
-) {
+): Promise<QuestView[]> {
   const [guild] = await db
     .select()
     .from(s.guilds)
     .where(eq(s.guilds.id, guildId));
-  if (!guild) return;
+  if (!guild) return [];
   const quests = await db
     .select()
     .from(s.quests)
     .where(eq(s.quests.guildId, guildId));
-  const results = await db
-    .select()
-    .from(s.combatResults)
-    .where(eq(s.combatResults.guildId, guildId));
   const members = await db
     .select()
     .from(s.guildMemberships)
     .where(eq(s.guildMemberships.guildId, guildId));
-  // Every Neon HTTP query consumes a Worker subrequest. Load job levels once
-  // for the whole guild instead of once for each of its personal quests.
-  const studentIds = [...new Set(quests.map(q => q.studentId).filter((id): id is string => !!id))];
-  const jobs = studentIds.length
-    ? await db.select().from(s.studentJobLevels).where(inArray(s.studentJobLevels.studentId, studentIds))
+  const ids = members.map((m) => m.studentId);
+  const jobs = ids.length
+    ? await db
+        .select()
+        .from(s.studentJobLevels)
+        .where(inArray(s.studentJobLevels.studentId, ids))
     : [];
-  const levelsByStudent = new Map<string, Partial<Record<CharacterClass, number>>>();
-  for (const job of jobs) {
-    const levels = levelsByStudent.get(job.studentId) || {};
-    levels[job.jobClass as CharacterClass] = job.level;
-    levelsByStudent.set(job.studentId, levels);
-  }
+  const students = ids.length
+    ? await db
+        .select({ id: s.students.id, grantedJobs: s.students.grantedJobs })
+        .from(s.students)
+        .where(inArray(s.students.id, ids))
+    : [];
+  const results = await db
+    .select()
+    .from(s.combatResults)
+    .where(eq(s.combatResults.guildId, guildId));
+  const evidenceRows = await db.execute(
+    sql`SELECT * FROM quest_fight_evidence WHERE guild_id=${guildId}`,
+  );
+  const evidence: QuestEvidence[] = evidenceRows.rows.map((r: any) => ({
+    studentId: r.student_id,
+    sessionId: r.session_id,
+    fightId: r.fight_id,
+    isSoloMode: r.is_solo_mode,
+    victory: r.victory,
+    answered: r.answered,
+    correct: r.correct,
+    correctKeys: r.correct_keys,
+    bankKeys: r.bank_keys,
+    updatedAt: Number(r.updated_at),
+  }));
+  // Historical aggregates may prove accuracy/clear goals, but never invented per-question mastery.
+  const seen = new Set(evidence.map((r) => r.sessionId + ":" + r.studentId));
+  for (const r of results)
+    if (!seen.has(r.sessionId + ":" + r.studentId))
+      evidence.push({
+        studentId: r.studentId,
+        sessionId: r.sessionId,
+        fightId: r.fightId,
+        isSoloMode: r.isSoloMode,
+        victory: r.victory,
+        answered: r.totals.questionsAnswered,
+        correct: r.totals.questionsCorrect,
+        correctKeys: [],
+        bankKeys: [],
+        updatedAt: r.completedAt,
+      });
+  const fights = await db
+    .select({ id: s.fights.id, questions: s.fights.questions })
+    .from(s.fights)
+    .where(eq(s.fights.teacherId, guild.teacherId));
+  const banks = new Map(
+    fights.map((f) => [f.id, f.questions.map(questionKey)]),
+  );
+  const levels = (id: string) =>
+    Object.fromEntries(
+      jobs.filter((j) => j.studentId === id).map((j) => [j.jobClass, j.level]),
+    ) as Partial<Record<CharacterClass, number>>;
   const week = Math.floor(Date.now() / (7 * 86400000));
-  const completedQuestIds: string[] = [];
-  const completions = [];
-  for (const quest of quests) {
-    const relevant = results.filter(
+  const awards: Array<{ id: string; period: string; recipients: string[] }> =
+    [];
+  const views = quests.map((q) => {
+    const eligible = results.filter(
       (r) =>
-        (!quest.studentId || r.studentId === quest.studentId) &&
-        (quest.questType !== "weekly" ||
+        (!q.studentId || q.studentId === r.studentId) &&
+        (q.questType !== "weekly" ||
           Math.floor(r.completedAt / (7 * 86400000)) === week),
     );
-    const levels = quest.studentId ? levelsByStudent.get(quest.studentId) || {} : {};
-    const totals = relevant.reduce(
-      (n, r) => ({
-        correct: n.correct + r.totals.questionsCorrect,
-        damage: n.damage + r.totals.damageDealt,
-        healing: n.healing + r.totals.healingDone,
-      }),
-      { correct: 0, damage: 0, healing: 0 },
-    );
-    let completed =
-      (quest.isCompleted &&
-        (quest.questType !== "weekly" || quest.completedWeek === week)) ||
-      criterionSatisfied(quest.criteria, levels, totals, guild.level);
-    if (quest.criteria.type === "custom" && !completed) {
-      const criteria = [
-        quest.criteria.criteria1,
-        quest.criteria.criteria2,
-        quest.criteria.criteria3,
-      ].filter(Boolean) as CustomQuestCriterion[];
-      completed =
-        criteria.length > 0 &&
-        criteria.every((c) => {
-          const rows = relevant.filter(
-            (r) =>
-              r.victory &&
-              (!c.fightId || r.fightId === c.fightId) &&
-              (c.mode !== "solo" || r.isSoloMode) &&
-              (c.mode !== "teacher" || !r.isSoloMode),
-          );
-          if (c.performanceType === "class_average") {
-            const sessions = [...new Set(rows.map((r) => r.sessionId))];
-            return sessions.some((session) => {
-              const group = rows.filter((r) => r.sessionId === session);
-              const answered = group.reduce(
-                (n, r) => n + r.totals.questionsAnswered,
-                0,
-              );
-              const correct = group.reduce(
-                (n, r) => n + r.totals.questionsCorrect,
-                0,
-              );
-              return (
-                answered > 0 && (correct / answered) * 100 >= (c.accuracy || 0)
-              );
-            });
-          }
-          return rows.some(
-            (r) =>
-              r.totals.questionsAnswered > 0 &&
-              (r.totals.questionsCorrect / r.totals.questionsAnswered) * 100 >=
-                (c.accuracy || 0),
-          );
-        });
+    const context: QuestContext = {
+      levels: q.studentId ? levels(q.studentId) : {},
+      unlockedJobs:
+        students.find((s) => s.id === q.studentId)?.grantedJobs || [],
+      members: ids.map((id) => ({ levels: levels(id) })),
+      limitTier: guild.limitTier,
+      guildLevel: guild.level,
+      totals: eligible.reduce(
+        (a, r) => ({
+          correct: a.correct + r.totals.questionsCorrect,
+          damage: a.damage + r.totals.damageDealt,
+          healing: a.healing + r.totals.healingDone,
+        }),
+        { correct: 0, damage: 0, healing: 0 },
+      ),
+      evidence: evidence.filter(
+        (r) =>
+          (!q.studentId || q.studentId === r.studentId) &&
+          (q.questType !== "weekly" ||
+            Math.floor(r.updatedAt / (7 * 86400000)) === week),
+      ),
+      bankKeys: q.criteria.fightId ? banks.get(q.criteria.fightId) : undefined,
+    };
+    let p = questProgress(q.criteria, context);
+    // Guild job/license milestones mean any current member achieves the objective.
+    if (
+      !q.studentId &&
+      [
+        "unlock_job",
+        "unlock_cross_class",
+        "unlock_license",
+        "reach_job_level",
+        "unlock_ultimate",
+      ].includes(q.criteria.type)
+    ) {
+      const options = ids.map((id) =>
+        questProgress(q.criteria, {
+          ...context,
+          levels: levels(id),
+          unlockedJobs: students.find((s) => s.id === id)?.grantedJobs || [],
+        }),
+      );
+      p = options.sort((a, b) => b.current - a.current)[0] || p;
     }
-    if (quest.id === manualQuestId) completed = true;
-    if (!completed) continue;
-    completedQuestIds.push(quest.id);
-    const period = quest.questType === "weekly" ? String(week) : "once";
-    const recipients = quest.studentId
-      ? [quest.studentId]
-      : members.map((m) => m.studentId);
-    for (const studentId of recipients)
-      completions.push(sql`(${quest.id}::uuid,${studentId}::uuid,${period}::text)`);
-  }
-  // A whole class can reach a milestone together. Batch transitions so neither
-  // the number of students nor the number of completed quests exhausts fetches.
-  if (completedQuestIds.length) await db.execute(sql`WITH completed AS (
- UPDATE quests SET is_completed=true, completed_at=${Date.now()}, completed_week=${week}
- WHERE id IN (${sql.join(completedQuestIds.map(id => sql`${id}::uuid`), sql`, `)})
- AND (is_completed=false OR (quest_type='weekly' AND completed_week IS DISTINCT FROM ${week})) RETURNING rewards)
- UPDATE guilds SET experience=experience+COALESCE((SELECT sum((rewards->>'guildXP')::integer) FROM completed),0),
- unlocked_tier=GREATEST(unlocked_tier,COALESCE((SELECT max((rewards->>'unlockTier')::integer) FROM completed),1)) WHERE id=${guildId}`);
-  if (completions.length) await db.execute(sql`WITH completion AS (
- INSERT INTO quest_completions(quest_id,student_id,period) VALUES ${sql.join(completions, sql`, `)}
- ON CONFLICT(quest_id,student_id,period) DO NOTHING RETURNING quest_id,student_id),
- earned AS (SELECT completion.student_id, sum(COALESCE((quests.rewards->>'gold')::integer,0)) AS gold,
- jsonb_agg(quests.rewards->>'equipmentItemId') FILTER (WHERE quests.rewards->>'equipmentItemId' IS NOT NULL) AS items
- FROM completion JOIN quests ON quests.id=completion.quest_id GROUP BY completion.student_id)
- UPDATE students SET gold=students.gold+earned.gold,
- inventory=students.inventory || COALESCE((SELECT jsonb_agg(DISTINCT item)
- FROM jsonb_array_elements(COALESCE(earned.items,'[]'::jsonb)) AS items(item)
- WHERE NOT(students.inventory @> jsonb_build_array(item))), '[]'::jsonb)
- FROM earned WHERE students.id=earned.student_id`);
-  const [current] = await db
-    .select()
-    .from(s.guilds)
-    .where(eq(s.guilds.id, guildId));
-  if (current) {
-    const level = getGuildLevelFromXP(current.experience);
+    const already =
+      q.isCompleted && (q.questType !== "weekly" || q.completedWeek === week);
+    const complete = already || p.complete || q.id === manualQuestId;
+    const activeRecipient = !q.studentId || ids.includes(q.studentId);
+    if (complete && !guild.isArchived && !q.isArchived && activeRecipient)
+      awards.push({
+        id: q.id,
+        period: q.questType === "weekly" ? String(week) : "once",
+        recipients: q.studentId ? [q.studentId] : ids,
+      });
+    return {
+      ...q,
+      isCompleted:
+        already ||
+        (!guild.isArchived && !q.isArchived && activeRecipient && complete),
+      progress: { ...p, complete: already || p.complete },
+    };
+  });
+  if (awards.length) {
+    await db.execute(
+      sql`SELECT award_quest_batch(${guildId}::uuid,${JSON.stringify(awards)}::jsonb)`,
+    );
+    const [updated] = await db
+      .select()
+      .from(s.guilds)
+      .where(eq(s.guilds.id, guildId));
     await db
       .update(s.guilds)
-      .set({
-        level,
-        unlockedTier: Math.max(
-          current.unlockedTier,
-          level >= 5 ? 10 : level >= 3 ? 5 : 1,
-        ),
-      })
+      .set({ level: getGuildLevelFromXP(updated.experience) })
       .where(eq(s.guilds.id, guildId));
   }
+  return views;
 }

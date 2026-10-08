@@ -129,7 +129,7 @@ export async function handleStudentAuth(
       const profile = await repository.getCombatProfile?.(current);
       if (
         !getUnlockedJobs(
-          (profile?.levels || {}) as Record<CharacterClass, number>,
+          (profile?.levels || {}) as Record<CharacterClass, number>, current.grantedJobs || [],
         ).includes(input.characterClass)
       )
         return json({ error: "Job is not unlocked" }, 403);
