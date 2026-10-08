@@ -76,6 +76,7 @@ test('potion attack buff refreshes without stacking, survives serialization and 
  const longFight={...fight,questions:Array.from({length:8},(_,i)=>({...fight.questions[0],id:`q${i}`}))};
  let state=started('herbalist');state.enemies[0].health=state.enemies[0].maxHealth=100000;
  const p=state.players[id];p.maxHealth=p.health=1000;p.equipmentEffects=equipmentEffects({offhand:'t1_healer_potion'});
+ assert.match(abilityPreview(p,'potion_diffuser'),/per living ally; \+1 ATK/);
  const base=p.stats.atk;
  const round=(potion:boolean)=>{
   const question=longFight.questions[state.currentQuestionIndex];

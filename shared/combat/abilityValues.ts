@@ -81,14 +81,14 @@ export function abilityPreview(p: AbilityContext, ability: string, upcomingAnswe
     case "crimson_slash": return `${base}; self-healing is half damage dealt, rounded down`;
     case "blood_price": return `${base}; costs ${whole(atk)} HP`;
     case "life_potion": return `Revives each knocked-out ally with up to ${whole(healing || 0)} HP`;
-    case "holy_light": case "potion_diffuser": case "cleansing_chorus": return `${heal} per living ally`;
+    case "holy_light": case "cleansing_chorus": return `${heal} per living ally`;
     case "divine_grace": return "Fully heals and revives the party";
     case "inner_peace": return "Fully heals you and grants immunity this round";
     case "warrior_block": case "aegis": case "deflect": return `Blocks up to ${Math.ceil(vit / 2)} damage per hit`;
     case "shield_bash": return `Blocks up to ${Math.ceil(vit / 2)} per hit; retaliates for ${whole(vit / 4)} base damage per guarded hit`;
     case "healing_guard": return `${heal}; blocks up to ${Math.ceil(vit / 2)} damage per hit`;
     case "manashield": return `Absorbs up to ${whole(int)} damage`;
-    case "healing_potion": case "potion_diffuser": return `${heal}${p.equipmentEffects?.potionAttackBonus ? '; +1 ATK for 3 rounds (refreshes, does not stack)' : ''}`;
+    case "healing_potion": case "potion_diffuser": return `${heal}${id === "potion_diffuser" ? " per living ally" : ""}${p.equipmentEffects?.potionAttackBonus ? '; +1 ATK for 3 rounds (refreshes, does not stack)' : ''}`;
     case "shield_potion": return `Grants a ${whole(mnd)} HP shield`;
     case "craft_healing_potion": {
       const bonus = getTotalMechanicUpgrades(p.jobLevels as Record<CharacterClass, number>).potionCraftBonus || 0;
