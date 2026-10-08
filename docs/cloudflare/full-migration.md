@@ -330,3 +330,32 @@ scripts succeeded, including 30 participants, isolated rooms, exactly-once rewar
 late entry, moderated rejoin and fractional host-ended completion rewards.
 This closes the combined release gate; infrastructure failure/rollback drills
 remain a separate acceptance track.
+
+
+## Gear release attempt — 8 October 2026 (blocked before migration)
+
+The owner authorized deployment of the complete review stack. PRs #43–46 were
+merged in order into `main`, ending at
+`14a58f14cf29e8a0ed33e8aa601e2e680dd77efc`. Its tree
+`47a5feea9194fc03b825edcd981c2f69c5a5070a` exactly matches reviewed PR #46.
+This includes remembered job loadouts, Tier 1 gear/VIT/loot rules, gear comparisons
+and both-body equipped static artwork. Previous head bonuses remain unchanged.
+
+All implementation PR checks passed. Merged-main
+[CI run 37773184867](https://github.com/Orsnoire/FightSchool/actions/runs/37773184867)
+passed type checking, all 133 tests and both production builds.
+[Deployment run 37773374205](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205),
+job `113298147189`, also passed those checks, then failed at **Ensure image storage
+bucket** at 11:58 UTC (05:58 MDT). Cloudflare returned HTTP 403:
+“Please enable R2 through the Cloudflare Dashboard.”
+
+No database migration, secret preparation, Worker deployment or smoke check ran.
+Migrations 0012 (remembered loadouts/revision) and 0013 (spell-book constraint)
+remain pending. The live Worker remains `8776783b-ea00-4ffa-979c-e42415856d0a`,
+from successful deployment `37717016937` and runtime commit
+`41a372c039d00421882e37044830abaa9218b427`.
+
+Next: resolve the R2 account/deployment-token issue, rerun the normal deployment
+workflow on the verified release revision, then run canonical-domain live
+acceptance. Do not bypass the storage gate or mark the stack deployed. Static
+animation/near-profile coverage and infrastructure recovery drills remain separate.

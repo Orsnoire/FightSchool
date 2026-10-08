@@ -575,3 +575,13 @@ Prefer the former.
 direction: independent static slot rendering, Tier 0-based Tier 1 recolors and
 missing weapon art. The head-stat change was withdrawn; prior bonuses remain.
 This implementation is not deployed and does not satisfy the animation gate.
+
+
+## October 8 deployment checkpoint
+
+PRs #43–46 are merged at `14a58f14cf29e8a0ed33e8aa601e2e680dd77efc`.
+The remembered-loadout, Tier 1, comparison and equipped-art implementations above
+have completed review but are **not deployed**. The release workflow stopped at
+Cloudflare's R2 HTTP 403 before migrations 0012/0013 or Worker activation. See
+[the release record](cloudflare/full-migration.md#gear-release-attempt--8-october-2026-blocked-before-migration).
+The previous October 7 release remains live.

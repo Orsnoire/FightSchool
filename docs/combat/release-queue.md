@@ -1,5 +1,13 @@
 # Classroom polish release queue
 
+**October 8 release status:** PRs #43–46 are merged into main but not deployed.
+Deployment passed all 133 tests and builds, then stopped on Cloudflare's R2 HTTP
+403 before any migration or Worker change. See the
+[release attempt](../cloudflare/full-migration.md#gear-release-attempt--8-october-2026-blocked-before-migration).
+Review-pending headings below describe the implementation checkpoints; their
+code review is now complete. Deployment/live acceptance remain blocked on R2.
+
+
 Status: October 7, 2026. PRs #37–42 are reviewed, merged and deployed as
 `41a372c039d00421882e37044830abaa9218b427`. Deployment run
 [37717016937](https://github.com/Orsnoire/FightSchool/actions/runs/37717016937)
