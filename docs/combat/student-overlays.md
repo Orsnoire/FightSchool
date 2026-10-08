@@ -82,4 +82,13 @@ current server snapshot. Headshot assumes the current answer succeeds and counts
 that answer; Fireblast uses current MP. Multi-hit, party, critical and conditional
 effects are labeled explicitly. The lobby shows equivalent starting-encounter
 values from its loaded gear and progression. See the [release queue](release-queue.md)
-for validation/review status and the remaining two polish items.
+for validation/review status and remaining polish work.
+
+## Loot choice details (implemented in review, not deployed)
+
+Earned equipment is displayed as named cards with item icons, slot, rarity, tier
+and signed stat modifiers. Students choose gold or one item, which goes into
+inventory. Metadata failures can be retried; an unidentified item cannot be
+claimed through the cards. All choices disable during a claim and re-enable on
+failure. This uses existing metadata and result-scoped claim endpoints without
+changing reward eligibility or amounts. See the [release queue](release-queue.md).

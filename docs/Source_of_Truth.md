@@ -105,7 +105,8 @@ and explicit student Leave fight behavior.
 The [classroom polish release queue](combat/release-queue.md) distinguishes
 implemented review branches from deployed behavior and records the remaining
 ordered tasks. First Aid and calculated ability values await the combined
-release; informative loot choices and general loadout synchronization are pending.
+release. Informative loot choices are also implemented in review; general loadout
+synchronization remains pending.
 
 ## Combat Flow Refactor
 

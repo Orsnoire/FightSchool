@@ -9,7 +9,7 @@ import { started, student } from "./fixtures.ts";
 
 test("student question, action, waiting, and resolution share a focused non-dismissible overlay", async () => {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: "https://qa.example/student/combat", pretendToBeVisual: true });
-  const keys = ["window", "document", "addEventListener", "removeEventListener", "dispatchEvent", "requestAnimationFrame", "cancelAnimationFrame", "location", "history", "localStorage", "navigator", "MutationObserver", "HTMLElement", "HTMLInputElement", "Node", "NodeFilter", "CustomEvent", "Event", "getComputedStyle", "WebSocket", "IS_REACT_ACT_ENVIRONMENT"];
+  const keys = ["window", "document", "addEventListener", "removeEventListener", "dispatchEvent", "requestAnimationFrame", "cancelAnimationFrame", "location", "history", "localStorage", "navigator", "MutationObserver", "HTMLElement", "HTMLInputElement", "Node", "NodeFilter", "CustomEvent", "Event", "getComputedStyle", "WebSocket", "fetch", "IS_REACT_ACT_ENVIRONMENT"];
   const saved = keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
   const sockets: any[] = [];
   class Socket {
@@ -168,6 +168,40 @@ test("student question, action, waiting, and resolution share a focused non-dism
     await act(async () => button("Confirm First Aid & Ready").click());
     assert.equal(socket.sent.at(-1).ability, "first_aid");
     assert.equal(socket.sent.at(-1).targetId, "ally");
+    // Earned loot resolves through the authenticated metadata API and claims the exact result/item.
+    const lootId = "00000000-0000-4000-8000-000000000009";
+    const resultId = "00000000-0000-4000-8000-000000000010";
+    const claims: {url: string; body: any}[] = [];
+    let finishClaim: (response: Response) => void;
+    globalThis.fetch = (async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        claims.push({url, body: JSON.parse(options.body as string)});
+        return new Promise<Response>(resolve => { finishClaim = resolve; });
+      }
+      return Response.json(url.startsWith("/api/equipment-items")
+        ? [{id: lootId, name: "Apprentice Wand", slot: "weapon", quality: "rare", tier: 2, stats: {int: 3, atk: -1}, iconUrl: null}]
+        : {completedCombats: 0, xpMultiplier: 1, resetsAt: Date.now() + 100000});
+    }) as typeof fetch;
+    state.currentPhase = "game_over";
+    state.victory = true;
+    state.revision++;
+    await act(async () => socket.emit({type: "combat_state", state, results: [{id: resultId, studentId: student().id, xpEarned: 15, goldReward: 10, lootTable: [{itemId: lootId}]}]}));
+    assert.ok(button("Claim Apprentice Wand"));
+    assert.match(dialog().textContent!, /INT\+3/);
+    assert.match(dialog().textContent!, /ATK-1/);
+    const claimButton = button("Claim Apprentice Wand");
+    await act(async () => { claimButton.click(); claimButton.click(); });
+    assert.equal(claims.length, 1, "double click sends only one claim");
+    assert.equal(button("Claim 10 gold").disabled, true);
+    assert.equal(claims[0].url, `/api/student/${student().id}/claim-loot`);
+    assert.deepEqual(claims[0].body, {fightId: state.fightId, resultId, itemId: lootId});
+    await act(async () => finishClaim!(new Response("Please retry", {status: 503})));
+    assert.match(dialog().textContent!, /Please retry/);
+    assert.equal(button("Claim Apprentice Wand").disabled, false);
+    await act(async () => button("Claim Apprentice Wand").click());
+    await act(async () => finishClaim!(Response.json({success: true})));
+    assert.match(dialog().textContent!, /Reward saved/);
+    assert.equal(button("Claim Apprentice Wand"), undefined);
     dom.window.confirm = () => false;
     await act(async () => button("Leave fight").click());
     assert.equal(socket.sent.some((message: any) => message.type === "leave_fight"), false);
