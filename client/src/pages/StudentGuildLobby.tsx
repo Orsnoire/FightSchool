@@ -1,3 +1,6 @@
+import { getUnlockedJobs } from "@shared/jobSystem";
+import { limitLevel } from "@shared/quests";
+import { QuestBoard } from "@/components/QuestBoard";
 import { useStudentLoadout } from "@/hooks/useStudentLoadout";
 import { saveStudentLoadout } from "@/lib/studentLoadout";
 import { useAvatarAppearance } from "@/hooks/useAvatarAppearance";
@@ -193,8 +196,9 @@ export default function StudentGuildLobby() {
               </h1>
               <Badge variant="outline" className="flex items-center gap-1 w-fit mt-1">
                 <Trophy className="h-3 w-3" />
-                Level {guild.level}
+                Guild level {guild.level} · Limit tier {guild.limitTier} (Lv {limitLevel(guild.limitTier)})
               </Badge>
+              {!!student?.aaExperience&&<p className="text-xs mt-1 text-muted-foreground">Banked AA XP: {student.aaExperience}</p>}
             </div>
           </div>
           <Button 
@@ -249,22 +253,7 @@ export default function StudentGuildLobby() {
 
         {/* Middle Third - Guild Quests */}
         <div className="flex-1 min-h-0 pb-4">
-          <Card className="h-full flex flex-col">
-            <CardHeader className="flex-shrink-0">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Scroll className="h-5 w-5 text-primary" />
-                Guild Quests
-              </CardTitle>
-              <CardDescription className="text-xs">Complete quests to earn rewards</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <Scroll className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-                <p className="text-base font-semibold text-muted-foreground">Coming Soon</p>
-                <p className="text-xs text-muted-foreground mt-2">Guild quests will be available when the quest system is implemented</p>
-              </div>
-            </CardContent>
-          </Card>
+          <QuestBoard guildId={guildId!}/>
         </div>
 
         {/* Bottom Third - Active Solo Sessions */}
@@ -354,7 +343,8 @@ export default function StudentGuildLobby() {
                 jobLevelMap[jl.jobClass] = jl.level;
               });
               
-              return ALL_CHARACTER_CLASSES.map((classType) => {
+              const unlockedJobs = getUnlockedJobs(jobLevelMap, student?.grantedJobs || []);
+              return unlockedJobs.map((classType) => {
                 const level = jobLevelMap[classType] || 0;
                 const isCurrentClass = student?.characterClass === classType;
                 

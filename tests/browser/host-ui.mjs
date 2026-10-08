@@ -25,6 +25,7 @@ try {
     });
     await page.route('**/api/teacher/check-session', route => route.fulfill({ json: { id: fight.teacherId, email: 'fixture@example.test', guildCode: 'FIXTURE' } }));
     await page.route(`**/api/fights/${fight.id}`, route => route.fulfill({ json: { ...fight, title: 'Unit 2 No-Calculator' } }));
+    await page.route(`**/api/fights/${fight.id}/host-guilds`, route => route.fulfill({json:[]}));
     await page.route(`**/api/fights/${fight.id}/sessions`, route => route.fulfill({ json: { sessionId: 'ABC234' } }));
     await page.route('**/api/combat/ABC234/force-question', route => route.fulfill({ json: { success: true } }));
     await page.goto(origin + '/teacher/host/' + fight.id);

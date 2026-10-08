@@ -15,6 +15,9 @@ export default function HostFight() {
   const [, params] = useRoute("/teacher/host/:id"), [, navigate] = useLocation();
   const { isAuthenticated, isChecking } = useTeacherAuth();
   const fightId = params?.id;
+  const [hostingGuild,setHostingGuild]=useState<string>(new URLSearchParams(window.location.search).get("guild")||"");
+  const {data:hostGuilds,isError:guildError}=useQuery<Array<{id:string;name:string;limitTier:number}>>({queryKey:[`/api/fights/${fightId}/host-guilds`],enabled:!!fightId&&isAuthenticated});
+  const chosenGuild=hostingGuild || (hostGuilds?.length===1?hostGuilds[0].id:"");
   const [sessionId, setSessionId] = useState<string | null>(null), [hostingError, setHostingError] = useState("");
   const [questionOpen, setQuestionOpen] = useState(true), [fullscreen, setFullscreen] = useState(false), [blockRejoin, setBlockRejoin] = useState(false);
   const shell = useRef<HTMLElement>(null);
@@ -24,11 +27,11 @@ export default function HostFight() {
   useEffect(() => { const update = () => setFullscreen(document.fullscreenElement === shell.current); document.addEventListener("fullscreenchange", update); return () => document.removeEventListener("fullscreenchange", update); }, []);
   const { data: fight } = useQuery<Fight>({ queryKey: [`/api/fights/${fightId}`], enabled: !!fightId && isAuthenticated });
   useEffect(() => {
-    if (!fightId || !isAuthenticated) return;
+    if (!fightId || !isAuthenticated || !hostGuilds || (hostGuilds.length>1&&!chosenGuild)) return;
     let disposed = false;
-    apiRequest("POST", `/api/fights/${fightId}/sessions`).then(r => r.json()).then(room => { if (!disposed) setSessionId(room.sessionId); }).catch(e => setHostingError(e.message));
+    apiRequest("POST", `/api/fights/${fightId}/sessions`,chosenGuild?{guildId:chosenGuild}:{}).then(r => r.json()).then(room => { if (!disposed) setSessionId(room.sessionId); }).catch(e => setHostingError(e.message));
     return () => { disposed = true; };
-  }, [fightId, isAuthenticated]);
+  }, [fightId, isAuthenticated, chosenGuild, hostGuilds]);
   if (isChecking) return <p className="p-6">Checking your session…</p>;
   if (!isAuthenticated) return <p className="p-6">Sign in to host a fight.</p>;
   const players = Object.values(state?.players || {}), queued = Object.values(state?.pendingPlayers || {});
@@ -44,6 +47,8 @@ export default function HostFight() {
     } catch { setHostingError("Fullscreen could not open. Try your browser’s fullscreen command."); }
   };
   return <main ref={shell} className="battle-shell battle-host">
+    {!sessionId&&hostGuilds&&hostGuilds.length>1&&<label className="p-4">Hosting guild<select aria-label="Hosting guild" className="ml-3 border rounded p-2" value={hostingGuild} onChange={e=>setHostingGuild(e.target.value)}><option value="">Choose the class for quest credit and limits</option>{hostGuilds.map(g=><option key={g.id} value={g.id}>{g.name}</option>)}</select></label>}
+    {guildError&&<p role="alert" className="p-4">Could not load hosting guilds. Reload to try again.</p>}
     <section aria-label="Host fight controls" className="battle-host-banner" data-testid="host-controls">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 basis-52"><h1 className="text-xl sm:text-2xl font-bold break-words">{fight?.title || "Host fight"}</h1>

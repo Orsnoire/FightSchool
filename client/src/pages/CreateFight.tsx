@@ -1,3 +1,4 @@
+import { ENCOUNTER_TIERS, ENEMY_ROLES, ENEMY_ROLE_LABELS, enemyTuning, inferEnemyRole, type EnemyRole } from "@shared/encounter-tiers";
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useForm } from "react-hook-form";
@@ -107,11 +108,7 @@ function SortableEnemyItem({ enemy, index, onEdit, onDelete }: SortableEnemyItem
         <div>
           <p className="font-medium">{enemy.name}</p>
           <p className="text-sm text-muted-foreground">
-            Difficulty: {enemy.difficultyMultiplier}
-            {enemy.difficultyMultiplier <= 10 && " (Trash Pack)"}
-            {enemy.difficultyMultiplier > 10 && enemy.difficultyMultiplier <= 30 && " (Elite)"}
-            {enemy.difficultyMultiplier > 30 && enemy.difficultyMultiplier <= 60 && " (Boss)"}
-            {enemy.difficultyMultiplier > 60 && " (Epic Boss)"}
+            {enemy.role ? ENEMY_ROLE_LABELS[enemy.role] : `Legacy difficulty ${enemy.difficultyMultiplier}`}
           </p>
         </div>
       </div>
@@ -159,6 +156,7 @@ export default function CreateFight() {
   const [currentEnemy, setCurrentEnemy] = useState<Partial<Enemy>>({
     image: dragonImg,
     difficultyMultiplier: 10,
+    role:"normal",
   });
   const [editingEnemyIndex, setEditingEnemyIndex] = useState<number | null>(null);
   const [uploadedEnemyImage, setUploadedEnemyImage] = useState<string | null>(null);
@@ -187,6 +185,7 @@ export default function CreateFight() {
       guildCode: "",
       questions: [],
       enemies: [],
+      encounterTier:1,
       baseXP: 10,
       baseEnemyDamage: 1,
       enemyDisplayMode: "consecutive",
@@ -196,11 +195,19 @@ export default function CreateFight() {
     },
   });
 
+  const encounterTier=form.watch('encounterTier');
+  const changeTier=(tier:number)=>{
+    form.setValue('encounterTier',tier);form.setValue('baseEnemyDamage',enemyTuning(tier,'normal').baseEnemyDamage);
+    const next=enemies.map(e=>({...e,role:e.role||inferEnemyRole(e.difficultyMultiplier),difficultyMultiplier:enemyTuning(tier,e.role||inferEnemyRole(e.difficultyMultiplier)).difficultyMultiplier}));
+    setEnemies(next);form.setValue('enemies',next);
+    setCurrentEnemy(e=>({...e,role:e.role||inferEnemyRole(e.difficultyMultiplier||10),difficultyMultiplier:enemyTuning(tier,e.role||inferEnemyRole(e.difficultyMultiplier||10)).difficultyMultiplier}));
+  };
   // Populate form with existing fight data in edit mode
   useEffect(() => {
     if (existingFight && isEditMode) {
       form.reset({
         teacherId: existingFight.teacherId,
+        encounterTier:existingFight.encounterTier||null,
         title: existingFight.title,
         guildCode: existingFight.guildCode,
         questions: existingFight.questions,
@@ -346,7 +353,8 @@ export default function CreateFight() {
         id: enemies[editingEnemyIndex].id,
         name: currentEnemy.name,
         image: currentEnemy.image || dragonImg,
-        difficultyMultiplier: currentEnemy.difficultyMultiplier,
+        difficultyMultiplier: encounterTier ? enemyTuning(encounterTier,currentEnemy.role||"normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
+        ...(encounterTier?{role:currentEnemy.role||"normal"}:{}),
       };
       setEnemies(updatedEnemies);
       form.setValue("enemies", updatedEnemies);
@@ -357,14 +365,15 @@ export default function CreateFight() {
         id: Date.now().toString(),
         name: currentEnemy.name,
         image: currentEnemy.image || dragonImg,
-        difficultyMultiplier: currentEnemy.difficultyMultiplier,
+        difficultyMultiplier: encounterTier ? enemyTuning(encounterTier,currentEnemy.role||"normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
+        ...(encounterTier?{role:currentEnemy.role||"normal"}:{}),
       };
       const updatedEnemies = [...enemies, newEnemy];
       setEnemies(updatedEnemies);
       form.setValue("enemies", updatedEnemies);
     }
     
-    setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10 });
+    setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10, role:"normal" });
     setUploadedEnemyImage(null);
   };
 
@@ -374,6 +383,7 @@ export default function CreateFight() {
       name: enemy.name,
       image: enemy.image,
       difficultyMultiplier: enemy.difficultyMultiplier,
+      role:enemy.role,
     });
     setEditingEnemyIndex(index);
     // Check if this is an uploaded image (starts with http)
@@ -621,25 +631,9 @@ export default function CreateFight() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="baseEnemyDamage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Enemy Damage Level: {field.value}</FormLabel>
-                      <Slider
-                        min={1}
-                        max={10}
-                        step={1}
-                        value={[field.value || 1]}
-                        onValueChange={(vals) => field.onChange(vals[0])}
-                        data-testid="slider-base-enemy-damage"
-                      />
-                      <p className="text-sm text-muted-foreground">Enemy attack strength (1 = gentle, 10 = very dangerous). Difficulty adds gradual scaling; armor and blocking reduce damage.</p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-3"><Label>Fight tier: {encounterTier||'Legacy tuning'}</Label>
+                  {encounterTier?<><input className="w-full" aria-label="Fight tier" type="range" min="1" max="4" step="1" value={encounterTier} onChange={e=>changeTier(+e.target.value)}/><div className="flex justify-between text-xs">{ENCOUNTER_TIERS.map(t=><span key={t.label}>{t.label} · up to Lv {t.level}</span>)}</div><p className="text-sm text-muted-foreground">Choose the intended progression tier. Enemy roles set the challenge within it; HP still adapts to party strength and quiz length.</p></>:<><p className="text-sm text-muted-foreground">This fight retains its existing tuning. Switch explicitly to use tier and role presets.</p><Button type="button" variant="outline" onClick={()=>changeTier(1)}>Use tier presets</Button></>}
+                </div>
                 <FormField
                   control={form.control}
                   name="enemyDisplayMode"
@@ -1022,42 +1016,10 @@ export default function CreateFight() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Difficulty: {currentEnemy.difficultyMultiplier || 10}
-                        {(currentEnemy.difficultyMultiplier || 10) <= 10 && " (Trash Pack)"}
-                        {(currentEnemy.difficultyMultiplier || 10) > 10 && (currentEnemy.difficultyMultiplier || 10) <= 30 && " (Elite)"}
-                        {(currentEnemy.difficultyMultiplier || 10) > 30 && (currentEnemy.difficultyMultiplier || 10) <= 60 && " (Boss)"}
-                        {(currentEnemy.difficultyMultiplier || 10) > 60 && " (Epic Boss)"}
-                      </label>
-                      <p className="text-xs text-muted-foreground">
-                        HP follows quiz length and party damage. Difficulty increases counterattack damage and rewards; with multiple enemies, it also sets their share of total HP.
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <Slider
-                          value={[currentEnemy.difficultyMultiplier || 10]}
-                          onValueChange={([value]) => setCurrentEnemy({ ...currentEnemy, difficultyMultiplier: value })}
-                          min={1}
-                          max={100}
-                          step={1}
-                          className="flex-1"
-                          data-testid="slider-enemy-difficulty"
-                        />
-                        <Input
-                          type="number"
-                          value={currentEnemy.difficultyMultiplier || 10}
-                          onChange={(e) => {
-                            const value = Math.max(1, Math.min(100, parseInt(e.target.value) || 10));
-                            setCurrentEnemy({ ...currentEnemy, difficultyMultiplier: value });
-                          }}
-                          min={1}
-                          max={100}
-                          step={1}
-                          className="w-24"
-                          data-testid="input-enemy-difficulty"
-                        />
-                      </div>
-                    </div>
+                    <fieldset className="space-y-3 border rounded-lg p-4"><legend className="px-2 font-medium">Enemy role</legend>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{ENEMY_ROLES.map(role=><label key={role} className={`flex items-center gap-2 rounded border p-3 cursor-pointer ${currentEnemy.role===role?'border-primary bg-primary/10':''}`}><input type="radio" name="enemy-role" value={role} checked={currentEnemy.role===role} onChange={()=>{if(!encounterTier)changeTier(1);setCurrentEnemy(e=>({...e,role,difficultyMultiplier:enemyTuning(encounterTier||1,role).difficultyMultiplier}));}}/>{ENEMY_ROLE_LABELS[role]}</label>)}</div>
+                      {encounterTier&&currentEnemy.role?<p className="text-sm text-muted-foreground">{ENEMY_ROLE_LABELS[currentEnemy.role]} · tier {encounterTier}: {enemyTuning(encounterTier,currentEnemy.role).hpMultiplier.toFixed(2)}× standard HP budget; counterattack up to {enemyTuning(encounterTier,currentEnemy.role).rawCounterattack} before defense. Solo safety limits still apply.</p>:<p className="text-sm text-muted-foreground">Legacy difficulty {currentEnemy.difficultyMultiplier||10}. Selecting a role switches this fight to tier presets.</p>}
+                    </fieldset>
 
                     <Button type="button" onClick={addEnemy} className="w-full" data-testid={editingEnemyIndex !== null ? "button-update-enemy" : "button-add-enemy"}>
                       <PlusCircle className="mr-2 h-4 w-4" />
@@ -1069,7 +1031,7 @@ export default function CreateFight() {
                         variant="outline" 
                         onClick={() => {
                           setEditingEnemyIndex(null);
-                          setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10 });
+                          setCurrentEnemy({ image: dragonImg, difficultyMultiplier: 10, role:"normal" });
                           setUploadedEnemyImage(null);
                         }}
                         className="w-full"

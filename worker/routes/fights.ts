@@ -1,3 +1,4 @@
+import { enemyTuning } from "../../shared/encounter-tiers";
 import { z } from "zod";
 import { authenticateSession, type SessionConfig } from "../auth/session.ts";
 import type { IdentityRepository } from "../db/repository.ts";
@@ -13,6 +14,7 @@ const questionSchema = z.object({
 });
 
 const enemySchema = z.object({
+  role:z.enum(["trash","normal","leader","boss"]).optional(),
   id: z.string().min(1).max(200),
   name: z.string().min(1).max(200),
   image: z.string().max(2_000),
@@ -20,6 +22,7 @@ const enemySchema = z.object({
 });
 
 const fightSchema = z.object({
+  encounterTier:z.number().int().min(1).max(4).nullable().optional(),
   teacherId: z.string().uuid(),
   title: z.string().trim().min(1).max(200),
   guildCode: z.string().max(100).optional().nullable(),
@@ -63,7 +66,14 @@ async function readFight(request: Request) {
   if (declaredLength > 1_048_576) throw new Error("REQUEST_TOO_LARGE");
   const raw = await request.text();
   if (raw.length > 1_048_576) throw new Error("REQUEST_TOO_LARGE");
-  return fightSchema.parse(JSON.parse(raw));
+  const fight=fightSchema.parse(JSON.parse(raw));
+  if(fight.encounterTier){
+    const tier=fight.encounterTier;
+    if(fight.enemies.some(e=>!e.role))throw new z.ZodError([{code:'custom',path:['enemies'],message:'Choose enemy roles for tiered fights.'}]);
+    fight.enemies=fight.enemies.map(e=>({...e,difficultyMultiplier:enemyTuning(tier,e.role!).difficultyMultiplier}));
+    fight.baseEnemyDamage=enemyTuning(tier,'normal').baseEnemyDamage;
+  }
+  return fight;
 }
 
 export async function handleFights(

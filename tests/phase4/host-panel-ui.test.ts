@@ -29,7 +29,7 @@ test("host panel keeps controls with the code and updates attendance, eligibilit
   const { act, createElement } = await import("react");
   const { createRoot } = await import("react-dom/client");
   const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
-  const cache = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0, queryFn: async () => fight } } });
+  const cache = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0, queryFn: async ({queryKey}) => String(queryKey[0]).endsWith("host-guilds")?[]:fight } } });
   const root = createRoot(document.getElementById("root")!);
   try {
     const outfile = join(dir, "host.mjs");
@@ -40,6 +40,7 @@ test("host panel keeps controls with the code and updates attendance, eligibilit
       } }] });
     const { default: HostFight } = await import(pathToFileURL(outfile).href);
     await act(async () => root.render(createElement(QueryClientProvider, { client: cache }, createElement(HostFight))));
+    for(let i=0;i<10&&!sockets.length;i++)await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20));});
     assert.equal(sockets.length, 1);
     const socket = sockets[0];
     await act(async () => socket.onopen?.());

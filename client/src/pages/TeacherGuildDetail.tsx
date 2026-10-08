@@ -1,3 +1,4 @@
+import { TeacherGuildShop } from "@/components/TeacherGuildShop";
 import { GuildAdministration } from "@/components/GuildAdministration";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -227,12 +228,13 @@ export default function TeacherGuildDetail() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5" data-testid="tabs-guild-management">
+        <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab")||"overview"} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6" data-testid="tabs-guild-management">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="members" data-testid="tab-members">Members</TabsTrigger>
             <TabsTrigger value="fights" data-testid="tab-fights">Assigned Fights</TabsTrigger>
             <TabsTrigger value="quests">Quests</TabsTrigger>
+            <TabsTrigger value="shop">Shop</TabsTrigger>
             <TabsTrigger value="settings" data-testid="tab-settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -515,6 +517,7 @@ export default function TeacherGuildDetail() {
               </CardContent>
             </Card>
           </TabsContent>
+          <TabsContent value="shop"><TeacherGuildShop guild={guild}/></TabsContent>
           <TabsContent value="quests"><GuildAdministration guild={guild}/></TabsContent>
         </Tabs>
       </main>

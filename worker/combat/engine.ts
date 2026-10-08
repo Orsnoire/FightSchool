@@ -1,3 +1,5 @@
+import { enemyTuning } from "../../shared/encounter-tiers";
+import { questionKey } from "../progression/question-key";
 import { abilityDamage, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
 import type { AvatarAppearance } from "../../shared/avatar/appearance.ts";
 import type {
@@ -43,6 +45,8 @@ export type {
   CombatPhase,
 } from "../../shared/combat/model.ts";
 export interface CombatProfile {
+  questGuildId?: string | null;
+  limitTier?: number;
   equipmentLoadout?: CombatPlayer["equipmentLoadout"];
   equipmentEffects?: CombatPlayer["equipmentEffects"];
   appearance?: AvatarAppearance | null;
@@ -110,6 +114,8 @@ export function addStudent(
     getTotalMechanicUpgrades(levels as Record<CharacterClass, number>),
   );
   const p: CombatPlayer = {
+    ...(profile.questGuildId!==undefined?{questGuildId:profile.questGuildId}:{}),
+    ...(profile.limitTier!==undefined?{limitTier:profile.limitTier}:{}), correctQuestionKeys: [],
     ...(profile.equipmentLoadout ? {equipmentLoadout:{...profile.equipmentLoadout}} : {}),
     equipmentEffects: {...profile.equipmentEffects, healingBonus:profile.equipmentEffects?.healingBonus || 0, potionAttackBonus:profile.equipmentEffects?.potionAttackBonus || 0},
     roundsParticipated: 0,
@@ -189,6 +195,7 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   const damage = players.reduce((sum, p) => sum + encounterDamageEstimate(p), 0);
   const questions = Math.max(1, fight.questions.length);
   let budget = Math.max(1, Math.ceil(damage * questions * 0.9));
+  if(fight.encounterTier)budget=Math.max(1,Math.ceil(budget*fight.enemies.reduce((n,e)=>n+enemyTuning(fight.encounterTier!,e.role||"normal").hpMultiplier,0)/Math.max(1,fight.enemies.length)));
   let soloEnemyDamageCap: number | undefined;
   if (solo && players.length === 1) {
     const p = players[0];
@@ -1006,6 +1013,7 @@ export function advancePhase(
         p.buffs.immunity = { rounds: 1, amount: 0 };
       if (p.lastAnswerCorrect) {
         p.totals.questionsCorrect++;
+        p.correctQuestionKeys = [...new Set([...(p.correctQuestionKeys || []), questionKey(fight.questions[s.currentQuestionIndex])])];
         p.consecutiveCorrectAnswers = (p.consecutiveCorrectAnswers || 0) + 1;
         const a = p.questionAction;
         // Departure can cancel a saved ally-targeted action before resolution.

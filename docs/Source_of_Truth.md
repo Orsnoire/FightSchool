@@ -585,3 +585,12 @@ have completed review but are **not deployed**. The release workflow stopped at
 Cloudflare's R2 HTTP 403 before migrations 0012/0013 or Worker activation. See
 [the release record](cloudflare/full-migration.md#gear-release-attempt--8-october-2026-blocked-before-migration).
 The previous October 7 release remains live.
+
+## Guild quests and classroom tiers — implementation pending release
+
+[Guild quests and classroom tiers](guild-quests-and-tiers.md) records the October 8
+owner direction and this branch's implementation: teacher-authored quests and
+limit-break/job rewards, permanent progression with encounter-specific caps,
+AA overflow banking, shop tier browsing and tier/role fight authoring. Initial
+scaling presets require classroom balance review. AA upgrade purchases remain
+future work. This implementation is not deployed.

@@ -6,6 +6,7 @@ import {
   combatProfile,
   gameDatabase,
   persistCombatResults,
+  recordQuestEvidence,
 } from "./game-repository.ts";
 import type { CombatProfile } from "../combat/engine.ts";
 import type { CombatSnapshot } from "../../shared/combat/model.ts";
@@ -32,7 +33,8 @@ import {
 
 export interface IdentityRepository extends SessionRepository {
   validateLoot?(teacherId: string, itemIds: string[]): Promise<boolean>;
-  getCombatProfile?(student: StudentRecord): Promise<CombatProfile>;
+  getCombatProfile?(student: StudentRecord, sessionId?: string): Promise<CombatProfile>;
+  recordQuestEvidence?(state: CombatSnapshot, fight: FightRecord): Promise<void>;
   persistResults?(
     state: CombatSnapshot,
     fight: FightRecord,
@@ -63,6 +65,8 @@ export interface IdentityRepository extends SessionRepository {
     sessionId: string;
     fightId: string;
     teacherId: string;
+    guildId?: string | null;
+    guildLimitTier?: number | null;
   }): Promise<LiveCombatSessionRecord>;
   findLiveCombatSession(
     sessionId: string,
@@ -96,8 +100,9 @@ export function createIdentityRepository(
         );
       return new Set(rows.map((r) => r.id)).size === new Set(itemIds).size;
     },
-    async getCombatProfile(student) {
-      return combatProfile(gameDatabase(databaseUrl), student);
+    async recordQuestEvidence(state, fight) { await recordQuestEvidence(gameDatabase(databaseUrl), state, fight); },
+    async getCombatProfile(student, sessionId) {
+      return combatProfile(gameDatabase(databaseUrl), student, sessionId);
     },
     async persistResults(state, fight) {
       return persistCombatResults(gameDatabase(databaseUrl), state, fight);
