@@ -1,3 +1,4 @@
+import { abilityDamage, abilityHealing } from "../../shared/combat/abilityValues.ts";
 import type { AvatarAppearance } from "../../shared/avatar/appearance.ts";
 import type {
   FightQuestion,
@@ -28,7 +29,6 @@ import {
   COOLDOWNS,
   ULTIMATES,
   defaultQuestionAbility,
-  firstAidHealing,
   hasOffensiveAbility,
 } from "../../shared/combat/abilities.ts";
 import type {
@@ -579,7 +579,8 @@ function applyAbility(
   const groupHeal = (n: number, revive = false) =>
     party().forEach((t) => heal(s, p, t.studentId, n, revive));
   let damage = 0;
-  const spentMP = p.mp;
+  const damageValue = abilityDamage(p, id) ?? 0;
+  const healingValue = abilityHealing(p, id) ?? 0;
   const problem = abilityProblem(p, id);
   if (problem) {
     event(s, "ability", p.studentId, targetId, 0, `${id}: ${problem}`);
@@ -591,7 +592,7 @@ function applyAbility(
   if (ULTIMATES.has(id)) p.ultimatesUsed.push(id);
   switch (id) {
     case "attack":
-      damage = baseDamage(p) * (rng(s) < agi / 200 ? 2 : 1);
+      damage = damageValue * (rng(s) < agi / 200 ? 2 : 1);
       break;
     case "warrior_block":
     case "shield_bash":
@@ -603,33 +604,33 @@ function applyAbility(
       buff("provoke", 1);
       break;
     case "crushing_blow":
-      damage = atk + str;
+      damage = damageValue;
       p.threat++;
       break;
     case "unbreakable":
       buff("immunity", 1);
       break;
     case "fireball":
-      damage = int * 3;
+      damage = damageValue;
       break;
     case "frostbolt":
-      damage = int;
+      damage = damageValue;
       break;
     case "manashield":
       (s.players[targetId] || p).buffs.manaShield = { rounds: 2, amount: int };
       break;
     case "fireblast":
-      damage = int * spentMP * 3;
+      damage = damageValue;
       p.mp = 0;
       break;
     case "manabomb":
-      all().forEach((e) => hit(s, p, e.id, int * 2, true));
+      all().forEach((e) => hit(s, p, e.id, damageValue, true));
       break;
     case "headshot":
-      damage = Math.floor(2 * (rtk + agi) + 0.5 * (p.consecutiveCorrectAnswers || 0));
+      damage = damageValue;
       break;
     case "aim":
-      damage = (rtk + agi) * 2;
+      damage = damageValue;
       break;
     case "mark":
     case "prey": {
@@ -650,7 +651,7 @@ function applyAbility(
       break;
     case "killshot": {
       const e = s.enemies.find((e) => e.id === targetId);
-      damage = rtk * agi * 2;
+      damage = damageValue;
       if (
         e &&
         rng(s) <
@@ -661,7 +662,7 @@ function applyAbility(
       break;
     }
     case "healing_potion":
-      heal(s, p, targetId, mnd + 1);
+      heal(s, p, targetId, healingValue);
       p.healingPotions--;
       break;
     case "craft_healing_potion":
@@ -683,14 +684,14 @@ function applyAbility(
       break;
     case "potion_diffuser":
       if (p.healingPotions > 0) {
-        groupHeal(mnd + 1);
+        groupHeal(healingValue);
         p.healingPotions--;
       }
       break;
     case "life_potion":
       party()
         .filter((x) => x.isDead)
-        .forEach((x) => heal(s, p, x.studentId, mnd, true));
+        .forEach((x) => heal(s, p, x.studentId, healingValue, true));
       break;
     case "hex":
     case "hemorrhage": {
@@ -710,14 +711,14 @@ function applyAbility(
           rounds: duration,
           damage: id === "hex" ? Math.max(0, int - 1) : atk / 2,
         });
-        if (id === "hemorrhage") damage = atk;
+        if (id === "hemorrhage") damage = damageValue;
         if (id === "hex" && (p.jobLevels.warlock || 0) >= 15)
           damage = (Math.max(0, int - 1) * duration) / 2;
       }
       break;
     }
     case "siphon":
-      damage = int;
+      damage = damageValue;
       break;
     case "pact_surge": {
       const n = integer(p.health / 4);
@@ -729,10 +730,10 @@ function applyAbility(
       buff("abyssal_drain", 2);
       break;
     case "mend":
-      heal(s, p, targetId, mnd);
+      heal(s, p, targetId, healingValue);
       break;
     case "first_aid":
-      heal(s, p, targetId, firstAidHealing(mnd));
+      heal(s, p, targetId, healingValue);
       break;
     case "purify":
       if (s.players[targetId]) delete s.players[targetId].buffs.poison;
@@ -748,32 +749,32 @@ function applyAbility(
         }
       break;
     case "holy_light":
-      groupHeal(mnd / 2);
+      groupHeal(healingValue);
       break;
     case "divine_grace":
       groupHeal(1e9, true);
       break;
     case "healing_guard":
-      heal(s, p, targetId, mnd);
+      heal(s, p, targetId, healingValue);
       buff(`guard:${targetId}`, 1, vit / 2);
       break;
     case "lay_on_hands":
-      heal(s, p, targetId, (vit + mnd) / 2);
+      heal(s, p, targetId, healingValue);
       break;
     case "aegis":
       buff(`guard:${targetId}`, 1, vit / 2);
       p.threat = Math.max(...party().map((x) => x.threat)) + 1;
       break;
     case "sacred_strike":
-      damage = atk * (str + mnd + vit);
+      damage = damageValue;
       buff("immunity", 1);
       break;
     case "holy_judgment":
-      groupHeal(vit + mnd);
-      all().forEach((e) => hit(s, p, e.id, (str + vit + mnd) / 3, true));
+      groupHeal(healingValue);
+      all().forEach((e) => hit(s, p, e.id, damageValue, true));
       break;
     case "ruin_strike":
-      damage = atk * (str + vit + int);
+      damage = damageValue;
       break;
     case "blood_sword":
       buff("blood_sword", 1);
@@ -782,26 +783,26 @@ function applyAbility(
       buff("dread_aura", 3, Math.ceil(int / 3));
       break;
     case "blood_price":
-      damage = atk * (str + vit + int) * 2;
+      damage = damageValue;
       damagePlayer(s, p.studentId, atk, p.studentId, true);
       break;
     case "shadow_requiem": {
       const dealt = all().reduce(
-        (n, e) => n + hit(s, p, e.id, atk * (str + vit + int), true),
+        (n, e) => n + hit(s, p, e.id, damageValue, true),
         0,
       );
       heal(s, p, p.studentId, dealt);
       break;
     }
     case "crimson_slash":
-      damage = (atk * (vit + str)) / 2;
+      damage = damageValue;
       break;
     case "vampiric_guard":
       buff("vampiric_guard", 1);
       break;
     case "raining_blood": {
       const dealt = all().reduce(
-        (n, e) => n + hit(s, p, e.id, atk * (str + vit + int), true),
+        (n, e) => n + hit(s, p, e.id, damageValue, true),
         0,
       );
       groupHeal(dealt / 2);
@@ -814,22 +815,22 @@ function applyAbility(
       }
       break;
     case "flurry":
-      damage = baseDamage(p) * 3;
+      damage = damageValue;
       break;
     case "deflect":
       buff(`guard:${targetId}`, 1, vit / 2);
       buff("deflect", 1);
       break;
     case "focused_palm":
-      damage = atk + 4 * str + 4 * agi;
+      damage = damageValue;
       break;
     case "inner_peace":
       p.threat = Math.max(...party().map((x) => x.threat)) + 1;
-      heal(s, p, p.studentId, p.maxHealth);
+      heal(s, p, p.studentId, healingValue);
       buff("immunity", 1);
       break;
     case "twin_shot":
-      damage = (rtk + agi) * 4;
+      damage = damageValue;
       {
         const prey = s.enemies.find((e) =>
           e.effects.some((x) => x.type === "prey"),
@@ -845,13 +846,13 @@ function applyAbility(
     case "arrowstorm":
       all().forEach((e) => {
         for (let i = 0; i < (id === "arrowstorm" ? 10 : 5); i++)
-          hit(s, p, e.id, (rtk + agi) * (id === "arrowstorm" ? 1 : 2), true);
+          hit(s, p, e.id, damageValue, true);
       });
       if (id === "arrowstorm") {
         const prey = s.enemies.find((e) =>
           e.effects.some((x) => x.type === "prey"),
         );
-        if (prey) hit(s, p, prey.id, rtk + agi, true);
+        if (prey) hit(s, p, prey.id, damageValue, true);
       }
       break;
     case "inspire":
@@ -873,18 +874,18 @@ function applyAbility(
       break;
     }
     case "cleansing_chorus":
-      groupHeal(Math.max(1, integer((p.jobLevels.bard || 1) / 2)));
+      groupHeal(healingValue);
       party().forEach((t) => delete t.buffs.poison);
       break;
     case "finale":
-      all().forEach((e) => hit(s, p, e.id, (int + mnd) * str, true));
+      all().forEach((e) => hit(s, p, e.id, damageValue, true));
       break;
     case "crescendo":
       party()
         .filter((t) => t.isDead)
         .forEach((t) => heal(s, p, t.studentId, 1, true));
-      all().forEach((e) => hit(s, p, e.id, (int + mnd) * str, true));
-      groupHeal((p.jobLevels.bard || 1) / 2);
+      all().forEach((e) => hit(s, p, e.id, damageValue, true));
+      groupHeal(healingValue);
       party().forEach((t) => delete t.buffs.poison);
       buff("doubleDamage", 1);
       break;

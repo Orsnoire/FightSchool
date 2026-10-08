@@ -1,3 +1,4 @@
+import { abilityPreview } from "@shared/combat/abilityValues";
 import { AllyTargetGrid } from "@/components/AllyTargetGrid";
 import { StaminaBar } from "@/components/StaminaBar";
 import { useEffect, useState } from "react";
@@ -11,7 +12,7 @@ import { CombatOverlay } from "@/components/CombatOverlay";
 import { CombatResources } from "@/components/CombatResources";
 import { CombatResolution } from "@/components/CombatResolution";
 import { Swords, Sparkles, FlaskConical, Shield, Heart } from "lucide-react";
-import { SUPPORT, ALLIES, selectionProblem, actionCost, defaultQuestionAbility, firstAidHealing } from "@shared/combat/abilities";
+import { SUPPORT, ALLIES, selectionProblem, actionCost, defaultQuestionAbility } from "@shared/combat/abilities";
 import { JOB_TREE } from "@shared/jobSystem";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 const names: Record<string, string> = {
@@ -107,9 +108,8 @@ export default function Combat() {
       .flatMap((r) => r.abilities || [])
       .find((a) => a.id === id);
   const label = (id: string) => id === "craft_healing_potion" && p?.healingPotions === 0 ? "Create potion" : definition(id)?.name || (id === "attack" ? "Attack" : id.replaceAll("_", " "));
-  const description = (id: string) => id === "first_aid" && p
-    ? `Heal a living ally for ${firstAidHealing(p.stats.mnd)} HP. No MP cost. Requires a correct answer.`
-    : definition(id)?.description || "Deal your base damage to an enemy.";
+  const preview = (id: string) => p ? abilityPreview(p, id, phase === "actions" || phase === "question") : "";
+  const description = (id: string) => definition(id)?.description || "Deal your base damage to an enemy.";
   const costLabel = (id: string) => {
     if (!p) return "";
     const c = actionCost(p, id);
@@ -223,7 +223,7 @@ export default function Combat() {
                   }}
                 >
                   {id === "first_aid" ? <Heart aria-hidden size={20} className="shrink-0" /> : id.includes("potion") ? <FlaskConical aria-hidden size={20} className="shrink-0" /> : id.includes("block") || id.includes("shield") ? <Shield aria-hidden size={20} className="shrink-0" /> : actionCost(p, id).mp || id.startsWith("mana") ? <Sparkles aria-hidden size={20} className="shrink-0" /> : <Swords aria-hidden size={20} className="shrink-0" />}
-                  <span><span className="block font-semibold">{label(id)}</span><span className="block text-xs font-normal">{selectionProblem(p, id) || costLabel(id)}</span></span>
+                  <span><span className="block font-semibold">{label(id)}</span><span className="block text-xs font-normal">{costLabel(id)}</span>{preview(id) && <span className="block text-xs font-normal" data-testid={`ability-preview-${id}`}>{preview(id)}</span>}{selectionProblem(p, id) && <span className="block text-xs font-normal">{selectionProblem(p, id)}</span>}</span>
                 </Button>
               ))}
             </div>
@@ -267,6 +267,7 @@ export default function Combat() {
                 ? `Selected: ${label(p.questionAction?.ability || defaultQuestionAbility(p.characterClass))}`
                 : `Selected: ${p.supportActions.map((a) => label(a.ability)).join(", ") || "none"}`}
             </p>
+            <p className="text-xs text-muted-foreground">Values use current stats and resources. Damage bonuses and earlier actions can change the result; healing is capped by missing HP.</p>
             <p className="text-xs text-muted-foreground">Costs are reserved for your selected actions and spent when they resolve. Question actions require a correct answer.</p>
             {phase === "abilities" && <Button onClick={() => send("ready")} disabled={!canAct}>
               {p.supportActions.length ? "Ready — finish choices" : "Ready — no support actions"}

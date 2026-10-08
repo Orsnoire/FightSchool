@@ -154,9 +154,14 @@ test("student question, action, waiting, and resolution share a focused non-dism
     state.players.ally = { ...structuredClone(state.players[student().id]), studentId: "ally", nickname: "Wounded ally", health: 1 };
     await emit();
     assert.ok(button("Confirm First Aid & Ready"));
-    assert.match(dialog().textContent!, /Heal a living ally for 3 HP/);
-    assert.ok([...dialog().querySelectorAll("button")].some(b => b.textContent === "First AidNo cost" && !b.disabled));
-    assert.equal([...dialog().querySelectorAll("button")].some(b => b.textContent === "AttackNo cost"), false);
+    assert.equal(dialog().querySelector('[data-testid="ability-preview-first_aid"]')?.textContent, "Heals up to 3 HP");
+    assert.ok([...dialog().querySelectorAll("button")].some(b => b.textContent?.startsWith("First AidNo cost") && !b.disabled));
+    assert.equal([...dialog().querySelectorAll("button")].some(b => b.textContent?.startsWith("AttackNo cost")), false);
+    // Values update from the next authoritative snapshot without another selection.
+    state.players[student().id].stats.mnd = 12;
+    await emit();
+    assert.equal(dialog().querySelector('[data-testid="ability-preview-first_aid"]')?.textContent, "Heals up to 4 HP");
+    assert.equal(dialog().querySelector('[data-testid="ability-preview-mend"]')?.textContent, "Heals up to 12 HP");
     const healTarget = dialog().querySelector('[aria-label="Ally targets"] button') as HTMLButtonElement;
     assert.match(healTarget.getAttribute("aria-label")!, /Wounded ally/);
     await act(async () => healTarget.click());

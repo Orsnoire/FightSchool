@@ -73,3 +73,13 @@ Worker version: `4ba61e1d-374d-4224-a0d4-cda88a62e442`.
 then passed combat, storage and 30-participant classroom checks against that
 deployment. Departure-specific behavior is covered by automated and browser
 tests; the live acceptance harness checks the established combat flows.
+
+## Calculated ability values (implemented in review, not deployed)
+
+Action cards now display current base damage, healing capacity and quantitative
+support effects alongside costs and unavailable reasons. Values follow the
+current server snapshot. Headshot assumes the current answer succeeds and counts
+that answer; Fireblast uses current MP. Multi-hit, party, critical and conditional
+effects are labeled explicitly. The lobby shows equivalent starting-encounter
+values from its loaded gear and progression. See the [release queue](release-queue.md)
+for validation/review status and the remaining two polish items.

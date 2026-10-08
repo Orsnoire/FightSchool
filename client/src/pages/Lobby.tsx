@@ -1,3 +1,4 @@
+import { abilityPreview, type AbilityContext } from "@shared/combat/abilityValues";
 import { fetchEquipmentItems } from "@/lib/equipment";
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
 import { equipmentExclusion } from "@shared/equipment-rules";
@@ -15,7 +16,7 @@ import { AvatarAppearanceEditor } from '@/components/AvatarAppearanceEditor';
 import { StaticAvatar } from '@/components/StaticAvatar';
 import { useAvatarAppearance } from '@/hooks/useAvatarAppearance';
 import { initialAppearance, AVATAR_JOBS, JOB_PRESENTATION, type AvatarJob } from '@shared/avatar/appearance';
-import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, BASE_CLASSES, ALL_CHARACTER_CLASSES, WEAPON_RESTRICTIONS } from "@shared/schema";
+import { type Student, type EquipmentSlot, type StudentJobLevel, type CharacterClass, type EquipmentItemDb, type BaseClass, type Guild, type EquipmentStats, BASE_CLASSES, ALL_CHARACTER_CLASSES, WEAPON_RESTRICTIONS } from "@shared/schema";
 import { LogOut, Swords, BarChart3, TrendingUp, Sword, Shield, Crown, RefreshCw, Heart, Zap, Crosshair, Sparkles, Brain, Wind, Users, Trophy, Lock, X, Filter, ShoppingBag } from "lucide-react";
 import { JOB_ABILITY_SLOTS, ABILITY_DISPLAYS, type AbilityClass } from "@shared/abilityUI";
 import { useToast } from "@/hooks/use-toast";
@@ -224,7 +225,7 @@ export default function Lobby() {
 
   // Fetch equipped items
   const equippedItemIds = EQUIPMENT_SLOTS.map(slot => student?.[slot]).filter(Boolean) as string[];
-  const { data: equippedItems = [] } = useQuery<EquipmentItemDb[]>({
+  const { data: equippedItems = [], isFetching: equipmentFetching, isError: equipmentError } = useQuery<EquipmentItemDb[]>({
     queryKey: ['equipment-items', { ids: equippedItemIds.sort() }],
     queryFn: async () => {
       if (equippedItemIds.length === 0) return [];
@@ -408,6 +409,16 @@ export default function Lobby() {
     return <div className="min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-black flex items-center justify-center">Loading...</div>;
   }
 
+  const previewLevels = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, jobLevels.find(row => row.jobClass === job)?.level || 0])) as Record<CharacterClass, number>;
+  const previewEquipment: EquipmentStats = {str: 0, int: 0, agi: 0, mnd: 0, vit: 0, def: 0, atk: 0, mat: 0, rtk: 0};
+  for (const item of equippedItems) for (const key of Object.keys(previewEquipment) as (keyof EquipmentStats)[]) previewEquipment[key] += item.stats[key] || 0;
+  const previewStats = calculateCharacterStats(student.characterClass, previewEquipment, getTotalPassiveBonuses(previewLevels), getTotalMechanicUpgrades(previewLevels));
+  const previewPlayer: AbilityContext = {characterClass: student.characterClass, stats: previewStats, jobLevels: previewLevels,
+    health: previewStats.maxHp, maxHealth: previewStats.maxHp,
+    mp: student.characterClass === "wizard" ? Math.floor(previewStats.maxMp / 2) : previewStats.maxMp,
+    healingPotions: 5, shieldPotions: 0, consecutiveCorrectAnswers: 0};
+  const showAbilityValues = !equipmentFetching && !equipmentError && jobLevels.length > 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-black">
       <header className="sticky top-0 z-50 border-b border-border bg-card">
@@ -535,28 +546,7 @@ export default function Lobby() {
                       <div className="space-y-3">
                         <div className="text-sm font-semibold text-muted-foreground">Character Stats</div>
                         {(() => {
-                          // Calculate complete stats
-                          const equipmentStats = {
-                            str: 0, int: 0, agi: 0, mnd: 0, vit: 0,
-                            def: 0, atk: 0, mat: 0, rtk: 0
-                          };
-                          
-                          // Add equipped item bonuses using new stat system
-                          equippedItems.forEach(item => {
-                            equipmentStats.str += item.stats.str || 0;
-                            equipmentStats.int += item.stats.int || 0;
-                            equipmentStats.agi += item.stats.agi || 0;
-                            equipmentStats.mnd += item.stats.mnd || 0;
-                            equipmentStats.vit += item.stats.vit || 0;
-                            equipmentStats.def += item.stats.def || 0;
-                            equipmentStats.atk += item.stats.atk || 0;
-                            equipmentStats.mat += item.stats.mat || 0;
-                            equipmentStats.rtk += item.stats.rtk || 0;
-                          });
-                          
-                          const mechanicUpgrades = getTotalMechanicUpgrades(jobLevelMap);
-                          const stats = calculateCharacterStats(student.characterClass, equipmentStats, passiveBonuses, mechanicUpgrades);
-                          
+                          const stats = previewStats;
                           return (
                             <>
                               {/* Primary Stats */}
@@ -682,7 +672,8 @@ export default function Lobby() {
                   
                   return (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {Object.entries(abilitySlots).map(([levelKey, abilityId]) => {
+                      <p className="text-xs text-muted-foreground md:col-span-2">Values use your equipped gear and starting combat resources. Target bonuses and missing HP affect final results.</p>
+                      {[...(student.characterClass === "priest" ? [["level1", "first_aid"]] : []), ...Object.entries(abilitySlots)].map(([levelKey, abilityId]) => {
                         // Extract number from "level1", "level4", etc.
                         const unlockLevel = parseInt(levelKey.replace("level", ""));
                         const isUnlocked = currentClassLevel >= unlockLevel;
@@ -710,7 +701,7 @@ export default function Lobby() {
                                   </div>
                                   <div className="text-xs text-muted-foreground mt-1">
                                     {isUnlocked ? (
-                                      <p>{abilityDisplay.description}</p>
+                                      <><p>{abilityDisplay.description}</p>{showAbilityValues && abilityPreview(previewPlayer, abilityId, true) && <p className="mt-1 font-semibold" data-testid={`lobby-ability-preview-${abilityId}`}>{abilityPreview(previewPlayer, abilityId, true)}</p>}</>
                                     ) : (
                                       <div className="flex items-center gap-1">
                                         <Lock className="h-3 w-3" />
