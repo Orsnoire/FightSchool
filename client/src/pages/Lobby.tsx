@@ -474,24 +474,12 @@ export default function Lobby() {
                   <p className="text-muted-foreground capitalize">{student.characterClass}</p>
                 </div>
                 <div className="w-full space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Weapon:</span>
-                    <span className="font-semibold capitalize" data-testid="text-weapon">
-                      {student.weapon ? equippedItemsMap[student.weapon]?.name || "None" : "None"}
+                  {EQUIPMENT_SLOTS.map(slot => <div key={slot} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">{SLOT_LABELS[slot]}:</span>
+                    <span className="font-semibold text-right" data-testid={`text-${slot}`}>
+                      {student[slot] ? (equippedItemsMap[student[slot]] ? `${equippedItemsMap[student[slot]].name} · Tier ${equippedItemsMap[student[slot]].tier}` : "Loading item…") : "None"}
                     </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Headgear:</span>
-                    <span className="font-semibold capitalize" data-testid="text-headgear">
-                      {student.headgear ? equippedItemsMap[student.headgear]?.name || "None" : "None"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Armor:</span>
-                    <span className="font-semibold capitalize" data-testid="text-armor">
-                      {student.armor ? equippedItemsMap[student.armor]?.name || "None" : "None"}
-                    </span>
-                  </div>
+                  </div>)}
                 </div>
                 
                 <Button
@@ -835,12 +823,13 @@ export default function Lobby() {
                                 ) : (
                                   <div className="text-muted-foreground">
                                     {item.slot === "weapon" && <Sword className="h-12 w-12" />}
-                                    {item.slot === "armor" && <Shield className="h-12 w-12" />}
+                                    {item.slot !== "weapon" && item.slot !== "headgear" && <Shield className="h-12 w-12" />}
                                     {item.slot === "headgear" && <Crown className="h-12 w-12" />}
                                   </div>
                                 )}
                               </div>
                               <p className="font-semibold text-sm">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">Tier {item.tier}</p>
                               <p className="text-xs text-muted-foreground capitalize">{item.quality}</p>
                               <div className="text-xs mt-1 space-y-0.5">
                                 {item.stats.str && item.stats.str > 0 && <div className="text-damage">+{item.stats.str} STR</div>}

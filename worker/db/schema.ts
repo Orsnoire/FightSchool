@@ -148,6 +148,7 @@ export const students = pgTable(
     hands: text("hands"),
     legs: text("legs"),
     feet: text("feet"),
+    arms: text("arms"),
     crossClassAbility1: text("cross_class_ability_1"),
     crossClassAbility2: text("cross_class_ability_2"),
     inventory: jsonb("inventory").$type<string[]>().notNull().default([]),

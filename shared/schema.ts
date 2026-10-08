@@ -1,3 +1,4 @@
+import { EQUIPMENT_SLOTS, type EquipmentSlot } from "./equipment-slots";
 import { z } from "zod";
 import { STARTER_EQUIPMENT, STARTER_LOADOUTS } from "./equipment-catalog";
 import { getTotalPassiveBonuses, getTotalMechanicUpgrades } from "./jobSystem";
@@ -26,8 +27,8 @@ export const TANK_CLASSES: CharacterClass[] = ["warrior", "paladin", "dark_knigh
 export const HEALER_CLASSES: CharacterClass[] = ["herbalist", "priest", "paladin"];
 export type Gender = "A" | "B";
 export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
-export type EquipmentSlot = "weapon" | "headgear" | "armor" | "offhand" | "hands" | "legs" | "feet";
-export type ItemType = "shield" | "potion" | "quiver" | "gloves" | "leggings" | "boots" | "sword" | "wand" | "bow" | "staff" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
+export type { EquipmentSlot } from "./equipment-slots";
+export type ItemType = "shield" | "potion" | "quiver" | "bracers" | "gloves" | "leggings" | "boots" | "sword" | "wand" | "bow" | "staff" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon" | "light_armor" | "leather_armor" | "armor" | "helmet" | "cap" | "hat" | "consumable";
 export type ItemQuality = "common" | "rare" | "epic" | "legendary";
 export type WeaponType = "sword" | "staff" | "bow" | "herbs" | "two-handed-sword" | "fist" | "claws" | "harp" | "spoon";
 
@@ -333,6 +334,7 @@ export interface CombatState {
 
 // Equipment item definition
 export interface EquipmentItem {
+  tier?: number; // Permanent low-stat starter gear is Tier 0; other built-ins default to 1.
   id: string;
   name: string;
   slot: EquipmentSlot;
@@ -598,6 +600,11 @@ export function calculateEquipmentStats(weapon: string | null, headgear: string 
   }
   
   return stats;
+}
+
+/** Sum every registered slot; custom database items are added by the repository. */
+export function calculateLoadoutEquipmentStats(loadout: Partial<Record<EquipmentSlot, string | null>>): EquipmentStats {
+  return calculateEquipmentStats(null, null, null, ...EQUIPMENT_SLOTS.map(slot => loadout[slot] ?? null));
 }
 
 // Base job starting stats (these are NOT awarded as passive bonuses)
@@ -950,8 +957,8 @@ export type InsertGuildMembership = typeof DB.guildMemberships.$inferInsert;
 export type InsertGuildFight = typeof DB.guildFights.$inferInsert;
 export const insertEquipmentItemSchema = z.object({
  teacherId:z.string(),name:z.string().min(1),iconUrl:z.string().nullable().optional(),
- itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable','shield','potion','quiver','gloves','leggings','boots']),
- quality:z.enum(['common','rare','epic','legendary']),tier:z.number().int().min(1).max(10).default(1),slot:z.enum(['weapon','headgear','armor','offhand','hands','legs','feet']),
+ itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable','shield','potion','quiver','bracers','gloves','leggings','boots']),
+ quality:z.enum(['common','rare','epic','legendary']),tier:z.number().int().min(1).max(10).default(1),slot:z.enum(EQUIPMENT_SLOTS),
  armorCategory:z.enum(['heavy_armor','leather_armor','light_armor']).nullable().optional(),
  offhandType:z.enum(['shield','potion','quiver']).nullable().optional(),
  weaponType:z.enum(['sword','staff','bow','herbs','two-handed-sword','fist','claws','harp','spoon']).nullable().optional(),

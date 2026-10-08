@@ -78,6 +78,13 @@
       "when": 1791406800000,
       "tag": "0010_fractional_participation_xp",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791410400000,
+      "tag": "0011_equipment_arms",
+      "breakpoints": true
     }
   ]
 }

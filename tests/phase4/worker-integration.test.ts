@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { neonConfig } from "@neondatabase/serverless";
+import { combatProfile, gameDatabase } from "../../worker/db/game-repository.ts";
 import worker from "../../worker/index.ts";
 import { EQUIPMENT_SLOTS, STARTER_ITEM_IDS } from "../../shared/equipment-catalog.ts";
 import { initialAppearance, PALETTES } from "../../shared/avatar/appearance.ts";
@@ -16,9 +17,21 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
   let subrequests = 0;
   try {
     const journal = JSON.parse(readFileSync(new URL("../../migrations/cloudflare/meta/_journal.json", import.meta.url), "utf8"));
+    let legacyLoadout: Record<string, unknown> | undefined;
+    const legacyId = '00000000-0000-4000-8000-000000000011';
     for (const { tag } of journal.entries) {
+      if (tag === '0011_equipment_arms') {
+        await pg.query(`INSERT INTO students (id,nickname,nickname_normalized,password_hash,weapon,armor,headgear,hands,legs,feet,offhand,inventory,gold)
+          VALUES ($1,'Legacy','legacy','test','custom-sword','custom-chest','custom-head','custom-hands','custom-pants','custom-feet','custom-shield','["saved-upgrade"]',17)`, [legacyId]);
+        legacyLoadout = (await pg.query('SELECT * FROM students WHERE id=$1', [legacyId])).rows[0];
+      }
       await pg.exec(readFileSync(new URL(`../../migrations/cloudflare/${tag}.sql`, import.meta.url), "utf8"));
     }
+    const migrated = (await pg.query<Record<string, unknown>>('SELECT * FROM students WHERE id=$1', [legacyId])).rows[0];
+    assert.equal(migrated.arms, null);
+    const { arms: _arms, ...preserved } = migrated;
+    assert.deepEqual(preserved, legacyLoadout, 'arms migration preserves every existing student field');
+    await pg.query('DELETE FROM students WHERE id=$1', [legacyId]);
     neonConfig.fetchFunction = async (_url, init) => {
       if (++subrequests > 50) {
         databaseErrors.push("Worker external subrequest budget exceeded");
@@ -115,7 +128,15 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     const stock = (await api(`/api/student/${student.payload.id}`, 'GET', student.cookie)).payload.inventory;
     assert.ok(STARTER_ITEM_IDS.every(item => stock.includes(item)));
     assert.equal(new Set(stock).size, stock.length);
+    const metadata = (await api(`/api/equipment-items?ids=${STARTER_ITEM_IDS.join(',')},plate_armor`, 'GET', student.cookie)).payload;
+    for (const id of STARTER_ITEM_IDS) assert.equal(metadata.find((item: any) => item.id === id).tier, 0);
+    assert.equal(metadata.find((item: any) => item.id === "plate_armor").tier, 1);
     const equipPath = `/api/student/${student.payload.id}/equipment`;
+    await api(equipPath, 'PATCH', student.cookie, {arms:'basic_plate_arms'},400);
+    await api(equipPath, 'PATCH', student.cookie, {arms:'basic_cloth_arms'});
+    await api(equipPath, 'PATCH', student.cookie, {hands:'basic_cloth_arms'},400);
+    await api(equipPath, 'PATCH', student.cookie, {arms:null});
+    assert.equal((await api(`/api/student/${student.payload.id}`, 'GET', student.cookie)).payload.arms, null);
     await api(equipPath, 'PATCH', student.cookie, {armor:'basic_armor'},400);
     await api(equipPath, 'PATCH', student.cookie, {hands:'basic_leather_gloves'},400);
     await api(equipPath, 'PATCH', student.cookie, {weapon:'legendary_blade'},400);
@@ -135,6 +156,32 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(scout.payload.offhand,'basic_quiver');
     await api(equipPath, 'PATCH', student.cookie, {headgear:'basic_helm'},400);
     assert.ok(STARTER_ITEM_IDS.every(item => scout.payload.inventory.includes(item)));
+    await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
+    // Every registered slot persists and contributes exactly once to combat stats.
+    await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'warrior',gender:'A'});
+    const customLoadout: Record<string, string> = {};
+    for (const [index, slot] of EQUIPMENT_SLOTS.entries()) {
+      const created = await api('/api/equipment-items', 'POST', teacher.cookie, {
+        name: `Upgrade ${slot}`, slot, itemType: slot === 'weapon' ? 'sword' : slot === 'offhand' ? 'shield' : 'bracers',
+        weaponType: slot === 'weapon' ? 'sword' : null, offhandType: slot === 'offhand' ? 'shield' : null,
+        armorCategory: slot === 'weapon' || slot === 'offhand' ? null : 'heavy_armor',
+        quality:'common', tier:1, stats:{str:index + 1,agi:1},
+      }, 201);
+      customLoadout[slot] = created.payload.id;
+    }
+    await api(equipPath, 'PATCH', student.cookie, {arms:customLoadout.arms},400);
+    await pg.query('UPDATE students SET inventory = inventory || $1::jsonb WHERE id=$2', [JSON.stringify(Object.values(customLoadout)), student.payload.id]);
+    await api(equipPath, 'PATCH', student.cookie, customLoadout);
+    const sameJob = (await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'warrior',gender:'A'})).payload;
+    for (const slot of EQUIPMENT_SLOTS) assert.equal(sameJob[slot], customLoadout[slot]);
+    subrequests = 0;
+    const profile = await combatProfile(gameDatabase(env.DATABASE_URL), sameJob);
+    assert.equal(profile.equipment?.str, 36);
+    assert.equal(profile.equipment?.agi, 8);
+    await api('/api/equipment-items', 'POST', teacher.cookie, {name:'Not a starter',slot:'arms',itemType:'bracers',quality:'common',tier:0,stats:{}},400);
+    await api(`/api/equipment-items/${customLoadout.arms}`, 'PATCH', teacher.cookie, {tier:2});
+    await api(equipPath, 'PATCH', student.cookie, {arms:null});
+    await api(equipPath, 'PATCH', student.cookie, {arms:customLoadout.arms},400);
     await api(`/api/student/${student.payload.id}/character`, 'PATCH', student.cookie, {characterClass:'wizard',gender:'A'});
     const guild = await api("/api/guilds", "POST", teacher.cookie, { name: "Test guild" }, 201);
     await api(`/api/guilds/${guild.payload.id}/members`, "POST", student.cookie, { studentId: student.payload.id });

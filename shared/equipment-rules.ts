@@ -1,4 +1,5 @@
 import { EQUIPMENT_ITEMS, WEAPON_RESTRICTIONS, type CharacterClass, type EquipmentSlot, type WeaponType } from './schema';
+import { SLOT_DEFINITIONS } from './equipment-slots';
 import { ARMOR_EXCLUSIONS, type ArmorCategory } from './equipment-catalog';
 export interface EquippableItem {
  id:string;slot:EquipmentSlot;weaponType?:string|null;armorCategory?:string|null;
@@ -8,7 +9,7 @@ export function armorCategory(item:EquippableItem):ArmorCategory|null {
  if(item.armorCategory)return item.armorCategory as ArmorCategory;
  if(['armor','helmet'].includes(item.itemType||'') || ['chainmail','plate_armor','dragon_scale','steel_helmet'].includes(item.id))return 'heavy_armor';
  if(item.itemType==='leather_armor'||['leather_armor','leather_helm'].includes(item.id))return 'leather_armor';
- if(['headgear','armor','hands','legs','feet'].includes(item.slot))return 'light_armor';
+ if(SLOT_DEFINITIONS[item.slot].armor)return 'light_armor';
  return null;
 }
 export function weaponType(item:EquippableItem):string|null {return item.weaponType || (item.itemType==='wand'?'staff':item.slot==='weapon'?item.itemType:null) || null;}
