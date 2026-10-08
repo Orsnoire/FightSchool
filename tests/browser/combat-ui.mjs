@@ -183,13 +183,14 @@ try {
     assert.match(await comparison.textContent(),/Requires removing Fighter's Shield/);
     assert.match(await comparison.textContent(),/-2/);
     const box=await comparison.boundingBox();
-    assert.ok(box.x>=0 && box.y>=0 && box.x+box.width<=viewport.width+1 && box.y+box.height<=viewport.height+1,'comparison fits viewport');
+    assert.ok(box.x>=0 && box.y>=0 && box.x+box.width<=viewport.width+1 && box.y+box.height<=viewport.height+1,`comparison fits viewport: ${JSON.stringify({viewport,box})}`);
     assert.equal(claims,0,'comparison never claims or equips');
     await page.screenshot({path:`${output}/${viewport.width}-gear-comparison.png`});
     await page.keyboard.press('Escape');
     await comparison.waitFor({state:'hidden'});
+    await compare.evaluate(element=>element.blur());
     await compare.focus();
-    await compare.press("Enter");
+    if(viewport.width>600) await compare.press("Enter");
     await comparison.waitFor();
     await page.keyboard.press('Escape');
     await comparison.waitFor({state:'hidden'});

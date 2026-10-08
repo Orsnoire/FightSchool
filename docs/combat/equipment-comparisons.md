@@ -8,7 +8,8 @@ bonuses before changing gear. This is available in the lobby equipment picker,
 guild shop and loot reward cards. The dedicated equipment screen retains its
 slot selectors and adds expandable **Compare [slot] options** lists with the
 same hover/focus/tap comparison. Close, Escape or clicking outside dismisses it.
-The panel is sized to the viewport and scrolls internally on small screens.
+Desktop uses a side-positioned hover panel. Phones use a centered comparison
+dialog with an explicit Close button, sized to the viewport and internally scrollable.
 
 The panel names the candidate and currently equipped item, then shows Current,
 After and signed Change values for STR, INT, AGI, MND, VIT, DEF, ATK, MAT and RTK.
