@@ -10,9 +10,10 @@ default rules, PNG decoding and actual alpha transparency.
 - `goblin-v1.png`: previously approved single-creature sprite from the goblin swarm branch.
 - `zombie-v2.png`, `ghost-v2.png`, `spider-v2.png`: generated replacement sprites,
   visually inspected and verified as transparent PNGs.
-- `vampire-v2.png`, `slime-v2.png`, `samhain-v2.png`: generation was interrupted.
-  These files are pending; the asset verification gate intentionally fails until
-  they are supplied and reviewed. Do not deploy this draft with missing sprites.
+- `vampire-v2.png`, `slime-v2.png`, `samhain-v2.png`: completed after resuming
+  generation, visually inspected, and verified as transparent PNGs. Each has a
+  full, left-facing silhouette without a backdrop. All seven registered sprites
+  are now present.
 
 ## Generation prompts
 
@@ -40,7 +41,7 @@ One ghost only, without extra objects.
 Spider: violet-black chitin, plum abdomen, exactly eight legs, amber eyes, ivory
 fangs and a small green poison accent. Facing left, no web backdrop.
 
-Pending subjects: a pale aristocratic vampire in a black coat and crimson cape;
-an emerald gelatinous slime with amber eyes; and Samhain as a skull-faced hooded
-harvest lord in black iron and bronze armor, with a pumpkin ornament and scythe.
-Samhain's skull face must remain visible; his head is not a pumpkin.
+The final Vampire, Slime and Samhain prompts are recorded in
+[remaining-sprite-prompts.md](remaining-sprite-prompts.md). Samhain retains a
+visible skull face under his hood, black iron and bronze harvest armor, pumpkin
+ornaments and a scythe.
