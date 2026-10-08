@@ -32,14 +32,14 @@ export function starterVisual(job:AvatarJob) {
 }
 interface JobPresentation {name:string;head:string;right:string;left:string;clothing:string;missingWeapon:string|null}
 export const JOB_PRESENTATION=Object.fromEntries(AVATAR_JOBS.map(job=>{
- const visual=starterVisual(job),body=visual.body;
+ const visual=starterVisual(job),body=visual.body,weapon=STARTER_LOADOUTS[job].weapon;
  return [job,{
   name:job.split('_').map(word=>word[0].toUpperCase()+word.slice(1)).join(' '),
   head:{warrior:'Imperial Italic helmet',wizard:'Purple conical hat',scout:'Brown rake’s cap',herbalist:'Gold & green laurel'}[visual.headwear],
-  right:body==='warrior'?'Sword':body==='wizard'?'Staff':body==='herbalist'?'Herbs':'Empty',
+  right:body==='warrior'?'Sword':body==='wizard'?'Staff':body==='herbalist'?'Herbs':weapon==='basic_claymore'?'Claymore':weapon==='basic_fist'?'Fist wraps':weapon==='basic_harp'?'Harp':'Empty',
   left:body==='warrior'?'Shield':body==='scout'?'Bow':body==='herbalist'?'Potion':'Empty',
   clothing:visual.armor==='plate'?'Steel & blue armor':visual.armor==='leather'?'Brown leather armor'+(body==='scout'?' · right-shoulder quiver':''):'Grey linen robes'+(body==='herbalist'?' · green herb pouch':''),
-  missingWeapon:visual.missingWeapon,
+  missingWeapon:null,
  }];
 })) as Record<AvatarJob,JobPresentation>;
 

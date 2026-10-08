@@ -568,3 +568,10 @@ When making a development decision, ask:
 > Does this move QuestAcademy toward a robust, reusable educational RPG platform, or merely preserve an accident of the prototype?
 
 Prefer the former.
+
+## Equipped gear artwork — review pending
+
+[Equipped gear visuals](avatar-equipment-visuals.md) records the October 7 owner
+direction: independent static slot rendering, Tier 0-based Tier 1 recolors and
+missing weapon art. The head-stat change was withdrawn; prior bonuses remain.
+This implementation is not deployed and does not satisfy the animation gate.

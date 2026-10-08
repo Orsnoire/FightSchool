@@ -1,0 +1,31 @@
+{
+  "id": "equipment-static-v1",
+  "status": "review",
+  "animationReady": false,
+  "date": "2026-10-08",
+  "models": [
+    "human-male-v1",
+    "human-female-v1"
+  ],
+  "view": "front",
+  "renderer": "shared/avatar/static-renderer.ts",
+  "fits": "shared/avatar/equipment-parts.ts",
+  "sources": {
+    "props.png": {
+      "path": "attached_assets/characters/human/equipment-static-v1/source/props.png",
+      "sha256": "ed3afb35e8d0a943f0d707e8a1656e157f8eca71819ee4f123b02e2a80bdae4b"
+    },
+    "tier-one-caster.png": {
+      "path": "attached_assets/characters/human/equipment-static-v1/source/tier-one-caster.png",
+      "sha256": "000b4c54e555db3163589860fb915ac4f38974c86c30472df9ca291a37d7e3d3"
+    },
+    "starter-harp.png": {
+      "path": "attached_assets/characters/human/equipment-static-v1/source/starter-harp.png",
+      "sha256": "8a13e73b0e1438ee624ef76aa4d67cd792f54f17dcc838f4d90942426b22771f"
+    },
+    "tier-one-outfits.png": {
+      "path": "attached_assets/characters/human/equipment-static-v1/source/tier-one-outfits.png",
+      "sha256": "d7b6587af4c0da04584b6886e1182125037fcc3c93e7d1cbcc1f6a71950ce879"
+    }
+  }
+}

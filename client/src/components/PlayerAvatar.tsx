@@ -1,9 +1,11 @@
+import type { AvatarLoadout } from '@shared/avatar/equipment-visuals';
 import type { CharacterClass, Gender } from "@shared/schema";
 import { initialAppearance, type AvatarAppearance } from '@shared/avatar/appearance';
 import { StaticAvatar } from './StaticAvatar';
 import { Crown } from "lucide-react";
 
 interface PlayerAvatarProps {
+  loadout?: AvatarLoadout;
   appearance?: AvatarAppearance | null;
   characterClass: CharacterClass;
   gender?: Gender;
@@ -29,6 +31,7 @@ const CROWN_SIZE_CLASSES = {
 
 export function PlayerAvatar({
   appearance,
+  loadout,
   characterClass,
   gender,
   size = "md",
@@ -45,7 +48,7 @@ export function PlayerAvatar({
       className={`${SIZE_CLASSES[size]} ${showBorder ? `border-2 ${borderColor} rounded-md` : ""} overflow-visible bg-card ${className} relative`}
       data-testid={`avatar-${characterClass}-${gender}`}
     >
-      <StaticAvatar appearance={currentAppearance} job={characterClass} className="w-full h-full" />
+      <StaticAvatar appearance={currentAppearance} job={characterClass} loadout={loadout} className="w-full h-full" />
       {isThreatLeader && (
         <div 
           className="absolute -top-1 -right-1 bg-warning rounded-full p-0.5 border border-warning-foreground shadow-lg"

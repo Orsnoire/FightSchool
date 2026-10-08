@@ -7,6 +7,7 @@ import { initialAppearance, STARTER_JOBS, AVATAR_JOBS, PALETTES } from '../../..
 (globalThis as any).document = { createElement: () => createCanvas(1,1) };
 const root=resolve('attached_assets/characters/human');
 const urls=Object.fromEntries([
+ ...['tier-one-outfits','tier-one-caster','props','starter-harp'].map(name=>[name,`${root}/equipment-static-v1/source/${name}.png`]),
  ...['male','female'].flatMap(model=>['neutral','hair','eyes','skin'].map(channel=>[
    `${model}-${channel}`, `${root}/v1/recolor/${channel==='neutral'?`neutral/human-${model}-front.png`:`masks/human-${model}-front-${channel}.png`}`,
  ])),

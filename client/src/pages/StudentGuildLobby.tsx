@@ -371,6 +371,7 @@ export default function StudentGuildLobby() {
                       <div className="relative">
                         <PlayerAvatar
                           characterClass={classType}
+                          loadout={isCurrentClass?student:undefined}
                           appearance={savedAppearance.data}
                           gender={student?.gender || "A"}
                           size="md"

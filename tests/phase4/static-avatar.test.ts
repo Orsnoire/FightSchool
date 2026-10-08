@@ -21,7 +21,7 @@ test('job switches derive gear from the latest shared appearance without rerolli
  assert.equal(validAppearance({...changed,hairColorId:PALETTES.skin[0].id}),false);
 });
 
-test('all jobs reuse starter armor and unfinished weapon art gives empty hands',()=>{
+test('legacy atlas selection remains stable while starter descriptions cover advanced weapons',()=>{
  const appearance=initialAppearance(null,'human-male-v1',()=>0.35);
  assert.equal(AVATAR_JOBS.length,12);
  for(const job of AVATAR_JOBS)assert.deepEqual(selectAvatarJob(appearance,job).appearance,appearance);
@@ -32,7 +32,8 @@ test('all jobs reuse starter armor and unfinished weapon art gives empty hands',
  for(const job of ['blood_knight','monk','bard'] as const) {
   assert.equal(starterVisual(job).body,'empty-bodies');
   assert.ok(starterVisual(job).missingWeapon);
-  assert.equal(selectAvatarJob(appearance,job).kit.right,'Empty');
+  assert.notEqual(selectAvatarJob(appearance,job).kit.right,'Empty');
+  assert.equal(selectAvatarJob(appearance,job).kit.missingWeapon,null);
   assert.equal(selectAvatarJob(appearance,job).kit.left,'Empty');
  }
  assert.equal(starterVisual('blood_knight').armor,'plate');

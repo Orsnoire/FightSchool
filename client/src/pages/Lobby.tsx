@@ -398,10 +398,11 @@ export default function Lobby() {
                 <PlayerAvatar
                   characterClass={student.characterClass}
                   appearance={savedAppearance.data}
+                  loadout={student}
                   gender={student.gender}
                   size="lg"
                 />
-                {savedAppearance.data && <p className="text-xs text-muted-foreground">Starter appearance</p>}
+                {savedAppearance.data && <p className="text-xs text-muted-foreground">Equipped appearance</p>}
                 <div className="text-center">
                   <h2 className="text-2xl font-bold" data-testid="text-nickname">{student.nickname}</h2>
                   <p className="text-muted-foreground capitalize">{student.characterClass}</p>
@@ -972,13 +973,13 @@ export default function Lobby() {
           </DialogHeader>
           
           <div className="grid sm:grid-cols-2 gap-4 items-center">
-            <StaticAvatar appearance={appearanceDraft} job={previewJob} className="h-72 aspect-[1200/1950] mx-auto" />
+            <StaticAvatar appearance={appearanceDraft} job={previewJob} loadout={previewJob===student.characterClass?student:undefined} className="h-72 aspect-[1200/1950] mx-auto" />
             <div className="space-y-4">
               <label className="block text-sm">Preview job<select aria-label="Preview job" className="block w-full mt-1 rounded border p-2 bg-background" value={previewJob} onChange={e => setPreviewJob(e.target.value as AvatarJob)}>
                 {AVATAR_JOBS.map(job => <option key={job} value={job}>{JOB_PRESENTATION[job].name}</option>)}
               </select></label>
               <AvatarAppearanceEditor value={appearanceDraft} onChange={setAppearanceDraft} modelLocked />
-              <p className="text-sm text-muted-foreground">{JOB_PRESENTATION[previewJob].head} · Right: {JOB_PRESENTATION[previewJob].right} · Left: {JOB_PRESENTATION[previewJob].left}</p>
+              <p className="text-sm text-muted-foreground">{previewJob===student.characterClass?"Previewing your equipped gear.":"Starter gear preview. Returning jobs restore their saved loadout."}</p>
               <Button disabled={savedAppearance.isLoading || savedAppearance.isError || savedAppearance.saving} onClick={() => student.characterClass && handleClassChange(student.characterClass)}>Save Appearance</Button>
               {savedAppearance.isError && <p role="alert">Your saved appearance could not load. <button className="underline" onClick={() => savedAppearance.refetch()}>Try again</button></p>}
             </div>
@@ -1013,6 +1014,7 @@ export default function Lobby() {
                         <PlayerAvatar
                           characterClass={classType}
                           appearance={appearanceDraft}
+                          loadout={classType===student.characterClass?student:undefined}
                           gender={student.gender || undefined}
                           size="md"
                         />

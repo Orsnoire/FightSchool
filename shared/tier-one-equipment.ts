@@ -1,6 +1,6 @@
 import type { EquipmentItem, EquipmentSlot } from './schema';
 
-/** Visual briefs are metadata until individual equipment overlays are available. */
+/** Palette briefs for the static equipment art; animation coverage is separate. */
 export const TIER_ONE_STYLES = {
  healer: 'White robes with a white tasseled fringe, dark grey gloves, white trousers and shoes.',
  caster: 'Light violet robes with a dark reddish fringe, black gloves and shoes, purple trousers.',
@@ -9,7 +9,7 @@ export const TIER_ONE_STYLES = {
 };
 const armorSlots: EquipmentSlot[] = ['headgear','armor','arms','hands','legs','feet'];
 const names = {
- healer: ['Hood','Robes','Sleeves','Gloves','Trousers','Slippers'],
+ healer: ['Laurel','Robes','Sleeves','Gloves','Trousers','Slippers'],
  caster: ['Hat','Robes','Sleeves','Gloves','Trousers','Shoes'],
  forester: ['Cap','Jerkin','Bracers','Gloves','Trousers','Boots'],
  fighter: ['Helm','Cuirass','Vambraces','Gauntlets','Greaves','Sabatons'],

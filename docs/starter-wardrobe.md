@@ -166,3 +166,13 @@ job-level-2 gates, wand/book pairing, ankh healing and potion buffs. Tier 0 rema
 permanently owned and available at level 1. The new color/trim briefs are recorded;
 individual equipped-item art and animation remain pending. Migration 0013 extends
 the off-hand constraint for spell books and follows remembered-loadout migration 0012.
+
+
+## Equipped gear art — implemented for review, not deployed
+
+The [new static renderer](avatar-equipment-visuals.md) selects all eight slots
+from actual equipment, with Tier 1 recolors and static advanced weapons on both
+bodies. It supersedes the combined-starter-only visual boundary upon release.
+Healer’s Laurel keeps the previous head bonus; all other head bonuses and set
+budgets remain unchanged. Unknown custom gear uses neutral fallback artwork.
+Owner visual review, deployment, animation and custom art remain pending.
