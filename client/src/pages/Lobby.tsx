@@ -1,9 +1,10 @@
+import { EquipmentPermissions } from "@/components/EquipmentPermissions";
 import { useStudentLoadout } from "@/hooks/useStudentLoadout";
 import { saveStudentLoadout } from "@/lib/studentLoadout";
 import { abilityPreview, type AbilityContext } from "@shared/combat/abilityValues";
 import { fetchEquipmentItems } from "@/lib/equipment";
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
-import { equipmentExclusion } from "@shared/equipment-rules";
+import { equipmentUnavailable } from "@shared/equipment-rules";
 import { StaminaBar } from "@/components/StaminaBar";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
@@ -716,6 +717,7 @@ export default function Lobby() {
                 </div>
               </CardHeader>
               <CardContent>
+                <EquipmentPermissions job={student.characterClass} />
                 {student[selectedSlot] && <Button variant="outline" size="sm" className="mb-4" onClick={() => updateEquipment(selectedSlot,null)}>Unequip {SLOT_LABELS[selectedSlot]}</Button>}
                 {inventoryItems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
@@ -729,10 +731,10 @@ export default function Lobby() {
                         // Filter by slot
                         if (item.slot !== selectedSlot) return false;
                         
-                        if (equipmentExclusion(student.characterClass || 'warrior', item)) return false;
                         return true;
                       })
                       .map((item) => {
+                        const unavailable = equipmentUnavailable(student.characterClass!, item, jobLevels.find(row => row.jobClass === student.characterClass)?.level || 1, equippedItemsMap[student.weapon || ''] || null, equippedItemsMap[student.offhand || ''] || null);
                         const isEquipped =
                           student[selectedSlot] === item.id;
 
@@ -742,7 +744,8 @@ export default function Lobby() {
                             className={`cursor-pointer hover-elevate ${
                               isEquipped ? "ring-2 ring-primary" : ""
                             } border-2 ${RARITY_COLORS[item.quality as keyof typeof RARITY_COLORS]}`}
-                            onClick={() => updateEquipment(selectedSlot, item.id)}
+                            aria-disabled={!!unavailable}
+                            onClick={() => { if (!unavailable) updateEquipment(selectedSlot, item.id); }}
                             data-testid={`item-${item.id}`}
                           >
                             <CardContent className="p-4 text-center">
@@ -758,6 +761,7 @@ export default function Lobby() {
                                 )}
                               </div>
                               <p className="font-semibold text-sm">{item.name}</p>
+                              {unavailable && <p className="text-xs text-destructive">{unavailable}</p>}
                               <p className="text-xs text-muted-foreground">Tier {item.tier}</p>
                               <p className="text-xs text-muted-foreground capitalize">{item.quality}</p>
                               <div className="text-xs mt-1 space-y-0.5">

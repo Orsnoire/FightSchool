@@ -1,8 +1,9 @@
+import { EquipmentPermissions } from "@/components/EquipmentPermissions";
 import { useStudentLoadout } from "@/hooks/useStudentLoadout";
 import { saveStudentLoadout } from "@/lib/studentLoadout";
 import { fetchEquipmentItems } from "@/lib/equipment";
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
-import { equipmentExclusion } from "@shared/equipment-rules";
+import { equipmentUnavailable } from "@shared/equipment-rules";
 import type { EquipmentSlot } from "@shared/schema";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -83,7 +84,7 @@ export default function StudentEquipment() {
   };
 
   const getEquipmentOptions = (slot: EquipmentSlot) => {
-    return inventoryItems.filter(item => item.slot === slot && !equipmentExclusion(student?.characterClass || 'warrior',item));
+    return inventoryItems.filter(item => item.slot === slot);
   };
 
   if (studentLoading) {
@@ -126,6 +127,7 @@ export default function StudentEquipment() {
         </div>
 
         <div className="grid gap-6">
+          <EquipmentPermissions job={student.characterClass || 'warrior'} />
           {/* Equipment Section */}
           <Card data-testid="card-equipment">
             <CardHeader>
@@ -147,7 +149,10 @@ export default function StudentEquipment() {
                   <SelectTrigger id={`equipment-${slot}`} className="w-48" data-testid={`select-${slot}`}><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {getEquipmentOptions(slot).map(item => <SelectItem key={item.id} value={item.id}>{item.name} · Tier {item.tier}</SelectItem>)}
+                    {getEquipmentOptions(slot).map(item => {
+                      const reason = equipmentUnavailable(student.characterClass || 'warrior', item, jobLevelMap[student.characterClass || 'warrior'] || 1, equippedItemsMap[student.weapon || ''] || null, equippedItemsMap[student.offhand || ''] || null);
+                      return <SelectItem key={item.id} value={item.id} disabled={!!reason}>{item.name} · Tier {item.tier}{reason ? ` — ${reason}` : ''}</SelectItem>;
+                    })}
                   </SelectContent>
                 </Select>
               </div>)}

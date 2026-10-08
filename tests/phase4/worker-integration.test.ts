@@ -202,6 +202,21 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     const item = await api("/api/equipment-items", "POST", teacher.cookie, {
       name: "Test wand", itemType: "wand", weaponType: "staff", slot: "weapon", quality: "common", tier: 1, stats: { mat: 1 }, shopPrice: 1,
     }, 201);
+    for (const slot of ['headgear','armor','arms','hands','legs','feet']) {
+      const armor = {name:`Explicit ${slot}`,slot,itemType:'bracers',quality:'common',tier:1,stats:{}};
+      await api('/api/equipment-items','POST',teacher.cookie,armor,400);
+      await api('/api/equipment-items','POST',teacher.cookie,{...armor,armorCategory:null},400);
+      const created=await api('/api/equipment-items','POST',teacher.cookie,{...armor,armorCategory:'heavy_armor'},201);
+      await api(`/api/equipment-items/${created.payload.id}`,'PATCH',teacher.cookie,{armorCategory:null},400);
+      await api(`/api/equipment-items/${created.payload.id}`,'PATCH',teacher.cookie,{name:'Renamed armor'});
+    }
+    await api(`/api/equipment-items/${item.payload.id}`,'PATCH',teacher.cookie,{slot:'hands'},400);
+    await api(`/api/equipment-items/${item.payload.id}`,'PATCH',teacher.cookie,{armorCategory:'heavy_armor'},400);
+    // Legacy items keep inferred compatibility on unrelated edits, but classification edits require a category.
+    const legacyArmor=(await pg.query<{id:string}>(`INSERT INTO equipment_items (teacher_id,name,item_type,quality,tier,slot,stats) VALUES ($1,'Legacy gloves','gloves','common',1,'hands','{}') RETURNING id`,[teacher.payload.id])).rows[0];
+    await api(`/api/equipment-items/${legacyArmor.id}`,'PATCH',teacher.cookie,{name:'Legacy renamed'});
+    await api(`/api/equipment-items/${legacyArmor.id}`,'PATCH',teacher.cookie,{slot:'feet'},400);
+    await api(`/api/equipment-items/${legacyArmor.id}`,'PATCH',teacher.cookie,{armorCategory:'leather_armor'});
     const fight = await api("/api/fights", "POST", teacher.cookie, {
       teacherId: teacher.payload.id, title: "Integration fight",
       questions: [{ id: "q1", type: "short_answer", question: "2+2?", correctAnswer: "4", timeLimit: 30 }],

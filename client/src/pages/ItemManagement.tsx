@@ -1,3 +1,4 @@
+import { armorClassificationError } from "@shared/equipment-rules";
 import { SLOT_LABELS, EQUIPMENT_SLOTS as ALL_EQUIPMENT_SLOTS } from "@shared/equipment-catalog";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -30,6 +31,9 @@ const itemFormSchema = insertEquipmentItemSchema.extend({
     rtk: z.coerce.number().min(0).optional(),
     def: z.coerce.number().min(0).optional(),
   }).optional(),
+}).superRefine((item, context) => {
+  const error = armorClassificationError(item);
+  if (error) context.addIssue({code:'custom',path:['armorCategory'],message:error});
 });
 
 type ItemFormData = z.infer<typeof itemFormSchema>;
@@ -308,7 +312,7 @@ export default function ItemManagement() {
                     />
                   </div>
 
-                  <FormField control={form.control} name="armorCategory" render={({field}) => <FormItem><FormLabel>Armor category</FormLabel><FormControl><select className="block w-full rounded border p-2 bg-background" value={field.value || ''} onChange={e => field.onChange(e.target.value || null)}><option value="">Infer from item type</option><option value="heavy_armor">Plate / heavy</option><option value="leather_armor">Leather</option><option value="light_armor">Linen / unarmored clothing</option></select></FormControl><FormMessage /></FormItem>} />
+                  <FormField control={form.control} name="armorCategory" render={({field}) => <FormItem><FormLabel>Armor category</FormLabel><FormControl><select className="block w-full rounded border p-2 bg-background" value={field.value || ''} onChange={e => field.onChange(e.target.value || null)}><option value="">Select a category for armor</option><option value="heavy_armor">Plate / heavy</option><option value="leather_armor">Leather</option><option value="light_armor">Linen / unarmored clothing</option></select></FormControl><FormMessage /></FormItem>} />
                   <FormField control={form.control} name="offhandType" render={({field}) => <FormItem><FormLabel>Off-hand type</FormLabel><FormControl><select className="block w-full rounded border p-2 bg-background" value={field.value || ''} onChange={e => field.onChange(e.target.value || null)}><option value="">Infer from item type</option><option value="shield">Shield</option><option value="potion">Potion</option><option value="quiver">Quiver</option></select></FormControl><FormMessage /></FormItem>} />
 
                   <FormField

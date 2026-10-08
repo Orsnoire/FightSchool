@@ -107,7 +107,9 @@ implemented review branches from deployed behavior and records the remaining
 ordered tasks. First Aid and calculated ability values await the combined
 release. Informative loot choices and the eight-slot gear expansion with Tier 0
 starters, general loadout synchronization and the completed Tier 0 catalog are
-also implemented in review. Combined merge, migration and deployment remain pending. See [starter wardrobe](starter-wardrobe.md) for the additive Arms migration
+also implemented in review. Equipment permissions are visible on the loadout
+views, and new custom armor requires explicit classification; see the release queue.
+Combined merge, migration and deployment remain pending. See [starter wardrobe](starter-wardrobe.md) for the additive Arms migration
 and future slot extension hooks.
 
 ## Combat Flow Refactor

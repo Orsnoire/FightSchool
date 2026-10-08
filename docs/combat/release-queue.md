@@ -11,7 +11,8 @@ and deployment. No deployment is authorized for this intermediate checkpoint.
 | 1. Calculated ability values | Implemented and tested in [PR #38](https://github.com/Orsnoire/FightSchool/pull/38), based on PR #37 | Awaiting review and combined merge/deployment |
 | 2. Informative loot choices | Implemented and tested in [PR #39](https://github.com/Orsnoire/FightSchool/pull/39), based on PR #38 | Awaiting review and combined merge/deployment; names, icons, slot, rarity, tier and signed stats shown before claiming |
 | Gear expansion and Tier 0 starters | Implemented and tested in [PR #40](https://github.com/Orsnoire/FightSchool/pull/40), based on PR #39 | Awaiting review and combined release; migration 0011 required before Worker activation |
-| 3. Loadout display synchronization and Tier 0 completion | Implemented and tested in `feat/loadout-sync-starter-completion`, based on PR #40 | Awaiting review and combined release; shared cache refresh and complete starter catalog |
+| 3. Loadout display synchronization and Tier 0 completion | Implemented and tested in [PR #41](https://github.com/Orsnoire/FightSchool/pull/41), based on PR #40 | Awaiting review and combined release; shared cache refresh and complete starter catalog |
+| Equipment permissions and explicit armor classification | Implemented and tested in `feat/equipment-permissions`, based on PR #41 | Awaiting review and combined release; no extra migration |
 | Combined release | Pending | Finish the individual items, check the combined changes, merge, deploy and verify live behavior; update this table with release evidence |
 
 ## Item 1: calculated values
@@ -117,6 +118,27 @@ serialized edits, failure/retry, actual mounted equipment UI updates, complete
 starter compatibility and real API claymore equip/metadata. All individual batch
 items are implemented; combined review, merge, migration, deployment and live
 acceptance remain pending.
+
+## Equipment permissions and explicit armor classification
+
+The lobby equipment panel and equipment sheet display allowed weapons, armor
+categories and usable off-hand types from the shared enforcement rules. Owned
+incompatible items remain visible with job, level/tier or hand-pair explanations;
+they cannot be selected from these controls. The server remains authoritative.
+
+New items in any of the six armor slots require an explicit heavy, leather or
+cloth category in both the teacher form and API. Weapons/off hands cannot carry
+an armor category. Partial updates validate the merged item when changing slot,
+item type or category, so a PATCH cannot clear a required category or move a
+weapon into an unclassified armor slot. Legacy uncategorized items retain their
+existing inferred compatibility; unrelated API edits remain allowed. Editing
+legacy classification, or saving it through the full teacher form, requires a
+category choice. No existing items or stats are migrated or rebalanced.
+
+Validation: type checking, all 118 tests, production build and diff checks pass.
+Tests cover all six armor slots, omitted/null categories, merged PATCH checks,
+legacy preservation, permission display and job/tier/hand-pair explanations.
+Individual gear art, animation and per-job saved loadouts remain deferred.
 
 ## Larger work outside this batch
 

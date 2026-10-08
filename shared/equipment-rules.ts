@@ -36,3 +36,34 @@ export function handConflict(weapon:EquippableItem|null,offhand:EquippableItem|n
  return type!=='sword';
 }
 export const builtinItem=(id:string|null|undefined)=>id?EQUIPMENT_ITEMS[id]||null:null;
+
+export const ARMOR_LABELS:Record<ArmorCategory,string>={heavy_armor:'Heavy / plate',leather_armor:'Leather',light_armor:'Cloth / light'};
+export const WEAPON_LABELS:Record<WeaponType,string>={sword:'Sword',staff:'Staff',bow:'Bow',herbs:'Herbs','two-handed-sword':'Two-handed sword',fist:'Fist wraps',claws:'Claws',harp:'Harp',spoon:'Spoon'};
+export function equipmentPermissions(job:CharacterClass) {
+ return {
+  offhands:['shield','quiver','potion'].filter(kind=>{
+   const item={id:kind,slot:'offhand' as const,offhandType:kind};
+   return !equipmentExclusion(job,item) && WEAPON_RESTRICTIONS[job].some(type=>!handConflict({id:type,slot:'weapon',weaponType:type},item));
+  }),
+  weapons:WEAPON_RESTRICTIONS[job].map(type=>WEAPON_LABELS[type]),
+  armor:(Object.keys(ARMOR_LABELS) as ArmorCategory[]).filter(type=>!ARMOR_EXCLUSIONS[job].includes(type)).map(type=>ARMOR_LABELS[type]),
+ };
+}
+/** Required for new armor; legacy category inference remains read-compatible. */
+export function armorClassificationError(item:{slot:EquipmentSlot;armorCategory?:string|null}):string|null {
+ if(SLOT_DEFINITIONS[item.slot].armor && !item.armorCategory)return 'Choose an explicit armor category for this armor slot.';
+ if(!SLOT_DEFINITIONS[item.slot].armor && item.armorCategory)return 'Armor category applies only to body equipment slots.';
+ return null;
+}
+
+/** Display the same job, tier and hand-pair blockers that the equip API enforces. */
+export function equipmentUnavailable(job:CharacterClass,item:EquippableItem & {tier?:number},level:number,weapon:EquippableItem|null,offhand:EquippableItem|null):string|null {
+ const exclusion=equipmentExclusion(job,item);
+ if(exclusion)return exclusion;
+ const tier=item.tier ?? 1;
+ const required=tier===0?1:[1,2,4,6,8,10,11,12,13,15][tier-1];
+ if(level<required)return `Requires job level ${required} (Tier ${tier}).`;
+ if(item.slot==='weapon' && handConflict(item,offhand))return 'Remove the incompatible off-hand item first.';
+ if(item.slot==='offhand' && handConflict(weapon,item))return 'Equip a compatible weapon first.';
+ return null;
+}
