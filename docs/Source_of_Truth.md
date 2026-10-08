@@ -91,7 +91,7 @@ Guild progression is intended to support long-term classroom engagement across a
 The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
 record the latest explicit changes to XP stamina, Block targeting and threat,
 potion replenishment, encounter HP, and the approved Wizard/Scout balance. They
-supersede older conflicting rules for these systems. Priest First Aid remains deferred.
+supersede older conflicting rules for these systems. Priest First Aid replaces its basic attack; see the same document for solo and group safety.
 
 The October 7 corrections in the same document supersede raw enemy-difficulty
 multiplication and the shared question/action clock, and restore host resurrection.

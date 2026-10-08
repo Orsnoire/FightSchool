@@ -142,6 +142,27 @@ test("student question, action, waiting, and resolution share a focused non-dism
     state.players[student().id].consecutiveCorrectAnswers = 4;
     await emit();
     assert.match(dialog().textContent!, /Correct streak 4/);
+    // The real Priest action view defaults to free healing and targets living allies.
+    const revision = state.revision;
+    state = started("priest");
+    state.revision = revision + 1;
+    state.currentPhase = "actions";
+    state.phaseDeadline = Date.now() + 20000;
+    state.players[student().id].hasAnswered = true;
+    state.players[student().id].mp = 0;
+    state.players[student().id].stats.mnd = 9;
+    state.players.ally = { ...structuredClone(state.players[student().id]), studentId: "ally", nickname: "Wounded ally", health: 1 };
+    await emit();
+    assert.ok(button("Confirm First Aid & Ready"));
+    assert.match(dialog().textContent!, /Heal a living ally for 3 HP/);
+    assert.ok([...dialog().querySelectorAll("button")].some(b => b.textContent === "First AidNo cost" && !b.disabled));
+    assert.equal([...dialog().querySelectorAll("button")].some(b => b.textContent === "AttackNo cost"), false);
+    const healTarget = dialog().querySelector('[aria-label="Ally targets"] button') as HTMLButtonElement;
+    assert.match(healTarget.getAttribute("aria-label")!, /Wounded ally/);
+    await act(async () => healTarget.click());
+    await act(async () => button("Confirm First Aid & Ready").click());
+    assert.equal(socket.sent.at(-1).ability, "first_aid");
+    assert.equal(socket.sent.at(-1).targetId, "ally");
     dom.window.confirm = () => false;
     await act(async () => button("Leave fight").click());
     assert.equal(socket.sent.some((message: any) => message.type === "leave_fight"), false);

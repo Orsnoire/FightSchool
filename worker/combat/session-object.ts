@@ -12,6 +12,7 @@ import {
   setReady,
   resurrectPlayer,
   removeStudent,
+  upgradePriestActions,
   deterministicShuffle,
   type CombatSnapshot,
 } from "./engine.ts";
@@ -97,7 +98,15 @@ export class CombatSessionObject {
   }
   private async room() {
     const room = await this.state.storage.get<StoredRoom>(ROOM_KEY);
-    if (!room || room.snapshot.schemaVersion === 2) return room;
+    if (!room) return room;
+    if (room.snapshot.schemaVersion === 2) {
+      const upgraded = upgradePriestActions(room.snapshot);
+      if (upgraded !== room.snapshot) {
+        room.snapshot = upgraded;
+        await this.save(room);
+      }
+      return room;
+    }
     // Upgrade the unfinished phase-4 room in place. Existing answers and HP survive.
     const old: any = room.snapshot;
     let upgraded = initialCombatState(
