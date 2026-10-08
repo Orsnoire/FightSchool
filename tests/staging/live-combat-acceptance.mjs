@@ -173,10 +173,18 @@ try {
     body: { itemId: item.payload.id },
     status: 409,
   });
+  // Tier 1 now requires job level 2. Verify the gate, then use the Tier 0
+  // staff with the same +1 MAT for this level-1 combat fixture.
   await api(`/api/student/${studentId}/equipment`, {
     method: "PATCH",
     cookie: student.cookie,
     body: { weapon: item.payload.id },
+    status: 400,
+  });
+  await api(`/api/student/${studentId}/equipment`, {
+    method: "PATCH",
+    cookie: student.cookie,
+    body: { weapon: "basic_staff" },
   });
   const fight = await api("/api/fights", {
     method: "POST",
