@@ -126,15 +126,20 @@ hover, keyboard and touch comparisons in gear, shop and loot screens, including
 lost off-hand bonuses and special effects. It is implemented for review after the
 Tier 1 branch, not yet deployed.
 
-## Combat Flow Refactor
+## Enemy roster, behavior and recovery
 
 The [October 8 enemy AI and recovery specification](combat/enemy-ai.md) records
 species defaults, teacher-editable conditional priorities, the six enemy move
-sets, and answer-based status recovery. Two nonconsecutive correct answers clear
+sets plus basic-attacking goblin swarms, and answer-based status recovery.
+Only these seven defined types are authorable; every goblin addition contains at
+least five individuals. New types require a moveset, default AI and verified art.
+Two nonconsecutive correct answers clear
 stun/paralysis; three release each player from single-target Hypnotic Stare or
 party-wide Hypnosis. Hypnotizing sources cannot act until their victims are free.
 This supersedes the initial damage-threshold and fixed-turn hypnosis proposals.
 Implementation is prepared for review; this entry does not claim deployment.
+
+## Combat Flow Refactor
 
 This document is authoritative primarily for **player experience and presentation**, including:
 
@@ -610,3 +615,8 @@ implicit session creation on page load and the proposed automatic end-on-launch.
 Use explicit Join / End / Launch controls and session-specific reconnect URLs.
 The same document records the code-level team-race feasibility review; team race
 and party-scaled swarm counts remain future implementation, not released features.
+## Individual enemies and wave budgets
+
+The [October 8 enemy and goblin rules](combat/enemy-waves-and-goblins.md) record
+individual quantities, role HP shares, reference-party scaling, goblin targeting,
+wave pauses and the approved sprite. This implementation is in review, not deployed.

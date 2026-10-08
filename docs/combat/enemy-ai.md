@@ -9,9 +9,16 @@ damage-threshold Hypnotize and fixed three-turn Hypnotic Stare.
 Each enemy has an explicit species and a behavior setting: species defaults,
 custom priorities, or basic attacks only. Selecting a built-in image suggests
 its species. An uploaded image can use any explicitly selected species. Cosmetic
-enemy names never select behavior. Vampire Bat and Ghost Wizard do not silently
-inherit Vampire or Ghost moves. Unspecified species use the asset identity where
-recognized, otherwise basic attacks. Slime can be selected with an uploaded image.
+enemy names never select behavior. Only Zombie, Ghost, Spider, Vampire, Slime,
+Samhain and Goblin may be authored. Retired types must be changed to a supported
+type before saving. Existing stored fights are not deleted: recognized old asset
+identities map to their defined species; unknown legacy enemies remain basic
+attacks when read. Vampire Bat and Ghost Wizard do not silently inherit Vampire
+or Ghost moves. Custom images require a supported species.
+
+The registry in `shared/combat/enemy-catalog.ts` supplies authoring choices and
+sprites. A new type requires a complete moveset, valid default AI, and a verified
+transparent combat sprite before inclusion. Catalog tests enforce this rule.
 
 Custom rules select enabled moves, conditions, targets, priority, weight and
 cooldown. Conditions are Always, Own HP below %, Target HP below %, Target lacks
@@ -31,6 +38,10 @@ Species defaults are in `shared/combat/enemy-ai.ts`. In brief:
 - Slime mixes corrosion, suffocation, Trip and Flatten.
 - Samhain prioritizes its nonstacking ATK buff, then favors Slash, adding defense
   below 60% HP and Blood Strike from round 2.
+- Goblin only uses basic attacks, with the fixed swarm targeting described in
+  [enemy waves and goblins](enemy-waves-and-goblins.md). Every addition has at
+  least five individually targetable goblins; the UI and API enforce that minimum.
+  Its fixed swarm policy does not expose custom move priorities.
 
 Move names, descriptions and default cooldowns come from one shared catalog.
 Cooldown N means N complete following rounds without that move. Teachers may
@@ -74,12 +85,15 @@ reapplication by swarms. New hypnosis cannot replace an existing source's effect
 
 ## Damage and status details
 
-- DMG uses the existing difficulty/encounter damage calculation. Double Attack
+- DMG uses the existing difficulty calculation for legacy fights and the shared
+  role-based outgoing budget for individual-enemy encounters. Double Attack
   is two distinct hits, each processed through armor, VIT, guards and shields.
 - Debuffs attached to a damaging hit require actual damage; pure status moves
   make their own application rolls. Immunity prevents new statuses.
 - Zombie Bite has a 5% knockout proc after a damaging hit. Solo encounters retain
   the aggregate damage cap, including this proc, multi-hits, copied attacks and DOT.
+  Individual-enemy encounters apply the existing 35%-of-player-max-HP per-phase
+  concentration ceiling across all enemies and DOT, including knockout procs.
 - Paralysis application stays 30%; its per-turn failure chance is a separate
   teacher setting, default 30%.
 - Poison deals exactly two-thirds of the attack's raw DMG per round until
@@ -131,6 +145,6 @@ remain separate modules.
 
 The new deterministic tests cover the move families, source/channel behavior,
 nonconsecutive recovery, stacking, solo caps, secrecy and persistence. API and
-browser tests cover authoring validation, save/reload and visible recovery.
+React DOM tests cover authoring validation, save/reload and visible recovery.
 Classroom balance still needs observation: especially large-party hypnosis,
 percentage vampire healing, poison duration and enemy compositions.

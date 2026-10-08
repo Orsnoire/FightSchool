@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { CombatEnemy, CombatPlayer, CombatSnapshot } from "./model";
 
-export const ENEMY_TYPES = ["basic", "zombie", "ghost", "spider", "vampire", "slime", "samhain"] as const;
-export type EnemyType = typeof ENEMY_TYPES[number];
+export const ENEMY_TYPES = ["goblin", "zombie", "ghost", "spider", "vampire", "slime", "samhain"] as const;
+export type EnemyType = typeof ENEMY_TYPES[number] | "basic"; // basic is read-only compatibility, never authorable
 export const BIOME_ATTACKS = { grasslands: { object: "rock", damageMultiplier: 1, stunChance: 0.3 } } as const;
 export const TARGETS = ["threat", "damage", "healer", "lowest_hp", "random", "priority_roles", "party", "self"] as const;
 export const TARGET_LABELS: Record<typeof TARGETS[number], string> = {
@@ -64,6 +64,7 @@ export function ruleFor(move: EnemyMove, changes: Partial<EnemyRule> = {}): Enem
 const rules = (moves: EnemyMove[]) => moves.map(move => ruleFor(move));
 export const DEFAULT_ENEMY_RULES: Record<EnemyType, EnemyRule[]> = {
   basic: rules(["attack"]),
+  goblin: rules(["attack"]),
   zombie: rules(["paralyze_claws", "freezing_touch", "bite", "double_attack"]),
   ghost: [ruleFor("hypnosis", { priority: 20, condition: "target_unafflicted" }), ruleFor("fade_out", { condition: "self_hp_below", value: 50 }), ...rules(["possess", "telekinesis"])],
   spider: [ruleFor("webbing", { priority: 20, condition: "target_unafflicted" }), ruleFor("fangs", { condition: "target_unafflicted", weight: 20 }), ruleFor("mandible_strike", { condition: "target_unafflicted" }), ruleFor("leg_strike", { weight: 5 })],
@@ -73,6 +74,9 @@ export const DEFAULT_ENEMY_RULES: Record<EnemyType, EnemyRule[]> = {
 };
 /** Use asset identity, never the teacher's cosmetic nickname. Explicit species wins. */
 export function inferEnemyType(image = ""): EnemyType {
+  const modern = image.match(/(?:^|\/)enemies\/(goblin|zombie|ghost|spider|vampire|slime|samhain)-v\d+\.png(?:[?#].*)?$/i);
+  if (modern) return modern[1].toLowerCase() as EnemyType;
+  if (/Goblin_(horde|swarm)/i.test(image)) return "goblin";
   if (/Samhain_lord/i.test(image)) return "samhain";
   if (/Giant_spider/i.test(image)) return "spider";
   if (/Vampire_RPG/i.test(image)) return "vampire";
@@ -80,6 +84,9 @@ export function inferEnemyType(image = ""): EnemyType {
   if (/Zombie_RPG/i.test(image)) return "zombie";
   if (/Slime_RPG/i.test(image)) return "slime";
   return "basic";
+}
+export function resolveEnemyType(enemy: { enemyType?: EnemyType; species?: string; image: string }): EnemyType {
+  return enemy.enemyType || (enemy.species === "goblin" ? "goblin" : inferEnemyType(enemy.image));
 }
 export function enemyRules(enemy: Pick<CombatEnemy, "enemyType" | "ai">): EnemyRule[] {
   if (enemy.ai?.mode === "basic") return DEFAULT_ENEMY_RULES.basic;
@@ -93,9 +100,13 @@ export function ruleAllowed(type: EnemyType, rule: EnemyRule): boolean {
     (move.type === type || rule.move === "attack") &&
     (move.target === "self" ? rule.target === "self" : rule.target !== "self" && (rule.target !== "priority_roles" || rule.move === "webbing") && (rule.target !== "party" || rule.move === "hypnosis") && (rule.move !== "hypnosis" || rule.target === "party"));
 }
-export function validEnemyAI(enemy: { enemyType?: EnemyType; image: string; ai?: EnemyAI }): boolean {
-  const type = enemy.enemyType || inferEnemyType(enemy.image);
+export function validEnemyAI(enemy: { enemyType?: EnemyType; image: string; ai?: EnemyAI; species?: string; quantity?: number }): boolean {
+  const type = resolveEnemyType(enemy);
+  if (type === "basic") return false;
+  if (type === "goblin" && (enemy.quantity === undefined || enemy.quantity < 5)) return false;
+  if (enemy.species === "goblin" && type !== "goblin") return false;
   const custom = enemy.ai?.rules || [];
+  if (type === "goblin" && (enemy.ai?.mode === "custom" || custom.length > 0)) return false;
   return custom.every(r => ruleAllowed(type, r)) && new Set(custom.map(r => r.move)).size === custom.length;
 }
 export function livingPlayers(s: CombatSnapshot): CombatPlayer[] {

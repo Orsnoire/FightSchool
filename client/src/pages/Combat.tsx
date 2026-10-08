@@ -1,3 +1,4 @@
+import { activeEnemies, hpLabel } from "@shared/combat/encounters";
 import { LootRewardChoices } from "@/components/LootRewardChoices";
 import { abilityPreview } from "@shared/combat/abilityValues";
 import { AllyTargetGrid } from "@/components/AllyTargetGrid";
@@ -17,6 +18,7 @@ import { SUPPORT, ALLIES, selectionProblem, actionCost, defaultQuestionAbility }
 import { JOB_TREE } from "@shared/jobSystem";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 const names: Record<string, string> = {
+  wave_break: "Wave cleared — next wave ready",
   waiting: "Waiting for your teacher",
   question: "Question",
   actions: "Combat action selection",
@@ -100,10 +102,8 @@ export default function Combat() {
           id: x.studentId,
           name: `${x.nickname} · ${x.health}/${x.maxHealth} HP`,
         }))
-    : state.enemies
-        .filter((e) => e.health > 0)
-        .slice(0, state.enemyDisplayMode === "consecutive" ? 1 : undefined)
-        .map((e) => ({ id: e.id, name: e.name }));
+    : activeEnemies(state)
+        .map((e) => ({ id: e.id, name: `${e.name} · ${hpLabel(e.health)}/${hpLabel(e.maxHealth)} HP` }));
   const chosen = options.some(o => o.id === target) ? target : options[0]?.id || p?.studentId || "";
   const definition = (id: string) =>
     Object.values(JOB_TREE)
@@ -121,8 +121,8 @@ export default function Combat() {
   const needsTarget = ALLIES.has(ability) || (!SUPPORT.has(ability) && !["craft_healing_potion", "craft_shield_potion", "pact_surge", "holy_light", "finale"].includes(ability));
   const view = queued && phase !== "game_over" ? "joining" : intro ? "intro" : p?.isDead && ["question", "actions", "abilities"].includes(phase) ? "knocked-out" : p?.ready && ["question", "actions", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "answered" : phase === "actions" ? "action" : phase;
   const title = view === "answered" ? "Answer submitted" : view === "intro" ? (state.round === 1 ? "Question" : "Next question") : view === "knocked-out" ? "Your party is still fighting" : view === "ready" ? "Ready — waiting for your party" : view === "action" ? "Choose your combat action" : phase === "question" ? `Question ${state.currentQuestionIndex + 1}` : names[phase];
-  const minimal = ["waiting", "joining", "intro", "answered", "ready", "knocked-out"].includes(view);
-  const waitMessage = view === "joining" ? "Joining next round" : view === "waiting" ? "Waiting for your teacher" : view === "intro" ? "Get ready…" : view === "knocked-out" ? "Knocked out · Your party is still fighting" : "Waiting for other players";
+  const minimal = ["waiting", "wave_break", "joining", "intro", "answered", "ready", "knocked-out"].includes(view);
+  const waitMessage = view === "wave_break" ? "Wave cleared · Waiting for the next wave" : view === "joining" ? "Joining next round" : view === "waiting" ? "Waiting for your teacher" : view === "intro" ? "Get ready…" : view === "knocked-out" ? "Knocked out · Your party is still fighting" : "Waiting for other players";
   const claim = async (itemId?: string) => {
     if (claimInFlight.current || claimed) return;
     claimInFlight.current = true;

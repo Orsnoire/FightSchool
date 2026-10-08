@@ -90,7 +90,7 @@ export function combatReward(state: CombatSnapshot, player: import("../../shared
   return {
     participation,
     progress,
-    xp: participation ? calculateXP({ ...player.totals, baseFightXP: fight.baseXP * progress * participation }) : 0,
+    xp: participation ? calculateXP({ ...player.totals, baseFightXP: fight.baseXP * (state.encounterXpFraction ?? 1) * progress * participation }) : 0,
     gold: state.victory && participation ? Math.floor(calculateGoldReward(Math.max(...fight.enemies.map(e => e.difficultyMultiplier))) * participation) : 0,
   };
 }

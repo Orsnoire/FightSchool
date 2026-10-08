@@ -91,8 +91,11 @@ export interface FightQuestion {
 }
 
 export interface FightEnemy {
-  enemyType?: import("../../shared/combat/enemy-ai").EnemyType;
+  enemyType?: Exclude<import("../../shared/combat/enemy-ai").EnemyType, "basic">;
   ai?: import("../../shared/combat/enemy-ai").EnemyAI;
+  quantity?: number;
+  wave?: number;
+  species?: "goblin" | "other";
   role?: import("../../shared/encounter-tiers").EnemyRole;
   id: string;
   name: string;

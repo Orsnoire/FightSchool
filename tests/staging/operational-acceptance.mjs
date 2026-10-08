@@ -54,7 +54,7 @@ async function fight(title, questionCount = 1) {
   const created = await api("/api/fights", { method: "POST", cookie: teacher.cookie, status: 201, body: {
     teacherId: teacher.payload.id, title: `${title} ${suffix}`, baseXP: 10, baseEnemyDamage: 1,
     questions: Array.from({length:questionCount}, (_,i) => ({ id: `q${i+1}`, type: "short_answer", question: "What is 2+2?", correctAnswer: "4", timeLimit: 120 })),
-    enemies: [{ id: "e1", name: "Acceptance slime", image: "/favicon.png", difficultyMultiplier: 1 }],
+    enemies: [{ id: "e1", name: "Acceptance slime", image: "/enemies/slime-v2.png", enemyType: "slime", ai: { mode: "basic" }, difficultyMultiplier: 1 }],
     enemyDisplayMode: "consecutive", lootTable: [], randomizeQuestions: false, shuffleOptions: false,
   } });
   fights.push(created.payload.id);

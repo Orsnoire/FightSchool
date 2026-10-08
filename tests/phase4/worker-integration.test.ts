@@ -293,7 +293,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     const fight = await api("/api/fights", "POST", teacher.cookie, {
       teacherId: teacher.payload.id, title: "Integration fight",
       questions: [{ id: "q1", type: "short_answer", question: "2+2?", correctAnswer: "4", timeLimit: 30 }],
-      enemies: [{ id: "e1", name: "Slime", image: "/slime.png", difficultyMultiplier: 1 }],
+      enemies: [{ id: "e1", name: "Slime", image: "/slime.png", enemyType: "slime", ai: {mode:"basic"}, difficultyMultiplier: 1 }],
       baseXP: 10, baseEnemyDamage: 1, enemyDisplayMode: "consecutive", lootTable: [{ itemId: item.payload.id }],
       randomizeQuestions: false, shuffleOptions: false,
     }, 201);

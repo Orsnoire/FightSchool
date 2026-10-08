@@ -25,6 +25,7 @@ export type CombatPhase =
   | "abilities"
   | "question_resolution"
   | "enemy_ai"
+  | "wave_break"
   | "game_over";
 export interface CombatTotals {
   questionsAnswered: number;
@@ -46,6 +47,7 @@ export interface CombatPlayer {
   recoveryCorrectAnswers?: number;
   controlImmuneThroughRound?: number;
   actionBlocked?: { round: number; reason: string; attacksOnly?: boolean };
+  joinOrder?: number;
   questGuildId?: string | null;
   limitTier?: number;
   correctQuestionKeys?: string[];
@@ -88,6 +90,11 @@ export interface CombatEnemy {
   aiState?: EnemyAIState;
   attackPower?: number;
   defense?: number;
+  role?: import("../encounter-tiers").EnemyRole;
+  templateId?: string;
+  quantity?: number;
+  wave?: number;
+  species?: "goblin" | "other";
   id: string;
   name: string;
   image: string;
@@ -112,6 +119,18 @@ export interface CombatEvent {
   message: string;
 }
 export interface CombatSnapshot {
+  encounterRules?: 2;
+  autoAdvanceWaves?: boolean;
+  activeWave?: number;
+  encounterAttendance?: number;
+  entryPerformance?: Record<string,{damage:number;healing:number;health:number;mitigation:number}>;
+  referenceDamage?: number;
+  enemyRoundBudget?: number;
+  encounterXpFraction?: number;
+  goblinAttackCursor?: number;
+  healerAttackCounts?: Record<string,number>;
+  questionOrder?: number[];
+  questionCursor?: number;
   enemyDisplayMode: "simultaneous" | "consecutive";
   schemaVersion: 2;
   revision: number;

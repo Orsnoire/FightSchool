@@ -53,7 +53,7 @@ export default function HostFight() {
   const players = Object.values(state?.players || {}), queued = Object.values(state?.pendingPlayers || {});
   const living = players.filter(p => !p.isDead), joined = players.length + queued.length;
   const phase = state?.currentPhase;
-  const phases: Record<string, string> = { waiting: "Waiting for players", question: "Question", actions: "Combat action selection", abilities: "Block, heal, and support", question_resolution: "Answer resolution", enemy_ai: "Enemy counterattack", game_over: "Fight complete" };
+  const phases: Record<string, string> = { wave_break: "Between waves", waiting: "Waiting for players", question: "Question", actions: "Combat action selection", abilities: "Block, heal, and support", question_resolution: "Answer resolution", enemy_ai: "Enemy counterattack", game_over: "Fight complete" };
   const active = !!phase && !["waiting", "game_over"].includes(phase);
   const toggleFullscreen = async () => {
     try {
@@ -83,7 +83,7 @@ export default function HostFight() {
           {question && active && <button className="flex items-center gap-1 text-xs underline underline-offset-4" aria-expanded={questionOpen} onClick={() => setQuestionOpen(!questionOpen)}>{questionOpen ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {questionOpen ? "Hide question" : "Show question"}</button>}
         </div>
         <div className="flex flex-wrap items-center gap-2">{phase === "waiting" && <Button disabled={status !== "connected" || !players.length} onClick={() => send("start_fight")}>Start fight</Button>}{active && <>
-          <Button size="sm" disabled={status !== "connected"} onClick={() => apiRequest("POST", `/api/combat/${sessionId}/force-question`).catch(e => setHostingError(e.message))}>Advance current phase</Button>
+          <Button size="sm" disabled={status !== "connected"} onClick={() => apiRequest("POST", `/api/combat/${sessionId}/force-question`).catch(e => setHostingError(e.message))}>{phase === "wave_break" ? "Start next wave" : "Advance current phase"}</Button>
           <Button size="sm" variant="outline" className="text-destructive border-destructive/30" disabled={status !== "connected"} onClick={() => { if (window.confirm("End this fight? Students receive activity XP plus base XP proportional to enemy damage and their participation. Victory gold and loot require defeating the enemies.")) send("end_fight"); }}>End fight</Button>
         </>}{phase === "waiting" && <Button size="sm" variant="outline" disabled={status !== "connected"} onClick={() => {
           if (window.confirm("End this waiting session?")) send("end_fight");

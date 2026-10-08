@@ -187,8 +187,11 @@ export const questionSchema = z.object({
 
 // Enemy schema
 export interface Enemy {
-  enemyType?: import("./combat/enemy-ai").EnemyType;
+  enemyType?: Exclude<import("./combat/enemy-ai").EnemyType, "basic">;
   ai?: import("./combat/enemy-ai").EnemyAI;
+  quantity?: number;
+  wave?: number;
+  species?: "goblin" | "other";
   role?: import("./encounter-tiers").EnemyRole;
   id: string;
   name: string;
@@ -199,6 +202,9 @@ export interface Enemy {
 export const enemySchema = z.object({
   enemyType: z.enum(ENEMY_TYPES).optional(),
   ai: enemyAISchema.optional(),
+  quantity:z.number().int().min(1).max(60).optional(),
+  wave:z.number().int().min(1).max(20).optional(),
+  species:z.enum(["goblin","other"]).optional(),
   role:z.enum(["trash","normal","leader","boss"]).optional(),
   id: z.string(),
   name: z.string().min(1),

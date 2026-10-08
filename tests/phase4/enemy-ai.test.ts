@@ -42,10 +42,11 @@ function execute(s: CombatSnapshot, f = fight, random = () => 0) {
   return { hits, messages };
 }
 
-test("all six species have legal defaults; asset inference never confuses Vampire Bat or cosmetic names", () => {
+test("all seven species have legal defaults; asset inference never confuses Vampire Bat or cosmetic names", () => {
   for (const [enemyType, rules] of Object.entries(DEFAULT_ENEMY_RULES)) {
     assert.ok(rules.length);
-    assert.ok(validEnemyAI({ enemyType: enemyType as EnemyType, image: "", ai: enemyAISchema.parse({ mode: "custom", rules }) }));
+    if (enemyType === "basic") continue;
+    assert.ok(validEnemyAI({ enemyType: enemyType as EnemyType, quantity: enemyType === "goblin" ? 5 : 1, image: "", ai: enemyAISchema.parse(enemyType === "goblin" ? { mode: "default" } : { mode: "custom", rules }) }));
   }
   assert.equal(inferEnemyType("Vampire_bat_RPG_enemy.png"), "basic");
   assert.equal(inferEnemyType("Vampire_RPG_enemy.png"), "vampire");

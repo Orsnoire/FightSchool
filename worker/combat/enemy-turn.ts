@@ -1,11 +1,12 @@
+import { activeEnemies, goblinTargets, ROLE_SHARES } from "../../shared/combat/encounters";
 import type { FightRecord } from "../db/schema";
 import type { CombatEnemy, CombatPlayer, CombatSnapshot, CombatStatus, StatusType } from "../../shared/combat/model";
 import { chooseEnemyRule, enemyTargets, ENEMY_MOVES, livingPlayers, BIOME_ATTACKS } from "../../shared/combat/enemy-ai";
-import { addStatus, isHypnosis, releaseInvalidStatuses, STATUS_LABELS } from "../../shared/combat/status-effects";
+import { addStatus, effectiveDefense, isHypnosis, releaseInvalidStatuses, STATUS_LABELS } from "../../shared/combat/status-effects";
 
 export interface EnemyTurnPorts {
   random: () => number;
-  damage: (id: string, raw: number, source: string, ignoreDefense: boolean, limit: number) => number;
+  damage: (id: string, raw: number, source: string, ignoreDefense: boolean, limit: number, fractional?: boolean) => number;
   say: (actor: string, target: string, message: string, amount?: number) => void;
   possess: (enemy: CombatEnemy, copied: CombatPlayer, target: CombatPlayer, damage: (id: string, raw: number) => number) => boolean;
 }
@@ -15,9 +16,17 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
   releaseInvalidStatuses(s);
   if (!s.enemies.some(e => e.health > 0)) return;
   let remaining = s.soloEnemyDamageCap ?? Infinity;
-  const damage = (id: string, raw: number, source: string, ignoreDefense = false) => {
-    if (remaining <= 0 || raw <= 0) return 0;
-    const dealt = ports.damage(id, raw, source, ignoreDefense, remaining);
+  const taken: Record<string, number> = {};
+  const modern = s.encounterRules === 2;
+  const damage = (id: string, raw: number, source: string, ignoreDefense = false, swarmBonus = 0) => {
+    const p = s.players[id];
+    if (!p || p.isDead || remaining <= 0 || (raw <= 0 && !swarmBonus)) return 0;
+    let amount = raw;
+    if (modern && !ignoreDefense) amount = Math.max(0, raw - effectiveDefense(p) - (p.buffs.vampiric_guard ? 0 : Math.floor(p.stats.vit / 2))) + swarmBonus;
+    const limit = Math.min(remaining, modern ? Math.max(0, p.maxHealth * 0.35 - (taken[id] || 0)) : Infinity);
+    if (amount <= 0 || limit <= 0) return 0;
+    const dealt = ports.damage(id, amount, source, modern || ignoreDefense, limit, modern);
+    taken[id] = (taken[id] || 0) + dealt;
     remaining -= dealt;
     return dealt;
   };
@@ -29,7 +38,11 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
     status.carry = total - tick;
     damage(p.studentId, tick, status.sourceId, status.type !== "suffocate");
   }
-  const enemies = s.enemies.filter(e => e.health > 0).slice(0, fight.enemyDisplayMode === "simultaneous" ? undefined : 1);
+  const enemies = activeEnemies(s);
+  const goblins = enemies.filter(e => e.enemyType === "goblin" || e.species === "goblin");
+  const assigned = goblinTargets(s, goblins.length, ports.random);
+  const goblinAssignments = new Map(goblins.map((e, i) => [e.id, assigned[i]]));
+  const swarmHits: Record<string, number> = {};
   for (const enemy of enemies) {
     if (enemy.health <= 0 || !livingPlayers(s).length) continue;
     const ai = enemy.aiState ||= { readyRounds: {}, buffs: [] };
@@ -46,7 +59,19 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
     if (rule.target === "random" && targets.length) targets = [targets[Math.floor(ports.random() * targets.length)]];
     const target = targets[0];
     const reduction = livingPlayers(s).reduce((sum, p) => sum + (p.buffs.dread_aura?.amount || 0), 0);
-    const raw = Math.max(0, Math.ceil(fight.baseEnemyDamage * Math.sqrt(enemy.difficultyMultiplier / 10)) - reduction);
+    const role = enemy.role || "normal";
+    const roleCount = s.enemies.filter(e => (e.role || "normal") === role).length;
+    const raw = Math.max(0, (modern ? (s.enemyRoundBudget || 0) * ROLE_SHARES[role] / Math.max(1, roleCount)
+      : Math.ceil(fight.baseEnemyDamage * Math.sqrt(enemy.difficultyMultiplier / 10))) - reduction);
+    if (goblinAssignments.has(enemy.id)) {
+      const assignedPlayer = s.players[goblinAssignments.get(enemy.id)!];
+      const victim = assignedPlayer && !assignedPlayer.isDead ? assignedPlayer : enemyTargets(s, "threat")[0];
+      if (victim) {
+        swarmHits[victim.studentId] = (swarmHits[victim.studentId] || 0) + 1;
+        damage(victim.studentId, raw, enemy.id, false, swarmHits[victim.studentId] % 3 === 0 ? 1 : 0);
+      }
+      continue;
+    }
     const attack = (enemy.attackPower || 1) * (ai.buffs.some(b => b.type === "attack") ? 2 : 1);
     const strike = (p = target, amount = raw, ignoreDefense = false) => p && enemy.health > 0 ? damage(p.studentId, amount, enemy.id, ignoreDefense) : 0;
     const status = (type: StatusType, chance: number, rounds?: number, amount?: number, p = target) => {

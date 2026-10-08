@@ -76,7 +76,7 @@ test("fight API derives scaling from tier/role instead of accepting conflicting 
       new Request(url, {
         method: "POST",
         headers: { Cookie: cookie, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({...body,enemies:body.enemies?.map((e:any)=>({...e,enemyType:e.enemyType||(e.species==="goblin"?"goblin":"slime")}))}),
       }),
       url,
       repo,
@@ -102,4 +102,12 @@ test("fight API derives scaling from tier/role instead of accepting conflicting 
   assert.equal((await save({ ...fight, encounterTier: 5 }))?.status, 400);
   assert.equal((await save(fight))?.status, 201);
   assert.equal(stored.baseEnemyDamage, fight.baseEnemyDamage);
+  for (const patch of [{quantity:0},{quantity:61},{quantity:1.5},{quantity:1,wave:21}]) {
+    assert.equal((await save({...fight,enemies:[{...fight.enemies[0],...patch}]}))?.status,400);
+  }
+  assert.equal((await save({...fight,enemies:Array.from({length:3},(_,i)=>({...fight.enemies[0],id:`g${i}`,quantity:60}))}))?.status,400);
+  assert.equal((await save({...fight,enemies:[{...fight.enemies[0],quantity:30,wave:2,role:'trash',species:'goblin'}]}))?.status,201);
+  assert.equal(stored.enemies[0].quantity,30);
+  assert.equal(stored.enemies[0].wave,2);
+
 });

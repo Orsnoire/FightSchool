@@ -17,6 +17,9 @@ const questionSchema = z.object({
 const enemySchema = z.object({
   enemyType: z.enum(ENEMY_TYPES).optional(),
   ai: enemyAISchema.optional(),
+  quantity:z.number().int().min(1).max(60).optional(),
+  wave:z.number().int().min(1).max(20).optional(),
+  species:z.enum(["goblin","other"]).optional(),
   role:z.enum(["trash","normal","leader","boss"]).optional(),
   id: z.string().min(1).max(200),
   name: z.string().min(1).max(200),
@@ -70,6 +73,11 @@ async function readFight(request: Request) {
   const raw = await request.text();
   if (raw.length > 1_048_576) throw new Error("REQUEST_TOO_LARGE");
   const fight=fightSchema.parse(JSON.parse(raw));
+  if(new Set(fight.enemies.map(e=>e.id)).size!==fight.enemies.length || fight.enemies.reduce((n,e)=>n+(e.quantity||1),0)>120) throw new z.ZodError([{code:"custom",path:["enemies"],message:"Use unique groups and at most 120 enemies per fight."}]);
+  if(fight.enemies.some(e=>e.quantity!==undefined)){
+    fight.encounterTier ||= 1;
+    fight.enemies=fight.enemies.map((e,i)=>({...e,quantity:e.quantity||1,wave:e.wave||(fight.enemyDisplayMode==="consecutive"?i+1:1),role:e.role||"normal"}));
+  }
   if(fight.encounterTier){
     const tier=fight.encounterTier;
     if(fight.enemies.some(e=>!e.role))throw new z.ZodError([{code:'custom',path:['enemies'],message:'Choose enemy roles for tiered fights.'}]);
