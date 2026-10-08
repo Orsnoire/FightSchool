@@ -12,7 +12,7 @@ const id = student().id;
 const enemyImage = 'data:image/png;base64,' + (await readFile('attached_assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png')).toString('base64');
 try {
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({ viewport, hasTouch: viewport.width < 600 });
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.addInitScript(({ id }) => {
@@ -177,7 +177,7 @@ try {
     const compare=page.getByRole('button',{name:"Compare Fighter's Claymore",exact:true});
     await compare.waitFor();
     if(viewport.width>600)await page.getByRole('article',{name:"Fighter's Claymore",exact:true}).hover();
-    else await compare.click();
+    else await compare.tap();
     const comparison=page.getByRole('dialog',{name:"Comparison for Fighter's Claymore",exact:true});
     await comparison.getByText("Equipped: Fighter's Sword",{exact:true}).waitFor();
     assert.match(await comparison.textContent(),/Requires removing Fighter's Shield/);
