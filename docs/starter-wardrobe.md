@@ -111,3 +111,20 @@ additional migration, forced replacement of existing gear or balance changes
 are involved. Per-item visuals and animation are still pending. The shared
 loadout synchronization and this catalog completion await the combined release;
 see [release queue](combat/release-queue.md).
+
+
+## Equipment permissions — implemented for review, not deployed
+
+Both loadout views now list allowed weapons, armor categories and usable off-hand
+types. Owned incompatible gear stays visible with a reason, including job, tier
+or held-item conflicts. The same shared rules drive these descriptions and the
+authoritative equip API. Blood Knight has no usable off hand because its allowed
+two-handed sword cannot pair with a shield.
+
+New custom armor requires an explicit category for Head, Chest, Arms, Hands,
+Pants and Feet. The teacher form and API enforce this. API partial updates check
+the merged item whenever classification changes; clearing a category or moving
+a weapon to an armor slot without one is rejected. Category metadata is rejected
+on weapon/off-hand slots. Existing uncategorized items retain legacy inference
+and may receive unrelated API edits; deliberate classification changes and full
+form saves require explicit selection. This requires no data migration.

@@ -1,5 +1,5 @@
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
-import { equipmentExclusion, handConflict } from "../../shared/equipment-rules.ts";
+import { armorClassificationError, equipmentExclusion, handConflict } from "../../shared/equipment-rules.ts";
 import { mountainDay, nextMountainMidnight, xpMultiplier, STAMINA_TIME_ZONE } from "../../shared/combat/stamina.ts";
 import { z } from "zod";
 import { and, eq, inArray, desc, sql } from "drizzle-orm";
@@ -705,6 +705,8 @@ export async function handleGame(
     if (path === "/api/equipment-items" && method(request, "POST")) {
       requireTeacher();
       const input = itemSchema.parse(await request.json());
+      const classificationError = armorClassificationError(input);
+      if (classificationError) throw new ApiError(classificationError);
       return json(
         (
           await db
@@ -734,16 +736,23 @@ export async function handleGame(
       }
       if (method(request, "GET")) return json(item);
       requireTeacher();
-      if (method(request, "PATCH"))
+      if (method(request, "PATCH")) {
+        const input = itemSchema.partial().parse(await request.json());
+        // Older unspecified armor can receive unrelated edits without changing its category.
+        if ('slot' in input || 'itemType' in input || 'armorCategory' in input || item.armorCategory) {
+          const classificationError = armorClassificationError({...item,...input});
+          if (classificationError) throw new ApiError(classificationError);
+        }
         return json(
           (
             await db
               .update(s.equipmentItems)
-              .set(itemSchema.partial().parse(await request.json()))
+              .set(input)
               .where(eq(s.equipmentItems.id, item.id))
               .returning()
           )[0],
         );
+      }
       if (method(request, "DELETE")) {
         await db
           .delete(s.equipmentItems)

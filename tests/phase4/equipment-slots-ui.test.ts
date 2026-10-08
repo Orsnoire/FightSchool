@@ -34,6 +34,8 @@ test('equipment screen renders eight labeled controls and Tier 0 starters, inclu
       assert.equal(card.querySelector(`label[for="equipment-${slot}"]`)?.textContent,SLOT_LABELS[slot]);
       assert.ok(card.querySelector(`[data-testid="select-${slot}"]`));
     }
+    assert.match(dom.window.document.body.textContent!, /Allowed weapons: Sword/);
+    assert.match(dom.window.document.body.textContent!, /Allowed armor: Heavy \/ plate, Leather, Cloth \/ light/);
     assert.match(card.textContent!,/Starter Vambraces · Tier 0/);
     assert.match(card.textContent!,/Starter Gauntlets · Tier 0/);
     assert.match(card.textContent!,/Starter Plate Leggings · Tier 0/);

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ALL_CHARACTER_CLASSES, EQUIPMENT_ITEMS, calculateLoadoutEquipmentStats, getStartingEquipment } from '../../shared/schema.ts';
 import { EQUIPMENT_SLOTS, SLOT_LABELS, STARTER_ITEM_IDS, ownedEquipment } from '../../shared/equipment-catalog.ts';
-import { equipmentExclusion, handConflict } from '../../shared/equipment-rules.ts';
+import { equipmentExclusion, handConflict, equipmentPermissions, equipmentUnavailable, armorClassificationError } from '../../shared/equipment-rules.ts';
 import { JOB_TREE } from '../../shared/jobSystem.ts';
 test('every job has an owned, compatible starter loadout and explicit armor exclusions',()=>{
  for(const job of ALL_CHARACTER_CLASSES) {
@@ -59,4 +59,19 @@ test('Tier 0 completes every armor material and supported weapon family without 
   const loadout=getStartingEquipment(job);
   for (const slot of ['headgear','armor','arms','hands','legs','feet'] as const) assert.ok(loadout[slot],`${job} ${slot}`);
  }
+});
+
+test('permissions match enforcement and unavailable gear explains job, tier and hand conflicts',()=>{
+ assert.deepEqual(equipmentPermissions('priest'),{weapons:['Staff'],armor:['Cloth / light'],offhands:[]});
+ assert.deepEqual(equipmentPermissions('blood_knight').offhands,[]);
+ assert.deepEqual(equipmentPermissions('ranger').offhands,['quiver']);
+ assert.equal(equipmentUnavailable('paladin',EQUIPMENT_ITEMS.basic_claymore,1,EQUIPMENT_ITEMS.basic_sword,EQUIPMENT_ITEMS.basic_shield),'Remove the incompatible off-hand item first.');
+ assert.equal(equipmentUnavailable('warrior',{...EQUIPMENT_ITEMS.basic_sword,tier:2},1,null,null),'Requires job level 2 (Tier 2).');
+ assert.match(equipmentUnavailable('priest',EQUIPMENT_ITEMS.basic_plate_gloves,1,null,null)!,/armor category/);
+ for(const slot of ['headgear','armor','arms','hands','legs','feet'] as const) {
+  assert.ok(armorClassificationError({slot}));
+  assert.equal(armorClassificationError({slot,armorCategory:'heavy_armor'}),null);
+ }
+ assert.ok(armorClassificationError({slot:'weapon',armorCategory:'heavy_armor'}));
+ assert.equal(armorClassificationError({slot:'weapon'}),null);
 });
