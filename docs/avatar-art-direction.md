@@ -388,3 +388,11 @@ For the animated release, only then begin live integration under its own impleme
 delivery, authenticated avatar/equipment APIs, character creation, persisted
 appearance, combat presentation, and approved replacements for each unfinished weapon.
 Local workshops and test previews may run earlier without changing live users.
+
+## October 7 equipped static gear — review pending
+
+The owner requested gear swaps and Tier 1 artwork, preferring Tier 0 recolors.
+[Equipped gear visuals](avatar-equipment-visuals.md) implements that static step
+for both bodies, including missing held props. This supersedes the starter-only
+rendering restriction only after review/release; all animated integration gates
+above remain in force. No rig or animation readiness flags are advanced.

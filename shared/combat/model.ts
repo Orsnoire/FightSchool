@@ -1,3 +1,4 @@
+import type { EquipmentLoadout } from '../equipment-catalog';
 import type { AvatarAppearance } from "../avatar/appearance";
 import type { CharacterClass, Gender, CharacterStats } from "../schema";
 export type CombatPhase =
@@ -24,6 +25,7 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  equipmentLoadout?: EquipmentLoadout;
   equipmentEffects?: { healingBonus:number; potionAttackBonus:number };
   roundsParticipated?: number;
   appearance?: AvatarAppearance | null;

@@ -189,6 +189,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     const profile = await combatProfile(gameDatabase(env.DATABASE_URL), sameJob);
     assert.equal(profile.equipment?.str, 36);
     assert.equal(profile.equipment?.agi, 8);
+    assert.deepEqual(profile.equipmentLoadout,customLoadout);
     // Switching away snapshots all eight upgrades plus abilities; returning restores them from SQL.
     const characterPath = `/api/student/${student.payload.id}/character`;
     await pg.query("UPDATE student_job_levels SET level=15 WHERE student_id=$1 AND job_class='wizard'", [student.payload.id]);

@@ -1,4 +1,5 @@
 import type { CharacterClass, EquipmentItem, EquipmentSlot } from './schema';
+import { EQUIPMENT_SLOTS } from './equipment-slots';
 export { EQUIPMENT_SLOTS, SLOT_LABELS } from './equipment-slots';
 export type ArmorCategory = 'heavy_armor'|'leather_armor'|'light_armor';
 export const ARMOR_EXCLUSIONS:Record<CharacterClass,readonly ArmorCategory[]> = {
@@ -53,3 +54,8 @@ export const STARTER_LOADOUTS:Record<CharacterClass,EquipmentLoadout> = {
  monk:leather('basic_fist',null),ranger:leather(),bard:leather('basic_harp',null),
 };
 export function ownedEquipment(inventory:readonly string[] = []) { return [...new Set([...STARTER_ITEM_IDS,...inventory])]; }
+
+/** Copy only public slot selections; normalize absent legacy fields to empty. */
+export function snapshotEquipmentLoadout(source:Partial<EquipmentLoadout>):EquipmentLoadout {
+ return Object.fromEntries(EQUIPMENT_SLOTS.map(slot=>[slot,source[slot]??null])) as EquipmentLoadout;
+}

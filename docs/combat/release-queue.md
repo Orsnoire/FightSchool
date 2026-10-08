@@ -180,3 +180,13 @@ remain pending. Existing assigned loot tables and defensive VIT benefits remain.
 previews, signed stat differences, special effects and forced off-hand losses
 in gear pickers, the guild shop and loot rewards. This is implemented for review,
 not deployed. Art, overlays and animation remain pending.
+
+
+## Equipped gear and Tier 1 art — review pending
+
+[Static equipped visuals](../avatar-equipment-visuals.md) are implemented after
+gear comparisons, with independent slot choices, saved/combat loadout snapshots,
+both-body Tier 1 recolors and missing weapon props. Healer’s Laurel is renamed;
+previous head bonuses and set budgets are unchanged. No new migration.
+Pending: owner visual review, PR review, deployment and live acceptance.
+Animation rigs/clips, near-profile fitting and custom-item art remain pending.

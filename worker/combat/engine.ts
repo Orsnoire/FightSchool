@@ -43,6 +43,7 @@ export type {
   CombatPhase,
 } from "../../shared/combat/model.ts";
 export interface CombatProfile {
+  equipmentLoadout?: CombatPlayer["equipmentLoadout"];
   equipmentEffects?: CombatPlayer["equipmentEffects"];
   appearance?: AvatarAppearance | null;
   levels: Partial<Record<CharacterClass, number>>;
@@ -109,6 +110,7 @@ export function addStudent(
     getTotalMechanicUpgrades(levels as Record<CharacterClass, number>),
   );
   const p: CombatPlayer = {
+    ...(profile.equipmentLoadout ? {equipmentLoadout:{...profile.equipmentLoadout}} : {}),
     equipmentEffects: {...profile.equipmentEffects, healingBonus:profile.equipmentEffects?.healingBonus || 0, potionAttackBonus:profile.equipmentEffects?.potionAttackBonus || 0},
     roundsParticipated: 0,
     studentId: student.id,

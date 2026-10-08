@@ -1,3 +1,4 @@
+import { snapshotEquipmentLoadout } from '../../shared/equipment-catalog';
 import { equipmentEffects } from "../../shared/tier-one-equipment";
 import { getStudentAvatar } from "./avatar-repository.ts";
 import { validAppearance } from "../../shared/avatar/appearance.ts";
@@ -50,6 +51,7 @@ export async function combatProfile(
     levels,
     equipment,
     equipmentEffects: equipmentEffects(student),
+    equipmentLoadout: snapshotEquipmentLoadout(student),
     crossClass: [student.crossClassAbility1, student.crossClassAbility2].filter(
       Boolean,
     ) as string[],

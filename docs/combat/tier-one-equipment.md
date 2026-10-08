@@ -88,9 +88,11 @@ and keep it until their job reaches level 2.
 - Forester: green leather and green bow.
 - Fighter: starter plate silhouette, red replacing the blue details.
 
-These briefs are recorded in catalog metadata. Individual item art, equipped
-color/overlay rendering and animation remain pending; current static starter
-illustrations do not display the new outfits. No unfinished art is marked ready.
+These briefs now have a separate [equipped-gear art implementation](../avatar-equipment-visuals.md)
+for review. It includes static slot rendering and Tier 0-based recolors on both
+bodies; it is not deployed or animation-ready. The healer head is named Healer’s
+Laurel. The owner withdrew the proposed new head bonuses, retaining the table
+above unchanged.
 
 Apply migration 0012 from PR #43 and then `0013_spellbook_offhand.sql` before
 activating the Worker. Migration 0013 extends the existing off-hand constraint;

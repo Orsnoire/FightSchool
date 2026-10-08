@@ -47,7 +47,7 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove }: {
       {p.health < p.maxHealth && <Bar current={p.health} max={p.maxHealth} label={`${p.nickname} HP`} />}
       <button type="button" className="battle-avatar" aria-label={canRevive ? `Resurrect ${p.nickname} with 1 HP` : `${p.nickname}${isSelf ? " (you)" : ""}, ${p.isDead ? "knocked out" : `${p.health}/${p.maxHealth} HP`}${queued ? ", joining next round" : ""}`}
         onClick={() => { setSelected(selected === p.studentId ? null : p.studentId); if (canRevive) onResurrect(p.studentId); }}>
-        <StaticAvatar appearance={p.appearance || initialAppearance(null, p.gender === "B" ? "human-female-v1" : "human-male-v1", () => .35)} job={p.characterClass} className="battle-paperdoll" />
+        <StaticAvatar appearance={p.appearance || initialAppearance(null, p.gender === "B" ? "human-female-v1" : "human-male-v1", () => .35)} job={p.characterClass} loadout={p.equipmentLoadout} className="battle-paperdoll" />
       </button>
       <span className="battle-name">{p.nickname}{isSelf ? " · You" : ""}{queued ? " · Next round" : p.isDead ? " · KO" : ""}</span>
       {onRemove && <button className="battle-remove" aria-label={`Remove ${p.nickname} from fight`} onClick={event => { event.stopPropagation(); onRemove(p.studentId); }}><XCircle size={23} /></button>}
