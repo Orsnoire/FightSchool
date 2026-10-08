@@ -100,6 +100,13 @@ The [October 7 host panel and departure rules](combat/student-overlays.md#octobe
 record the consolidated host controls, attendance, temporary log placement,
 and explicit student Leave fight behavior.
 
+## Current implementation and release queue
+
+The [classroom polish release queue](combat/release-queue.md) distinguishes
+implemented review branches from deployed behavior and records the remaining
+ordered tasks. First Aid and calculated ability values await the combined
+release; informative loot choices and general loadout synchronization are pending.
+
 ## Combat Flow Refactor
 
 This document is authoritative primarily for **player experience and presentation**, including:
