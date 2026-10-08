@@ -1,6 +1,24 @@
 import type { EquipmentLoadout } from '../equipment-catalog';
 import type { AvatarAppearance } from "../avatar/appearance";
 import type { CharacterClass, Gender, CharacterStats } from "../schema";
+import type { EnemyAI, EnemyMove, EnemyType } from "./enemy-ai";
+export type StatusType = "stun" | "paralysis" | "web" | "poison" | "bleed" | "hypnosis" | "stare" | "fear" | "corrosion" | "suffocate" | "trip";
+export interface CombatStatus {
+  type: StatusType;
+  sourceId: string;
+  appliedRound: number;
+  throughRound?: number;
+  amount?: number;
+  carry?: number;
+  chance?: number;
+  actionFailure?: { round: number; skip: boolean };
+  correctAnswers?: number;
+}
+export interface EnemyAIState {
+  readyRounds: Partial<Record<EnemyMove, number>>;
+  buffs: Array<{ type: "defense" | "attack" | "fade" | "flatten"; throughRound: number }>;
+  lastMove?: EnemyMove;
+}
 export type CombatPhase =
   | "waiting"
   | "question"
@@ -8,6 +26,7 @@ export type CombatPhase =
   | "abilities"
   | "question_resolution"
   | "enemy_ai"
+  | "wave_break"
   | "game_over";
 export interface CombatTotals {
   questionsAnswered: number;
@@ -25,6 +44,11 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  statuses?: CombatStatus[];
+  recoveryCorrectAnswers?: number;
+  controlImmuneThroughRound?: number;
+  actionBlocked?: { round: number; reason: string; attacksOnly?: boolean };
+  joinOrder?: number;
   questGuildId?: string | null;
   limitTier?: number;
   correctQuestionKeys?: string[];
@@ -62,6 +86,16 @@ export interface CombatPlayer {
   totals: CombatTotals;
 }
 export interface CombatEnemy {
+  enemyType?: EnemyType;
+  ai?: EnemyAI;
+  aiState?: EnemyAIState;
+  attackPower?: number;
+  defense?: number;
+  role?: import("../encounter-tiers").EnemyRole;
+  templateId?: string;
+  quantity?: number;
+  wave?: number;
+  species?: "goblin" | "other";
   id: string;
   name: string;
   image: string;
@@ -86,6 +120,18 @@ export interface CombatEvent {
   message: string;
 }
 export interface CombatSnapshot {
+  encounterRules?: 2;
+  autoAdvanceWaves?: boolean;
+  activeWave?: number;
+  encounterAttendance?: number;
+  entryPerformance?: Record<string,{damage:number;healing:number;health:number;mitigation:number}>;
+  referenceDamage?: number;
+  enemyRoundBudget?: number;
+  encounterXpFraction?: number;
+  goblinAttackCursor?: number;
+  healerAttackCounts?: Record<string,number>;
+  questionOrder?: number[];
+  questionCursor?: number;
   enemyDisplayMode: "simultaneous" | "consecutive";
   schemaVersion: 2;
   revision: number;

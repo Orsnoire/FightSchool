@@ -48,6 +48,9 @@ export function publicSnapshot(snapshot: CombatSnapshot): CombatSnapshot {
   const { departedPlayers: _, ...visible } = snapshot;
   return {
     ...visible,
+    seed: 0,
+    enemies: snapshot.enemies.map(e => ({ ...e, ai: undefined,
+      aiState: e.aiState ? { readyRounds: {}, buffs: e.aiState.buffs.filter(b => b.type !== "flatten") } : undefined })),
     pendingPlayers: Object.fromEntries(Object.entries(snapshot.pendingPlayers||{}).map(([id,p])=>[id,{...p,correctQuestionKeys:undefined,currentAnswer:null,lastAnswerCorrect:undefined}])),
     players: Object.fromEntries(
       Object.entries(snapshot.players).map(([id, p]) => [
@@ -442,6 +445,7 @@ export class CombatSessionObject {
             const fight = await this.repository.findFightById(live.fightId);
             if (fight) {
               fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
+              if(fight.randomizeQuestions)fight.questions=deterministicShuffle(fight.questions,actor.sessionId);
               room = {
                 fight,
                 snapshot: initialCombatState(actor.sessionId, fight),

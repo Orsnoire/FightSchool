@@ -205,7 +205,9 @@ try {
         {
           id: "e1",
           name: "Acceptance slime",
-          image: "/favicon.png",
+          image: "/enemies/slime-v2.png",
+          enemyType: "slime",
+          ai: { mode: "basic" },
           difficultyMultiplier: 1,
         },
       ],

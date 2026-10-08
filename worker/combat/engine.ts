@@ -1,3 +1,7 @@
+import { enemyAISchema, inferEnemyType, resolveEnemyType } from "../../shared/combat/enemy-ai";
+import { cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
+import { resolveEnemyTurn } from "./enemy-turn";
+import { activeEnemies, bounceTarget, expandEnemies, encounterBudget, allocateHP, ROLE_SHARES, goblinTargets, roundHP, performance } from "../../shared/combat/encounters";
 import { enemyTuning } from "../../shared/encounter-tiers";
 import { questionKey } from "../progression/question-key";
 import { abilityDamage, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
@@ -77,8 +81,14 @@ export function initialCombatState(
     departedPlayers: {},
     completedRounds: 0,
     damageLeaderId: null,
-    enemies: fight.enemies.map((e) => ({
+    ...(fight.enemies.some(e=>e.quantity!==undefined || resolveEnemyType(e) === "goblin")?{encounterRules:2 as const,activeWave:Math.min(...fight.enemies.map((e,i)=>fight.enemyDisplayMode==='consecutive'?(e.wave||i+1):1))}:{}),
+    enemies: expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive').map((e) => ({
       ...e,
+      enemyType: e.enemyType || (e.species === "goblin" ? "goblin" : inferEnemyType(e.image)),
+      ai: enemyAISchema.parse(e.ai || {}),
+      aiState: { readyRounds: {}, buffs: [] },
+      attackPower: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 1,
+      defense: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 0,
       health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
       maxHealth: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
       effects: [],
@@ -119,6 +129,7 @@ export function addStudent(
     ...(profile.equipmentLoadout ? {equipmentLoadout:{...profile.equipmentLoadout}} : {}),
     equipmentEffects: {...profile.equipmentEffects, healingBonus:profile.equipmentEffects?.healingBonus || 0, potionAttackBonus:profile.equipmentEffects?.potionAttackBonus || 0},
     roundsParticipated: 0,
+    joinOrder: Object.values({...state.departedPlayers,...state.pendingPlayers,...state.players}).reduce((n,p)=>Math.max(n,p.joinOrder??-1),-1)+1,
     studentId: student.id,
     nickname: student.nickname,
     characterClass: job,
@@ -192,6 +203,12 @@ export function participatedRounds(state: CombatSnapshot, player: CombatPlayer):
 export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo = false): CombatSnapshot {
   if (state.currentPhase !== "waiting") return state;
   const players = Object.values(state.players);
+  if(state.encounterRules===2){
+    const budget=encounterBudget(players,fight.encounterTier||1,fight.questions.length);
+    const enemies=allocateHP(state.enemies,budget.hp);
+    const present=new Set(enemies.map(e=>e.role||'normal'));
+    return {...state,enemies,entryPerformance:Object.fromEntries(players.map(p=>[p.studentId,performance(p,Math.max(1,fight.questions.length))])),autoAdvanceWaves:solo,encounterAttendance:players.length,referenceDamage:budget.damage,enemyRoundBudget:budget.rawPressure,encounterXpFraction:[...present].reduce((n,r)=>n+ROLE_SHARES[r],0)};
+  }
   const damage = players.reduce((sum, p) => sum + encounterDamageEstimate(p), 0);
   const questions = Math.max(1, fight.questions.length);
   let budget = Math.max(1, Math.ceil(damage * questions * 0.9));
@@ -315,7 +332,7 @@ export function selectAction(
   if (
     state.enemyDisplayMode === "consecutive" &&
     state.enemies.some((e) => e.id === targetId) &&
-    targetId !== state.enemies.find((e) => e.health > 0)?.id
+    !activeEnemies(state).some(e=>e.id===targetId)
   )
     throw new Error("That enemy is not active yet");
   const next = structuredClone(state);
@@ -430,16 +447,17 @@ function damagePlayer(
   raw: number,
   source: string,
   ignoreDefense = false,
+  limit = Infinity,
+  fractional = false,
 ) {
   const p = s.players[id];
   if (!p || p.isDead) return 0;
   let damage = ignoreDefense
-    ? integer(raw)
+    ? (fractional ? roundHP(raw) : integer(raw))
     : Math.max(
         1,
-        integer(raw) -
-          p.stats.def -
-          (p.buffs.vampiric_guard ? 0 : integer(p.stats.vit / 2)),
+        Math.ceil(integer(raw) - effectiveDefense(p) -
+          (p.buffs.vampiric_guard ? 0 : integer(p.stats.vit / 2))),
       );
   if (p.buffs.immunity || (p.buffs.dodge && source === "wrong_answer")) {
     event(s, "block", id, id, damage, `${p.nickname} avoided ${damage}`);
@@ -469,7 +487,7 @@ function damagePlayer(
       hit(
         s,
         guard,
-        s.enemies.find((e) => e.health > 0)?.id || "",
+        activeEnemies(s)[0]?.id || "",
         guard.stats.vit / 4,
       );
   }
@@ -488,13 +506,13 @@ function damagePlayer(
         `${p.nickname}'s shield prevented ${prevented}`,
       );
     }
-  const actual = Math.min(p.health, damage);
-  p.health -= actual;
+  const actual = Math.min(p.health, damage, limit);
+  p.health = roundHP(p.health - actual);
   p.totals.damageTaken += actual;
   if (p.characterClass === "monk" && actual)
     p.comboPoints = Math.min(p.maxComboPoints, p.comboPoints + 1);
   if (p.buffs.deflect && actual)
-    hit(s, p, s.enemies.find((e) => e.health > 0)?.id || "", actual);
+    hit(s, p, activeEnemies(s)[0]?.id || "", actual);
   if (p.buffs.vampiric_guard) {
     p.mp = Math.min(p.maxMp, p.mp + actual + 5);
     delete p.buffs.vampiric_guard;
@@ -521,12 +539,21 @@ function hit(
   bonus = false,
 ) {
   const e = s.enemies.find((e) => e.id === id);
-  if (!e || e.health <= 0) return 0;
+  if (!e || e.health <= 0 || (s.encounterRules===2&&!activeEnemies(s).some(x=>x.id===id))) return 0;
+  const protection = (e.aiState?.buffs || []).filter(b => b.throughRound >= s.round);
+  if (protection.some(b => b.type === "fade" || b.type === "flatten")) {
+    event(s, "block", e.id, p.studentId, 0, protection.some(b => b.type === "flatten")
+      ? `${e.name} reveals Flatten: the attack misses` : `${e.name} has faded out and is immune`);
+    return 0;
+  }
   let amount = integer(raw);
   if (e.effects.some((x) => ["mark", "prey"].includes(x.type))) amount *= 2;
   if (p.buffs.doubleDamage) amount *= 2;
+  const defense = (e.defense || 0) * (1 + 0.5 * protection.filter(b => b.type === "defense").length);
+  amount = Math.max(0, Math.ceil(amount - defense));
   const actual = Math.min(e.health, amount);
-  e.health -= actual;
+  e.health = roundHP(e.health - actual);
+  if (e.health <= 0) releaseInvalidStatuses(s);
   p.totals.damageDealt += actual;
   if (bonus) p.totals.bonusDamage += actual;
   p.threat += Math.max(0, actual - p.stats.agi);
@@ -550,7 +577,7 @@ export function encounterDamageEstimate(p: CombatPlayer): number {
 
 function defaultQuestionAction(p: CombatPlayer, state: CombatSnapshot) {
   return { ability: defaultQuestionAbility(p.characterClass),
-    targetId: p.characterClass === "priest" ? p.studentId : state.enemies.find(e => e.health > 0)?.id || "" };
+    targetId: p.characterClass === "priest" ? p.studentId : activeEnemies(state)[0]?.id || "" };
 }
 
 /** Upgrade saved Priest loadouts and obsolete default choices without resetting combat. */
@@ -570,7 +597,19 @@ export function upgradePriestActions(state: CombatSnapshot): CombatSnapshot {
   return next;
 }
 
-function applyAbility(
+function applyAbility(s: CombatSnapshot, p: CombatPlayer, id: string, targetId: string) {
+  const lock = p.actionBlocked?.round === s.round ? p.actionBlocked : undefined;
+  if (lock && (!lock.attacksOnly || hasOffensiveAbility([id]) || abilityDamage(p, id) !== undefined)) {
+    event(s, "ability", p.studentId, targetId, 0, `${p.nickname} cannot use ${id.replaceAll("_", " ")}: ${lock.reason}`);
+    return;
+  }
+  const bleedPenalty = p.statuses?.some(x => x.type === "bleed") ? Math.min(1, p.stats.atk) : 0;
+  p.stats.atk -= bleedPenalty;
+  try { executeAbility(s, p, id, targetId); }
+  finally { p.stats.atk += bleedPenalty; }
+}
+
+function executeAbility(
   s: CombatSnapshot,
   p: CombatPlayer,
   id: string,
@@ -578,7 +617,11 @@ function applyAbility(
 ) {
   const st = p.stats;
   const { atk, mat, rtk, str, int, agi, mnd, vit } = st;
-  const all = () => s.enemies.filter((e) => e.health > 0);
+  const all = () => activeEnemies(s);
+  if(s.encounterRules===2&&s.enemies.some(e=>e.id===targetId)){
+    targetId=bounceTarget(s,targetId);
+    if(!targetId)return;
+  }
   const party = () => Object.values(s.players);
   const buff = (name: string, rounds: number, amount = 0) => {
     p.buffs[name] = { rounds, amount };
@@ -753,7 +796,7 @@ function applyAbility(
       heal(s, p, targetId, healingValue);
       break;
     case "purify":
-      if (s.players[targetId]) delete s.players[targetId].buffs.poison;
+      if (s.players[targetId]) cleansePlayer(s, s.players[targetId]);
       break;
     case "bless":
       if (s.players[targetId])
@@ -892,7 +935,7 @@ function applyAbility(
     }
     case "cleansing_chorus":
       groupHeal(healingValue);
-      party().forEach((t) => delete t.buffs.poison);
+      party().forEach((t) => cleansePlayer(s, t));
       break;
     case "finale":
       all().forEach((e) => hit(s, p, e.id, damageValue, true));
@@ -903,7 +946,7 @@ function applyAbility(
         .forEach((t) => heal(s, p, t.studentId, 1, true));
       all().forEach((e) => hit(s, p, e.id, damageValue, true));
       groupHeal(healingValue);
-      party().forEach((t) => delete t.buffs.poison);
+      party().forEach((t) => cleansePlayer(s, t));
       buff("doubleDamage", 1);
       break;
     default:
@@ -943,6 +986,10 @@ export function advancePhase(
   const s = structuredClone(state);
   s.revision++;
   s.phaseStartTime = now;
+  if(s.currentPhase==='wave_break'){
+    s.currentPhase='question';s.questionStartTime=now+3000;
+    s.phaseDeadline=now+3000+fight.questions[s.currentQuestionIndex].timeLimit*1000;return s;
+  }
   if (s.currentPhase === "question") {
     for (const p of Object.values(s.players))
       if (!p.isDead) {
@@ -968,8 +1015,9 @@ export function advancePhase(
     for (const p of Object.values(s.players)) p.roundsParticipated = participatedRounds(s, p) + 1;
     s.completedRounds = completed + 1;
     s.events = [];
+    prepareStatusActions(s, () => rng(s));
     // Support resolves before answer damage so blocks protect wrong answers, as specified.
-    const ordered = Object.values(s.players).sort(
+    const legacyOrdered = Object.values(s.players).sort(
       (a, b) =>
         [
           "warrior",
@@ -1000,6 +1048,9 @@ export function advancePhase(
             "bard",
           ].indexOf(b.characterClass) || a.studentId.localeCompare(b.studentId),
     );
+    const joined=Object.values(s.players).sort((a,b)=>(a.joinOrder||0)-(b.joinOrder||0));
+    const offset=(s.round-1)%Math.max(1,joined.length);
+    const ordered=s.encounterRules===2?[...joined.slice(offset),...joined.slice(0,offset)]:legacyOrdered;
     for (const p of ordered.filter((p) => !p.isDead))
       for (const a of p.supportActions)
         applyAbility(s, p, a.ability, a.targetId);
@@ -1008,7 +1059,7 @@ export function advancePhase(
       const before = p.totals.damageDealt;
       if (
         p.questionAction?.ability === "sacred_strike" &&
-        !abilityProblem(p, "sacred_strike")
+        !abilityProblem(p, "sacred_strike") && !p.actionBlocked
       )
         p.buffs.immunity = { rounds: 1, amount: 0 };
       if (p.lastAnswerCorrect) {
@@ -1017,10 +1068,16 @@ export function advancePhase(
         p.consecutiveCorrectAnswers = (p.consecutiveCorrectAnswers || 0) + 1;
         const a = p.questionAction;
         // Departure can cancel a saved ally-targeted action before resolution.
-        if (a) applyAbility(s, p, a.ability, a.targetId);
-        if (a && p.buffs.abyssal_drain) {
+        const tripped = p.statuses?.some(x => x.type === "trip");
+        if (tripped) {
+          p.statuses = p.statuses?.filter(x => x.type !== "trip");
+          event(s, "ability", p.studentId, p.studentId, 0, `${p.nickname} tripped: answer credit preserved, combat action failed`);
+          const provoke = ordered.find(x => !x.isDead && x.buffs.provoke);
+          damagePlayer(s, provoke?.studentId || p.studentId, fight.baseEnemyDamage, "trip");
+        } else if (a) applyAbility(s, p, a.ability, a.targetId);
+        if (a && !tripped && !p.actionBlocked && p.buffs.abyssal_drain) {
           const amount = baseDamage(p);
-          s.enemies
+          activeEnemies(s)
             .filter((e) => e.health > 0 && e.id !== a.targetId)
             .forEach((e) => hit(s, p, e.id, amount));
           heal(s, p, p.studentId, p.totals.damageDealt - before);
@@ -1049,7 +1106,7 @@ export function advancePhase(
           heal(s, p, p.studentId, dealt / 4);
       }
     }
-    for (const e of s.enemies)
+    for (const e of activeEnemies(s))
       for (const effect of e.effects)
         if (effect.damage > 0 && s.players[effect.ownerId])
           hit(s, s.players[effect.ownerId], e.id, effect.damage, true);
@@ -1077,30 +1134,30 @@ export function advancePhase(
   if (s.currentPhase === "question_resolution") {
     s.currentPhase = "enemy_ai";
     leader(s);
-    let soloDamageRemaining = s.soloEnemyDamageCap ?? Infinity;
-    for (const enemy of s.enemies
-      .filter((e) => e.health > 0)
-      .slice(0, fight.enemyDisplayMode === "simultaneous" ? undefined : 1)) {
-      const reduction = Object.values(s.players).reduce(
-        (n, p) => n + (p.buffs.dread_aura?.amount || 0),
-        0,
-      );
-      if (s.threatLeaderId && soloDamageRemaining > 0) {
-        const target = s.players[s.threatLeaderId];
-        // Difficulty 10 is the baseline; square-root scaling keeps +1 survivable.
-        const raw = Math.max(0, Math.ceil(fight.baseEnemyDamage * Math.sqrt(enemy.difficultyMultiplier / 10)) - reduction);
-        // Cap total counterattack damage for solo encounters, including simultaneous enemies.
-        const capped = Math.min(raw, soloDamageRemaining + target.stats.def + integer(target.stats.vit / 2));
-        const taken = damagePlayer(
-          s,
-          s.threatLeaderId,
-          capped,
-          enemy.id,
-        );
-        soloDamageRemaining -= taken;
-      }
-      leader(s);
-    }
+    resolveEnemyTurn(s, fight, {
+      random: () => rng(s),
+      damage: (id, raw, source, ignoreDefense, limit, fractional) => damagePlayer(s, id, raw, source, ignoreDefense, limit, fractional),
+      say: (actor, target, message, amount = 0) => event(s, "ability", actor, target, amount, message),
+      possess: (enemy, copied, target, damage) => {
+        const abilities = copied.availableAbilities.filter(id =>
+          (abilityDamage(copied, id) || 0) > 0 && !ULTIMATES.has(id) && !abilityProblem(copied, id));
+        if (!abilities.length) return false;
+        const ability = abilities[Math.floor(rng(s) * abilities.length)];
+        // Resolve the borrowed attack on isolated targets through the same player rules.
+        // Only its damage is mirrored back; real player resources, totals and loadouts are untouched.
+        const borrowed = structuredClone(copied);
+        borrowed.statuses = []; delete borrowed.actionBlocked;
+        const projection: CombatSnapshot = { ...structuredClone(s), encounterRules: undefined, enemyDisplayMode: "simultaneous", events: [], players: { [borrowed.studentId]: borrowed },
+          enemies: Object.values(s.players).filter(p => !p.isDead).map(p => ({ id: p.studentId, name: p.nickname,
+            image: "", difficultyMultiplier: 1, health: 1e9, maxHealth: 1e9, effects: [] })) };
+        applyAbility(projection, borrowed, ability, target.studentId);
+        s.seed = projection.seed;
+        event(s, "ability", enemy.id, copied.studentId, 0, `${enemy.name} copies ${copied.nickname}'s ${ability.replaceAll("_", " ")}`);
+        for (const attack of projection.events.filter(e => e.type === "damage")) damage(attack.targetId, attack.amount);
+        return true;
+      },
+    });
+    leader(s);
     s.phaseDeadline = now + 3000;
     return s;
   }
@@ -1141,16 +1198,48 @@ export function advancePhase(
           .map((x) => ({ ...x, rounds: x.rounds - 1 }))
           .filter((x) => x.rounds > 0)),
     );
+    if(s.encounterRules===2 && Object.keys(s.pendingPlayers||{}).length){
+      const q=Math.max(1,fight.questions.length);
+      s.entryPerformance||={};
+      for(const [id,p]of Object.entries(s.pendingPlayers||{}))s.entryPerformance[id] ||= performance(p,q);
+      const count=Object.keys(s.entryPerformance).length;
+      if(count>(s.encounterAttendance||0)){
+        const entries=Object.values(s.entryPerformance);
+        const ref=encounterBudget(Array.from({length:Math.max(3,count)},()=>Object.values(s.players)[0]),fight.encounterTier||1,q);
+        const damage=count<=2?entries.reduce((n,p)=>n+p.damage,0):ref.damage;
+        const pressure=count<=2?entries.reduce((n,p)=>n+p.healing/q*.8+p.health/(q*1.1)*.55+p.mitigation,0):ref.rawPressure;
+        const nextAllocation=allocateHP(s.enemies,Math.max(.001,damage*1.1));
+        s.enemies=s.enemies.map((e,i)=>({...e,maxHealth:nextAllocation[i].maxHealth,health:e.health>0?Math.max(.001,roundHP(nextAllocation[i].maxHealth*e.health/e.maxHealth)):0}));
+        s.referenceDamage=damage;s.enemyRoundBudget=pressure;s.encounterAttendance=count;
+      }
+    }
     for (const [id, player] of Object.entries(s.pendingPlayers || {})) s.players[id] = player;
     s.pendingPlayers = {};
     leader(s);
     s.round++;
-    s.currentQuestionIndex =
-      (s.currentQuestionIndex + 1) % fight.questions.length;
-    s.currentPhase = "question";
+    releaseInvalidStatuses(s);
+    let waveChanged=false;
+    if(s.encounterRules===2){
+      if(!activeEnemies(s).length && s.enemyDisplayMode==='consecutive'){
+        s.activeWave=Math.min(...s.enemies.filter(e=>e.health>0).map(e=>e.wave||1));
+        waveChanged=true;
+      }
+      s.questionOrder ||= fight.questions.map((_,i)=>i);
+      s.questionCursor=(s.questionCursor||0)+1;
+      if(s.questionCursor>=s.questionOrder.length){
+        s.questionCursor=0;
+        if(fight.randomizeQuestions){
+          for(let i=s.questionOrder.length-1;i>0;i--){const j=Math.floor(rng(s)*(i+1));[s.questionOrder[i],s.questionOrder[j]]=[s.questionOrder[j],s.questionOrder[i]];}
+          if(s.questionOrder.length>1&&s.questionOrder[0]===s.currentQuestionIndex)[s.questionOrder[0],s.questionOrder[1]]=[s.questionOrder[1],s.questionOrder[0]];
+        }
+      }
+      s.currentQuestionIndex=s.questionOrder[s.questionCursor];
+    }else s.currentQuestionIndex=(s.currentQuestionIndex+1)%fight.questions.length;
+    s.currentPhase = waveChanged ? "wave_break" : "question";
     s.questionStartTime = now + 3000;
     s.phaseDeadline =
       now + 3000 + fight.questions[s.currentQuestionIndex].timeLimit * 1000;
+    if(waveChanged)s.phaseDeadline=s.autoAdvanceWaves?now+3000:null;
     return s;
   }
   return s;
