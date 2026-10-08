@@ -80,7 +80,7 @@ test('mounted loadout screen follows saves for the same student without a reload
     await act(async()=>{await new Promise(resolve=>setTimeout(resolve,10));});
     assert.match(document.body.textContent!,/Starter Sleeves · Tier 0/);
     assert.match(document.body.textContent!,/Starter Linen Pants · Tier 0/);
-    assert.doesNotMatch(document.querySelector('[data-testid="card-equipment"]')!.textContent!,/Starter Vambraces/);
+    assert.doesNotMatch(document.querySelector('[data-testid="card-equipment"]')!.textContent!,/Starter Vambraces · Tier 0/);
   }finally{
     await act(async()=>root.unmount());cache.clear();dom.window.close();
     for(const [key,value] of saved)if(value)Object.defineProperty(globalThis,key,value);else delete (globalThis as any)[key];

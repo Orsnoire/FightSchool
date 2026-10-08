@@ -121,6 +121,11 @@ owner's level-2 equipment collection, revised tank VIT damage weighting and
 fallback instance loot rules. It supersedes older conflicting equipment level
 gates and VIT damage formulas. Implementation is in review, not deployed.
 
+The [equipment comparison specification](combat/equipment-comparisons.md) records
+hover, keyboard and touch comparisons in gear, shop and loot screens, including
+lost off-hand bonuses and special effects. It is implemented for review after the
+Tier 1 branch, not yet deployed.
+
 ## Combat Flow Refactor
 
 This document is authoritative primarily for **player experience and presentation**, including:

@@ -1,3 +1,5 @@
+import { GearComparison } from "@/components/GearComparison";
+import { useEquipmentComparison } from "@/hooks/useEquipmentComparison";
 import { refreshStudentLoadout } from "@/lib/studentLoadout";
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from "@shared/equipment-catalog";
 import type { EquipmentSlot } from "@shared/schema";
@@ -43,6 +45,8 @@ export default function GuildShop() {
   const { toast } = useToast();
   const [selectedSlot, setSelectedSlot] = useState<string>("all");
   const studentId = localStorage.getItem("studentId");
+
+  const comparison=useEquipmentComparison(studentId);
 
   // Fetch student data
   const { data: student, isLoading: studentLoading } = useQuery<Student>({
@@ -244,8 +248,8 @@ export default function GuildShop() {
                   </div>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {itemsByTier[Number(tier)].map((item) => (
+                      <GearComparison key={item.id} item={item} context={comparison}>
                       <Card
-                        key={item.id}
                         className="hover-elevate"
                         data-testid={`card-item-${item.id}`}
                       >
@@ -338,6 +342,7 @@ export default function GuildShop() {
                           </Button>
                         </CardFooter>
                       </Card>
+                      </GearComparison>
                     ))}
                   </div>
                 </div>

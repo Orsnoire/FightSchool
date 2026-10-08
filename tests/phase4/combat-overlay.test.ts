@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { build } from "esbuild";
@@ -27,6 +28,7 @@ test("student question, action, waiting, and resolution share a focused non-dism
     value: key === "WebSocket" ? Socket : key === "IS_REACT_ACT_ENVIRONMENT" ? true : ["addEventListener", "removeEventListener", "dispatchEvent", "requestAnimationFrame", "cancelAnimationFrame", "getComputedStyle"].includes(key) ? (dom.window as any)[key].bind(dom.window) : (dom.window as any)[key] });
   const dir = await mkdtemp(join(process.cwd(), ".combat-ui-test-"));
   const outfile = join(dir, "Combat.mjs");
+  const cache=new QueryClient({defaultOptions:{queries:{retry:false,gcTime:Infinity,queryFn:async ({queryKey})=> String(queryKey[0]).endsWith('job-levels') ? [{jobClass:'herbalist',level:2}] : student('herbalist')}}});
   let root: ReturnType<typeof import("react-dom/client").createRoot> | undefined;
   const { act, createElement } = await import("react");
   try {
@@ -43,7 +45,7 @@ test("student question, action, waiting, and resolution share a focused non-dism
     localStorage.setItem("sessionId", "ABC234");
     localStorage.setItem("studentId", student().id);
     root = createRoot(document.getElementById("root")!);
-    await act(async () => root!.render(createElement(Combat)));
+    await act(async () => root!.render(createElement(QueryClientProvider,{client:cache},createElement(Combat))));
     const socket = sockets[0];
     await act(async () => socket.onopen?.());
     let state = started("herbalist");
@@ -215,6 +217,7 @@ test("student question, action, waiting, and resolution share a focused non-dism
 
   } finally {
     if (root) await act(async () => root!.unmount());
+    cache.clear();
     await rm(dir, { recursive: true, force: true });
     dom.window.close();
     for (const [key, descriptor] of saved) {

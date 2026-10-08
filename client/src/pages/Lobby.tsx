@@ -1,3 +1,4 @@
+import { GearComparison } from "@/components/GearComparison";
 import { equipmentEffectText } from "@shared/tier-one-equipment";
 import { equipmentEffects } from "@shared/tier-one-equipment";
 import { EquipmentPermissions } from "@/components/EquipmentPermissions";
@@ -741,8 +742,8 @@ export default function Lobby() {
                           student[selectedSlot] === item.id;
 
                         return (
+                          <GearComparison key={item.id} item={item} context={{student,items:equippedItemsMap,level:jobLevels.find(row=>row.jobClass===student.characterClass)?.level || 1,loading:loadoutFetching || equipmentFetching,error:!!loadoutError || !!equipmentError}}>
                           <Card
-                            key={item.id}
                             className={`cursor-pointer hover-elevate ${
                               isEquipped ? "ring-2 ring-primary" : ""
                             } border-2 ${RARITY_COLORS[item.quality as keyof typeof RARITY_COLORS]}`}
@@ -780,6 +781,7 @@ export default function Lobby() {
                               </div>
                             </CardContent>
                           </Card>
+                          </GearComparison>
                         );
                       })}
                   </div>

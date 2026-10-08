@@ -17,6 +17,7 @@ is recorded in [the release record](../cloudflare/full-migration.md).
 | Equipment permissions and explicit armor classification | Implemented and tested in [PR #42](https://github.com/Orsnoire/FightSchool/pull/42), based on PR #41 | Released October 7; see release evidence above |
 | Remembered loadouts per job | Implemented and tested on `feat/remembered-job-loadouts` | Review pending; migration 0012 required; not deployed |
 | Tier 1 gear, reduced VIT damage scaling and fallback loot | Implemented for review on `feat/tier-one-gear`, based on PR #43 | Review/deployment pending; migrations 0012 and 0013 required |
+| Gear comparisons, including loot and shop | Implemented for review on `feat/gear-comparisons`, based on PR #44 | Review/deployment pending; no additional migration |
 | Combined release | Deployed | Migration 0011 applied; existing data preserved; see release record for live validation |
 
 ## Item 1: calculated values
@@ -171,3 +172,11 @@ budgets, level-2 gate, wand/book rules, ankh/potion effects, halved tank VIT dam
 weighting, and four stable random reward choices for new unassigned instances.
 Implementation is complete for review; deployment and individual equipment art
 remain pending. Existing assigned loot tables and defensive VIT benefits remain.
+
+
+## Gear comparisons — review pending
+
+[Gear comparison behavior](equipment-comparisons.md) covers hover/focus/tap
+previews, signed stat differences, special effects and forced off-hand losses
+in gear pickers, the guild shop and loot rewards. This is implemented for review,
+not deployed. Art, overlays and animation remain pending.
