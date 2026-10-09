@@ -1,9 +1,9 @@
 # QuestAcademy documentation
 
 **CURRENT — updated October 9, 2026.** Cleanup is the next development priority.
-Cleanup Phase 1 has **started with the resume safeguard**. All three C01 fixes
-are implemented and locally verified on the registered branch; PR checks/review
-and release remain separate. New features wait for the cleanup exit gates.
+Cleanup Phase 1 is active. **C01 is COMPLETE: merged, deployed and accepted.**
+**C02 dependency triage is next and not started.** New features wait for the
+cleanup exit gates.
 Read [active work](ACTIVE_WORK.md) before editing.
 
 ## Start here
@@ -12,7 +12,7 @@ Read [active work](ACTIVE_WORK.md) before editing.
 | --- | --- | --- |
 | [Active work / resume here](ACTIVE_WORK.md) | One package, branch/PR, checkpoint and next action | CURRENT COORDINATION |
 | [Current status](CURRENT_STATUS.md) | Shipped features, verified runtime, known defects and open acceptance | CURRENT |
-| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01 implementation verified locally; review/release next |
+| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01 COMPLETE; C02 next, not started |
 | [Expansion plan](EXPANSION_PLAN.md) | Deferred features, design dependencies and long-term direction | FUTURE — after cleanup |
 | [October 9 engineering review](reviews/2026-10-09-code-review.md) | Findings F01–F17 and measured baseline behind the cleanup plan | BASELINE RECORD |
 | [Source of Truth](Source_of_Truth.md) | Product authority, design rules and conflict resolution | CURRENT AUTHORITY |
@@ -43,7 +43,7 @@ to the historical Cloudflare migration phase numbers.
 | --- | --- | --- |
 | Combat rules and presentation | [Balance and stamina](combat/classroom-balance-and-stamina.md), [student overlays](combat/student-overlays.md), [battlefield direction](combat-facelift.md) | Released static battlefield and current rules; later dated approvals supersede early proposals |
 | Enemies | [Enemy AI and recovery](combat/enemy-ai.md), [individual enemies and waves](combat/enemy-waves-and-goblins.md) | Seven defined species, goblin minimum five, fixed authored quantities |
-| Equipment | [Starter wardrobe](starter-wardrobe.md), [Tier 1](combat/tier-one-equipment.md), [comparisons](combat/equipment-comparisons.md), [equipped artwork](avatar-equipment-visuals.md) | Released; F01 claim fix in draft PR #53, not yet deployed |
+| Equipment | [Starter wardrobe](starter-wardrobe.md), [Tier 1](combat/tier-one-equipment.md), [comparisons](combat/equipment-comparisons.md), [equipped artwork](avatar-equipment-visuals.md) | Released; F01 claim correction deployed and accepted in C01 / PR #53 |
 | Progression | [Guild quests and tiers](guild-quests-and-tiers.md) | Released; classroom tuning open, AA purchases future |
 | Hosting and team race | [Host sessions and team-race feasibility](combat/host-sessions-and-team-race.md) | Explicit Join / End / Launch released; team race future |
 | Avatars | [Database foundation](avatar-database.md), [art and animation direction](avatar-art-direction.md) | Static avatars released; full animation gate remains open |

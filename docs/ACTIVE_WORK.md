@@ -1,6 +1,6 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 9, 2026. C01 implementation verified locally; awaiting PR checks/review.**
+**CURRENT — October 9, 2026. C01 COMPLETE: merged, deployed and accepted. C02 next, not started.**
 
 Read this file on `main` to find the active package, then read the same file on
 its registered branch and inspect the live PR. Branch progress can be newer than
@@ -12,21 +12,19 @@ editing. The [cleanup plan](CLEANUP_PLAN.md) controls scope; the
 
 | Field | Checkpoint |
 | --- | --- |
-| Active package | **C01 — correctness**, the only active cleanup package |
-| Current stage | F01–F03 implemented and locally verified; exact-head CI/review recorded in PR #53; not merged or deployed |
-| Owner / execution lane | QuestAcademy cleanup session; resume this registered work, do not create another implementation |
-| Canonical branch | [`cleanup/c01-correctness`](https://github.com/Orsnoire/FightSchool/tree/cleanup/c01-correctness) |
-| Draft PR | [#53 — C01 correctness](https://github.com/Orsnoire/FightSchool/pull/53); continue this PR |
-| Starting main | `117373252e81721342d0faa483d2cf54eeeda874`; includes merged kickoff PR #54 at `3b490b391df4a3ec6d1d69d44346b8ccb153390a` |
-| Last verified implementation | This commit: local type check, 208 tests and production build pass; exact pushed SHA and CI are in the live PR |
-| Latest pushed checkpoint | Read the registered PR's live head SHA and checkpoint section; update that section after every push |
-| Deployed runtime | `e1581948f6623d86af859452bf083ca0f35db681`; none of C01 is merged or deployed |
-| Other packages | C02–C12 not started; register C02 only after C01 closes and its handoff is updated |
+| Active package | **None. C01 is COMPLETE; C02 is next and NOT STARTED.** |
+| C01 disposition | F01–F03 implemented, reviewed, merged, deployed and accepted on the canonical domain |
+| Completed PR / branch | [#53 — C01 correctness](https://github.com/Orsnoire/FightSchool/pull/53), merged; `cleanup/c01-correctness` is historical, not a resume target |
+| Deployed runtime | `8bf9df71629c9ba8933b63a24ca5f35da655e3cc`, PR #53 merge |
+| Immutable Worker | `68cf4f65-c163-4018-ad6f-a718489dbb46`, published October 9 at 16:07:27 UTC |
+| Release handoff | `release/c01-2026-10-09` records this documentation-only checkpoint; inspect its PR state if interrupted during publication |
+| Release evidence | [C01 release record](cloudflare/full-migration.md#c01-correctness-release--9-october-2026) |
+| Other packages | C02–C12 not started; register C02 before dependency implementation |
 
-A commit cannot contain its own SHA. The PR description records the exact pushed
-SHA after publication; this file records the work and next action contained in
-the commit. Verify the remote head rather than trusting a stale copied SHA. If
-the two differ, inspect the newer commits and update the handoff before editing.
+A commit cannot contain its own SHA. The handoff PR description records its exact
+pushed SHA; this file records the work and next action contained in that commit.
+Verify the remote head and PR state rather than trusting a stale copied SHA.
+If they differ, inspect newer commits and reconcile before editing.
 
 ## Completed implementation
 
@@ -45,7 +43,7 @@ Only the three C01 defects from the [review](reviews/2026-10-09-code-review.md):
 
 Dependency updates, schema generation repair, broad refactors and expansion
 belong to later packages. No live data, schema, reward calculations or approved
-combat/gameplay rules were changed. Local correctness is not release evidence.
+combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 
 ## Verification checkpoint
 
@@ -66,21 +64,30 @@ combat/gameplay rules were changed. Local correctness is not release evidence.
   tests. The full suite includes the F01 claim, reward and combat UI regressions.
 - Existing Vite large-chunk warning remains C07 work. Local Node 24 reused the
   existing locked dependencies; GitHub CI verifies its fresh Node 22 install.
-- The live PR records CI and triggered browser acceptance for the exact pushed
-  SHA. Local checks do not claim those remote workflows have completed.
+- **Reviewed head:** `b952894a1fd9e584f41018038765434d49981a41` passed
+  [CI 37951053838](https://github.com/Orsnoire/FightSchool/actions/runs/37951053838)
+  and [browser acceptance 37951054128](https://github.com/Orsnoire/FightSchool/actions/runs/37951054128).
+- **Merged runtime:** `8bf9df71629c9ba8933b63a24ca5f35da655e3cc` passed
+  [main CI 37956409540](https://github.com/Orsnoire/FightSchool/actions/runs/37956409540),
+  [deployment 37956580253](https://github.com/Orsnoire/FightSchool/actions/runs/37956580253)
+  and [canonical live acceptance 37956888302](https://github.com/Orsnoire/FightSchool/actions/runs/37956888302).
+  Both hostname smoke checks passed; the live run covered combat/economy, R2,
+  30 participants, reconnects, isolation, moderation and idempotent rewards.
+- **Yesterday's queue:** all October 8 merged PRs (#37–50 and #52) were already
+  ancestors of the verified October 8 runtime `e158194`; this release includes
+  them. No separate older open PR or undeployed merged runtime change remained.
 
 ## Exact next action
 
-Fetch the registered branch and current main, reconcile this checkpoint with
-newer commits and the live PR, and inspect all checks for the exact current head.
-Resolve any remaining failure on this branch. Review the complete C01 diff and
-record its merge/release disposition; no F01–F03 implementation remains queued.
+Fetch current `main`, check for newer commits and open PRs, and verify this release
+handoff is merged. If publication was interrupted, resume the existing
+`release/c01-2026-10-09` documentation PR before starting another branch.
 
-Keep C01 active until that review/release handoff is resolved. Merge, deployment
-and live acceptance are separate states and have not occurred for C01. On
-completion, update the main discovery pointer/current status and cleanup table,
-then register C02 (dependency triage) before substantive work. Do not start a
-competing correctness branch or mark live defects fixed based on this draft.
+For the next implementation session, register **C02 — dependency triage** with
+one branch and draft PR, and publish that claim in this checkpoint before
+substantive dependency changes. Follow the C02 scope and exit gates in the
+cleanup plan. C02 is not started by this release; do not reopen C01 or combine
+schema repair, broad refactors or expansion with dependency maintenance.
 
 ## Resume and handoff checklist
 

@@ -478,7 +478,8 @@ explicit host-session releases.
   passed on the review head; [enemy verification](../combat/enemy-ai-verification.md)
   records its scope and inspected screenshots.
 
-This is the latest verified runtime for the October 9 review. The release does
+This was the verified runtime at the October 9 review baseline, superseded by
+the C01 release below. The release does
 not implement team race, party-scaled enemy counts, AA purchases or animated
 avatars. Existing operational drills above and classroom balance observation
 remain open. October 9 documentation changes require no runtime redeployment.
@@ -487,12 +488,64 @@ remain open. October 9 documentation changes require no runtime redeployment.
 
 [Current status](../CURRENT_STATUS.md), the [cleanup plan](../CLEANUP_PLAN.md),
 [expansion backlog](../EXPANSION_PLAN.md) and [engineering review](../reviews/2026-10-09-code-review.md)
-now govern work tracking. Documentation preparation is complete; cleanup Phase 1
-is not started. The review reproduced built-in loot validation and leaderboard
-defects, plus schema generation drift; successful live acceptance does not erase
-those known issues.
+now govern work tracking. Documentation preparation and the Phase 1 resume
+safeguard are complete. C01 subsequently closed the reproduced built-in loot and
+leaderboard defects; its release evidence follows. C02 is next and not started.
+Schema generation drift remains C03 work.
 
 Preserve current live students and records. Old Worker IDs above are historical
 checkpoints, not a claim that September builds are safe against today's room
 state and schema. C12 must identify and rehearse a currently compatible immutable
 rollback version; changing Worker code does not undo Neon, R2 or room data.
+
+
+## C01 correctness release — 9 October 2026
+
+**COMPLETE — merged, deployed and accepted.** [PR #53](https://github.com/Orsnoire/FightSchool/pull/53)
+merged at 16:04:13 UTC as `8bf9df71629c9ba8933b63a24ca5f35da655e3cc`.
+This release fixes F01 built-in/custom loot claim validation, F02 leaderboard
+metric URLs and visible retryable errors, and F03 weighted accuracy. Ownership,
+earned-loot checks, atomic rewards, guild visibility and approved gameplay remain
+unchanged. C01 adds no migration and performs no player-data reset.
+
+| Evidence | Verified result |
+| --- | --- |
+| [Main CI 37956409540](https://github.com/Orsnoire/FightSchool/actions/runs/37956409540) | Passed on exact merged runtime `8bf9df7` |
+| [Deployment 37956580253](https://github.com/Orsnoire/FightSchool/actions/runs/37956580253), [job 113908508849](https://github.com/Orsnoire/FightSchool/actions/runs/37956580253/job/113908508849) | Passed on `8bf9df7`: type check, 208 tests, production build, R2, migration gate, Worker publication and both hostname smoke checks |
+| Immutable Worker | `68cf4f65-c163-4018-ad6f-a718489dbb46`, published 16:07:27 UTC (10:07:27 MDT) |
+| Migration evidence | Existing additive migrator succeeded at 16:07:09 UTC with the unchanged journal through `0014`; no new SQL files. This is migrator-gate evidence, not an independent live-schema audit |
+| Smoke checks | workers.dev and canonical-domain checks passed at 16:07:35–36 UTC |
+| [Canonical live acceptance 37956888302](https://github.com/Orsnoire/FightSchool/actions/runs/37956888302), [job 113909563121](https://github.com/Orsnoire/FightSchool/actions/runs/37956888302/job/113909563121) | Passed on `8bf9df7`, 16:08–16:11 UTC; both scripts targeted `https://questacademy.bookwyrminteractive.studio` |
+| [PR CI 37951053838](https://github.com/Orsnoire/FightSchool/actions/runs/37951053838) and [browser acceptance 37951054128](https://github.com/Orsnoire/FightSchool/actions/runs/37951054128) | Passed on reviewed head `b952894a1fd9e584f41018038765434d49981a41`; merged tree matches this head |
+
+Live acceptance covered combat/damage/resources, enemy AI, reconnect deadlines,
+stale/retried commands, durable XP, guilds, quests, shop, reward claims, solo
+hosting, history and owner isolation. Operational checks passed R2 upload and
+readback, authorization, ranges/metadata, 30 participants, refresh, concurrent
+room isolation, exactly-once results, host discovery/end/launch, late entry,
+moderation, fractional host-end rewards and open-socket logout revocation.
+
+The 30-answer burst recorded **p50 2,065 ms, p95 3,976 ms, maximum 4,177 ms**,
+within the existing 15-second maximum gate. This single run does not establish a
+performance trend, meet the proposed under-one-second cleanup p95 target, or
+replace repeated seeded 30/60-player measurements. Those remain C05–C08/C12 work.
+F01–F03's specific built-in loot, unequal-fight accuracy and error UI fixtures
+are covered by disposable boundary regressions in the 208-test suite; the
+standard live harness does not individually reproduce all those new cases.
+
+**October 8 queue reconciliation:** all merged PRs #37–50 and #52 were verified
+as ancestors of `e1581948f6623d86af859452bf083ca0f35db681`, which already passed
+October 8 deployment `37844054859` and live acceptance `37844271331`. Before
+merging C01, later main changes were documentation-only and #53 was the only
+open PR. No separate older runtime change was waiting to deploy. This release
+includes equipment, guild quests/progression, host controls, waves/goblin swarms
+and enemy AI. Team race, party-scaled counts, AA purchases and full animated
+avatars remain future work, not a release backlog.
+
+Previous Worker `2180375a-c947-470d-a3ea-e199c9ff25f3` remains historical evidence;
+no rollback rehearsal was performed. C12's infrastructure drills, fixture
+isolation/retention and full operational signoff remain open. Current live data
+must be preserved. The [active-work checkpoint](../ACTIVE_WORK.md) records C01
+complete and C02 unstarted; documentation-only handoff commits require no redeploy.
+
+[Deployment success screenshot](../releases/2026-10-09-c01-deployed.jpg).

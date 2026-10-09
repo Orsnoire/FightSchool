@@ -242,5 +242,5 @@ preserving defensive benefits and direct healing; add the level-2 gear collectio
 apply the Priest ankh's +1 healing after First Aid's normal rounding; and select
 four fallback loot choices when an otherwise unassigned new instance opens.
 This follow-up shipped in PR #44 after PRs #37–42; see [current status](../CURRENT_STATUS.md).
-The built-in loot claim HTTP defect is tracked separately as F01/C01 in the
-[cleanup plan](../CLEANUP_PLAN.md).
+The built-in loot claim HTTP defect was corrected in the October 9 C01 release
+(PR #53); see the [cleanup plan](../CLEANUP_PLAN.md) and current release evidence.
