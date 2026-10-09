@@ -1,5 +1,6 @@
 import { questInput } from "../../shared/quests";
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
+import { equipmentIdSchema } from "../../shared/equipment-id.ts";
 import { armorClassificationError, equipmentExclusion, handConflict, equipmentRequiredLevel } from "../../shared/equipment-rules.ts";
 import { mountainDay, nextMountainMidnight, xpMultiplier, STAMINA_TIME_ZONE } from "../../shared/combat/stamina.ts";
 import { z } from "zod";
@@ -573,19 +574,17 @@ export async function handleGame(
           })
           .from(s.combatResults)
           .where(eq(s.combatResults.guildId, id));
-        const grouped = new Map<string, number>();
-        for (const r of rows)
-          grouped.set(
-            r.studentId,
-            (grouped.get(r.studentId) || 0) +
-              (metric === "xpEarned"
-                ? r.xpEarned
-                : metric === "accuracy"
-                  ? (r.totals.questionsCorrect /
-                      Math.max(1, r.totals.questionsAnswered)) *
-                    100
-                  : (r.totals as any)[metric] || 0),
-          );
+        const grouped = new Map<string, { value: number; questionsAnswered: number }>();
+        for (const r of rows) {
+          const total = grouped.get(r.studentId) || { value: 0, questionsAnswered: 0 };
+          total.value += metric === "xpEarned"
+            ? r.xpEarned
+            : metric === "accuracy"
+              ? r.totals.questionsCorrect
+              : (r.totals as any)[metric] || 0;
+          total.questionsAnswered += r.totals.questionsAnswered;
+          grouped.set(r.studentId, total);
+        }
         const members = await db
           .select({
             id: s.students.id,
@@ -600,14 +599,21 @@ export async function handleGame(
           .where(eq(s.guildMemberships.guildId, id));
         return json(
           members
-            .map((m) => ({
-              ...m,
-              studentId: m.id,
-              value: grouped.get(m.id) || 0,
-              totalDamageDealt: grouped.get(m.id) || 0,
-              fightsCompleted: rows.filter((r) => r.studentId === m.id).length,
-              [metric]: grouped.get(m.id) || 0,
-            }))
+            .map((m) => {
+              const total = grouped.get(m.id);
+              // Weight every answered question equally, including unequal fights.
+              const value = metric === "accuracy"
+                ? total?.questionsAnswered ? 100 * total.value / total.questionsAnswered : 0
+                : total?.value || 0;
+              return {
+                ...m,
+                studentId: m.id,
+                value,
+                totalDamageDealt: value,
+                fightsCompleted: rows.filter((r) => r.studentId === m.id).length,
+                [metric]: value,
+              };
+            })
             .sort((a, b) => b.value - a.value),
         );
       }
@@ -918,7 +924,7 @@ export async function handleGame(
           .object({
             fightId: uuid,
             resultId: uuid.optional(),
-            itemId: uuid.optional(),
+            itemId: equipmentIdSchema.optional(),
           })
           .parse(await request.json());
         if (tail === "claim-loot" && !input.itemId)

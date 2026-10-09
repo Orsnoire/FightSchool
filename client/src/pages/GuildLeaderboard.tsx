@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trophy, Medal } from "lucide-react";
 import { type Guild } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 interface LeaderboardEntry {
   studentId: string;
@@ -19,13 +20,24 @@ export default function GuildLeaderboard() {
   const guildId = params?.guildId;
   const studentId = localStorage.getItem("studentId");
 
-  const { data: guild, isLoading: guildLoading } = useQuery<Guild>({
+  const {
+    data: guild, isLoading: guildLoading, isError: guildError,
+    isFetching: guildFetching, refetch: refetchGuild,
+  } = useQuery<Guild>({
     queryKey: [`/api/guilds/${guildId}`],
     enabled: !!guildId,
   });
 
-  const { data: leaderboard = [], isLoading: leaderboardLoading } = useQuery<LeaderboardEntry[]>({
-    queryKey: [`/api/guilds/${guildId}/leaderboard`, "damageDealt"],
+  const metric = "damageDealt";
+  const {
+    data: leaderboard = [], isLoading: leaderboardLoading, isError: leaderboardError,
+    isFetching: leaderboardFetching, refetch: refetchLeaderboard,
+  } = useQuery<LeaderboardEntry[]>({
+    queryKey: [`/api/guilds/${guildId}/leaderboard`, metric],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/guilds/${guildId}/leaderboard?metric=${metric}`);
+      return response.json();
+    },
     enabled: !!guildId,
   });
 
@@ -38,6 +50,28 @@ export default function GuildLeaderboard() {
           </div>
           <p className="text-muted-foreground">Loading leaderboard...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (guildError || leaderboardError) {
+    const retrying = guildFetching || leaderboardFetching;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900 flex items-center justify-center p-4">
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <p role="alert" className="text-muted-foreground">Could not load leaderboard. Please try again.</p>
+            <div className="flex gap-2">
+              <Button disabled={retrying} onClick={() => {
+                if (guildError) void refetchGuild();
+                if (leaderboardError) void refetchLeaderboard();
+              }}>{retrying ? "Retrying..." : "Retry"}</Button>
+              <Link href={`/student/guild-lobby/${guildId}`}>
+                <Button variant="outline">Back to guild</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

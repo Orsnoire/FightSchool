@@ -3,8 +3,9 @@
 > **CURRENT AUTHORITY — October 9, 2026.** Start with the [documentation index](README.md),
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
-> Phase 1 has started with the [resume safeguard](ACTIVE_WORK.md); C01 fixes are
-> pending. Historical migration phases are not the active queue.
+> Phase 1 has started with the [resume safeguard](ACTIVE_WORK.md); C01 is
+> implemented and locally verified (F01–F03), with checks/review and release
+> tracked separately in PR #53. Historical migration phases are not the active queue.
 
 This document defines the authority hierarchy for all QuestAcademy design, development, migration, and agent-based work.
 

@@ -1,6 +1,6 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 9, 2026. Phase 1 has started with the resume safeguard.**
+**CURRENT — October 9, 2026. C01 implementation verified locally; awaiting PR checks/review.**
 
 Read this file on `main` to find the active package, then read the same file on
 its registered branch and inspect the live PR. Branch progress can be newer than
@@ -12,56 +12,75 @@ editing. The [cleanup plan](CLEANUP_PLAN.md) controls scope; the
 
 | Field | Checkpoint |
 | --- | --- |
-| Active package | **C01 — correctness**, reserved as the only active cleanup package |
-| Current stage | Phase 1 first step COMPLETE; C01 draft registered, runtime fixes not started |
+| Active package | **C01 — correctness**, the only active cleanup package |
+| Current stage | F01–F03 implemented and locally verified; exact-head CI/review recorded in PR #53; not merged or deployed |
 | Owner / execution lane | QuestAcademy cleanup session; resume this registered work, do not create another implementation |
 | Canonical branch | [`cleanup/c01-correctness`](https://github.com/Orsnoire/FightSchool/tree/cleanup/c01-correctness) |
-| Draft PR | [#53 — C01 correctness (DRAFT)](https://github.com/Orsnoire/FightSchool/pull/53); continue this PR |
-| Starting main | `117373252e81721342d0faa483d2cf54eeeda874` (merged documentation reconciliation) |
-| Last verified draft checkpoint | `bdbef1f042cae030e997849089f8f41342aa3d8d` — initialization only; inspect the live PR for newer commits |
-| Latest pushed checkpoint | Read the registered PR's live head SHA and its checkpoint section; update that section after every push |
-| Deployed runtime | `e1581948f6623d86af859452bf083ca0f35db681`; the kickoff does not change the live application |
-| Other packages | C02–C12 not started; do not begin another package while C01 is active |
+| Draft PR | [#53 — C01 correctness](https://github.com/Orsnoire/FightSchool/pull/53); continue this PR |
+| Starting main | `117373252e81721342d0faa483d2cf54eeeda874`; includes merged kickoff PR #54 at `3b490b391df4a3ec6d1d69d44346b8ccb153390a` |
+| Last verified implementation | This commit: local type check, 208 tests and production build pass; exact pushed SHA and CI are in the live PR |
+| Latest pushed checkpoint | Read the registered PR's live head SHA and checkpoint section; update that section after every push |
+| Deployed runtime | `e1581948f6623d86af859452bf083ca0f35db681`; none of C01 is merged or deployed |
+| Other packages | C02–C12 not started; register C02 only after C01 closes and its handoff is updated |
 
 A commit cannot contain its own SHA. The PR description records the exact pushed
 SHA after publication; this file records the work and next action contained in
 the commit. Verify the remote head rather than trusting a stale copied SHA. If
 the two differ, inspect the newer commits and update the handoff before editing.
 
-## Scope and unfinished work
+## Completed implementation
 
 Only the three C01 defects from the [review](reviews/2026-10-09-code-review.md):
 
-1. **F01:** built-in Tier 1 loot IDs fail UUID-only claim-route validation. Cover
-   registered built-in and custom IDs, ownership/earned-item checks and replay.
-2. **F02:** the student leaderboard builds a path from its metric cache key instead
-   of using the route's query parameter. Correct the URL and expose load errors.
-3. **F03:** accuracy sums fight percentages. Use question-weighted totals with
-   zero-answer and unequal-size-fight coverage.
+1. **F01:** shared claim-item validation accepts registered built-in equipment IDs
+   and custom UUIDs. Fight/result IDs remain UUID-only; earned-item checks,
+   ownership and atomic reward SQL are unchanged.
+2. **F02:** the student leaderboard sends the metric as a query parameter while
+   retaining its guild/metric cache key. Leaderboard and guild metadata failures,
+   including failed cached refreshes, show an accessible error and Retry action.
+   Only successful empty responses show “No stats yet.”
+3. **F03:** leaderboard accuracy is `100 * sum(correct) / sum(answered)`, with zero
+   for no answers/history and fractional precision retained. Other metric sums,
+   response aliases, rankings, guild/member scope and hidden-metric rules remain.
 
 Dependency updates, schema generation repair, broad refactors and expansion
-belong to later packages. Preserve live students, inventory, reward receipts and
-approved gameplay. The review reproductions are findings, not completed fixes.
+belong to later packages. No live data, schema, reward calculations or approved
+combat/gameplay rules were changed. Local correctness is not release evidence.
 
 ## Verification checkpoint
 
-- Starting main `1173732`: [CI 37944238703](https://github.com/Orsnoire/FightSchool/actions/runs/37944238703)
-  passed type checking, the 186-test suite and production build.
-- Kickoff: 254 relative documentation links and diff scope verified; the resume
-  rules and C01 registration are the first Phase 1 step. Its documentation PR
-  records CI before merge; subsequent C01 checks belong to PR #53.
-- C01: no new regression tests or runtime changes yet. No C01 test result is
-  claimed; no application deployment or database migration is part of kickoff.
-- Remaining verification: reproduce F01–F03 through the actual HTTP/UI boundary,
-  then implement and verify the fixes against the C01 completion gate.
+- **F01 baseline proof:** `1f2eaf418b4547578c758a437eefbe6bb423bfa9`
+  intentionally fails two HTTP subcases on UUID-only claim validation. The fix
+  `d24e934de770d41e3ca5619e720a5034ea9360e9` passed 194 tests/type/build and
+  [CI 37949069416](https://github.com/Orsnoire/FightSchool/actions/runs/37949069416).
+- **F02/F03 baseline proof:** `d6a699baec353a91217f212e9c21968fcd80f883`
+  intentionally fails seven new subcases: the URL, four error/retry states,
+  8/10 + 8/10 returning 160 rather than 80, and 1/1 + 1/9 returning 111.11 rather
+  than 20. Five new subcases already pass; both parent tests also report failure.
+- **Fixed boundary tests:** `node --import tsx --test tests/phase4/leaderboard-*.test.ts`
+  passes all 14 tests (12 subcases plus two parents). The UI test bundles the real
+  page/default query function. HTTP tests use signed sessions, real handlers and
+  all 15 migrations in disposable PGlite; no production data is involved.
+- **Full local gates:** `npm run check`, `npm test` (208 tests: 5 Phase 2, 7 Phase 3,
+  191 Phase 4, 5 rich-content) and `npm run build` pass, with no failed/skipped
+  tests. The full suite includes the F01 claim, reward and combat UI regressions.
+- Existing Vite large-chunk warning remains C07 work. Local Node 24 reused the
+  existing locked dependencies; GitHub CI verifies its fresh Node 22 install.
+- The live PR records CI and triggered browser acceptance for the exact pushed
+  SHA. Local checks do not claim those remote workflows have completed.
 
 ## Exact next action
 
-Fetch `cleanup/c01-correctness` / PR #53 and current `main`, reconcile this
-checkpoint with the live PR head and any newer branch commits, then add
-the F01 reward-claim HTTP regression against a disposable migrated database.
-Prove the current built-in ID fails while a valid earned custom ID works before
-changing validation. Keep that work in the registered C01 draft PR.
+Fetch the registered branch and current main, reconcile this checkpoint with
+newer commits and the live PR, and inspect all checks for the exact current head.
+Resolve any remaining failure on this branch. Review the complete C01 diff and
+record its merge/release disposition; no F01–F03 implementation remains queued.
+
+Keep C01 active until that review/release handoff is resolved. Merge, deployment
+and live acceptance are separate states and have not occurred for C01. On
+completion, update the main discovery pointer/current status and cleanup table,
+then register C02 (dependency triage) before substantive work. Do not start a
+competing correctness branch or mark live defects fixed based on this draft.
 
 ## Resume and handoff checklist
 
