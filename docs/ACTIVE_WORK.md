@@ -13,11 +13,12 @@ editing. The [cleanup plan](CLEANUP_PLAN.md) controls scope; the
 | Field | Checkpoint |
 | --- | --- |
 | Active package | **C01 — correctness**, reserved as the only active cleanup package |
-| Current stage | Phase 1 first step: publish resume rules and register C01; runtime fixes not started |
+| Current stage | Phase 1 first step COMPLETE; C01 draft registered, runtime fixes not started |
 | Owner / execution lane | QuestAcademy cleanup session; resume this registered work, do not create another implementation |
 | Canonical branch | [`cleanup/c01-correctness`](https://github.com/Orsnoire/FightSchool/tree/cleanup/c01-correctness) |
-| Draft PR | Pending registration during this kickoff; inspect open PRs for the canonical branch before creating one |
+| Draft PR | [#53 — C01 correctness (DRAFT)](https://github.com/Orsnoire/FightSchool/pull/53); continue this PR |
 | Starting main | `117373252e81721342d0faa483d2cf54eeeda874` (merged documentation reconciliation) |
+| Last verified draft checkpoint | `bdbef1f042cae030e997849089f8f41342aa3d8d` — initialization only; inspect the live PR for newer commits |
 | Latest pushed checkpoint | Read the registered PR's live head SHA and its checkpoint section; update that section after every push |
 | Deployed runtime | `e1581948f6623d86af859452bf083ca0f35db681`; the kickoff does not change the live application |
 | Other packages | C02–C12 not started; do not begin another package while C01 is active |
@@ -46,8 +47,9 @@ approved gameplay. The review reproductions are findings, not completed fixes.
 
 - Starting main `1173732`: [CI 37944238703](https://github.com/Orsnoire/FightSchool/actions/runs/37944238703)
   passed type checking, the 186-test suite and production build.
-- Kickoff: documentation links and diff scope must be verified before merging the
-  resume rules. Record the actual kickoff CI run in its PR.
+- Kickoff: 254 relative documentation links and diff scope verified; the resume
+  rules and C01 registration are the first Phase 1 step. Its documentation PR
+  records CI before merge; subsequent C01 checks belong to PR #53.
 - C01: no new regression tests or runtime changes yet. No C01 test result is
   claimed; no application deployment or database migration is part of kickoff.
 - Remaining verification: reproduce F01–F03 through the actual HTTP/UI boundary,
@@ -55,8 +57,8 @@ approved gameplay. The review reproductions are findings, not completed fixes.
 
 ## Exact next action
 
-Finish publishing the resume rules on `main` and registering the single C01 draft
-PR. Then fetch that branch and current `main`, reconcile this checkpoint, and add
+Fetch `cleanup/c01-correctness` / PR #53 and current `main`, reconcile this
+checkpoint with the live PR head and any newer branch commits, then add
 the F01 reward-claim HTTP regression against a disposable migrated database.
 Prove the current built-in ID fails while a valid earned custom ID works before
 changing validation. Keep that work in the registered C01 draft PR.
