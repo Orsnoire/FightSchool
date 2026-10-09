@@ -18,7 +18,7 @@ editing. The [cleanup plan](CLEANUP_PLAN.md) controls scope; the
 | Canonical branch | [`cleanup/c01-correctness`](https://github.com/Orsnoire/FightSchool/tree/cleanup/c01-correctness) |
 | Draft PR | [#53 — C01 correctness (DRAFT)](https://github.com/Orsnoire/FightSchool/pull/53); continue this PR |
 | Starting main | `117373252e81721342d0faa483d2cf54eeeda874` (merged documentation reconciliation) |
-| Last verified draft checkpoint | `bdbef1f042cae030e997849089f8f41342aa3d8d` — initialization only; inspect the live PR for newer commits |
+| Last verified draft checkpoint | `45ed2e5333b40f8300c9c764af204d69a358047b` — documentation checkpoint, CI 37945619623 passed; inspect the live PR for newer commits |
 | Latest pushed checkpoint | Read the registered PR's live head SHA and its checkpoint section; update that section after every push |
 | Deployed runtime | `e1581948f6623d86af859452bf083ca0f35db681`; the kickoff does not change the live application |
 | Other packages | C02–C12 not started; do not begin another package while C01 is active |
@@ -57,9 +57,11 @@ approved gameplay. The review reproductions are findings, not completed fixes.
 
 ## C01 branch checkpoint
 
-This is the registered C01 draft workspace. The resume protocol is tracked in
-[kickoff PR #54](https://github.com/Orsnoire/FightSchool/pull/54); verify it is merged
-before substantive code work. This branch includes its documentation changes.
+This is the registered C01 draft workspace. The resume protocol is COMPLETE in
+[merged kickoff PR #54](https://github.com/Orsnoire/FightSchool/pull/54), main commit
+`3b490b391df4a3ec6d1d69d44346b8ccb153390a`. Its exact-head
+[CI 37945475536](https://github.com/Orsnoire/FightSchool/actions/runs/37945475536) passed.
+This branch includes that main commit; only this handoff differs from main.
 Runtime code and regression tests are unchanged. F01 is the next implementation
 checkpoint; F02/F03 remain pending in this same PR.
 
