@@ -1,6 +1,6 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 9, 2026. Phase 1 has started with the resume safeguard.**
+**CURRENT — October 9, 2026. C01 in progress; F01 verified, not released.**
 
 Read this file on `main` to find the active package, then read the same file on
 its registered branch and inspect the live PR. Branch progress can be newer than
@@ -13,14 +13,14 @@ editing. The [cleanup plan](CLEANUP_PLAN.md) controls scope; the
 | Field | Checkpoint |
 | --- | --- |
 | Active package | **C01 — correctness**, reserved as the only active cleanup package |
-| Current stage | Phase 1 first step COMPLETE; F01 HTTP regression reproduced, validator fix next |
+| Current stage | Phase 1 first step COMPLETE; F01 implemented and locally verified; F02/F03 pending |
 | Owner / execution lane | QuestAcademy cleanup session; resume this registered work, do not create another implementation |
 | Canonical branch | [`cleanup/c01-correctness`](https://github.com/Orsnoire/FightSchool/tree/cleanup/c01-correctness) |
 | Draft PR | [#53 — C01 correctness (DRAFT)](https://github.com/Orsnoire/FightSchool/pull/53); continue this PR |
 | Starting main | `117373252e81721342d0faa483d2cf54eeeda874` (merged documentation reconciliation) |
-| Last verified draft checkpoint | `45ed2e5333b40f8300c9c764af204d69a358047b` — documentation checkpoint, CI 37945619623 passed; inspect the live PR for newer commits |
+| Last verified draft checkpoint | F01 code and tests in this commit: local type check, 194 tests and production build pass; exact pushed SHA and CI are in the live PR |
 | Latest pushed checkpoint | Read the registered PR's live head SHA and its checkpoint section; update that section after every push |
-| Deployed runtime | `e1581948f6623d86af859452bf083ca0f35db681`; the kickoff does not change the live application |
+| Deployed runtime | `e1581948f6623d86af859452bf083ca0f35db681`; F01 is not merged or deployed |
 | Other packages | C02–C12 not started; do not begin another package while C01 is active |
 
 A commit cannot contain its own SHA. The PR description records the exact pushed
@@ -32,8 +32,10 @@ the two differ, inspect the newer commits and update the handoff before editing.
 
 Only the three C01 defects from the [review](reviews/2026-10-09-code-review.md):
 
-1. **F01:** built-in Tier 1 loot IDs fail UUID-only claim-route validation. Cover
-   registered built-in and custom IDs, ownership/earned-item checks and replay.
+1. **F01 — implemented and locally verified:** claim-route validation accepts
+   registered built-in equipment IDs and custom UUIDs through a shared schema.
+   Fight/result IDs remain UUID-only; ownership, earned-item checks and atomic
+   reward SQL are unchanged. Not merged or deployed.
 2. **F02:** the student leaderboard builds a path from its metric cache key instead
    of using the route's query parameter. Correct the URL and expose load errors.
 3. **F03:** accuracy sums fight percentages. Use question-weighted totals with
@@ -45,38 +47,46 @@ approved gameplay. The review reproductions are findings, not completed fixes.
 
 ## Verification checkpoint
 
-- Starting main `1173732`: [CI 37944238703](https://github.com/Orsnoire/FightSchool/actions/runs/37944238703)
-  passed type checking, the 186-test suite and production build.
-- Kickoff: 254 relative documentation links and diff scope verified; the resume
-  rules and C01 registration are the first Phase 1 step. Its documentation PR
-  records CI before merge; subsequent C01 checks belong to PR #53.
-- F01 regression: `node --import tsx --test tests/phase4/reward-claim-http.test.ts`
-  has two expected failing subcases on the unchanged runtime: built-in claims
-  return 400, and registered but unearned built-ins never reach earned-loot
-  validation. Five subcases pass (custom UUID/retry, ownership, ineligible
-  results, gold/legacy result ID, and simultaneous claims). The parent test also
-  reports failure. This is an intentionally failing draft checkpoint.
-- The test uses the real HTTP handler, signed sessions, all 15 migrations and
-  atomic reward SQL in disposable PGlite. No live data or schema is changed.
-- Remaining: fix F01 and verify the full suite, then reproduce and fix F02/F03.
+- Baseline proof: commit `1f2eaf418b4547578c758a437eefbe6bb423bfa9`
+  intentionally fails two HTTP subcases against unchanged runtime: earned
+  built-ins are rejected, and valid unearned built-ins never reach earned-loot
+  validation. Five other subcases pass; the parent also reports failure.
+- F01 fix: `node --import tsx --test tests/phase4/reward-claim-http.test.ts
+  tests/phase4/tier-one-rewards.test.ts tests/phase4/combat-overlay.test.ts
+  tests/phase4/loot-reward-choices.test.ts` passes all 11 tests. The new HTTP
+  regression passes all seven subcases (eight tests counting its parent).
+- Full local gates: `npm run check`, `npm test` (194 tests: 5 Phase 2, 7 Phase 3,
+  177 Phase 4, 5 rich-content), and `npm run build` all pass. Existing Vite large
+  chunk warning remains assigned to C07. Local Node 24 uses the existing locked
+  dependencies; GitHub CI verifies a fresh install on its configured Node 22.
+- The HTTP regression uses signed sessions, all 15 migrations and real atomic
+  reward SQL in disposable PGlite. It covers custom UUIDs, all four built-in
+  fallback choices, invalid/unearned/prototype-property IDs, student and
+  fight/result scope, ineligible results, gold, retries and simultaneous claims.
+- No production data, migration, reward calculation, or gameplay changes. CI
+  for this pushed commit is recorded in the live PR; local checks are not a
+  claim that CI has completed.
 
 ## C01 branch checkpoint
 
 This is the registered C01 draft workspace. The resume protocol is COMPLETE in
 [merged kickoff PR #54](https://github.com/Orsnoire/FightSchool/pull/54), main commit
-`3b490b391df4a3ec6d1d69d44346b8ccb153390a`. Its exact-head
-[CI 37945475536](https://github.com/Orsnoire/FightSchool/actions/runs/37945475536) passed.
-This branch includes that main commit. The new F01 regression is intentionally
-failing against unchanged runtime code. F02/F03 remain pending in this same PR.
+`3b490b391df4a3ec6d1d69d44346b8ccb153390a`. This branch includes that main commit.
+F01's regression and validator fix are complete locally. F02/F03 are pending;
+C01 remains a draft and is not ready for package completion, merge or release.
 
 ## Exact next action
 
 Fetch `cleanup/c01-correctness` / PR #53 and current `main`, reconcile this
-checkpoint with the live PR head and any newer branch commits, then fix the
-claim-route item ID contract to accept registered built-in IDs and custom UUIDs.
-Retain UUID-only fight/result IDs and repository ownership, earned-loot and
-replay checks. Make the published regression pass, run the C01 verification
-gates and checkpoint the result before beginning F02/F03 in this same PR.
+checkpoint with the live PR head and any newer branch commits, and inspect the
+latest exact-head CI. Resolve any F01 check failure before new work.
+
+Then reproduce F02 through the actual student leaderboard request: show the
+metric-specific cache key currently creates an invalid URL, and cover visible
+load errors/retry. Correct the URL to use the metric query parameter while
+preserving cache separation. F03 then replaces summed percentages with
+question-weighted accuracy, covering zero answers and unequal fight sizes.
+Keep both fixes and their published checkpoints in this same C01 draft PR.
 
 ## Resume and handoff checklist
 

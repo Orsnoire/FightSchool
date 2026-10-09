@@ -1,5 +1,6 @@
 import { questInput } from "../../shared/quests";
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
+import { equipmentIdSchema } from "../../shared/equipment-id.ts";
 import { armorClassificationError, equipmentExclusion, handConflict, equipmentRequiredLevel } from "../../shared/equipment-rules.ts";
 import { mountainDay, nextMountainMidnight, xpMultiplier, STAMINA_TIME_ZONE } from "../../shared/combat/stamina.ts";
 import { z } from "zod";
@@ -918,7 +919,7 @@ export async function handleGame(
           .object({
             fightId: uuid,
             resultId: uuid.optional(),
-            itemId: uuid.optional(),
+            itemId: equipmentIdSchema.optional(),
           })
           .parse(await request.json());
         if (tail === "claim-loot" && !input.itemId)

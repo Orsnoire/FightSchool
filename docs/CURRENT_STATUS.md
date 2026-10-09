@@ -2,7 +2,9 @@
 
 **CURRENT — verified October 9, 2026.** Documentation has been reconciled before
 cleanup. **Phase 1 has started with its interruption/resume safeguard.**
-C01 is registered as the single active package in [draft PR #53](https://github.com/Orsnoire/FightSchool/pull/53);\nruntime fixes are not yet written.
+C01 is the single active package in [draft PR #53](https://github.com/Orsnoire/FightSchool/pull/53).
+F01 is implemented on its branch; F02/F03 remain pending. The F01 fix is not merged
+or deployed.
 Read [active work](ACTIVE_WORK.md) for the branch/PR and exact next action. The
 [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
@@ -36,7 +38,7 @@ from the active runtime and is not a rollback target.
 | Area | Released behavior | Outstanding boundary |
 | --- | --- | --- |
 | Combat and classroom UI | Deterministic combat, current class rules, daily stamina, First Aid, calculated ability values, static battlefield, late entry, moderation, host resurrection and proportional host-end rewards | Refactors preserve these rules; classroom balance observation continues |
-| Equipment | Eight slots, full Tier 0 starters, permissions, remembered per-job gear/abilities, Tier 1 level-2 collection, comparisons, equipped static art | Built-in Tier 1 loot claim fails at the HTTP validator: F01/C01 |
+| Equipment | Eight slots, full Tier 0 starters, permissions, remembered per-job gear/abilities, Tier 1 level-2 collection, comparisons, equipped static art | Live runtime has the F01 claim-validation defect; correction implemented in draft PR #53, not deployed |
 | Guilds and progression | Teacher/personal/shared quests, permanent progression with encounter caps, tier browsing, AA overflow banking, atomic reward receipts | AA purchases and additional balance tuning remain future work |
 | Host sessions | Explicit Join / End / Launch, exact-session reconnect, duplicate-launch protection, idempotent host-end rewards | Team race is not implemented |
 | Enemies | Seven defined species, configurable priorities, answer-based recovery, individual quantities, waves, goblin targeting and minimum-five additions | Party-scaled enemy counts are not implemented; fixed authored quantities remain |
@@ -48,12 +50,16 @@ Release details: [October 7–8 completed batch](combat/release-queue.md),
 
 ## Known issues and cleanup status
 
-The [review](reviews/2026-10-09-code-review.md) identifies 17 findings. No runtime
-fixes from that review have been implemented by this documentation update.
+The [review](reviews/2026-10-09-code-review.md) identifies 17 findings. Branch
+implementation and verification are recorded in [active work](ACTIVE_WORK.md);
+the released runtime remains unchanged.
 
-- **Reproduced correctness defects:** built-in loot IDs are rejected by the claim
-  route; the student leaderboard constructs an invalid path; accuracy adds fight
-  percentages instead of calculating an aggregate percentage (F01–F03).
+- **F01 implemented, not released:** the claim-route item contract accepts
+  registered built-in IDs and custom UUIDs. HTTP regressions cover all four
+  fallback choices, invalid/unearned IDs, ownership, result scope, eligibility,
+  gold and repeated/concurrent claims. No reward SQL or gameplay rules changed.
+- **F02/F03 pending:** the student leaderboard constructs an invalid path;
+  accuracy adds fight percentages instead of calculating an aggregate percentage.
 - **Schema generation drift:** journal through `0014`, latest snapshot `0007`;
   disposable generation emitted 23 duplicate column additions. SQL-only quest
   tables also need explicit schema ownership (F04).
