@@ -1,5 +1,8 @@
 # Guild quests and classroom tiers
 
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> See [current status](CURRENT_STATUS.md) for known issues and [expansion](EXPANSION_PLAN.md) for pending extensions.
+
 Implementation decision record, 8 October 2026. Implements the owner's current quest, guild-limit, shop and fight-authoring direction. PR #47 is merged and deployed; see the [October 8 release and migration evidence](cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026). Classroom tuning and AA upgrade purchases remain separate work.
 
 ## Teacher workflow

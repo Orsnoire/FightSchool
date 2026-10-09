@@ -1,6 +1,14 @@
-# Phase 2: Unified Worker Foundation
+<a id="phase-2-unified-worker-foundation"></a>
 
-Status: repository implementation prepared; staging deployment requires manual approval
+# COMPLETE / HISTORICAL — Phase 2: Unified Worker Foundation
+
+> **COMPLETE / HISTORICAL — classified October 9, 2026.** Worker foundation is deployed; later releases added identity, Neon, R2 and the custom domain.
+> The body below records its original checkpoint; its pending tasks, legacy commands
+> and rollback paths are not current operating instructions. See [current status](../CURRENT_STATUS.md),
+> [release/recovery history](full-migration.md), and the [active cleanup plan](../CLEANUP_PLAN.md).
+> This historical phase number is unrelated to the current cleanup phases.
+
+Original checkpoint status: repository implementation prepared; staging deployment requires manual approval
 
 ## Architecture
 

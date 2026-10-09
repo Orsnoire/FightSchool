@@ -1,10 +1,18 @@
-# Classroom polish release queue
+<a id="classroom-polish-release-queue"></a>
+
+# COMPLETE / HISTORICAL — October 7–8 classroom polish release batch
+
+> **COMPLETE RELEASE BATCH — reconciled October 9, 2026.** The active development
+> queue is now the [cleanup plan](../CLEANUP_PLAN.md); expansion is [deferred](../EXPANSION_PLAN.md).
+> The dated implementation/test counts below describe their original checkpoints.
+> [Current status](../CURRENT_STATUS.md) records the latest runtime and known defects,
+> including built-in loot claiming (F01). Released does not mean defect-free.
 
 **October 8 release status:** PRs #43–46 are merged and deployed. The original
 R2 HTTP 403 was limited to attempt 1 of run `37773374205`;
 [attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/attempts/2)
 passed at 12:21 UTC, including migrations, Worker publication and both hostnames.
-The latest verified [deployment 37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746)
+The 17:12 UTC checkpoint [deployment 37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746)
 published runtime `764cd2fe2d544733c8e10fdace84084cbbfe94aa`, Worker
 `926af6a1-eb8b-4fd0-8c3b-9941ece77aad`, at 17:12 UTC. It also includes PRs #47
 and #49. [Canonical live acceptance 37816148964, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37816148964/attempts/2)
@@ -13,6 +21,11 @@ passed at 17:28 UTC with PR #50's corrected fixtures. See the
 for evidence that migrations 0012/0013 were covered by the successful 12:21 gate,
 0014 by the 15:31 gate, and all three by the 17:12 gate. This is migrator/journal
 evidence, not an independent query of live schema or migration-ledger rows.
+
+Later on October 8, PR #52 released enemy AI/recovery and individual enemies/waves
+at `e158194`. [Deployment 37844054859](https://github.com/Orsnoire/FightSchool/actions/runs/37844054859)
+and [live acceptance 37844271331](https://github.com/Orsnoire/FightSchool/actions/runs/37844271331)
+passed. This is the latest verified runtime for the October 9 cleanup baseline.
 
 
 Previous release: October 7, 2026. PRs #37–42 were reviewed, merged and deployed as
@@ -36,6 +49,7 @@ is recorded in [the release record](../cloudflare/full-migration.md).
 | Equipped gear and Tier 1 art | Merged in [PR #46](https://github.com/Orsnoire/FightSchool/pull/46) | Released October 8; front-facing static artwork; no additional migration |
 | Guild quests and classroom tiers | Merged in [PR #47](https://github.com/Orsnoire/FightSchool/pull/47) | Released October 8; migration 0014 covered by successful gate; classroom tuning remains open |
 | Explicit hosted-session Join / End / Launch | Merged in [PR #49](https://github.com/Orsnoire/FightSchool/pull/49) | Released October 8; host-session live acceptance passed |
+| Enemy AI, answer-based recovery, individual enemies/waves and goblins | Merged in [PR #52](https://github.com/Orsnoire/FightSchool/pull/52) | Released October 8; fixed quantities; team race and party-scaled counts remain future |
 | October 7 combined release (#37–42) | Deployed | Migration 0011 applied; existing data preserved; see release record for live validation |
 
 ## Item 1: calculated values
@@ -161,6 +175,8 @@ legacy preservation, permission display and job/tier/hand-pair explanations.
 Individual gear art and per-job saved loadouts were released October 8 as recorded
 below. Full animation remains deferred.
 
+<a id="remembered-loadouts-per-job--review-pending"></a>
+
 ## Remembered loadouts per job — released October 8, 2026
 
 Switching jobs now saves and restores eight gear slots and two cross-class
@@ -178,14 +194,19 @@ Type checking, all 120 tests, the production build and diff checks pass.
 PR #43 is merged and deployed; migration-gate and live acceptance evidence are
 recorded in the October 8 release record above.
 
-## Larger work outside this batch
+<a id="larger-work-outside-this-batch"></a>
+
+## Larger work outside this completed batch
 
 Front-facing static equipment artwork/overlays are released. Full avatar
 animations, near-profile fitting and custom-item artwork remain pending.
 The static battlefield remains the released baseline. See `docs/starter-wardrobe.md`
 and `docs/avatar-art-direction.md`. Team race and party-scaled swarm counts
-remain future implementation; this reconciliation does not release those features.
+remain future implementation in the [expansion plan](../EXPANSION_PLAN.md).
+Cleanup must finish before new feature development resumes.
 
+
+<a id="tier-1-gear-and-fallback-loot--review-pending"></a>
 
 ## Tier 1 gear and fallback loot — released October 8, 2026
 
@@ -196,6 +217,8 @@ PR #44 is merged and deployed, with static equipment art released in PR #46.
 Existing assigned loot tables and defensive VIT benefits remain.
 
 
+<a id="gear-comparisons--review-pending"></a>
+
 ## Gear comparisons — released October 8, 2026
 
 [Gear comparison behavior](equipment-comparisons.md) covers hover/focus/tap
@@ -203,6 +226,8 @@ previews, signed stat differences, special effects and forced off-hand losses
 in gear pickers, the guild shop and loot rewards. PR #45 is merged and deployed.
 Static art and overlays were released in PR #46; animation remains pending.
 
+
+<a id="equipped-gear-and-tier-1-art--review-pending"></a>
 
 ## Equipped gear and Tier 1 art — released October 8, 2026
 

@@ -15,6 +15,7 @@ That document defines the authority hierarchy for QuestAcademy and explains how 
 - Prefer clean, modular, maintainable systems over layering new behavior onto known prototype technical debt.
 - Keep deterministic game logic separate from UI presentation, transport, timers, and persistence where practical.
 - Keep academic content and campaign data separate from combat-engine logic.
+- Only the seven registered enemy types may be authored: zombie, ghost, spider, vampire, slime, Samhain and goblin. Before adding another type, define its complete moveset, default AI and combat sprite, then extend the catalog verification tests. Goblin additions contain at least five individuals and retain swarm targeting.
 - Avoid unnecessary provider lock-in.
 - Never commit secrets, credentials, tokens, or production connection strings.
 - Production code must not create test users, insecure credentials, or test data automatically.

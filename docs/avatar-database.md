@@ -1,5 +1,9 @@
 # Avatar database foundation
 
+> **CURRENT FOUNDATION — RELEASED.** Static appearance APIs and rendering are deployed.
+> The table contract also reserves future rig/attachment capabilities; that does not
+> imply animated integration is complete. See [current status](CURRENT_STATUS.md).
+
 Approved September 30, 2026: replace fixed class portraits with persistent,
 customizable avatars. This is a dedicated set of PostgreSQL tables inside the
 existing QuestAcademy database, independent of class/job selection. It does not
@@ -65,8 +69,9 @@ Further slot definitions can be added without adding columns to student rows.
 An equipment definition can fit several slots and provide a distinct image per
 view, so one armor item can cover torso and limbs. Empty slots are represented
 by absent equipped-item rows. No fake equipment, transforms, or rendered parts
-are seeded. The starter clothes are still baked into the concept art and will
-need to be separated or covered when production equipment layers are built.
+are seeded. The original concept art has baked-in starter clothes. Released static
+equipment layers now cover/replace those visuals; future animated attachments
+remain separate work under the art/rig contract.
 
 Foreign keys reject equipment in an incompatible slot/model and visuals for a
 nonexistent view. Gloves and grips can coexist. A model change with equipped
@@ -104,8 +109,9 @@ version migration; never rewrite saved choices on render, login, or job change.
 
 The repository helpers are internal building blocks, not HTTP endpoints. Their
 callers must derive student identity from the authenticated session and enforce
-same-origin mutations. A future renderer must read the saved avatar and its
-selected color IDs rather than the old `Gender`/class image lookup.
+same-origin mutations. The released static renderer reads the saved avatar and its selected color IDs;
+future renderers must preserve this behavior instead of restoring the old
+`Gender`/class image lookup.
 
 ## Rollout and validation
 

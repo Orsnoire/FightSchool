@@ -1,5 +1,10 @@
 # QuestAcademy — Source of Truth
 
+> **CURRENT AUTHORITY — October 9, 2026.** Start with the [documentation index](README.md),
+> [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
+> [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
+> Phase 1 has not started. Historical migration phases are not the active queue.
+
 This document defines the authority hierarchy for all QuestAcademy design, development, migration, and agent-based work.
 
 Its purpose is to prevent outdated prototype behavior, abandoned architecture, old bug reports, or implementation accidents from being mistaken for current product requirements.
@@ -102,9 +107,10 @@ and explicit student Leave fight behavior.
 
 ## Current implementation and release queue
 
-The [classroom polish release queue](combat/release-queue.md) distinguishes
-implemented review branches from deployed behavior and records the remaining
-ordered tasks. First Aid, calculated ability values, informative loot choices,
+The [cleanup plan](CLEANUP_PLAN.md) is the current ordered implementation queue.
+The [classroom polish release record](combat/release-queue.md) preserves the
+completed October 7–8 batch and its validation evidence. First Aid, calculated
+ability values, informative loot choices,
 eight equipment slots, complete Tier 0 starters, loadout synchronization and
 visible equipment permissions with explicit new-armor classification were
 released October 7 in PRs #37–42. Migration 0011 preserves existing equipment.
@@ -121,12 +127,28 @@ The [October 7 Tier 1 specification](combat/tier-one-equipment.md) records the
 owner's level-2 equipment collection, revised tank VIT damage weighting and
 fallback instance loot rules. It supersedes older conflicting equipment level
 gates and VIT damage formulas. PR #44 was released October 8; migration 0013 is
-covered by the successful migration gate recorded below.
+covered by the successful migration gate recorded below. The October 9 review
+found a built-in loot claim HTTP-validation defect; [F01/C01](CLEANUP_PLAN.md)
+tracks the correction without changing intended loot eligibility or rewards.
 
 The [equipment comparison specification](combat/equipment-comparisons.md) records
 hover, keyboard and touch comparisons in gear, shop and loot screens, including
 lost off-hand bonuses and special effects. PR #45 was released October 8 after
 the Tier 1 implementation, with no additional migration.
+
+## Enemy roster, behavior and recovery
+
+The [October 8 enemy AI and recovery specification](combat/enemy-ai.md) records
+species defaults, teacher-editable conditional priorities, the six enemy move
+sets plus basic-attacking goblin swarms, and answer-based status recovery.
+Only these seven defined types are authorable; every goblin addition contains at
+least five individuals. New types require a moveset, default AI and verified art.
+Two nonconsecutive correct answers clear
+stun/paralysis; three release each player from single-target Hypnotic Stare or
+party-wide Hypnosis. Hypnotizing sources cannot act until their victims are free.
+This supersedes the initial damage-threshold and fixed-turn hypnosis proposals.
+PR #52 is merged and deployed in runtime `e158194`; CI, deployment and canonical
+live acceptance passed. See [current status](CURRENT_STATUS.md) for exact runs.
 
 ## Combat Flow Refactor
 
@@ -184,8 +206,8 @@ moderated re-entry, proportional completion rewards and full earned activity XP.
 The [combat facelift brief](combat-facelift.md) records the October 1 direction
 for biome scenery and population-dependent player formations. Players occupy
 the left half facing right; enemies occupy the right half facing left. The
-precise formation pattern remains open; it does not replace the current
-combat overlay flow or authorize premature live avatar integration.
+early formation studies are historical. The October 7 approval and subsequent
+release govern the current static battlefield and overlay flow.
 
 October 5 owner direction supersedes the earlier all-animation release gate for
 an initial static release. Front-facing Human male/female paperdolls with the
@@ -228,7 +250,8 @@ avatar tables, saved appearance, and equipment attachment slots. This system
 supersedes fixed class portraits as the intended product design. Migration
 `0006_avatar_foundation.sql` seeds the Human model metadata and palettes, and
 `0007_human_recolor_masks.sql` associates the recoloring assets with their views; the
-current portrait UI is transitional until the new renderer/creator is integrated.
+static renderer/creator and equipped-item visuals are now released. Full animated
+integration remains subject to the separate art and animation gates.
 
 ---
 
@@ -257,9 +280,8 @@ Agents should inspect existing code before changing systems, but should not pres
 
 When code conflicts with current design documents, current design wins unless changing the behavior would destroy required functionality that has not yet been replaced.
 
-GitHub should become the canonical source of the codebase after migration.
-
-Replit should not remain a required part of QuestAcademy's architecture.
+GitHub is the canonical source of the codebase. The live runtime is Cloudflare
+with Neon and R2; Replit is no longer an application dependency or rollback target.
 
 ---
 
@@ -318,7 +340,10 @@ Identify the conflict and ask for a product decision.
 
 # 7. Migration Principles
 
-QuestAcademy is being migrated away from Replit.
+The application migration away from Replit is implemented and deployed. These
+principles remain architectural guidance. The historical migration plan does not
+replace the current cleanup queue; infrastructure recovery/rollback signoff
+remains open in cleanup C12.
 
 The objective is NOT to recreate the Replit environment exactly.
 
@@ -347,19 +372,17 @@ Do not preserve:
 - historical deployment hacks
 - prototype websocket behavior
 - obsolete schemas
-- unused student records
-- test data
+- historical Replit prototype student records
+- historical Replit test data
 - implementation compromises made solely because of Replit
 
 ---
 
 # 8. Database Migration
 
-Existing Replit database data does NOT need to be preserved.
-
-A fresh production database is preferred.
-
-The migration should therefore:
+The following was the **historical initial-migration decision**, not a current
+database reset instruction: existing Replit prototype data did not need to be
+preserved, and the migration began with a clean production schema. Its goals were:
 
 1. determine the data model QuestAcademy actually needs
 2. create a clean schema
@@ -368,7 +391,11 @@ The migration should therefore:
 5. seed only data that is useful for the product itself
 6. begin production with clean user/student data
 
-Do not spend development time preserving historical test accounts, player progression, or prototype database state.
+That decision applied only to discarded Replit prototype state. **Preserve the
+current live Neon data**, including students, progression, equipment, guilds,
+content, results and reward receipts, throughout cleanup and expansion. Use
+reviewed data-preserving migrations; do not reset live data or rewrite applied
+migrations. Acceptance-fixture cleanup must identify its own scoped records.
 
 ---
 
@@ -400,7 +427,8 @@ The preferred conceptual architecture is:
 
 Exact providers may change.
 
-Current likely options include services such as Cloudflare for hosting/DNS and Neon for PostgreSQL, but implementation should avoid unnecessary provider lock-in.
+The deployed providers are Cloudflare Worker Static Assets, Durable Objects and
+R2, with Neon PostgreSQL. Keep product rules and content portable across providers.
 
 Secrets and credentials must not be committed to Git.
 
@@ -571,6 +599,8 @@ When making a development decision, ask:
 
 Prefer the former.
 
+<a id="equipped-gear-artwork--review-pending"></a>
+
 ## Equipped gear artwork — released October 8, 2026
 
 [Equipped gear visuals](avatar-equipment-visuals.md) records the October 7 owner
@@ -588,9 +618,9 @@ are **deployed**. The R2 HTTP 403 occurred only in attempt 1 of run `37773374205
 [attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/attempts/2)
 passed at 12:21 UTC, including the migration gate with 0012/0013 in its journal.
 
-The latest verified deployment is
-[run 37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746)
-at 17:12 UTC, runtime commit `764cd2fe2d544733c8e10fdace84084cbbfe94aa`, Worker
+The 17:12 UTC checkpoint was
+[run 37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746),
+runtime commit `764cd2fe2d544733c8e10fdace84084cbbfe94aa`, Worker
 `926af6a1-eb8b-4fd0-8c3b-9941ece77aad`. It includes PRs #43–46, #47 and #49;
 R2, the migration gate through 0014 and both hostname smoke checks passed.
 [Live acceptance 37816148964, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37816148964/attempts/2)
@@ -602,6 +632,15 @@ for run/job evidence and migration verification limits. The successful migrator
 and committed journals establish the release gate; individual database ledger
 rows and live column/constraint definitions were not independently queried.
 The earlier R2 failure is historical context, not an active release blocker.
+
+The later PR #52 release supersedes that runtime checkpoint: `e158194` passed
+[CI 37843818974](https://github.com/Orsnoire/FightSchool/actions/runs/37843818974),
+[deployment 37844054859](https://github.com/Orsnoire/FightSchool/actions/runs/37844054859)
+and [canonical acceptance 37844271331](https://github.com/Orsnoire/FightSchool/actions/runs/37844271331).
+See [current status](CURRENT_STATUS.md) for the consolidated baseline and known
+cleanup defects; a successful release does not imply every code path is correct.
+
+<a id="guild-quests-and-classroom-tiers--implementation-pending-release"></a>
 
 ## Guild quests and classroom tiers — released October 8, 2026
 
@@ -621,3 +660,11 @@ Use explicit Join / End / Launch controls and session-specific reconnect URLs.
 These controls were released in PR #49 and exercised by the live acceptance above.
 The same document records the code-level team-race feasibility review; team race
 and party-scaled swarm counts remain future implementation, not released features.
+
+## Individual enemies and wave budgets
+
+The [October 8 enemy and goblin rules](combat/enemy-waves-and-goblins.md) record
+individual quantities, role HP shares, reference-party scaling, goblin targeting,
+wave pauses and the approved sprite. This implementation was integrated into
+PR #52 and is deployed. Party-scaled counts and team race remain future work in
+the [expansion plan](EXPANSION_PLAN.md).

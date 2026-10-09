@@ -1,5 +1,8 @@
 # Permanent starter wardrobe
 
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> See [current status](CURRENT_STATUS.md) for known issues and [expansion](EXPANSION_PLAN.md) for pending extensions.
+
 **Release status, October 8, 2026:** remembered job loadouts, Tier 1 equipment
 and front-facing equipped-item artwork are deployed (PRs #43–46). The October 5
 and October 7 sections retain their original release scope; the October 8

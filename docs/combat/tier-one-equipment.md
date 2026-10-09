@@ -1,5 +1,9 @@
 # Tier 1 equipment, tank VIT and fallback loot
 
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> Preserve these intended rules during [cleanup](../CLEANUP_PLAN.md);
+> see [current status](../CURRENT_STATUS.md) for known issues and release evidence.
+
 Status: PR #44 merged and released October 8, 2026 after remembered-loadout
 PR #43. Owner direction: October 7, 2026. See the
 [release and migration evidence](../cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026).

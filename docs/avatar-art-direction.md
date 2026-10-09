@@ -1,5 +1,10 @@
 # Avatar art and animation direction
 
+> **CURRENT DESIGN — static release complete; animation FUTURE.** Updated October 9, 2026.
+> Static avatars and front-facing equipped gear are deployed. The full animated
+> collection is not approved or released. Dated early checkpoints below remain
+> historical; see [current status](CURRENT_STATUS.md) and [expansion scope](EXPANSION_PLAN.md).
+
 This guide defines how QuestAcademy produces reusable Human avatars through
 visual direction, iterative art review, and technical implementation. It covers
 the male and female base models, skeletons, equipment, and animations required
@@ -100,10 +105,10 @@ Parts and clips may be shared when their fit and behavior have been verified.
 Signature gear is the visually distinctive “awesome stuff”; preparing its art
 does not grant it to players or decide its acquisition tier.
 
-As of this guide's creation, four approved assembled source images, twelve
-color masks, four neutral bases, palettes, and an avatar database foundation
-exist. Segmented bodies, calibrated rigs, finished gear kits, and animation
-clips do not. Live avatar integration remains pending. See the
+At this guide's original creation, assembled sources, masks, neutral bases,
+palettes and the database foundation existed while production parts/rigs/clips
+were pending. That is a historical checkpoint: static integration and front-facing
+gear have since shipped. Full animated coverage remains pending. See the
 [asset catalog](../attached_assets/characters/human/v1/README.md),
 [recoloring contract](../attached_assets/characters/human/v1/recolor/README.md),
 and [database specification](avatar-database.md).
@@ -389,10 +394,12 @@ delivery, authenticated avatar/equipment APIs, character creation, persisted
 appearance, combat presentation, and approved replacements for each unfinished weapon.
 Local workshops and test previews may run earlier without changing live users.
 
-## October 7 equipped static gear — review pending
+<a id="october-7-equipped-static-gear--review-pending"></a>
+
+## October 7 equipped static gear — released October 8, 2026
 
 The owner requested gear swaps and Tier 1 artwork, preferring Tier 0 recolors.
 [Equipped gear visuals](avatar-equipment-visuals.md) implements that static step
 for both bodies, including missing held props. This supersedes the starter-only
-rendering restriction only after review/release; all animated integration gates
+rendering restriction following release in PR #46; all animated integration gates
 above remain in force. No rig or animation readiness flags are advanced.

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { issueSession } from "../../worker/auth/session.ts";
 import { handleFights } from "../../worker/routes/fights.ts";
-import { fight } from "../phase4/fixtures.ts";
+import { fight as legacyFight } from "../phase4/fixtures.ts";
+const fight = { ...legacyFight, enemies: legacyFight.enemies.map(e => ({...e, enemyType: "slime", ai: {mode:"basic"}})) };
 const config = {
   cookieName: "test_session",
   secret: "test-only-secret-not-deployed-1234567890",

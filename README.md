@@ -2,7 +2,12 @@
 
 A persistent educational RPG hosted at https://questacademy.bookwyrminteractive.studio.
 
-Read [Source of Truth](docs/Source_of_Truth.md) and [Migration Plan](docs/Migration_Plan) before changing gameplay or architecture. The current runtime and verification procedure are documented in [the Worker migration guide](docs/cloudflare/full-migration.md).
+Start with the [documentation index](docs/README.md), [current status](docs/CURRENT_STATUS.md),
+and [cleanup plan](docs/CLEANUP_PLAN.md). Cleanup Phase 1 has not started;
+[expansion](docs/EXPANSION_PLAN.md) follows the cleanup exit gates.
+Read [Source of Truth](docs/Source_of_Truth.md) before changing gameplay or architecture.
+The [migration plan](docs/Migration_Plan) is historical; the deployed architecture,
+release evidence and open operational checks are in [the release/recovery record](docs/cloudflare/full-migration.md).
 
 ## Development
 
@@ -29,5 +34,7 @@ npm run build:static-avatars
 npm run render:static-avatars
 ```
 
-The workshop review can publish independently. Live game deployment requires
-static-art/armor-rule signoff and additive migration `0009_starter_wardrobe.sql`.
+The workshop review can publish independently. Static avatars and the starter
+wardrobe are already deployed, including migration `0009_starter_wardrobe.sql`;
+front-facing equipped-item art followed in PR #46. Further art and animation
+remain subject to their documented visual and technical gates.

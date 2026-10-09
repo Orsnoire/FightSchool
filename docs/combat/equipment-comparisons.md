@@ -1,5 +1,9 @@
 # Equipment comparisons
 
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> Preserve these intended rules during [cleanup](../CLEANUP_PLAN.md);
+> see [current status](../CURRENT_STATUS.md) for known issues and release evidence.
+
 Status: PR #45 merged and released October 8, 2026 after Tier 1 PR #44 and
 remembered-loadout PR #43. See the
 [release evidence](../cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026).

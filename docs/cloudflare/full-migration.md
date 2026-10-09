@@ -1,15 +1,19 @@
 # Worker migration and combat recovery
 
+> **RELEASE HISTORY + OPEN OPERATIONS — updated October 9, 2026.**
+> The application migration is deployed; full operational signoff remains open.
+> [Current status](../CURRENT_STATUS.md) names the latest runtime. Dated entries
+> below retain earlier evidence and historical blockers; they are not competing
+> current queues. Recovery and rollback follow-up belongs to [cleanup C12](../CLEANUP_PLAN.md).
+
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Current verified release, 8 October 2026:** equipment PRs #43–46, guild quests
-(#47) and explicit host-session controls (#49) are deployed at runtime commit
-`764cd2fe2d544733c8e10fdace84084cbbfe94aa`, Worker version
-`926af6a1-eb8b-4fd0-8c3b-9941ece77aad`. Deployment `37814586746` and subsequent
-canonical live acceptance `37816148964` (attempt 2, corrected PR #50 fixtures)
-passed. The original R2 403 is historical; it was overcome in attempt 2 of the
-earlier gear deployment. See the [October 8 evidence and migration record](#gear-release-recovered-and-verified--8-october-2026).
-Full Phase 7 operational signoff remains open.
+**Latest verified runtime, October 9 review:** `e158194`, released October 8
+with PR #52. It includes the preceding equipment, guild-quest and explicit
+host-session releases plus enemy AI, recovery, individuals and waves. CI,
+deployment and canonical live acceptance passed; see the [latest release entry](#enemy-ai-recovery-and-waves-release--8-october-2026)
+and [current status](../CURRENT_STATUS.md). Earlier R2 failures are historical.
+Full infrastructure recovery/rollback signoff remains open.
 
 ## Root cause and corrected behavior
 
@@ -42,7 +46,7 @@ Run `npm ci`, `npm run check`, `npm test`, and `npm run build:cloudflare`. The s
 
 Deploy Cloudflare Staging checks the app, ensures the `questacademy-objects` R2 bucket, applies committed additive Neon migrations, publishes to the existing Worker, and verifies both configured origins. No credentials are committed. Run Live Combat Staging Acceptance on the same branch against `https://questacademy.bookwyrminteractive.studio` to exercise a complete fight plus guild/shop/quest/reward/solo flows with isolated acceptance fixtures. The workflow never seeds production accounts on startup. Acceptance fixture fights are archived after use.
 
-The current pre-refactor rollback Worker version is `20382b06-88e9-42a3-805d-bc7ca476e602`, from successful deployment run `36749441658` on 30 September 2026. It includes the rich-content preview fix merged in PR #17 (`b10488316d9f008139c000e3d4e51383548a07e8`). The added database tables and columns can remain during rollback; do not remove them or replace the Durable Object namespace. Keep the canonical domain, Worker identity, session secrets and Neon database unchanged.
+The historical pre-refactor rollback Worker version was `20382b06-88e9-42a3-805d-bc7ca476e602`, from successful deployment run `36749441658` on 30 September 2026. It includes the rich-content preview fix merged in PR #17 (`b10488316d9f008139c000e3d4e51383548a07e8`). The added database tables and columns can remain during rollback; do not remove them or replace the Durable Object namespace. Keep the canonical domain, Worker identity, session secrets and Neon database unchanged.
 
 ## Recovery checkpoint — 30 September 2026
 
@@ -382,7 +386,7 @@ canonical-hostname smoke checks. The configured environment is named
 | --- | --- | --- | --- |
 | [37773374205, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/attempts/2), [job 113307281605](https://github.com/Orsnoire/FightSchool/actions/runs/37773374205/job/113307281605) | `14a58f14cf29e8a0ed33e8aa601e2e680dd77efc` | `73332986-23d4-4393-b22e-c96161f8ff4f`, 12:21:36 | First verified successful gear-stack deployment: PRs #43–46 |
 | [37801260340](https://github.com/Orsnoire/FightSchool/actions/runs/37801260340), [job 113393829996](https://github.com/Orsnoire/FightSchool/actions/runs/37801260340/job/113393829996) | `e3e1737a371e1d5d26d65b77e46f7f48684200f3` | `974a808d-07e5-48a7-aba3-2cf3dd4842b0`, 15:32:12 | Gear stack plus guild quests/progression/tier authoring, PR #47 |
-| [37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746), [job 113439828394](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746/job/113439828394) | `764cd2fe2d544733c8e10fdace84084cbbfe94aa` | `926af6a1-eb8b-4fd0-8c3b-9941ece77aad`, 17:12:46 | Latest verified deployment, additionally including explicit host-session controls, PR #49 |
+| [37814586746](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746), [job 113439828394](https://github.com/Orsnoire/FightSchool/actions/runs/37814586746/job/113439828394) | `764cd2fe2d544733c8e10fdace84084cbbfe94aa` | `926af6a1-eb8b-4fd0-8c3b-9941ece77aad`, 17:12:46 | Verified 17:12 checkpoint, additionally including explicit host-session controls, PR #49; superseded by PR #52 below |
 
 The 12:21 retry passed all 133 tests and both builds. The 17:12 deployment passed
 type checking, all 142 tests and both builds; R2 reported ready at 17:12:24,
@@ -447,3 +451,48 @@ animation rig, near-profile coverage, completed classroom balance tuning or full
 Phase 7 infrastructure recovery/rollback signoff. Team race and party-scaled
 swarm counts remain future work. This reconciliation changes documentation only
 and neither dispatches nor reruns deployment, migration or live acceptance jobs.
+
+
+## Enemy AI, recovery and waves release — 8 October 2026
+
+PR #52 merged as `e1581948f6623d86af859452bf083ca0f35db681` at 21:01 UTC,
+including individual enemies/waves, goblin targeting, the seven-species authoring
+catalog, configurable AI and answer-based status recovery. No schema migration
+was added by this release. It includes the preceding equipment, guild-quest and
+explicit host-session releases.
+
+- [CI 37843818974](https://github.com/Orsnoire/FightSchool/actions/runs/37843818974)
+  passed on this exact revision.
+- [Deployment 37844054859](https://github.com/Orsnoire/FightSchool/actions/runs/37844054859)
+  passed on this revision after the R2/migration gates and published immutable
+  Worker `2180375a-c947-470d-a3ea-e199c9ff25f3` at 21:04:51 UTC
+  ([job 113540375470](https://github.com/Orsnoire/FightSchool/actions/runs/37844054859/job/113540375470)).
+- [Canonical live acceptance 37844271331](https://github.com/Orsnoire/FightSchool/actions/runs/37844271331)
+  passed on the same revision against the canonical classroom domain, covering
+  functional combat/economy, R2, 30 participants, refresh, isolated rooms,
+  late entry/moderation, revocation and idempotent rewards.
+- The 30-answer burst recorded p50 1,657ms, p95 3,070ms, maximum 3,220ms.
+  The maximum gate remains 15 seconds; this is one burst and not a fully seeded
+  guild/history workload or a sustained performance guarantee.
+- [PR browser acceptance 37841834095](https://github.com/Orsnoire/FightSchool/actions/runs/37841834095)
+  passed on the review head; [enemy verification](../combat/enemy-ai-verification.md)
+  records its scope and inspected screenshots.
+
+This is the latest verified runtime for the October 9 review. The release does
+not implement team race, party-scaled enemy counts, AA purchases or animated
+avatars. Existing operational drills above and classroom balance observation
+remain open. October 9 documentation changes require no runtime redeployment.
+
+## October 9 cleanup handoff
+
+[Current status](../CURRENT_STATUS.md), the [cleanup plan](../CLEANUP_PLAN.md),
+[expansion backlog](../EXPANSION_PLAN.md) and [engineering review](../reviews/2026-10-09-code-review.md)
+now govern work tracking. Documentation preparation is complete; cleanup Phase 1
+is not started. The review reproduced built-in loot validation and leaderboard
+defects, plus schema generation drift; successful live acceptance does not erase
+those known issues.
+
+Preserve current live students and records. Old Worker IDs above are historical
+checkpoints, not a claim that September builds are safe against today's room
+state and schema. C12 must identify and rehearse a currently compatible immutable
+rollback version; changing Worker code does not undo Neon, R2 or room data.

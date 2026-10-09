@@ -1,5 +1,8 @@
 # Equipped gear visuals and Tier 1 artwork
 
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> See [current status](CURRENT_STATUS.md) for known issues and [expansion](EXPANSION_PLAN.md) for pending extensions.
+
 Status: PR #46 merged and released October 8, 2026 after gear comparisons
 (PR #45). Owner direction: October 7, 2026 MDT. See the
 [release evidence](cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026).
@@ -52,6 +55,8 @@ props are not an approved animation rig or animation-ready database record.
 No migration is added here; prerequisite migrations 0012 and 0013 are covered by
 the successful deployment migration gate recorded above. Deployment and general
 live acceptance do not establish exhaustive manual visual or animation signoff.
+
+<a id="completed-for-review"></a>
 
 ## Fitted review exports
 

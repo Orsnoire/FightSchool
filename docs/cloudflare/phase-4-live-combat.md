@@ -1,4 +1,12 @@
-# Phase 4: first live-combat slice
+<a id="phase-4-first-live-combat-slice"></a>
+
+# SUPERSEDED / HISTORICAL — Phase 4: first live-combat slice
+
+> **SUPERSEDED / HISTORICAL — classified October 9, 2026.** The initial combat slice was incomplete; full combat recovery replaced it. Do not treat this slice as full acceptance.
+> The body below records its original checkpoint; its pending tasks, legacy commands
+> and rollback paths are not current operating instructions. See [current status](../CURRENT_STATUS.md),
+> [release/recovery history](full-migration.md), and the [active cleanup plan](../CLEANUP_PLAN.md).
+> This historical phase number is unrelated to the current cleanup phases.
 
 This slice moves one complete text-only classroom path to the Cloudflare runtime:
 

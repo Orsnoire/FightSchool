@@ -1,4 +1,4 @@
-CLOUDFLARE MIGRATION PLAN
+HISTORICAL CLOUDFLARE MIGRATION PLAN
 
 QuestAcademy - approved architecture, implementation phases, validation, cutover, and rollback
 
@@ -12,7 +12,17 @@ Plan version: 2.0
 
 Updated: 22 September 2026
 
-Status: implementation authority for the Cloudflare migration
+Status: HISTORICAL implementation sequence; deployed architecture retained; full operational signoff remains OPEN
+
+October 9, 2026 status reconciliation:
+
+- CURRENT STATUS: docs/CURRENT_STATUS.md. CURRENT DEVELOPMENT QUEUE: docs/CLEANUP_PLAN.md.
+- Application migration, legacy-runtime removal, R2 uploads and custom-domain activation are implemented and deployed.
+- The original phases and repository inventory below describe September checkpoints. Their pending tasks, test paths, proposed providers and old runtime references are historical, not instructions to repeat the migration.
+- Current live Neon students, content, equipment, progression and reward records MUST be preserved. The clean-database decision applied only to discarded Replit prototype records.
+- Full operational signoff is not complete: forced room restart/eviction, Neon failure/connection recovery, compatible timed rollback, student desktop/mobile acceptance and monitoring evidence are carried into cleanup C12. See docs/cloudflare/full-migration.md.
+- Retain the canonical hostname, unified Worker topology, root-relative routes, authenticated sessions, room authority, portability and data-preserving rollout/rollback principles.
+- Replit/Express is neither a runtime nor a rollback target. The service still named staging serves the live classroom application; do not assume isolated data from its name.
 
 This version supersedes earlier assumptions that production would use either the apex /QuestAcademy path or a Cloudflare Pages frontend with a separate Pages Functions gateway.
 

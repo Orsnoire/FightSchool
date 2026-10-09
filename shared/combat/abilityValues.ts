@@ -81,7 +81,8 @@ export function abilityPreview(p: AbilityContext, ability: string, upcomingAnswe
     case "crimson_slash": return `${base}; self-healing is half damage dealt, rounded down`;
     case "blood_price": return `${base}; costs ${whole(atk)} HP`;
     case "life_potion": return `Revives each knocked-out ally with up to ${whole(healing || 0)} HP`;
-    case "holy_light": case "cleansing_chorus": return `${heal} per living ally`;
+    case "holy_light": return `${heal} per living ally`;
+    case "cleansing_chorus": return `${heal} per living ally; removes poison and paralysis`;
     case "divine_grace": return "Fully heals and revives the party";
     case "inner_peace": return "Fully heals you and grants immunity this round";
     case "warrior_block": case "aegis": case "deflect": return `Blocks up to ${Math.ceil(vit / 2)} damage per hit`;
@@ -102,6 +103,7 @@ export function abilityPreview(p: AbilityContext, ability: string, upcomingAnswe
       const immediate = id === "hemorrhage" ? base : (p.jobLevels.warlock || 0) >= 15 ? `Base damage: ${whole(dot * rounds / 2)}` : "";
       return `${immediate ? immediate + "; " : ""}${whole(dot)} base damage per round × ${rounds}`;
     }
+    case "purify": return "Removes poison and paralysis from one ally";
     case "bless": return `+${whole(mnd / 3)} STR, INT and AGI for ${Math.max(1, whole(mnd / 2))} rounds`;
     case "dread_aura": return `Reduces raw enemy damage by ${Math.ceil(int / 3)} for 3 rounds`;
     case "pact_surge": return `Sacrifices ${whole(p.health / 4)} HP for +${whole(p.health / 4)} ATK`;

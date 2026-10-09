@@ -1,6 +1,14 @@
-# Phase 1: Legacy Boundary Hardening
+<a id="phase-1-legacy-boundary-hardening"></a>
 
-Status: implemented for the selected authentication and fight-management boundary
+# COMPLETE / HISTORICAL — Phase 1: Legacy Boundary Hardening
+
+> **COMPLETE / HISTORICAL — classified October 9, 2026.** This boundary was implemented and then superseded by the Worker; Express/Replit is removed.
+> The body below records its original checkpoint; its pending tasks, legacy commands
+> and rollback paths are not current operating instructions. See [current status](../CURRENT_STATUS.md),
+> [release/recovery history](full-migration.md), and the [active cleanup plan](../CLEANUP_PLAN.md).
+> This historical phase number is unrelated to the current cleanup phases.
+
+Original checkpoint status: implemented for the selected authentication and fight-management boundary
 
 Canonical production origin: https://questacademy.bookwyrminteractive.studio
 

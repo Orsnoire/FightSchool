@@ -1,7 +1,12 @@
 # Combat facelift
 
-Vision captured October 1, 2026. This is a presentation direction and exploration
-brief, not an implemented combat layout. It follows [Source of Truth](Source_of_Truth.md),
+> **CURRENT PRESENTATION DIRECTION — static battlefield RELEASED.** Updated October 9, 2026.
+> The October 1 sections are the original exploration brief. The October 5 and
+> October 7 approvals below supersede early integration/joining gates; the static
+> battlefield is deployed. See [current status](CURRENT_STATUS.md).
+
+Vision captured October 1, 2026. The original text was a presentation direction
+and exploration brief; the October 7 approved static layout has since shipped. It follows [Source of Truth](Source_of_Truth.md),
 the [avatar art direction](avatar-art-direction.md), and the current
 [student combat overlays](combat/student-overlays.md). Combat calculations,
 target eligibility, timers, and player progression remain server-authoritative.
