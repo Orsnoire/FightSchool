@@ -13,7 +13,7 @@ editing. The [cleanup plan](CLEANUP_PLAN.md) controls scope; the
 | Field | Checkpoint |
 | --- | --- |
 | Active package | **C01 — correctness**, reserved as the only active cleanup package |
-| Current stage | Phase 1 first step COMPLETE; C01 draft registered, runtime fixes not started |
+| Current stage | Phase 1 first step COMPLETE; F01 HTTP regression reproduced, validator fix next |
 | Owner / execution lane | QuestAcademy cleanup session; resume this registered work, do not create another implementation |
 | Canonical branch | [`cleanup/c01-correctness`](https://github.com/Orsnoire/FightSchool/tree/cleanup/c01-correctness) |
 | Draft PR | [#53 — C01 correctness (DRAFT)](https://github.com/Orsnoire/FightSchool/pull/53); continue this PR |
@@ -50,10 +50,15 @@ approved gameplay. The review reproductions are findings, not completed fixes.
 - Kickoff: 254 relative documentation links and diff scope verified; the resume
   rules and C01 registration are the first Phase 1 step. Its documentation PR
   records CI before merge; subsequent C01 checks belong to PR #53.
-- C01: no new regression tests or runtime changes yet. No C01 test result is
-  claimed; no application deployment or database migration is part of kickoff.
-- Remaining verification: reproduce F01–F03 through the actual HTTP/UI boundary,
-  then implement and verify the fixes against the C01 completion gate.
+- F01 regression: `node --import tsx --test tests/phase4/reward-claim-http.test.ts`
+  has two expected failing subcases on the unchanged runtime: built-in claims
+  return 400, and registered but unearned built-ins never reach earned-loot
+  validation. Five subcases pass (custom UUID/retry, ownership, ineligible
+  results, gold/legacy result ID, and simultaneous claims). The parent test also
+  reports failure. This is an intentionally failing draft checkpoint.
+- The test uses the real HTTP handler, signed sessions, all 15 migrations and
+  atomic reward SQL in disposable PGlite. No live data or schema is changed.
+- Remaining: fix F01 and verify the full suite, then reproduce and fix F02/F03.
 
 ## C01 branch checkpoint
 
@@ -61,17 +66,17 @@ This is the registered C01 draft workspace. The resume protocol is COMPLETE in
 [merged kickoff PR #54](https://github.com/Orsnoire/FightSchool/pull/54), main commit
 `3b490b391df4a3ec6d1d69d44346b8ccb153390a`. Its exact-head
 [CI 37945475536](https://github.com/Orsnoire/FightSchool/actions/runs/37945475536) passed.
-This branch includes that main commit; only this handoff differs from main.
-Runtime code and regression tests are unchanged. F01 is the next implementation
-checkpoint; F02/F03 remain pending in this same PR.
+This branch includes that main commit. The new F01 regression is intentionally
+failing against unchanged runtime code. F02/F03 remain pending in this same PR.
 
 ## Exact next action
 
 Fetch `cleanup/c01-correctness` / PR #53 and current `main`, reconcile this
-checkpoint with the live PR head and any newer branch commits, then add
-the F01 reward-claim HTTP regression against a disposable migrated database.
-Prove the current built-in ID fails while a valid earned custom ID works before
-changing validation. Keep that work in the registered C01 draft PR.
+checkpoint with the live PR head and any newer branch commits, then fix the
+claim-route item ID contract to accept registered built-in IDs and custom UUIDs.
+Retain UUID-only fight/result IDs and repository ownership, earned-loot and
+replay checks. Make the published regression pass, run the C01 verification
+gates and checkpoint the result before beginning F02/F03 in this same PR.
 
 ## Resume and handoff checklist
 

@@ -18,7 +18,9 @@ migration phases.
 ## Phase 1 first step — interruption and resume safeguard
 
 **First step COMPLETE:** publish [AGENTS.md resume rules](../AGENTS.md#start-or-resume-work)
-and the single [active-work checkpoint](ACTIVE_WORK.md), with C01 registered on\n`cleanup/c01-correctness` / [draft PR #53](https://github.com/Orsnoire/FightSchool/pull/53)\nbefore substantive code changes. Keep one cleanup package active
+and the single [active-work checkpoint](ACTIVE_WORK.md), with C01 registered on
+`cleanup/c01-correctness` / [draft PR #53](https://github.com/Orsnoire/FightSchool/pull/53)
+before substantive code changes. Keep one cleanup package active
 at a time initially; resume its actual remote head and push small checkpoints.
 This coordination step starts Phase 1 but does not complete any C01 defect fix.
 
@@ -31,7 +33,7 @@ a historical feature branch. Register handoffs when a package finishes.
 
 | Phase / package | Scope and review findings | Completion gate | Status / actual PR |
 | --- | --- | --- | --- |
-| **1 — C01: correctness** (small) | F01–F03: shared built-in/custom equipment ID validation; correct leaderboard URL and visible errors; weighted aggregate accuracy | HTTP/UI reproductions fail on baseline and pass after fixes; unauthorized/unearned claims rejected; duplicate claims remain harmless; zero-answer and mixed-size fights covered | DRAFT #53 — registered; fixes pending; [checkpoint](ACTIVE_WORK.md) |
+| **1 — C01: correctness** (small) | F01–F03: shared built-in/custom equipment ID validation; correct leaderboard URL and visible errors; weighted aggregate accuracy | HTTP/UI reproductions fail on baseline and pass after fixes; unauthorized/unearned claims rejected; duplicate claims remain harmless; zero-answer and mixed-size fights covered | DRAFT #53 — F01 regression reproduced; fixes pending; [checkpoint](ACTIVE_WORK.md) |
 | **1 — C02: dependencies** (medium) | F15: triage exposure; update editor chain first, then ORM and build/test tools in compatible groups | Record advisory disposition and versions; rich HTML/SVG/math, paste/undo, auth, SQL, migration and build checks pass; no forced blanket audit fix | NOT STARTED / — |
 | **1 — C03: schema baseline** (medium) | F04: reconcile Drizzle snapshots, table declarations and intentional hand-written SQL; documentation portion F17 already completed in preparation | No-op generation proposes no duplicate DDL; all migrations apply to a disposable database; existing-data preservation and catalog/schema comparison pass; shipped SQL history is not rewritten | NOT STARTED / — |
 | **2 — C04: contracts and diagnostics** (medium) | F05, F16: request/response/command contracts, public snapshot allowlists, typed query factories, bounded JSON parsing, structured diagnostics and intended required CI checks | Built-in and custom content covered through real boundaries; explicit ownership and revocation preserved; logs identify request/room/revision and timing without credentials or submitted answers | NOT STARTED / — |
