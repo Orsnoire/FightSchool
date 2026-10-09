@@ -1,6 +1,14 @@
-# Phase 3A: Teacher Identity and Neon Foundation
+<a id="phase-3a-teacher-identity-and-neon-foundation"></a>
 
-Status: repository implementation prepared; Neon staging provisioning and acceptance remain manual
+# COMPLETE / HISTORICAL — Phase 3A: Teacher Identity and Neon Foundation
+
+> **COMPLETE / HISTORICAL — classified October 9, 2026.** Teacher identity and Neon foundation are deployed; later releases expanded the schema and identity flows.
+> The body below records its original checkpoint; its pending tasks, legacy commands
+> and rollback paths are not current operating instructions. See [current status](../CURRENT_STATUS.md),
+> [release/recovery history](full-migration.md), and the [active cleanup plan](../CLEANUP_PLAN.md).
+> This historical phase number is unrelated to the current cleanup phases.
+
+Original checkpoint status: repository implementation prepared; Neon staging provisioning and acceptance remain manual
 
 ## Scope
 

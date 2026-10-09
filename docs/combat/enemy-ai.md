@@ -1,7 +1,8 @@
 # Enemy behavior and answer-based recovery
 
-Owner decisions, October 8, 2026. Implementation for review; deployment is not
-claimed by this document. This specification supersedes the initial proposal's
+Owner decisions, October 8, 2026. **CURRENT SPECIFICATION — RELEASED** in PR #52,
+runtime `e158194`. See [current status and release evidence](../CURRENT_STATUS.md).
+This specification supersedes the initial proposal's
 damage-threshold Hypnotize and fixed three-turn Hypnotic Stare.
 
 ## Teacher authoring

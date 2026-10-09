@@ -1,7 +1,13 @@
-# Enemy AI verification — October 8, 2026
+<a id="enemy-ai-verification--october-8-2026"></a>
 
-Branch: `feat/enemy-ai-priorities`, integrating the existing goblin/wave work.
-Draft implementation; not deployed.
+# COMPLETE — Enemy AI release verification, October 8, 2026
+
+**COMPLETE RELEASE VERIFICATION — updated October 9, 2026.**
+PR #52 merged and deployed at `e158194`, integrating the existing goblin/wave work.
+See [current status](../CURRENT_STATUS.md) for the exact release baseline and known
+cleanup issues. Classroom balance observation remains open in the
+[expansion plan](../EXPANSION_PLAN.md); this record does not close every
+infrastructure acceptance gate.
 
 ## Completed checks
 
@@ -41,11 +47,18 @@ hidden Flatten state, and preserving academic credit while combat actions are
 blocked. Goblin additions below five are rejected by the API and raised to five
 by the editor. Explicit species takes precedence over legacy portrait identity.
 
-## Remaining release gates
+<a id="remaining-release-gates"></a>
 
-1. Final CI on the possession fix, merge, deployment and live staging acceptance.
-   The review branch is published as PR #52 and deployment is authorized.
-   Acceptance fixtures now explicitly use
-   a defined Slime type with basic attacks for predictable operational checks.
+## Completed release gates
 
-No failing check is skipped or weakened to make this draft appear release-ready.
+1. [CI 37843818974](https://github.com/Orsnoire/FightSchool/actions/runs/37843818974)
+   passed on merged runtime `e158194`, including the possession fix.
+2. [Deployment 37844054859](https://github.com/Orsnoire/FightSchool/actions/runs/37844054859)
+   passed on that exact revision.
+3. [Canonical live acceptance 37844271331](https://github.com/Orsnoire/FightSchool/actions/runs/37844271331)
+   passed on the same revision. Operational fixtures use a defined Slime with
+   basic attacks; species-specific behavior is covered by the deterministic,
+   authoring and browser checks above, not inferred from that simple live fixture.
+
+These original release gates are complete. The [cleanup plan](../CLEANUP_PLAN.md)
+owns new correctness, performance and operational follow-up.

@@ -1,7 +1,12 @@
 # Tier 1 equipment, tank VIT and fallback loot
 
-Status: implemented for review on `feat/tier-one-gear`, not deployed. Based on
-remembered-loadout PR #43. Owner direction: October 7, 2026.
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> Preserve these intended rules during [cleanup](../CLEANUP_PLAN.md);
+> see [current status](../CURRENT_STATUS.md) for known issues and release evidence.
+
+Status: PR #44 merged and released October 8, 2026 after remembered-loadout
+PR #43. Owner direction: October 7, 2026. See the
+[release and migration evidence](../cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026).
 
 ## Equipment and level gate
 
@@ -89,15 +94,16 @@ and keep it until their job reaches level 2.
 - Fighter: starter plate silhouette, red replacing the blue details.
 
 These briefs now have a separate [equipped-gear art implementation](../avatar-equipment-visuals.md)
-for review. It includes static slot rendering and Tier 0-based recolors on both
-bodies; it is not deployed or animation-ready. The healer head is named Healer’s
+released in PR #46. It includes static slot rendering and Tier 0-based recolors on
+both bodies; it is deployed but not animation-ready. The healer head is named Healer’s
 Laurel. The owner withdrew the proposed new head bonuses, retaining the table
 above unchanged.
 
-Apply migration 0012 from PR #43 and then `0013_spellbook_offhand.sql` before
-activating the Worker. Migration 0013 extends the existing off-hand constraint;
-it does not modify any items, loadouts or stats. Pending: review, deployment and
-live acceptance. Local verification covers item budgets, permissions/level gates,
+Migrations 0012 from PR #43 and `0013_spellbook_offhand.sql` are covered by the
+successful migration gate before Worker activation, as recorded above. Migration
+0013 extends the existing off-hand constraint; it does not modify any items,
+loadouts or stats. Deployment and subsequent canonical live acceptance passed.
+Implementation verification covers item budgets, permissions/level gates,
 real migrated API and reward persistence, seeded room opening/recovery, ankh
 rounding, potion refresh/expiry and revised damage/healing formulas.
 

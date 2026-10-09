@@ -1,5 +1,10 @@
 # Bookwyrm animation workshop routing and publishing
 
+> **OPERATING REFERENCE — separate workshop.** This configuration record was last
+> checked October 5; the October 9 status reconciliation did not republish or probe
+> the workshop. Static game integration is released; future art remains in the
+> [expansion plan](EXPANSION_PLAN.md).
+
 Recovered and checked October 5, 2026. This workshop is separate from the QuestAcademy application Worker and its deployment workflow.
 
 | Surface | Configuration |

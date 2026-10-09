@@ -1,6 +1,9 @@
 # Guild quests and classroom tiers
 
-Implementation decision record, 8 October 2026. Implements the owner's current quest, guild-limit, shop and fight-authoring direction. This branch is not deployed.
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> See [current status](CURRENT_STATUS.md) for known issues and [expansion](EXPANSION_PLAN.md) for pending extensions.
+
+Implementation decision record, 8 October 2026. Implements the owner's current quest, guild-limit, shop and fight-authoring direction. PR #47 is merged and deployed; see the [October 8 release and migration evidence](cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026). Classroom tuning and AA upgrade purchases remain separate work.
 
 ## Teacher workflow
 
@@ -66,6 +69,6 @@ The existing party strength, quiz length, defense and solo safety calculations s
 
 ## Migration and validation
 
-Apply migration `0014_guild_quests.sql` after 0013 before activating the Worker. It adds explicit encounter context, tier fields, job grants, AA XP, quest archives, evidence and atomic reward ledgers/functions. No production data was modified during implementation.
+Migration `0014_guild_quests.sql` follows 0013 and is covered by the successful migration gate before Worker activation in deployment `37801260340` and again in `37814586746`. It adds explicit encounter context, tier fields, job grants, AA XP, quest archives, evidence and atomic reward ledgers/functions. See the release record for the journal/log evidence and its limits; no direct live schema audit was performed for this documentation update.
 
 Validation includes the full existing test suite, TypeScript check and production build, plus database tests for duplicate rewards, cross-guild receipts, mastery, archived guilds, cap overflow, permanent job grants and teacher authorization; deterministic/API tier tests; and teacher authoring payload checks. Browser visual verification remains outstanding because the Chromium download failed in the development environment.

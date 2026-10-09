@@ -1,9 +1,14 @@
 # QuestAcademy custom domain
 
+> **CURRENT OPERATING REFERENCE — domain active.** October 9 status reconciliation:
+> canonical-domain deployment and acceptance are verified in [current status](../CURRENT_STATUS.md).
+> Broader recovery/rollback signoff remains open in [cleanup C12](../CLEANUP_PLAN.md).
+
 The canonical browser address is https://questacademy.bookwyrminteractive.studio.
 The existing questacademy-staging Worker serves this domain at its root, retaining
 its current database, sessions, Durable Object namespace, and workers.dev address.
-This is access to the current classroom test build, not completion of migration.
+The application is deployed; domain access alone does not complete the remaining
+infrastructure recovery/rollback acceptance.
 
 Wrangler declares a Custom Domain and manages its DNS record and certificate.
 PUBLIC_ORIGIN is the canonical domain. ADDITIONAL_PUBLIC_ORIGINS explicitly retains

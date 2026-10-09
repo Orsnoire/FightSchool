@@ -1,6 +1,8 @@
 # Individual enemies, waves and goblins — October 8, 2026
 
-Integrated into `feat/enemy-ai-priorities` from `feat/goblin-swarms`. Not deployed.
+**CURRENT SPECIFICATION — RELEASED**, October 8, 2026 in PR #52 (`e158194`),
+integrating the earlier goblin/wave work. See [current status](../CURRENT_STATUS.md)
+for release evidence and the [expansion plan](../EXPANSION_PLAN.md) for deferred scope.
 
 ## Authoring and compatibility
 
@@ -67,8 +69,10 @@ is unchanged.
 
 ## Follow-up ideas, not implemented
 
-- Team race: independent room codes and state for one encounter, shared teacher
-  start and a progress/accuracy scoreboard. Existing hosting reuses an open room.
+- Team race: one public join code backed by two independent child rooms, shared
+  teacher controls and a progress/accuracy scoreboard, as specified in
+  [host-session/race feasibility](host-sessions-and-team-race.md). Existing
+  ordinary hosting reuses an open room.
 - Optional party-scaled swarm count with an enemies-per-player control. Proposed
   counts lock at wave start; subsequent arrivals affect the next wave. Fixed
-  quantities remain the behavior in this branch. Do not apply party scaling twice.
+  quantities remain the released behavior. Do not apply party scaling twice.

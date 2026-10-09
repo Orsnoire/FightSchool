@@ -1,5 +1,9 @@
 # Student combat overlays and resources
 
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> Preserve these intended rules during [cleanup](../CLEANUP_PLAN.md);
+> see [current status](../CURRENT_STATUS.md) for known issues and release evidence.
+
 Implemented from the September 30 classroom feedback, following `docs/Source_of_Truth.md` and the Combat Flow Refactor presentation intent.
 
 The student battlefield stays mounted throughout combat. Answering, combat choices, answer resolution, enemy counterattack, and results use a lightly dimmed centered dialog. Introduction, lobby waiting, queued entry, submitted answers, readiness and knockouts use a compact nonmodal status strip so the battlefield and private character HUD remain visible. Its header keeps the server timer and current HP, MP, combo points, and applicable potion counts visible. The body scrolls on small screens. Escape and outside clicks cannot dismiss a timed phase or advance combat. Focus returns to the heading when the view changes. MathLive's virtual keyboard is contained in the dialog and restored on unmount.

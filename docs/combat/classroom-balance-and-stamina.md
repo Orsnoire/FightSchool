@@ -1,5 +1,9 @@
 # Classroom balance and daily stamina
 
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> Preserve these intended rules during [cleanup](../CLEANUP_PLAN.md);
+> see [current status](../CURRENT_STATUS.md) for known issues and release evidence.
+
 These rules implement the October 1, 2026 classroom feedback. They follow the
 Source of Truth hierarchy and supersede older conflicting combat presentation
 and progression rules. This release was deployed on October 1, 2026, including
@@ -228,11 +232,15 @@ statistics, choices and phase deadlines; it does not replay resolved turns.
 Students should refresh after this release to load the separate action phase UI.
 
 
-## October 7 Tier 1 follow-up — implemented for review, not deployed
+<a id="october-7-tier-1-follow-up--implemented-for-review-not-deployed"></a>
+
+## October 7 Tier 1 follow-up — released October 8, 2026
 
 See [Tier 1 gear and instance loot](tier-one-equipment.md) for the latest approved
 changes: halve tank VIT contributions to damaging abilities/basic attacks while
 preserving defensive benefits and direct healing; add the level-2 gear collection;
 apply the Priest ankh's +1 healing after First Aid's normal rounding; and select
 four fallback loot choices when an otherwise unassigned new instance opens.
-This follow-up is separate from the released PRs #37–42.
+This follow-up shipped in PR #44 after PRs #37–42; see [current status](../CURRENT_STATUS.md).
+The built-in loot claim HTTP defect is tracked separately as F01/C01 in the
+[cleanup plan](../CLEANUP_PLAN.md).

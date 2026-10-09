@@ -1,7 +1,12 @@
 # Equipment comparisons
 
-Status: implemented for review on `feat/gear-comparisons`, not deployed. Stacked
-on Tier 1 PR #44, after remembered-loadout PR #43.
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> Preserve these intended rules during [cleanup](../CLEANUP_PLAN.md);
+> see [current status](../CURRENT_STATUS.md) for known issues and release evidence.
+
+Status: PR #45 merged and released October 8, 2026 after Tier 1 PR #44 and
+remembered-loadout PR #43. See the
+[release evidence](../cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026).
 
 Hover an item card or focus/tap its **Compare** button to inspect equipment
 bonuses before changing gear. This is available in the lobby equipment picker,
@@ -38,8 +43,8 @@ data gets an explicit unavailable state instead of treating the slot as empty.
 Lobby/equipment comparisons reuse their authoritative cached loadout queries.
 Existing save/reward invalidations update comparisons without a reload.
 
-No server or database migration is added by this feature. Pending: review and
-deployment of this stack; item artwork, equipped overlays and animation remain
-separate work. Validation includes signed stat changes, displaced off hands,
+No server or database migration is added by this feature. This stack is deployed;
+static item artwork and equipped overlays were released in PR #46. Animation
+remains separate work. Validation includes signed stat changes, displaced off hands,
 effects, blocked items, absent/refreshing metadata, and actual reward comparisons
 at Chromebook and phone widths, including hover, tap, keyboard and no-claim checks.

@@ -1,4 +1,12 @@
-# Phase 3B: Teacher fight persistence
+<a id="phase-3b-teacher-fight-persistence"></a>
+
+# COMPLETE / HISTORICAL — Phase 3B: Teacher fight persistence
+
+> **COMPLETE / HISTORICAL — classified October 9, 2026.** Teacher fight persistence is deployed; live hosting and uploads were added later.
+> The body below records its original checkpoint; its pending tasks, legacy commands
+> and rollback paths are not current operating instructions. See [current status](../CURRENT_STATUS.md),
+> [release/recovery history](full-migration.md), and the [active cleanup plan](../CLEANUP_PLAN.md).
+> This historical phase number is unrelated to the current cleanup phases.
 
 This slice restores the authenticated teacher workflow for creating, listing, opening, updating, and deleting fight definitions. It keeps Neon PostgreSQL as the system of record and does not enable hosting a live fight yet.
 

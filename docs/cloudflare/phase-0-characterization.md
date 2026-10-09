@@ -1,6 +1,14 @@
-# Phase 0: Milestone 1 Characterization
+<a id="phase-0-milestone-1-characterization"></a>
 
-Status: complete for repository-level characterization
+# COMPLETE / HISTORICAL — Phase 0: Milestone 1 Characterization
+
+> **COMPLETE / HISTORICAL — classified October 9, 2026.** Repository characterization completed; its legacy fixtures are historical.
+> The body below records its original checkpoint; its pending tasks, legacy commands
+> and rollback paths are not current operating instructions. See [current status](../CURRENT_STATUS.md),
+> [release/recovery history](full-migration.md), and the [active cleanup plan](../CLEANUP_PLAN.md).
+> This historical phase number is unrelated to the current cleanup phases.
+
+Original checkpoint status: complete for repository-level characterization
 
 Baseline: `main` at `2d3d07053f6be854f99cb81ac8bfce3fce56969f`
 

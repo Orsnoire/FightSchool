@@ -1,7 +1,11 @@
 # Equipped gear visuals and Tier 1 artwork
 
-Status: implemented for review on `feat/equipped-gear-art`, stacked after gear
-comparisons (PR #45). Not deployed. Owner direction: October 7, 2026 MDT.
+> **CURRENT SPECIFICATION — RELEASED.** Reconciled October 9, 2026.
+> See [current status](CURRENT_STATUS.md) for known issues and [expansion](EXPANSION_PLAN.md) for pending extensions.
+
+Status: PR #46 merged and released October 8, 2026 after gear comparisons
+(PR #45). Owner direction: October 7, 2026 MDT. See the
+[release evidence](cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026).
 
 The avatar now reads its eight equipped item IDs. Chest, paired Arms, paired
 Hands, Pants, Feet, Head, Weapon and Off hand select independently. Equipping,
@@ -12,7 +16,7 @@ stats/effects on entry, preserves them through serialization/rejoin, and does
 not change appearance when lobby gear changes mid-fight. Legacy rooms without
 IDs use deterministic starter visuals.
 
-## Completed for review
+## Released static implementation
 
 - Both Human bodies use the approved front-facing identity, palettes, neck fits
   and headwear occlusion, with independently selected static clothing layers.
@@ -44,12 +48,15 @@ for both bodies. Changing gloves preserves face/hair/skin/chest; changing a hat
 preserves the body and held items. The review script exercises full Tier 0/Tier 1
 sets, cross-material mixed equipment, empty gear and advanced weapons.
 
-Pending: owner visual review, PR review, deployment and live acceptance. Full
-animation, near-profile views, skeleton-connected parts, moving grip/occlusion
+PR #46 is merged and deployed; subsequent canonical live acceptance passed.
+Full animation, near-profile views, skeleton-connected parts, moving grip/occlusion
 validation and custom-item artwork remain separate work. These static masks and
 props are not an approved animation rig or animation-ready database record.
-No migration is added here; stacked migrations 0012 and 0013 remain prerequisites
-for releasing the earlier remembered-loadout/Tier 1 changes.
+No migration is added here; prerequisite migrations 0012 and 0013 are covered by
+the successful deployment migration gate recorded above. Deployment and general
+live acceptance do not establish exhaustive manual visual or animation signoff.
+
+<a id="completed-for-review"></a>
 
 ## Fitted review exports
 
