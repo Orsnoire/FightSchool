@@ -1,6 +1,6 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 9, 2026. C01 in progress; F01 verified, not released.**
+**CURRENT — October 9, 2026. C01 in progress; F01 verified; F02/F03 regressions reproduced.**
 
 Read this file on `main` to find the active package, then read the same file on
 its registered branch and inspect the live PR. Branch progress can be newer than
@@ -13,12 +13,12 @@ editing. The [cleanup plan](CLEANUP_PLAN.md) controls scope; the
 | Field | Checkpoint |
 | --- | --- |
 | Active package | **C01 — correctness**, reserved as the only active cleanup package |
-| Current stage | Phase 1 first step COMPLETE; F01 implemented and locally verified; F02/F03 pending |
+| Current stage | Phase 1 first step COMPLETE; F01 verified in CI; F02/F03 failing regressions published, fixes next |
 | Owner / execution lane | QuestAcademy cleanup session; resume this registered work, do not create another implementation |
 | Canonical branch | [`cleanup/c01-correctness`](https://github.com/Orsnoire/FightSchool/tree/cleanup/c01-correctness) |
 | Draft PR | [#53 — C01 correctness (DRAFT)](https://github.com/Orsnoire/FightSchool/pull/53); continue this PR |
 | Starting main | `117373252e81721342d0faa483d2cf54eeeda874` (merged documentation reconciliation) |
-| Last verified draft checkpoint | F01 code and tests in this commit: local type check, 194 tests and production build pass; exact pushed SHA and CI are in the live PR |
+| Last verified draft checkpoint | F01 `d24e934de770d41e3ca5619e720a5034ea9360e9`; 194 tests/type check/build and CI 37949069416 passed; this later checkpoint intentionally adds failing F02/F03 regressions |
 | Latest pushed checkpoint | Read the registered PR's live head SHA and its checkpoint section; update that section after every push |
 | Deployed runtime | `e1581948f6623d86af859452bf083ca0f35db681`; F01 is not merged or deployed |
 | Other packages | C02–C12 not started; do not begin another package while C01 is active |
@@ -69,24 +69,36 @@ approved gameplay. The review reproductions are findings, not completed fixes.
 
 ## C01 branch checkpoint
 
-This is the registered C01 draft workspace. The resume protocol is COMPLETE in
-[merged kickoff PR #54](https://github.com/Orsnoire/FightSchool/pull/54), main commit
-`3b490b391df4a3ec6d1d69d44346b8ccb153390a`. This branch includes that main commit.
-F01's regression and validator fix are complete locally. F02/F03 are pending;
-C01 remains a draft and is not ready for package completion, merge or release.
+Resume safeguards from merged PR #54 are included. F01 is verified at
+`d24e934de770d41e3ca5619e720a5034ea9360e9` by
+[CI 37949069416](https://github.com/Orsnoire/FightSchool/actions/runs/37949069416).
+
+This checkpoint adds `leaderboard-http.test.ts` and `leaderboard-ui.test.ts`.
+Running both with `node --import tsx --test tests/phase4/leaderboard-*.test.ts`
+against unchanged leaderboard code yields seven expected failing subcases and
+five passing subcases (the two parents also fail):
+
+- UI failures: path instead of metric query parameter, invisible 403/503 errors,
+  guild metadata failure misreported as missing, and failed cached refresh.
+- HTTP failures: 8/10 + 8/10 yields 160 rather than 80; 1/1 + 1/9 yields 111.11
+  rather than 20. Zero/no-history and fractional results already pass.
+- Guild/member scope, additive metrics and response aliases, ordering,
+  authentication, teacher ownership and hidden metric permissions already pass.
+
+The UI test bundles the actual page/default query function and supplies HTTP
+responses. The HTTP test runs the real handler against all 15 migrations in a
+disposable PGlite database with signed sessions. No live data is used.
+This is an intentionally failing draft checkpoint, not a completed C01 package.
 
 ## Exact next action
 
-Fetch `cleanup/c01-correctness` / PR #53 and current `main`, reconcile this
-checkpoint with the live PR head and any newer branch commits, and inspect the
-latest exact-head CI. Resolve any F01 check failure before new work.
-
-Then reproduce F02 through the actual student leaderboard request: show the
-metric-specific cache key currently creates an invalid URL, and cover visible
-load errors/retry. Correct the URL to use the metric query parameter while
-preserving cache separation. F03 then replaces summed percentages with
-question-weighted accuracy, covering zero answers and unequal fight sizes.
-Keep both fixes and their published checkpoints in this same C01 draft PR.
+Fetch the registered branch and main, inspect the live PR head/CI and any newer
+commits, then fix F02's explicit query-parameter URL and visible retriable errors
+without changing the metric-specific cache key. Fix F03 with
+`100 * sum(correct) / sum(answered)` and zero when unanswered; preserve all
+other metric aliases, guild/member visibility and response fields. Make the new
+boundary regressions pass, then run full type/test/build and CI gates. Keep this
+work in PR #53 and update current docs before marking C01 implementation verified.
 
 ## Resume and handoff checklist
 
