@@ -3,9 +3,9 @@
 > **CURRENT AUTHORITY — October 9, 2026.** Start with the [documentation index](README.md),
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
-> Phase 1 has started with the [resume safeguard](ACTIVE_WORK.md); C01 is
-> implemented and locally verified (F01–F03), with checks/review and release
-> tracked separately in PR #53. Historical migration phases are not the active queue.
+> Phase 1 is active with the [resume safeguard](ACTIVE_WORK.md). C01 (F01–F03)
+> is COMPLETE: PR #53 merged, deployed and accepted. C02 is next, not started.
+> Historical migration phases are not the active queue.
 
 This document defines the authority hierarchy for all QuestAcademy design, development, migration, and agent-based work.
 
@@ -131,7 +131,8 @@ fallback instance loot rules. It supersedes older conflicting equipment level
 gates and VIT damage formulas. PR #44 was released October 8; migration 0013 is
 covered by the successful migration gate recorded below. The October 9 review
 found a built-in loot claim HTTP-validation defect; [F01/C01](CLEANUP_PLAN.md)
-tracks the correction without changing intended loot eligibility or rewards.
+corrected it in the October 9 PR #53 release without changing intended loot
+eligibility or rewards.
 
 The [equipment comparison specification](combat/equipment-comparisons.md) records
 hover, keyboard and touch comparisons in gear, shop and loot screens, including
@@ -149,8 +150,9 @@ Two nonconsecutive correct answers clear
 stun/paralysis; three release each player from single-target Hypnotic Stare or
 party-wide Hypnosis. Hypnotizing sources cannot act until their victims are free.
 This supersedes the initial damage-threshold and fixed-turn hypnosis proposals.
-PR #52 is merged and deployed in runtime `e158194`; CI, deployment and canonical
-live acceptance passed. See [current status](CURRENT_STATUS.md) for exact runs.
+PR #52 was released in runtime `e158194` and remains included in the current
+C01 runtime `8bf9df7`; CI, deployment and canonical live acceptance passed.
+See [current status](CURRENT_STATUS.md) for exact runs.
 
 ## Combat Flow Refactor
 

@@ -6,7 +6,7 @@
 > queue is now the [cleanup plan](../CLEANUP_PLAN.md); expansion is [deferred](../EXPANSION_PLAN.md).
 > The dated implementation/test counts below describe their original checkpoints.
 > [Current status](../CURRENT_STATUS.md) records the latest runtime and known defects,
-> including built-in loot claiming (F01). Released does not mean defect-free.
+> including the October 9 C01 correction of built-in loot claiming (F01).
 
 **October 8 release status:** PRs #43–46 are merged and deployed. The original
 R2 HTTP 403 was limited to attempt 1 of run `37773374205`;

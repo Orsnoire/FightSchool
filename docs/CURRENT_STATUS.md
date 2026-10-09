@@ -1,31 +1,34 @@
 # Current status
 
-**CURRENT — verified October 9, 2026.** Documentation has been reconciled before
-cleanup. **Phase 1 has started with its interruption/resume safeguard.**
-C01 is the single active package in [draft PR #53](https://github.com/Orsnoire/FightSchool/pull/53).
-All three C01 fixes are implemented and locally verified (208 tests, type check
-and production build); exact-head CI/review are recorded in the PR. They are not
-merged or deployed.
-Read [active work](ACTIVE_WORK.md) for the branch/PR and exact next action. The
-[cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
+**CURRENT — verified October 9, 2026.** Cleanup Phase 1 is in progress.
+**C01 is COMPLETE:** F01–F03 are merged in [PR #53](https://github.com/Orsnoire/FightSchool/pull/53),
+deployed and accepted. **C02 — dependency triage is next, not started.**
+Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
+The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
 ## Verified release baseline
 
 The latest verified application runtime is
-[`e1581948f6623d86af859452bf083ca0f35db681`](https://github.com/Orsnoire/FightSchool/commit/e1581948f6623d86af859452bf083ca0f35db681),
-the October 8 merge of PR #52. It was also `main` at the start of this review.
-Subsequent documentation commits do not change the deployed runtime. Immutable
-Worker version: `2180375a-c947-470d-a3ea-e199c9ff25f3`, published October 8
-at 21:04:51 UTC in deployment job `113540375470`.
+[`8bf9df71629c9ba8933b63a24ca5f35da655e3cc`](https://github.com/Orsnoire/FightSchool/commit/8bf9df71629c9ba8933b63a24ca5f35da655e3cc),
+the October 9 merge of PR #53. Immutable Worker version:
+`68cf4f65-c163-4018-ad6f-a718489dbb46`, published October 9 at 16:07:27 UTC
+in deployment job `113908508849`. Subsequent documentation-only commits do not
+change the deployed runtime.
 
 | Evidence | Result |
 | --- | --- |
-| [CI 37843818974](https://github.com/Orsnoire/FightSchool/actions/runs/37843818974) | Passed on `e158194` |
-| [Deployment 37844054859](https://github.com/Orsnoire/FightSchool/actions/runs/37844054859) | Passed on `e158194`, October 8 |
-| [Canonical live acceptance 37844271331](https://github.com/Orsnoire/FightSchool/actions/runs/37844271331) | Passed on `e158194`, October 8 |
-| [Enemy AI browser acceptance 37841834095](https://github.com/Orsnoire/FightSchool/actions/runs/37841834095) | Passed on the PR #52 review head; sprite/authoring/recovery screenshots inspected |
-| Local review baseline | TypeScript, 186 tests and production client/Worker build passed; existing installed dependencies reused |
-| Database release evidence | Successful migrator gates with the committed journal through `0014`; details and limits in the [release record](cloudflare/full-migration.md#gear-release-recovered-and-verified--8-october-2026) |
+| [Main CI 37956409540](https://github.com/Orsnoire/FightSchool/actions/runs/37956409540) | Passed on `8bf9df7` |
+| [Deployment 37956580253](https://github.com/Orsnoire/FightSchool/actions/runs/37956580253) | Passed on `8bf9df7`, including both hostname smoke checks |
+| [Canonical live acceptance 37956888302](https://github.com/Orsnoire/FightSchool/actions/runs/37956888302) | Passed on `8bf9df7`, October 9 |
+| [PR browser acceptance 37951054128](https://github.com/Orsnoire/FightSchool/actions/runs/37951054128) | Passed on C01 review head `b952894`; merge tree matches reviewed head |
+| Correctness gates | TypeScript, all 208 tests and production client/Worker build passed locally and in deployment; F01–F03 boundary regressions included |
+| Database release evidence | Migrator succeeded at 16:07:09 UTC with the existing journal through `0014`; C01 adds no migration. See [release record](cloudflare/full-migration.md#c01-correctness-release--9-october-2026) for evidence and limits |
+
+Yesterday's queue is reconciled: every October 8 merged PR (#37–50 and #52)
+is already included in the verified October 8 runtime `e158194` and this release.
+There was no separate older open PR or undeployed merged application change.
+The gear, guild-quest, host-control and enemy releases are live. Deferred
+expansion items are not pending deployments.
 
 The canonical classroom URL is <https://questacademy.bookwyrminteractive.studio>.
 The Worker and deployment workflows still use the name **staging**, but they
@@ -39,10 +42,11 @@ from the active runtime and is not a rollback target.
 | Area | Released behavior | Outstanding boundary |
 | --- | --- | --- |
 | Combat and classroom UI | Deterministic combat, current class rules, daily stamina, First Aid, calculated ability values, static battlefield, late entry, moderation, host resurrection and proportional host-end rewards | Refactors preserve these rules; classroom balance observation continues |
-| Equipment | Eight slots, full Tier 0 starters, permissions, remembered per-job gear/abilities, Tier 1 level-2 collection, comparisons, equipped static art | Live runtime has the F01 claim-validation defect; correction implemented in draft PR #53, not deployed |
+| Equipment | Eight slots, full Tier 0 starters, permissions, remembered per-job gear/abilities, Tier 1 level-2 collection, comparisons, equipped static art | F01 built-in/custom claim validation released in C01; ownership, earned-loot checks and atomic rewards preserved |
 | Guilds and progression | Teacher/personal/shared quests, permanent progression with encounter caps, tier browsing, AA overflow banking, atomic reward receipts | AA purchases and additional balance tuning remain future work |
 | Host sessions | Explicit Join / End / Launch, exact-session reconnect, duplicate-launch protection, idempotent host-end rewards | Team race is not implemented |
 | Enemies | Seven defined species, configurable priorities, answer-based recovery, individual quantities, waves, goblin targeting and minimum-five additions | Party-scaled enemy counts are not implemented; fixed authored quantities remain |
+| Leaderboards | Student metric query and visible retryable errors; accuracy weighted by total answers | Guild scope, hidden metrics and additive metrics preserved |
 | Avatars | Saved independent appearance, Human models, starter wardrobe and front-facing equipped-item visuals | Full animation, near-profile fitting and custom-item artwork remain pending |
 
 Release details: [October 7–8 completed batch](combat/release-queue.md),
@@ -51,19 +55,18 @@ Release details: [October 7–8 completed batch](combat/release-queue.md),
 
 ## Known issues and cleanup status
 
-The [review](reviews/2026-10-09-code-review.md) identifies 17 findings. Branch
-implementation and verification are recorded in [active work](ACTIVE_WORK.md);
-the released runtime remains unchanged.
+The [review](reviews/2026-10-09-code-review.md) records 17 baseline findings.
+**F01–F03 are now closed by released C01;** remaining work stays in the cleanup
+plan and [active-work checkpoint](ACTIVE_WORK.md).
 
-- **F01 implemented and locally verified, not released:** the claim-route item contract accepts
-  registered built-in IDs and custom UUIDs. HTTP regressions cover all four
-  fallback choices, invalid/unearned IDs, ownership, result scope, eligibility,
-  gold and repeated/concurrent claims. No reward SQL or gameplay rules changed.
-- **F02/F03 implemented and locally verified, not released:** the student
-  leaderboard uses the metric query parameter and displays retriable errors.
-  Accuracy uses total correct over total answered, including unequal fight sizes
-  and explicit zero-answer behavior. Guild scope, permissions and other metrics
-  retain regression coverage. These defects remain in the deployed runtime.
+- **F01 released:** registered built-in equipment IDs and custom UUIDs pass the
+  claim contract. HTTP regressions cover fallback choices, invalid/unearned
+  IDs, ownership, result scope, eligibility, gold and repeated/concurrent claims.
+- **F02/F03 released:** the student leaderboard sends the metric query parameter,
+  displays retriable errors, and calculates total correct over total answered.
+  Unequal fight sizes, zero answers, guild scope and permissions have boundary
+  regression coverage. The standard live acceptance run complements these
+  disposable HTTP/UI regressions; it does not reproduce every new fixture live.
 - **Schema generation drift:** journal through `0014`, latest snapshot `0007`;
   disposable generation emitted 23 duplicate column additions. SQL-only quest
   tables also need explicit schema ownership (F04).
@@ -78,8 +81,9 @@ the released runtime remains unchanged.
 
 ## Open acceptance and operational work
 
-The October 8 30-answer burst measured p50 **1,657 ms**, p95 **3,070 ms**, maximum
-**3,220 ms**. Its current maximum threshold is 15 seconds. It does not establish
+The October 9 30-answer burst measured p50 **2,065 ms**, p95 **3,976 ms**, maximum
+**4,177 ms**. Its current maximum threshold is 15 seconds. One burst is not a
+performance trend or evidence of meeting the proposed cleanup target; it does not establish
 performance for a guild with fully seeded quests, realistic history and many
 distinct avatars. Cleanup C05–C08 and C12 own repeated 30/60-player measurements.
 

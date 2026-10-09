@@ -4,8 +4,10 @@
 This is the repository companion to the October 9 code review and cleanup report.
 Use [CURRENT_STATUS.md](../CURRENT_STATUS.md) for current completion status and
 [CLEANUP_PLAN.md](../CLEANUP_PLAN.md) for the active queue. Findings describe the
-reviewed baseline, even after later fixes. F17's documentation reconciliation is
-complete; the runtime/schema/dependency packages have not started.
+reviewed baseline, even after later fixes. At that review checkpoint, F17's
+documentation reconciliation was complete and runtime/schema/dependency packages
+had not started. C01 subsequently closed F01–F03; the findings below retain the
+original reproduction evidence.
 
 P1 means address in the first cleanup phase; P2 means material cleanup work;
 P3 means lower-priority removal once dependencies are verified. These are review
