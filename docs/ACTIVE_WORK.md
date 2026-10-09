@@ -53,6 +53,11 @@ approved gameplay. The review reproductions are findings, not completed fixes.
 - Remaining verification: reproduce F01–F03 through the actual HTTP/UI boundary,
   then implement and verify the fixes against the C01 completion gate.
 
+## C01 branch checkpoint
+
+Draft workspace initialized. Runtime code and regression tests are unchanged.
+The next implementation checkpoint is the F01 reward-claim HTTP reproduction.
+
 ## Exact next action
 
 Finish publishing the resume rules on `main` and registering the single C01 draft
