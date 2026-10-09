@@ -2,7 +2,7 @@
 
 **CURRENT — verified October 9, 2026.** Documentation has been reconciled before
 cleanup. **Phase 1 has started with its interruption/resume safeguard.**
-C01 is reserved as the single active package; runtime fixes are not yet written.
+C01 is registered as the single active package in [draft PR #53](https://github.com/Orsnoire/FightSchool/pull/53);\nruntime fixes are not yet written.
 Read [active work](ACTIVE_WORK.md) for the branch/PR and exact next action. The
 [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
