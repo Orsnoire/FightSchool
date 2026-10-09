@@ -4,8 +4,8 @@
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
 > Phase 1 has started with the [resume safeguard](ACTIVE_WORK.md); C01 is
-> in progress (F01 implemented, not released; F02/F03 pending). Historical
-> migration phases are not the active queue.
+> implemented and locally verified (F01–F03), with checks/review and release
+> tracked separately in PR #53. Historical migration phases are not the active queue.
 
 This document defines the authority hierarchy for all QuestAcademy design, development, migration, and agent-based work.
 

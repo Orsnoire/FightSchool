@@ -3,8 +3,9 @@
 **CURRENT — verified October 9, 2026.** Documentation has been reconciled before
 cleanup. **Phase 1 has started with its interruption/resume safeguard.**
 C01 is the single active package in [draft PR #53](https://github.com/Orsnoire/FightSchool/pull/53).
-F01 is implemented on its branch; F02/F03 remain pending. The F01 fix is not merged
-or deployed.
+All three C01 fixes are implemented and locally verified (208 tests, type check
+and production build); exact-head CI/review are recorded in the PR. They are not
+merged or deployed.
 Read [active work](ACTIVE_WORK.md) for the branch/PR and exact next action. The
 [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
@@ -54,12 +55,15 @@ The [review](reviews/2026-10-09-code-review.md) identifies 17 findings. Branch
 implementation and verification are recorded in [active work](ACTIVE_WORK.md);
 the released runtime remains unchanged.
 
-- **F01 implemented, not released:** the claim-route item contract accepts
+- **F01 implemented and locally verified, not released:** the claim-route item contract accepts
   registered built-in IDs and custom UUIDs. HTTP regressions cover all four
   fallback choices, invalid/unearned IDs, ownership, result scope, eligibility,
   gold and repeated/concurrent claims. No reward SQL or gameplay rules changed.
-- **F02/F03 pending:** the student leaderboard constructs an invalid path;
-  accuracy adds fight percentages instead of calculating an aggregate percentage.
+- **F02/F03 implemented and locally verified, not released:** the student
+  leaderboard uses the metric query parameter and displays retriable errors.
+  Accuracy uses total correct over total answered, including unequal fight sizes
+  and explicit zero-answer behavior. Guild scope, permissions and other metrics
+  retain regression coverage. These defects remain in the deployed runtime.
 - **Schema generation drift:** journal through `0014`, latest snapshot `0007`;
   disposable generation emitted 23 duplicate column additions. SQL-only quest
   tables also need explicit schema ownership (F04).
