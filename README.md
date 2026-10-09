@@ -3,7 +3,8 @@
 A persistent educational RPG hosted at https://questacademy.bookwyrminteractive.studio.
 
 Start with the [documentation index](docs/README.md), [current status](docs/CURRENT_STATUS.md),
-and [cleanup plan](docs/CLEANUP_PLAN.md). Cleanup Phase 1 has not started;
+and [cleanup plan](docs/CLEANUP_PLAN.md). Phase 1 has started with the
+[resume safeguard and active-work checkpoint](docs/ACTIVE_WORK.md);
 [expansion](docs/EXPANSION_PLAN.md) follows the cleanup exit gates.
 Read [Source of Truth](docs/Source_of_Truth.md) before changing gameplay or architecture.
 The [migration plan](docs/Migration_Plan) is historical; the deployed architecture,
