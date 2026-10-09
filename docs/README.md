@@ -1,15 +1,17 @@
 # QuestAcademy documentation
 
 **CURRENT — updated October 9, 2026.** Cleanup is the next development priority.
-Cleanup Phase 1 has **not started**. New feature development waits for the cleanup
-exit gates; this documentation update is the preparation step.
+Cleanup Phase 1 has **started with the resume safeguard**. C01 is the registered
+next implementation; its fixes are not yet written. New features wait for the
+cleanup exit gates. Read [active work](ACTIVE_WORK.md) before editing.
 
 ## Start here
 
 | Document | Purpose | Status |
 | --- | --- | --- |
+| [Active work / resume here](ACTIVE_WORK.md) | One package, branch/PR, checkpoint and next action | CURRENT COORDINATION |
 | [Current status](CURRENT_STATUS.md) | Shipped features, verified runtime, known defects and open acceptance | CURRENT |
-| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — implementation not started |
+| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — Phase 1 kickoff; C01 fixes pending |
 | [Expansion plan](EXPANSION_PLAN.md) | Deferred features, design dependencies and long-term direction | FUTURE — after cleanup |
 | [October 9 engineering review](reviews/2026-10-09-code-review.md) | Findings F01–F17 and measured baseline behind the cleanup plan | BASELINE RECORD |
 | [Source of Truth](Source_of_Truth.md) | Product authority, design rules and conflict resolution | CURRENT AUTHORITY |

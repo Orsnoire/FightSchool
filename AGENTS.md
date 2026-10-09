@@ -6,6 +6,35 @@ Before making any architectural, product, gameplay, migration, or data-model cha
 
 That document defines the authority hierarchy for QuestAcademy and explains how to resolve conflicts between product vision, system design documents, current code, and historical prototype behavior.
 
+## Start or Resume Work
+
+Before editing, read `docs/ACTIVE_WORK.md` on current `main`, then inspect the
+registered branch, open PR and that branch's copy of the checkpoint. Fetch the
+remote heads and inspect local changes; chat history and an old checkout are not
+proof of current work. Use `docs/CLEANUP_PLAN.md` for scope and exit gates.
+
+- Keep one cleanup package active at a time initially. Use its registered branch
+  and draft PR; do not start a second implementation of the same fix. Historical
+  feature branches are references, not resume targets. Create a replacement only
+  after checking existing work and recording why it is superseded.
+- Reconcile the checkpoint with actual commits, PR state and CI before proceeding.
+  If another session has advanced the branch, incorporate its work before writing.
+  Use ordinary fast-forward pushes or expected-head checks; never overwrite an
+  unexpected remote head or discard someone else's local changes.
+- Before substantive code work, publish the package claim and draft PR. Commit
+  and push small coherent checkpoints throughout the work, including explicitly
+  labeled incomplete work on the draft branch. Do not leave the only recoverable
+  copy in local files or conversation memory.
+- Keep `docs/ACTIVE_WORK.md` on the active branch current: scope, completed and
+  unfinished work, tests/results and the exact next action. After every push,
+  update the PR description with the pushed SHA and verification state. Verify
+  publication; a local commit is not a pushed checkpoint. If interrupted between
+  push and documentation, inspect the newer diff and reconcile before resuming.
+- Keep `main`'s checkpoint as the discovery pointer to the active branch/PR; its
+  branch copy and live PR carry newer in-progress details. On completion, update
+  the checkpoint and cleanup table, distinguishing verified, merged, deployed
+  and accepted states. Register the next package before its implementation.
+
 ## Core Rules
 
 - Do not assume existing code represents intended product behavior.
