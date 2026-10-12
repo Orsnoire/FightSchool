@@ -4,12 +4,12 @@
 
 ## C04 active checkpoint
 
-- Branch: `cleanup/c04-contracts-diagnostics`; registered C04 implementation branch. Read the draft PR for exact published commits.
+- Branch: `cleanup/c04-contracts-diagnostics`; [draft PR #60](https://github.com/Orsnoire/FightSchool/pull/60). Read its PR for exact published commits.
 - Baseline: `ee95602ca229bf4cc19f6458afa8271055dc675d`; C03 complete and HP preview deployed/accepted; no open PRs at start.
 - Scope: F05/F16 shared request/response/command contracts, public snapshot allowlists, typed query factories, bounded JSON parsing, redacted structured diagnostics and intended CI checks.
 - Preserve ownership, session revocation, saved rooms, rewards, approved gameplay and current live data. No production database changes.
-- Verification: not yet run for C04. Boundary inventory in progress; implementation not started.
-- Next: inspect boundaries, publish failing regression checks, implement in coherent checkpoints and run full gates.
+- Baseline reproduction: both contracts.test.ts tests intentionally FAIL on the untouched implementation: shared fight bounds drift and future internal fields leaking through snapshot spreads.
+- Next: unify fight contracts, allowlist public state, then bounded parsing, typed commands/queries and redacted diagnostics; run full gates.
 
 The records below are historical.
 
