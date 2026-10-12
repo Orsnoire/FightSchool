@@ -44,8 +44,11 @@ there is no claim of production latency improvement before a measured release.
 
 ## Reproducible isolated comparison
 
-Run `node --import tsx tests/support/measure-room-costs.ts` on baseline `de0ddfd7`
-and the candidate with the same dependencies/runtime. Twelve independent runs
+Run `node --import tsx tests/support/measure-room-costs.ts` against baseline runtime `de0ddfd7`
+and the candidate with the same dependencies/runtime. Use the final PR #63 versions
+of both `tests/support/room-costs.ts` and `measure-room-costs.ts` in each checkout:
+the final fixture corrects appearance metadata to registered model/palette IDs.
+Run baseline and candidate sequentially, without competing benchmark processes. Twelve independent runs
 per size; median per column. Each run has 30/60 players plus host, varied jobs and
 appearance metadata, rich question text, and a configured goblin swarm. It performs
 10 changed publications, 10 identical publications and one reconnect per player.
@@ -55,11 +58,11 @@ Raw measurements and Node version are in
 
 | Measured work per run | 30 players: before → after | 60 players: before → after |
 | --- | --- | --- |
-| Publish loop, ms | 67.19 → 13.00 | 241.93 → 30.05 |
-| Reconnect loop, ms | 137.01 → 22.98 | 836.48 → 79.89 |
+| Publish loop, ms | 76.95 → 13.70 | 254.48 → 31.17 |
+| Reconnect loop, ms | 147.96 → 23.12 | 868.92 → 82.03 |
 | Full state encodings | 1,550 → 70 | 4,880 → 100 |
 | Sent messages | 1,550 → 340 | 4,880 → 670 |
-| Sent UTF-8 bytes | 55,988,550 → 12,281,340 | 344,685,760 → 47,323,640 |
+| Sent UTF-8 bytes | 60,632,350 → 13,299,980 | 374,292,720 → 51,388,530 |
 | Reconnect student/profile reads (each) | 30 → 0 | 60 → 0 |
 | Reconnect checkpoints | 30 → 0 | 60 → 0 |
 | Revocation checks | 30 → 30 | 60 → 60 |

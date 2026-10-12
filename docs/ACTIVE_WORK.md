@@ -4,7 +4,7 @@
 - Baseline includes accepted PR #61/C04. Published regression checkpoint `de0ddfd7ab51385e2f01998755341f9aeea55d6d` intentionally fails three cost tests.
 - Implemented shared per-role encoding, unchanged public-payload suppression, established/pending reconnect without redundant profiles/checkpoints, and allowlisted repository/storage/publish counters and timing.
 - Isolated 12-run 30/60-player comparisons show encodes 1550→70 / 4880→100; reconnect profile reads/checkpoints drop to zero while every revocation check remains. See [method, results and limits](cloudflare/room-costs.md). These are local CPU/operation fixtures, not live latency claims.
-- Local full suite: 242 tests, typecheck/builds pass; two additional burst/admission tests pass in the six-test targeted suite. Final exact-head CI/browser pending (244 expected total).
+- Local full suite: 242 tests, typecheck/builds pass; two additional burst/admission tests pass in the six-test targeted suite. Implementation CI 38298884328 passes all 244 tests/typecheck/builds. Final fixture refinement uses valid avatar IDs in identical sequential baseline/candidate runs; all six targeted tests pass. Final-head CI/browser pending.
 - Preserve immediate acknowledgements/transitions, moderation, retries, saved clocks and released swarm/host controls. No SQL change, live load test, merge or deployment.
 - Next: publish implementation, run exact-head full CI/browser and review failure/reconnect boundaries. C06 not started.
 

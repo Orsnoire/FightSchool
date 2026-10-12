@@ -1,5 +1,6 @@
 import { CombatSessionObject } from '../../worker/combat/session-object.ts';
 import { addStudent, initialCombatState, scaleEncounter, startQuestion } from '../../worker/combat/engine.ts';
+import { PALETTES } from '../../shared/avatar/appearance.ts';
 import { fight, student } from '../phase4/fixtures.ts';
 
 export function roomFixture(count:number, capture=true) {
@@ -8,7 +9,7 @@ export function roomFixture(count:number, capture=true) {
     enemies:[{id:'goblins',name:'Goblin',image:'',enemyType:'goblin',difficultyMultiplier:1,quantity:5,swarm:{enemiesPerFourPlayers:2}}]};
   let snapshot=initialCombatState('ABC234',authored as any,now);
   const students=Array.from({length:count},(_,i)=>({...student(['warrior','wizard','scout','priest'][i%4] as any,`00000000-0000-4000-8000-${String(i+10).padStart(12,'0')}`),nickname:`Fixture ${i}`}));
-  for(const [i,s] of students.entries())snapshot=addStudent(snapshot,s,{levels:{[s.characterClass!]:4},appearance:{hairColorIndex:i%8,skinColorIndex:(i+2)%8,eyeColorIndex:(i+4)%8} as any});
+  for(const [i,s] of students.entries())snapshot=addStudent(snapshot,s,{levels:{[s.characterClass!]:4},appearance:{modelId:i%2?'human-female-v1':'human-male-v1',hairColorId:PALETTES.hair[i%8].id,skinColorId:PALETTES.skin[Math.floor(i/8)%8].id,eyeColorId:PALETTES.eyes[(i+4)%8].id}});
   snapshot=startQuestion(scaleEncounter(snapshot,authored as any),now-4000,300);
   const room:any={fight:authored,snapshot,receipts:[]};
   let saved=structuredClone(room);
