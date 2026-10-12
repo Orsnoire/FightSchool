@@ -1,3 +1,4 @@
+import { readJson, bodyErrorResponse } from "../http/json";
 import { gameDatabase } from "../db/game-repository.ts";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import {
@@ -60,7 +61,9 @@ export async function handleCombatSessions(
     );
     if (!actor) return json({ error: "Authentication required" }, 401);
     const db = gameDatabase(databaseUrl);
-    const input = (await request.json()) as { guildId?: string };
+    let input: {guildId?:string};
+    try {input = (await readJson(request)) as {guildId?:string};if(!input||typeof input!=="object")return json({error:"Invalid request"},400);}
+    catch(error){return bodyErrorResponse(error)||json({error:"Invalid request"},400);}
     if (!input.guildId || !/^[0-9a-f-]{36}$/i.test(input.guildId))
       return json({ error: "Guild required" }, 400);
     const [assignment] = await db
@@ -132,8 +135,7 @@ export async function handleCombatSessions(
     let guildLimitTier:number|null=null;
     if(databaseUrl){
       let input:{guildId?:string}={};
-      const body=await request.text();
-      try{input=body?JSON.parse(body):{};}catch{return json({error:'Invalid request'},400);}
+      try{input=await readJson(request,65_536,true) as {guildId?:string};if(!input||typeof input!=="object")return json({error:'Invalid request'},400);}catch(error){return bodyErrorResponse(error)||json({error:'Invalid request'},400);}
       const assigned=await gameDatabase(databaseUrl).select({id:guilds.id,limitTier:guilds.limitTier}).from(guildFights).innerJoin(guilds,eq(guilds.id,guildFights.guildId)).where(and(eq(guildFights.fightId,fight.id),eq(guilds.teacherId,actor.actorId),eq(guilds.isArchived,false)));
       if(input.guildId&&!assigned.some(g=>g.id===input.guildId))return json({error:'Choose an active guild assigned to this fight.'},403);
       if(!input.guildId&&assigned.length>1)return json({error:'Choose the hosting guild.'},409);

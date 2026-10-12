@@ -1,3 +1,8 @@
+import { CombatRuleError } from "../../shared/combat/errors";
+import { diagnostic } from "../diagnostics";
+import { combatCommandSchema, type CombatCommand } from "../../shared/contracts/combat";
+import { publicSnapshot } from "./public-snapshot";
+export { publicSnapshot } from "./public-snapshot";
 import { handleCombatSessions } from "../routes/combat-sessions.ts";
 import { instanceLoot } from "../../shared/combat/instance-loot";
 import type { IdentityRepository } from "../db/repository.ts";
@@ -28,6 +33,7 @@ interface SocketAttachment {
   actorId: string;
   role: "teacher" | "student" | "staging-smoke";
   sessionId: string;
+  requestId?: string;
   expiresAt?: number;
   tokenHash?: string;
   windowStart?: number;
@@ -44,35 +50,6 @@ interface StoredRoom {
   removals?: Record<string, { nickname: string; blocked: boolean; requestedAt?: number; deniedAt?: number }>;
 }
 const ROOM_KEY = "room";
-export function publicSnapshot(snapshot: CombatSnapshot, fight?: FightRecord): CombatSnapshot {
-  // Preview only the enemy HP. Starting attendance, rewards, clocks and resources
-  // remain untouched until the host actually starts the fight.
-  const enemies = fight && snapshot.currentPhase === "waiting" && Object.keys(snapshot.players).length
-    ? scaleEncounter(snapshot, fight).enemies
-    : snapshot.enemies;
-  const { departedPlayers: _, ...visible } = snapshot;
-  return {
-    ...visible,
-    seed: 0,
-    enemies: enemies.map(e => ({ ...e, ai: undefined,
-      aiState: e.aiState ? { readyRounds: {}, buffs: e.aiState.buffs.filter(b => b.type !== "flatten") } : undefined })),
-    pendingPlayers: Object.fromEntries(Object.entries(snapshot.pendingPlayers||{}).map(([id,p])=>[id,{...p,correctQuestionKeys:undefined,currentAnswer:null,lastAnswerCorrect:undefined}])),
-    players: Object.fromEntries(
-      Object.entries(snapshot.players).map(([id, p]) => [
-        id,
-        {
-          ...Object.fromEntries(Object.entries(p).filter(([key])=>key!=="correctQuestionKeys")),
-          currentAnswer: null,
-          lastAnswerCorrect: ["question", "actions", "waiting"].includes(
-            snapshot.currentPhase,
-          )
-            ? undefined
-            : p.lastAnswerCorrect,
-        },
-      ]),
-    ) as CombatSnapshot["players"],
-  };
-}
 export class CombatSessionObject {
   private repository: IdentityRepository | null = null;
   private queue: Promise<unknown> = Promise.resolve();
@@ -176,12 +153,16 @@ export class CombatSessionObject {
     return room;
   }
   private async save(room: StoredRoom) {
-    await this.state.storage.put(ROOM_KEY, room);
+    const startedAt=performance.now();
+    try { await this.state.storage.put(ROOM_KEY, room); }
+    catch(error) { diagnostic({event:'combat_checkpoint',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-startedAt,outcome:'failed'});throw error; }
+    diagnostic({event:'combat_checkpoint',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-startedAt,outcome:'ok'});
     const entries=Object.values({...room.snapshot.players,...room.snapshot.departedPlayers}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0);
     const signature=JSON.stringify([room.snapshot.victory,entries.map(p=>[p.studentId,p.totals.questionsAnswered,p.totals.questionsCorrect,!!room.snapshot.players[p.studentId]])]);
     if(this.repository?.recordQuestEvidence && entries.length && signature!==room.evidenceSignature){
-      try {await this.repository.recordQuestEvidence(room.snapshot,room.fight);room.evidenceSignature=signature;room.evidencePending=false;}
-      catch {room.evidencePending=true;}
+      const evidenceStartedAt=performance.now();
+      try {await this.repository.recordQuestEvidence(room.snapshot,room.fight);room.evidenceSignature=signature;room.evidencePending=false;diagnostic({event:'combat_evidence',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-evidenceStartedAt,outcome:'ok'});}
+      catch {room.evidencePending=true;diagnostic({event:'combat_evidence',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-evidenceStartedAt,outcome:'retry'});}
       await this.state.storage.put(ROOM_KEY,room);
       if(room.evidencePending)await this.syncAlarm(room);
     }
@@ -192,9 +173,16 @@ export class CombatSessionObject {
     if(Number.isFinite(deadline))await this.state.storage.setAlarm(deadline);
     else await this.state.storage.deleteAlarm();
   }
+  private publicResults(room:StoredRoom) {
+    return room.results?.map((r:any)=>({
+      studentId:r.studentId,id:r.id,xpEarned:r.xpEarned,baseXp:r.baseXp,xpMultiplier:r.xpMultiplier,
+      staminaFightNumber:r.staminaFightNumber,goldReward:r.goldReward,
+      lootTable:r.lootTable?.map((item:{itemId:string})=>({itemId:item.itemId}))||[],
+    }));
+  }
   private snapshotMessage(room: StoredRoom, role = "student", projectedState = publicSnapshot(room.snapshot, room.fight)) {
     const question = room.fight.questions[room.snapshot.currentQuestionIndex];
-    const { correctAnswer: _, ...safe } = question;
+    const safe = { id:question.id,type:question.type,question:question.question,options:question.options,timeLimit:question.timeLimit };
     if (room.fight.shuffleOptions && safe.options)
       safe.options = deterministicShuffle(
         safe.options,
@@ -214,16 +202,7 @@ export class CombatSessionObject {
         ? safe
         : null,
       serverTime: Date.now(),
-      results: room.results?.map((r: any) => ({
-        studentId: r.studentId,
-        id: r.id,
-        xpEarned: r.xpEarned,
-        baseXp: r.baseXp,
-        xpMultiplier: r.xpMultiplier,
-        staminaFightNumber: r.staminaFightNumber,
-        goldReward: r.goldReward,
-        lootTable: r.lootTable,
-      })),
+      results: this.publicResults(room),
     };
   }
   private async publish(room: StoredRoom) {
@@ -236,7 +215,7 @@ export class CombatSessionObject {
       const actor = ws.deserializeAttachment() as SocketAttachment;
       if (actor.role !== "teacher" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) continue;
       this.send(ws, this.snapshotMessage(room, actor.role, projectedState));
-      if (room.snapshot.currentPhase === "game_over") this.send(ws, { type: "game_over", victory: room.snapshot.victory, message: room.snapshot.endReason, results: room.results });
+      if (room.snapshot.currentPhase === "game_over") this.send(ws, { type: "game_over", victory: room.snapshot.victory, message: room.snapshot.endReason, results: this.publicResults(room) });
     }
   }
   async fetch(request: Request): Promise<Response> {
@@ -353,17 +332,24 @@ export class CombatSessionObject {
       sessionId,
       expiresAt:
         Number(request.headers.get("x-questacademy-expires-at")) || undefined,
+      requestId: request.headers.get("x-request-id") || undefined,
       tokenHash: request.headers.get("x-questacademy-token-hash") || undefined,
     });
     this.state.acceptWebSocket(pair[1]);
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    const queuedAt=performance.now();
+    const requestId=crypto.randomUUID();
     return this.serialized(async () => {
-      let command: any;
+      const startedAt=performance.now();
+      const context=ws.deserializeAttachment() as SocketAttachment;
+      let revision:number|undefined;
+      let outcome:'ok'|'rejected'='ok';
+      let command: CombatCommand | undefined;
       try {
-        if (typeof message !== "string" || message.length > 16000)
-          throw new Error("Text command up to 16KB required");
+        if (typeof message !== "string" || new TextEncoder().encode(message).byteLength > 16000)
+          throw new CombatRuleError("Text command up to 16KB required");
         const actor = ws.deserializeAttachment() as SocketAttachment;
         if (actor.expiresAt && actor.expiresAt < Date.now()) {
           ws.close(1008, "Session expired");
@@ -376,13 +362,14 @@ export class CombatSessionObject {
         actor.count = (actor.count || 0) + 1;
         ws.serializeAttachment(actor);
         if (actor.count > 120)
-          throw new Error("Too many commands; wait a minute");
-        command = JSON.parse(message);
+          throw new CombatRuleError("Too many commands; wait a minute");
+        let rawCommand:unknown;
+        try {rawCommand=JSON.parse(message);}catch{throw new CombatRuleError("Invalid combat command");}
         if (actor.role === "staging-smoke") {
-          if (command.type === "ping")
+          if (rawCommand && typeof rawCommand === "object" && "type" in rawCommand && rawCommand.type === "ping")
             this.send(ws, {
               type: "pong",
-              commandId: command.commandId,
+              commandId: "commandId" in rawCommand && typeof rawCommand.commandId === "string" ? rawCommand.commandId.slice(0,100) : undefined,
               role: "staging-smoke",
             });
           return;
@@ -398,17 +385,16 @@ export class CombatSessionObject {
           ws.close(1008, "Session expired or revoked");
           return;
         }
-        if (
-          typeof command.commandId !== "string" ||
-          !/^[A-Za-z0-9_-]{8,100}$/.test(command.commandId)
-        )
-          throw new Error("Valid commandId required");
-        if (!this.repository) throw new Error("Repository unavailable");
+        const parsed = combatCommandSchema.safeParse(rawCommand);
+        if (!parsed.success) throw new CombatRuleError("Invalid combat command");
+        command = parsed.data;
+        if (!this.repository) throw new CombatRuleError("Repository unavailable");
         const key = actor.actorId + ":" + command.commandId;
         let room = await this.room();
+        revision=room?.snapshot.revision;
         if (command.type === "host") {
           if (actor.role !== "teacher")
-            throw new Error("Teacher role required");
+            throw new CombatRuleError("Teacher role required");
           const live = await this.repository.findLiveCombatSession(
             actor.sessionId,
           );
@@ -417,11 +403,11 @@ export class CombatSessionObject {
             live.teacherId !== actor.actorId ||
             live.status === "superseded"
           )
-            throw new Error("Session unavailable");
-          if (!room && live.status === "completed") throw new Error("Fight has ended");
+            throw new CombatRuleError("Session unavailable");
+          if (!room && live.status === "completed") throw new CombatRuleError("Fight has ended");
           if (!room) {
             const fight = await this.repository.findFightById(live.fightId);
-            if (!fight) throw new Error("Fight unavailable");
+            if (!fight) throw new CombatRuleError("Fight unavailable");
             fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
             if (fight.randomizeQuestions)
               fight.questions = deterministicShuffle(
@@ -462,17 +448,17 @@ export class CombatSessionObject {
             }
           }
         }
-        if (!room) throw new Error("Host has not opened this session");
+        if (!room) throw new CombatRuleError("Host has not opened this session");
         room.receipts ||= [];
-        if (command.type === "leave_fight" && actor.role !== "student") throw new Error("Student role required");
+        if (command.type === "leave_fight" && actor.role !== "student") throw new CombatRuleError("Student role required");
         if (actor.role === "teacher") {
           const live = await this.repository.findLiveCombatSession(actor.sessionId);
-          if (live?.teacherId !== actor.actorId || live.status === "superseded") throw new Error("Only the host can manage this fight");
+          if (live?.teacherId !== actor.actorId || live.status === "superseded") throw new CombatRuleError("Only the host can manage this fight");
         }
         if (command.type === "join") {
           if (actor.role !== "student")
-            throw new Error("Student role required");
-          if (room.snapshot.currentPhase === "game_over" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) throw new Error("Fight has ended");
+            throw new CombatRuleError("Student role required");
+          if (room.snapshot.currentPhase === "game_over" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) throw new CombatRuleError("Fight has ended");
           const removal = room.removals?.[actor.actorId];
           if (removal) {
             if (removal.blocked) {
@@ -493,7 +479,7 @@ export class CombatSessionObject {
             return;
           }
           const student = await this.repository.findStudentById(actor.actorId);
-          if (!student) throw new Error("Student unavailable");
+          if (!student) throw new CombatRuleError("Student unavailable");
           room.snapshot = addStudent(
             room.snapshot,
             student,
@@ -535,7 +521,7 @@ export class CombatSessionObject {
           return;
         }
         if (command.type === "leave_fight") {
-          if (actor.role !== "student") throw new Error("Student role required");
+          if (actor.role !== "student") throw new CombatRuleError("Student role required");
           // Identity comes from the authenticated socket, never a supplied target.
           // Completed rosters stay intact until their rewards have been persisted.
           room.snapshot = removeStudent(room.snapshot, actor.actorId);
@@ -552,23 +538,23 @@ export class CombatSessionObject {
           return;
         }
         if (room.snapshot.currentPhase === "game_over")
-          throw new Error("Fight has ended");
+          throw new CombatRuleError("Fight has ended");
         if (command.type === "remove_player" || command.type === "review_rejoin") {
-          if (actor.role !== "teacher") throw new Error("Teacher role required");
+          if (actor.role !== "teacher") throw new CombatRuleError("Teacher role required");
           const id = command.targetId;
-          if (typeof id !== "string") throw new Error("Invalid player");
+          if (typeof id !== "string") throw new CombatRuleError("Invalid player");
           if (command.type === "remove_player") {
             const player = room.snapshot.players[id] || room.snapshot.pendingPlayers?.[id];
-            if (!player) throw new Error("Player is not in this fight");
+            if (!player) throw new CombatRuleError("Player is not in this fight");
             room.snapshot = removeStudent(room.snapshot, id);
             (room.removals ||= {})[id] = { nickname: player.nickname, blocked: false };
           } else {
             const removal = room.removals?.[id];
-            if (!removal?.requestedAt || removal.blocked) throw new Error("Rejoin request is no longer pending");
-            if (!["allow", "deny", "block"].includes(command.decision)) throw new Error("Invalid decision");
+            if (!removal?.requestedAt || removal.blocked) throw new CombatRuleError("Rejoin request is no longer pending");
+            if (!["allow", "deny", "block"].includes(command.decision)) throw new CombatRuleError("Invalid decision");
             if (command.decision === "allow") {
               const student = await this.repository.findStudentById(id);
-              if (!student) throw new Error("Student unavailable");
+              if (!student) throw new CombatRuleError("Student unavailable");
               room.snapshot = addStudent(room.snapshot, student);
               delete room.removals![id];
             } else {
@@ -579,9 +565,9 @@ export class CombatSessionObject {
           }
         } else if (command.type === "start_fight") {
           if (actor.role !== "teacher")
-            throw new Error("Teacher role required");
+            throw new CombatRuleError("Teacher role required");
           if (room.snapshot.currentPhase !== "waiting")
-            throw new Error("Fight already started");
+            throw new CombatRuleError("Fight already started");
           room.snapshot = startQuestion(
             scaleEncounter(room.snapshot, room.fight),
             Date.now(),
@@ -592,16 +578,16 @@ export class CombatSessionObject {
             "active",
           );
         } else if (command.type === "resurrect") {
-          if (actor.role !== "teacher") throw new Error("Teacher role required");
+          if (actor.role !== "teacher") throw new CombatRuleError("Teacher role required");
           const live = await this.repository.findLiveCombatSession(actor.sessionId);
           if (live?.teacherId !== actor.actorId || live.status === "superseded")
-            throw new Error("Only the host can resurrect players");
-          if (command.round !== room.snapshot.round) throw new Error("Command belongs to another round");
-          if (typeof command.targetId !== "string") throw new Error("Invalid player");
+            throw new CombatRuleError("Only the host can resurrect players");
+          if (command.round !== room.snapshot.round) throw new CombatRuleError("Command belongs to another round");
+          if (typeof command.targetId !== "string") throw new CombatRuleError("Invalid player");
           room.snapshot = resurrectPlayer(room.snapshot, command.targetId);
         } else if (command.type === "end_fight") {
           if (actor.role !== "teacher")
-            throw new Error("Teacher role required");
+            throw new CombatRuleError("Teacher role required");
           room.snapshot = {
             ...room.snapshot,
             currentPhase: "game_over",
@@ -612,29 +598,29 @@ export class CombatSessionObject {
           };
         } else {
           if (actor.role !== "student" || !room.snapshot.players[actor.actorId])
-            throw new Error("Student participant required");
+            throw new CombatRuleError("Student participant required");
           if (command.round !== room.snapshot.round)
-            throw new Error("Command belongs to another round");
+            throw new CombatRuleError("Command belongs to another round");
           if (
             room.snapshot.phaseDeadline &&
             Date.now() >= room.snapshot.phaseDeadline
           ) {
             await this.advance(room);
-            throw new Error("Phase has ended");
+            throw new CombatRuleError("Phase has ended");
           }
           if (command.type === "answer") {
             if (
               room.snapshot.questionStartTime &&
               Date.now() < room.snapshot.questionStartTime
             )
-              throw new Error("Question is opening");
+              throw new CombatRuleError("Question is opening");
             if (
               typeof command.answer !== "string" ||
               command.answer.length > 5000 ||
               command.questionId !==
                 room.fight.questions[room.snapshot.currentQuestionIndex].id
             )
-              throw new Error("Invalid or stale answer");
+              throw new CombatRuleError("Invalid or stale answer");
             room.snapshot = applyAnswer(
               room.snapshot,
               actor.actorId,
@@ -646,7 +632,7 @@ export class CombatSessionObject {
               typeof command.ability !== "string" ||
               typeof command.targetId !== "string"
             )
-              throw new Error("Invalid action");
+              throw new CombatRuleError("Invalid action");
             room.snapshot = selectAction(
               room.snapshot,
               actor.actorId,
@@ -657,9 +643,10 @@ export class CombatSessionObject {
               room.snapshot = setReady(room.snapshot, actor.actorId);
           } else if (command.type === "ready")
             room.snapshot = setReady(room.snapshot, actor.actorId);
-          else throw new Error("Unsupported command");
+          else throw new CombatRuleError("Unsupported command");
         }
         room.snapshot.revision++;
+        revision=room.snapshot.revision;
         room.receipts.push(key);
         room.receipts = room.receipts.slice(-512);
         await this.save(room);
@@ -682,11 +669,14 @@ export class CombatSessionObject {
           await this.complete(room);
         else await this.publish(room);
       } catch (error) {
+        outcome="rejected";
         this.send(ws, {
           type: "protocol_error",
           commandId: command?.commandId,
-          error: error instanceof Error ? error.message : "Invalid command",
+          error: error instanceof CombatRuleError ? error.message : "Unable to process command",
         });
+      } finally {
+        diagnostic({event:'combat_command',requestId:context.requestId||requestId,roomId:context.sessionId,revision,queueMs:startedAt-queuedAt,durationMs:performance.now()-startedAt,outcome});
       }
     });
   }
@@ -694,7 +684,7 @@ export class CombatSessionObject {
     try {
       if (!room.resultsPersisted) {
         if (!this.repository?.persistResults)
-          throw new Error("Result persistence unavailable");
+          throw new CombatRuleError("Result persistence unavailable");
         room.results = await this.repository.persistResults(
           room.snapshot,
           room.fight,
@@ -705,6 +695,7 @@ export class CombatSessionObject {
       await this.syncAlarm(room);
       await this.publish(room);
     } catch (error) {
+      diagnostic({event:'combat_results',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,outcome:'retry'});
       await this.state.storage.setAlarm(Date.now() + 5000);
       this.broadcast({
         type: "result_pending",

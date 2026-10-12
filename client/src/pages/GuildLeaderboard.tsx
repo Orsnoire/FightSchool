@@ -1,3 +1,4 @@
+import { apiQueries, type LeaderboardEntry } from "@/lib/apiQueries";
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,14 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trophy, Medal } from "lucide-react";
 import { type Guild } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
-
-interface LeaderboardEntry {
-  studentId: string;
-  nickname: string;
-  characterClass: string;
-  totalDamageDealt: number;
-  fightsCompleted: number;
-}
 
 export default function GuildLeaderboard() {
   const [, params] = useRoute("/student/guilds/:guildId/leaderboard");
@@ -24,7 +17,7 @@ export default function GuildLeaderboard() {
     data: guild, isLoading: guildLoading, isError: guildError,
     isFetching: guildFetching, refetch: refetchGuild,
   } = useQuery<Guild>({
-    queryKey: [`/api/guilds/${guildId}`],
+    ...apiQueries.guild(guildId||""),
     enabled: !!guildId,
   });
 
@@ -33,11 +26,7 @@ export default function GuildLeaderboard() {
     data: leaderboard = [], isLoading: leaderboardLoading, isError: leaderboardError,
     isFetching: leaderboardFetching, refetch: refetchLeaderboard,
   } = useQuery<LeaderboardEntry[]>({
-    queryKey: [`/api/guilds/${guildId}/leaderboard`, metric],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/guilds/${guildId}/leaderboard?metric=${metric}`);
-      return response.json();
-    },
+    ...apiQueries.leaderboard(guildId||"",metric),
     enabled: !!guildId,
   });
 

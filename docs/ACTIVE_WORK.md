@@ -8,8 +8,11 @@
 - Baseline: `ee95602ca229bf4cc19f6458afa8271055dc675d`; C03 complete and HP preview deployed/accepted; no open PRs at start.
 - Scope: F05/F16 shared request/response/command contracts, public snapshot allowlists, typed query factories, bounded JSON parsing, redacted structured diagnostics and intended CI checks.
 - Preserve ownership, session revocation, saved rooms, rewards, approved gameplay and current live data. No production database changes.
-- Baseline reproduction: both contracts.test.ts tests intentionally FAIL on the untouched implementation: shared fight bounds drift and future internal fields leaking through snapshot spreads.
-- Next: unify fight contracts, allowlist public state, then bounded parsing, typed commands/queries and redacted diagnostics; run full gates.
+- Published baseline `051ad3a`: two intentional failing tests reproduced shared fight validation drift and future-field snapshot leakage.
+- Implemented: shared authoring/command/JSON DTO contracts, allowlisted public projections, typed query factories, bounded UTF-8 readers, redacted diagnostics and unconditional browser CI.
+- Local verification: all 224 tests, typecheck and client/Worker production builds pass. Exact-head CI/browser checks pending.
+- [Ownership, limits and intended CI policy](cloudflare/contracts-and-diagnostics.md). GitHub reports main unprotected; protection enforcement is not claimed.
+- Next: review exact-head CI/browser checks for PR #60. Not merged or deployed.
 
 The records below are historical.
 
@@ -21,8 +24,8 @@ The records below are historical.
 - No-op generation writes no files; all 27 tables/246 columns match the migrated PostgreSQL catalog. Shipped SQL hashes and journal entries are unchanged.
 - [Schema ownership and future migration workflow](cloudflare/schema-baseline.md) documents the repaired 0014 snapshot and SQL-owned reward functions.
 - This is a tooling/declaration repair with no new SQL migration. No production database operation or deployment was performed during the C03 task. C03 is included in the later HP preview deployment below; the existing migrator passed with no new SQL.
-- `cleanup/c03-schema-baseline` is now historical. No cleanup implementation package is active.
-- Next cleanup package: C04, not started. Check current main and open PRs, then register its branch/PR before implementation; preserve any separately authorized work.
+- `cleanup/c03-schema-baseline` is now historical. C04 is active above.
+- At C03 closeout C04 was next; it is now active above. Check current main and open PRs, then register its branch/PR before implementation; preserve any separately authorized work.
 
 The C02 release record below is historical context.
 
@@ -117,4 +120,4 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 - Owner explicitly authorized deployment after review/merge. Deployed checkout: `274dbfe1d29dcb8897b675e85a3edb0343866f0c`; immutable Worker `50f91c4d-1cdb-4b04-bf69-8f3c715eff82`, published at 16:13:11 UTC.
 - [Deployment 38275647965](https://github.com/Orsnoire/FightSchool/actions/runs/38275647965) passed: all 218 tests, typecheck, both builds, R2, existing migration gate and both hostname smoke checks.
 - [Canonical live acceptance 38275889570](https://github.com/Orsnoire/FightSchool/actions/runs/38275889570) passed on the same checkout, including combat/economy, R2, 30 participants, reconnects, room isolation, moderation and exactly-once rewards.
-- Status: complete, merged, deployed and accepted. Next: C04 remains unstarted; register it before implementation. C04 sequencing remains governed by the cleanup checkpoint above.
+- Status: complete, merged, deployed and accepted. C04 is now registered above. C04 sequencing remains governed by the cleanup checkpoint above.

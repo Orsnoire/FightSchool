@@ -1,3 +1,4 @@
+import { EQUIPMENT_ITEMS } from "../../shared/schema";
 import { switchStudentJob } from "./job-loadouts";
 import {
   type CharacterClass,
@@ -88,6 +89,7 @@ export function createIdentityRepository(
 
   return {
     async validateLoot(teacherId, itemIds) {
+      itemIds = itemIds.filter(id => !Object.hasOwn(EQUIPMENT_ITEMS,id));
       if (!itemIds.length) return true;
       const rows = await database
         .select({ id: equipmentItems.id })

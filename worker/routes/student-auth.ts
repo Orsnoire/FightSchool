@@ -1,3 +1,4 @@
+import { readJson, bodyErrorResponse } from "../http/json";
 import { LoadoutConflict } from "../db/job-loadouts";
 import { safeStudent } from "./game.ts";
 import { getUnlockedJobs } from "../../shared/jobSystem.ts";
@@ -48,7 +49,7 @@ export async function handleStudentAuth(
 ): Promise<Response | null> {
   if (request.method === "POST" && url.pathname === "/api/student/login") {
     try {
-      const input = loginSchema.parse(await request.json());
+      const input = loginSchema.parse(await readJson(request));
       const nicknameNormalized = input.nickname.toLocaleLowerCase("en-US");
       let student = await repository.findStudentByNickname(nicknameNormalized);
       if (student) {
@@ -76,6 +77,7 @@ export async function handleStudentAuth(
       );
       return json(publicStudent(student), 200, cookie);
     } catch (error) {
+      const bodyFailure=bodyErrorResponse(error);if(bodyFailure)return bodyFailure;
       if (error instanceof z.ZodError || error instanceof SyntaxError) {
         return json({ error: "Invalid student login" }, 400);
       }
@@ -123,7 +125,7 @@ export async function handleStudentAuth(
     if (session.actorId !== characterMatch[1])
       return json({ error: "Forbidden" }, 403);
     try {
-      const input = characterSchema.parse(await request.json());
+      const input = characterSchema.parse(await readJson(request));
       const current = await repository.findStudentById(session.actorId);
       if (!current) return json({ error: "Student not found" }, 404);
       const profile = await repository.getCombatProfile?.(current);
@@ -142,6 +144,7 @@ export async function handleStudentAuth(
         ? json(publicStudent(student))
         : json({ error: "Student not found" }, 404);
     } catch (error) {
+      const bodyFailure=bodyErrorResponse(error);if(bodyFailure)return bodyFailure;
       if (error instanceof LoadoutConflict) return json({ error: error.message }, 409);
       return error instanceof z.ZodError || error instanceof SyntaxError
         ? json({ error: "Invalid character" }, 400)

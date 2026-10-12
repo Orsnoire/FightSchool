@@ -1,3 +1,4 @@
+import { diagnostic } from "./diagnostics";
 import { gameDatabase } from "./db/game-repository.ts";
 import { handleAvatar } from "./routes/avatars.ts";
 import { handleGame } from "./routes/game.ts";
@@ -36,13 +37,6 @@ function json(body: unknown, status = 200, requestId?: string): Response {
   const headers = new Headers(JSON_HEADERS);
   if (requestId) headers.set("X-Request-Id", requestId);
   return new Response(JSON.stringify(body), { status, headers });
-}
-
-function requestId(request: Request): string {
-  const incoming = request.headers.get("x-request-id");
-  return incoming && /^[A-Za-z0-9._:-]{1,128}$/.test(incoming)
-    ? incoming
-    : crypto.randomUUID();
 }
 
 function constantTimeEqual(left: string, right: string): boolean {
@@ -163,10 +157,9 @@ async function handleWebSocket(
   return env.COMBAT_SESSIONS.get(id).fetch(new Request(request, { headers }));
 }
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+async function dispatch(request: Request, env: Env, currentRequestId:string):Promise<Response> {
     const url = new URL(request.url);
-    const currentRequestId = requestId(request);
+
 
     if (url.pathname === "/api/health/live") {
       return json(
@@ -224,6 +217,7 @@ export default {
               "x-questacademy-internal": "1",
               "x-questacademy-actor-id": actor.actorId,
               "x-questacademy-session-id": force[1],
+              "x-request-id": currentRequestId,
             },
           });
         }
@@ -464,6 +458,25 @@ export default {
     }
 
     return env.ASSETS.fetch(request);
+}
+export default {
+  async fetch(request:Request,env:Env):Promise<Response> {
+    const currentRequestId=crypto.randomUUID();
+    const startedAt=performance.now();
+    let status=503;
+    try {
+      const headers=new Headers(request.headers);headers.set('X-Request-Id',currentRequestId);
+      const response=await dispatch(new Request(request,{headers}),env,currentRequestId);
+      status=response.status;
+      // A WebSocket upgrade response must retain its webSocket property.
+      if(status!==101 && new URL(request.url).pathname.startsWith('/api'))response.headers.set('X-Request-Id',currentRequestId);
+      return response;
+    } catch {
+      return json({error:'Service unavailable'},503,currentRequestId);
+    } finally {
+      if(new URL(request.url).pathname.startsWith('/api')||new URL(request.url).pathname==='/ws')
+        diagnostic({event:'http_request',requestId:currentRequestId,status,durationMs:performance.now()-startedAt,outcome:status>=500?'failed':status>=400?'rejected':'ok'});
+    }
   },
 };
 
