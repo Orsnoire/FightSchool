@@ -466,12 +466,17 @@ export default {
     let status=503;
     try {
       const headers=new Headers(request.headers);headers.set('X-Request-Id',currentRequestId);
-      const response=await dispatch(new Request(request,{headers}),env,currentRequestId);
+      let response=await dispatch(new Request(request,{headers}),env,currentRequestId);
+      // Fetch subresponses (including Durable Objects) have immutable headers.
+      // Copy HTTP responses before adding metadata; preserve WebSocket identity.
+      if(response.status!==101 && new URL(request.url).pathname.startsWith('/api')) {
+        response=new Response(response.body,response);
+        response.headers.set('X-Request-Id',currentRequestId);
+      }
       status=response.status;
-      // A WebSocket upgrade response must retain its webSocket property.
-      if(status!==101 && new URL(request.url).pathname.startsWith('/api'))response.headers.set('X-Request-Id',currentRequestId);
       return response;
     } catch {
+      status=503;
       return json({error:'Service unavailable'},503,currentRequestId);
     } finally {
       if(new URL(request.url).pathname.startsWith('/api')||new URL(request.url).pathname==='/ws')
