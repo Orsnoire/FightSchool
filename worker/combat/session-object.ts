@@ -44,12 +44,17 @@ interface StoredRoom {
   removals?: Record<string, { nickname: string; blocked: boolean; requestedAt?: number; deniedAt?: number }>;
 }
 const ROOM_KEY = "room";
-export function publicSnapshot(snapshot: CombatSnapshot): CombatSnapshot {
+export function publicSnapshot(snapshot: CombatSnapshot, fight?: FightRecord): CombatSnapshot {
+  // Preview only the enemy HP. Starting attendance, rewards, clocks and resources
+  // remain untouched until the host actually starts the fight.
+  const enemies = fight && snapshot.currentPhase === "waiting" && Object.keys(snapshot.players).length
+    ? scaleEncounter(snapshot, fight).enemies
+    : snapshot.enemies;
   const { departedPlayers: _, ...visible } = snapshot;
   return {
     ...visible,
     seed: 0,
-    enemies: snapshot.enemies.map(e => ({ ...e, ai: undefined,
+    enemies: enemies.map(e => ({ ...e, ai: undefined,
       aiState: e.aiState ? { readyRounds: {}, buffs: e.aiState.buffs.filter(b => b.type !== "flatten") } : undefined })),
     pendingPlayers: Object.fromEntries(Object.entries(snapshot.pendingPlayers||{}).map(([id,p])=>[id,{...p,correctQuestionKeys:undefined,currentAnswer:null,lastAnswerCorrect:undefined}])),
     players: Object.fromEntries(
@@ -187,7 +192,7 @@ export class CombatSessionObject {
     if(Number.isFinite(deadline))await this.state.storage.setAlarm(deadline);
     else await this.state.storage.deleteAlarm();
   }
-  private snapshotMessage(room: StoredRoom, role = "student") {
+  private snapshotMessage(room: StoredRoom, role = "student", projectedState = publicSnapshot(room.snapshot, room.fight)) {
     const question = room.fight.questions[room.snapshot.currentQuestionIndex];
     const { correctAnswer: _, ...safe } = question;
     if (room.fight.shuffleOptions && safe.options)
@@ -198,7 +203,7 @@ export class CombatSessionObject {
     return {
       type: "combat_state",
       rejoinRequests: role === "teacher" ? Object.entries(room.removals || {}).filter(([, r]) => r.requestedAt && !r.blocked).map(([studentId, r]) => ({ studentId, nickname: r.nickname })) : undefined,
-      state: publicSnapshot(room.snapshot),
+      state: projectedState,
       question: [
         "question",
         "actions",
@@ -225,10 +230,12 @@ export class CombatSessionObject {
     if (room.snapshot.currentPhase === "game_over") for (const [id, request] of Object.entries(room.removals || {})) {
       if (request.requestedAt) this.notifyStudent(id, { type: "join_status", status: "ended", sessionId: room.snapshot.sessionId }, true);
     }
+    // Calculate the roster preview once per broadcast, not once per recipient.
+    const projectedState = publicSnapshot(room.snapshot, room.fight);
     for (const ws of this.state.getWebSockets()) {
       const actor = ws.deserializeAttachment() as SocketAttachment;
       if (actor.role !== "teacher" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) continue;
-      this.send(ws, this.snapshotMessage(room, actor.role));
+      this.send(ws, this.snapshotMessage(room, actor.role, projectedState));
       if (room.snapshot.currentPhase === "game_over") this.send(ws, { type: "game_over", victory: room.snapshot.victory, message: room.snapshot.endReason, results: room.results });
     }
   }
@@ -428,12 +435,13 @@ export class CombatSessionObject {
             };
             await this.save(room);
           }
+          const projectedState = publicSnapshot(room.snapshot, room.fight);
           this.send(ws, {
             type: "session_created",
             sessionId: actor.sessionId,
-            state: publicSnapshot(room.snapshot),
+            state: projectedState,
           });
-          this.send(ws, this.snapshotMessage(room, actor.role));
+          this.send(ws, this.snapshotMessage(room, actor.role, projectedState));
           await this.syncAlarm(room);
           return;
         }
