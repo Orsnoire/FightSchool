@@ -2,6 +2,15 @@
 
 C04 / PR #60 is merged and deployed at `097081c11692c3526714d34628a29b0b0f28815c` (deployment 38284111710; Worker ad902178-71c9-443c-a1d3-d987beb416b6), but live acceptance 38284362252 failed at host launch. **Not yet accepted.** [PR #62](https://github.com/Orsnoire/FightSchool/pull/62), branch `fix/c04-forwarded-response`, reproduces immutable-header mutation and contains the forward fix; full verification is running. Resume there and redeploy after exact-head gates. Preserve separate PR #61. The checkpoint below predates this release.
 
+## PR #61 — swarm, gear baseline and host controls ready for review
+
+- Branch: `feat/swarm-party-count`; [PR #61](https://github.com/Orsnoire/FightSchool/pull/61), ready for review at `8d78de7ef593e9812e833950d282c7395488c178`.
+- Implemented: optional swarm batches at 8/12/16 players, exact waiting count/HP preview, previous-tier reference gear, teacher **Next wave** override and enemy elimination ×.
+- Integrated C04 merge `097081c` without restoring duplicate contracts. Public wave mode, authenticated host commands, stale-phase guards and durable retries are covered.
+- Verified: all 238 tests, typecheck and both builds; [CI 38284666305](https://github.com/Orsnoire/FightSchool/actions/runs/38284666305) and [browser acceptance 38284666286](https://github.com/Orsnoire/FightSchool/actions/runs/38284666286) passed on that head.
+- Not merged or deployed. Preserve the independent PR #62 live fix above; refresh main and reconcile its result before merging/releasing #61. No SQL migration or production data operation.
+- The older swarm section below is superseded by this pointer and the PR's verified checkpoint.
+
 # Active work and interruption checkpoint
 
 **CURRENT — October 12, 2026. C04 contracts and diagnostics active.**
