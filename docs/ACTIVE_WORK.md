@@ -1,12 +1,12 @@
-# C05 room costs — active October 12, 2026
+# C05 room costs — released October 12, 2026
 
-- Branch `cleanup/c05-room-costs`; [draft PR #63](https://github.com/Orsnoire/FightSchool/pull/63). Read PR for exact published SHA.
-- Baseline includes accepted PR #61/C04. Published regression checkpoint `de0ddfd7ab51385e2f01998755341f9aeea55d6d` intentionally fails three cost tests.
-- Implemented shared per-role encoding, unchanged public-payload suppression, established/pending reconnect without redundant profiles/checkpoints, and allowlisted repository/storage/publish counters and timing.
-- Isolated 12-run 30/60-player comparisons show encodes 1550→70 / 4880→100; reconnect profile reads/checkpoints drop to zero while every revocation check remains. See [method, results and limits](cloudflare/room-costs.md). These are local CPU/operation fixtures, not live latency claims.
-- Local full suite: 242 tests, typecheck/builds pass; two additional burst/admission tests pass in the six-test targeted suite. Implementation CI 38298884328 passes all 244 tests/typecheck/builds. Final fixture refinement uses valid avatar IDs in identical sequential baseline/candidate runs; all six targeted tests pass. Final-head CI/browser pending.
-- Preserve immediate acknowledgements/transitions, moderation, retries, saved clocks and released swarm/host controls. No SQL change, live load test, merge or deployment.
-- Next: publish implementation, run exact-head full CI/browser and review failure/reconnect boundaries. C06 not started.
+- Owner authorized merge and deployment. [PR #63](https://github.com/Orsnoire/FightSchool/pull/63) merged as `fed94dc9da8c01490438af8cf343f8b6f43ae2b4`; implementation branch `cleanup/c05-room-costs` is historical.
+- Shared per-role encoding, unchanged public-payload suppression, established/pending reconnect savings and redacted repository/storage/publish diagnostics are deployed. No new SQL migration or live-data reset.
+- Reviewed head `03880a193748bbbef140ea7f27a39b962f9fc133`: [CI 38299405641](https://github.com/Orsnoire/FightSchool/actions/runs/38299405641) and [browser 38299405650](https://github.com/Orsnoire/FightSchool/actions/runs/38299405650) passed. All 244 tests, typecheck and builds pass; merged-main CI 38299839108 passed.
+- [Deployment 38299904045](https://github.com/Orsnoire/FightSchool/actions/runs/38299904045) passed on the exact merge: tests/builds, R2, existing migration gate and both hostname smoke checks. Worker `c2a367a6-d47d-47eb-a6f5-d447b27180cf`, published at 19:48:43 UTC.
+- [Canonical live acceptance 38300146217](https://github.com/Orsnoire/FightSchool/actions/runs/38300146217) passed on the same merge: combat/economy, R2, 30 participants, simultaneous answers, reconnects, isolation, moderation, revocation and exactly-once rewards. C05 is COMPLETE: merged, deployed and accepted.
+- [Measurements and limits](cloudflare/room-costs.md): equivalent 12-run 30/60-player local fixtures reduce full encodes 1550→70 / 4880→100; established reconnect profile reads/checkpoints become zero while authentication remains. These do not establish live p95, SQL query counts or memory savings.
+- Next: C06 is next, not started; register its branch/PR before implementation. Preserve PR #61 swarm, previous-tier gear and host controls.
 
 The following release records predate C05 and remain historical evidence.
 

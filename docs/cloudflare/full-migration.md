@@ -8,10 +8,10 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Latest verified runtime:** `274dbfe`, released October 12 with C03 and HP preview
-PR #59. Deployment and canonical acceptance passed. See the
-[HP preview release entry](#hp-preview-release--12-october-2026) and
-[current status](../CURRENT_STATUS.md). Earlier R2 failures are historical.
+**Latest verified runtime:** `fed94dc9`, released October 12 with C05 / PR #63.
+Deployment 38299904045 and canonical acceptance 38300146217 passed.
+See the [current release record](../ACTIVE_WORK.md) and [current status](../CURRENT_STATUS.md).
+Earlier releases and R2 failures below are historical.
 Full infrastructure recovery/rollback signoff remains open.
 
 ## Root cause and corrected behavior
