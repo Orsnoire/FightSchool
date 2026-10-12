@@ -378,7 +378,7 @@ try {
   assert.ok(questionReport.rows.every(row => row.question.correctAnswer === "4" && row.questionVersion));
   assert.equal(questionReport.rows.filter(row => row.outcome === "incorrect").length, 1);
   assert.equal((await api(`/api/combat-stats/report?${reportParams}`, { cookie: other.cookie })).payload.total, 0);
-  await api(`/api/combat-stats/report?${reportParams}`, { cookie: student.cookie, status: 401 });
+  await api(`/api/combat-stats/report?${reportParams}`, { cookie: student.cookie, status: 403 });
   console.log("PASS: completion-driven resolution, empty victory, persisted palettes and teacher-scoped question reports");
   const stamina = await api(`/api/student/${studentId}/stamina`, { cookie: student.cookie });
   assert.equal(stamina.payload.completedCombats, 1);
