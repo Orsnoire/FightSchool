@@ -1,3 +1,4 @@
+import { apiQueries } from "@/lib/apiQueries";
 import { useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -18,7 +19,7 @@ export default function TeacherDashboard() {
   const teacherGuildCode = localStorage.getItem("teacherGuildCode") || "";
 
   const { data: fights, isLoading } = useQuery<Fight[]>({
-    queryKey: [`/api/teacher/${teacherId}/fights`],
+    ...apiQueries.teacherFights(teacherId||""),
     enabled: !!teacherId && isAuthenticated && !isChecking,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
@@ -27,7 +28,7 @@ export default function TeacherDashboard() {
 
   const hostedKey = ["/api/fights/hosted-sessions"];
   const hosted = useQuery<Array<{sessionId: string; fightId: string; status: string}>>({
-    queryKey: [...hostedKey, teacherId], queryFn: async () => (await apiRequest("GET", hostedKey[0])).json(), enabled: isAuthenticated && !isChecking,
+    ...apiQueries.hostedSessions(teacherId||""), enabled: isAuthenticated && !isChecking,
     refetchInterval: 5000, refetchOnWindowFocus: true, refetchOnMount: "always",
   });
   const hostActionPending = useRef(false);

@@ -1,15 +1,8 @@
+import { combatCommandSchema, type CombatCommandType, type CommandPayload, type PublicCombatSnapshot } from "@shared/contracts/combat";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CombatSnapshot, PublicQuestion } from "@shared/combat/model";
-export interface EarnedResult {
-  id: string;
-  studentId: string;
-  xpEarned: number;
-  baseXp?: number;
-  xpMultiplier?: number;
-  staminaFightNumber?: number;
-  goldReward: number;
-  lootTable: Array<{ itemId: string }>;
-}
+import type { PublicQuestion } from "@shared/combat/model";
+import type { EarnedResult, CombatServerMessage } from "@shared/contracts/combat";
+export type { EarnedResult } from "@shared/contracts/combat";
 export function useCombatSession(
   sessionId: string | null,
   role: "teacher" | "student",
@@ -17,7 +10,7 @@ export function useCombatSession(
   const [connectionEpoch, setConnectionEpoch] = useState(0);
   const [admission, setAdmission] = useState<"joining" | "admitted" | "removed" | "pending" | "denied" | "blocked" | "ended">("joining");
   const [rejoinRequests, setRejoinRequests] = useState<Array<{ studentId: string; nickname: string }>>([]);
-  const [state, setState] = useState<CombatSnapshot | null>(null),
+  const [state, setState] = useState<PublicCombatSnapshot | null>(null),
     [hasLeft, setHasLeft] = useState(false),
     [isLeaving, setIsLeaving] = useState(false),
     [question, setQuestion] = useState<PublicQuestion | null>(null),
@@ -70,7 +63,7 @@ export function useCombatSession(
       };
       ws.onmessage = (e) => {
         if (disposed) return;
-        let message: any;
+        let message: CombatServerMessage;
         try {
           message = JSON.parse(e.data);
         } catch {
@@ -131,7 +124,7 @@ export function useCombatSession(
             leaveCommand.current = null;
             setIsLeaving(false);
           }
-          pending.current.delete(message.commandId);
+          if(message.commandId)pending.current.delete(message.commandId);
           setError(message.error);
         } else if (message.type === "game_over" && message.results)
           setResults(message.results);
@@ -157,7 +150,8 @@ export function useCombatSession(
     };
   }, [sessionId, role, connectionEpoch]);
   const send = useCallback(
-    (type: string, payload: Record<string, unknown> = {}) => {
+    <T extends CombatCommandType>(type: T, ...args: keyof CommandPayload<T> extends never ? [payload?: CommandPayload<T>] : [payload: CommandPayload<T>]) => {
+      const payload=args[0]||{};
       if (leaveCommand.current) return;
       if (socket.current?.readyState !== WebSocket.OPEN) {
         setError("Wait for the connection to recover");
@@ -169,8 +163,10 @@ export function useCombatSession(
         round: state?.round,
         ...payload,
       };
-      pending.current.set(command.commandId, command);
-      socket.current.send(JSON.stringify(command));
+      const parsed=combatCommandSchema.safeParse(command);
+      if(!parsed.success){setError("Invalid combat command");return;}
+      pending.current.set(command.commandId, parsed.data);
+      socket.current.send(JSON.stringify(parsed.data));
     },
     [state?.round],
   );

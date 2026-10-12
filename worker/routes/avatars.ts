@@ -1,3 +1,4 @@
+import { readJson, bodyErrorResponse } from "../http/json";
 import { authenticateSession, type SessionConfig } from '../auth/session.ts';
 import type { IdentityRepository } from '../db/repository.ts';
 import type { GameDatabase } from '../db/game-repository.ts';
@@ -20,7 +21,7 @@ export async function handleAvatar(request:Request, url:URL, repository:Identity
   if (request.method==='GET') return json(appearance(await getStudentAvatar(db,actor.actorId)));
   if (!['POST','PUT'].includes(request.method)) return json({error:'Method not allowed'},405);
   let value:unknown;
-  try { value=await request.json(); } catch { return json({error:'Invalid JSON'},400); }
+  try { value=await readJson(request); } catch(error) { return bodyErrorResponse(error)||json({error:'Invalid JSON'},400); }
   if (!validAppearance(value)) return json({error:'Invalid avatar selection'},400);
   if (request.method==='POST') return json(appearance(await createStudentAvatar(db,actor.actorId,value.modelId,value)));
   const existing=await getStudentAvatar(db,actor.actorId);
