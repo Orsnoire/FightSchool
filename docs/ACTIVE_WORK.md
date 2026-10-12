@@ -102,3 +102,13 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 5. At package completion, update the cleanup table and main discovery pointer.
    Record merge and deployment separately; do not reuse an old feature branch or
    infer that another package started merely because it is next in the plan.
+
+## Parallel HP preview — owner-authorized October 12, 2026
+
+- Separate branch: `fix/waiting-room-hp-preview`; draft PR registration in progress.
+- Baseline: `72b945d265a2b95db396a057957a2401ab95f1d4` from main.
+- Scope: genuine waiting-room HP using the same calculation as Start Fight, recalculated from the joined roster; estimated labels and no numeric HP for empty rooms.
+- C03 remains on `cleanup/c03-schema-baseline` / PR #58. Do not alter its schema, migrations, package files or checkpoint section.
+- Verification: registration only; no implementation yet.
+- Next: add preview projection and display tests, implement, verify and publish this separate PR. Merge/deployment are not part of this task.
+- This explicitly requested parallel fix is an exception to the cleanup-first queue, not another cleanup package.
