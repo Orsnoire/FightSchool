@@ -73,6 +73,7 @@ export const appSessions = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
   (table) => ({
+    actorTypeCheck: check("app_sessions_actor_type_check", sql`${table.actorType} IN ('teacher', 'student')`),
     actorIndex: index("app_sessions_actor_idx").on(
       table.actorType,
       table.actorId,
@@ -135,6 +136,7 @@ export const fights = pgTable(
       .defaultNow(),
   },
   (table) => ({
+    encounterTierCheck: check("fights_encounter_tier_check", sql`${table.encounterTier} BETWEEN 1 AND 4`),
     teacherIndex: index("fights_teacher_idx").on(table.teacherId),
   }),
 );
@@ -178,7 +180,10 @@ export const students = pgTable(
       "students_gold_nonnegative",
       sql`${table.gold} >= 0`,
     ),
-    nicknameUnique: uniqueIndex("students_nickname_normalized_unique").on(
+    dailyCombatsCheck: check("students_daily_combats_check", sql`${table.dailyCombats} >= 0`),
+    xpRemainderCheck: check("students_xp_remainder_check", sql`${table.xpRemainder} >= 0 AND ${table.xpRemainder} < 1`),
+    aaExperienceCheck: check("students_aa_experience_check", sql`${table.aaExperience} >= 0`),
+    nicknameUnique: unique("students_nickname_normalized_unique").on(
       table.nicknameNormalized,
     ),
     guildCodeIndex: index("students_guild_code_idx").on(table.guildCode),
@@ -198,13 +203,15 @@ export const liveCombatSessions = pgTable(
     status: text("status").notNull().default("waiting"),
     soloStudentId: uuid("solo_student_id").references(() => students.id),
     guildLimitTier: integer("guild_limit_tier"),
-    guildId: uuid("guild_id").references(() => guilds.id),
+    guildId: uuid("guild_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (table) => ({
+    guildForeignKey: foreignKey({ name: "live_combat_sessions_guild_id_fkey", columns: [table.guildId], foreignColumns: [guilds.id] }),
+    guildLimitTierCheck: check("live_combat_sessions_guild_limit_tier_check", sql`${table.guildLimitTier} BETWEEN 1 AND 4`),
     fightIndex: index("live_combat_sessions_fight_idx").on(table.fightId),
     teacherIndex: index("live_combat_sessions_teacher_idx").on(table.teacherId),
   }),
@@ -239,7 +246,10 @@ export const equipmentItems = pgTable("equipment_items", {
   createdAt: bigint("created_at", { mode: "number" })
     .notNull()
     .default(sql`(extract(epoch from now()) * 1000)::bigint`),
-});
+}, (t) => ({
+  armorCategoryCheck: check("equipment_items_armor_category_check", sql`${t.armorCategory} IN ('heavy_armor', 'leather_armor', 'light_armor')`),
+  offhandTypeCheck: check("equipment_items_offhand_type_check", sql`${t.offhandType} IN ('shield', 'potion', 'quiver', 'spellbook')`),
+}));
 
 export const studentJobLevels = pgTable(
   "student_job_levels",
@@ -279,7 +289,9 @@ export const guilds = pgTable("guilds", {
   createdAt: bigint("created_at", { mode: "number" })
     .notNull()
     .default(sql`(extract(epoch from now()) * 1000)::bigint`),
-});
+}, (t) => ({
+  limitTierCheck: check("guilds_limit_tier_check", sql`${t.limitTier} BETWEEN 1 AND 4`),
+}));
 
 export const guildMemberships = pgTable(
   "guild_memberships",
@@ -611,3 +623,35 @@ export const avatarEquippedItems = pgTable("avatar_equipped_items", {
 }));
 
 export type StudentAvatarRecord = typeof studentAvatars.$inferSelect;
+
+// Introduced by handwritten migration 0014. Keep all relational structures in
+// Drizzle; only procedural SQL and data backfills remain migration-owned.
+export const questFightEvidence = pgTable("quest_fight_evidence", {
+  sessionId: text("session_id").notNull(),
+  studentId: uuid("student_id").notNull(),
+  guildId: uuid("guild_id").notNull(),
+  fightId: uuid("fight_id").notNull(),
+  isSoloMode: boolean("is_solo_mode").notNull(),
+  victory: boolean("victory").notNull().default(false),
+  answered: integer("answered").notNull(),
+  correct: integer("correct").notNull(),
+  correctKeys: jsonb("correct_keys").$type<string[]>().notNull().default([]),
+  bankKeys: jsonb("bank_keys").$type<string[]>().notNull().default([]),
+  revision: integer("revision").notNull().default(0),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+}, (t) => ({
+  pk: primaryKey({ name: "quest_fight_evidence_pkey", columns: [t.sessionId, t.studentId] }),
+  session: foreignKey({ name: "quest_fight_evidence_session_id_fkey", columns: [t.sessionId], foreignColumns: [liveCombatSessions.sessionId] }),
+  student: foreignKey({ name: "quest_fight_evidence_student_id_fkey", columns: [t.studentId], foreignColumns: [students.id] }),
+  guild: foreignKey({ name: "quest_fight_evidence_guild_id_fkey", columns: [t.guildId], foreignColumns: [guilds.id] }),
+  fight: foreignKey({ name: "quest_fight_evidence_fight_id_fkey", columns: [t.fightId], foreignColumns: [fights.id] }),
+  guildStudentIndex: index("quest_evidence_guild_student").on(t.guildId, t.studentId),
+}));
+
+export const personalQuestReceipts = pgTable("personal_quest_receipts", {
+  studentId: uuid("student_id").notNull(),
+  milestone: text("milestone").notNull(),
+}, (t) => ({
+  pk: primaryKey({ name: "personal_quest_receipts_pkey", columns: [t.studentId, t.milestone] }),
+  student: foreignKey({ name: "personal_quest_receipts_student_id_fkey", columns: [t.studentId], foreignColumns: [students.id] }),
+}));

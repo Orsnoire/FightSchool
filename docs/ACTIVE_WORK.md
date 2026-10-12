@@ -1,21 +1,23 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C03 schema baseline registered; investigation starting.**
+**CURRENT — October 12, 2026. C03 schema baseline implemented; full verification pending.**
 
 ## C03 active checkpoint
 
-- Branch: `cleanup/c03-schema-baseline`; draft PR registration in progress.
-- Baseline: `bdad601`; C02 release handoff merged, no open PRs at start.
-- Scope: F04 snapshots, schema declarations and handwritten SQL ownership. Preserve all applied SQL and current data.
-- Gates: no-op generation, all migrations on a disposable database, existing-data preservation and catalog/schema comparison.
-- Verification: not yet run for C03. No implementation or production database changes.
-- Next: reproduce generation drift in a disposable copy, inventory schema ownership, reconcile declarations/snapshot and add regression gates.
+- Branch: `cleanup/c03-schema-baseline`; [draft PR #58](https://github.com/Orsnoire/FightSchool/pull/58).
+- Baseline: `bdad601`; registration commit `6632988`. Exact newest published SHA is in the PR description.
+- Scope: F04 snapshots, declarations and handwritten SQL ownership. Preserve applied SQL and live data.
+- Implemented: two missing quest tables, nine checks, nickname unique-constraint kind and guild FK name; additive 0014 snapshot linked to retained 0007.
+- Focused verification: 3/3 schema tests pass. No-op CLI writes no files; migrated catalog matches all 27 tables/246 columns; shipped SQL hashes and journal prefix match.
+- Ownership and future migration workflow: [schema baseline](cloudflare/schema-baseline.md).
+- Pending: full typecheck, tests (including existing-data preservation), production builds and exact-head CI. Not merged or deployed.
+- Next: run full verification, review diff and publish results on this same branch/PR. No production database change is needed.
 
 The C02 release record below is historical context.
 
-## Registered work
+## Historical C02 registered work
 
-- No active implementation package. C01 and C02 are COMPLETE.
+- At C02 closeout there was no active package. C03 is now active above.
 - [PR #56](https://github.com/Orsnoire/FightSchool/pull/56) merged; `cleanup/c02-dependencies` is historical, not a resume target.
 - Deployed runtime: `5d89fb0bc4d160754ceb9645019f465809742ef2`; immutable Worker `81387a2a-9084-410f-b773-3726713f8544`.
 - [Deployment 38270833735](https://github.com/Orsnoire/FightSchool/actions/runs/38270833735) and [canonical live acceptance 38271115093](https://github.com/Orsnoire/FightSchool/actions/runs/38271115093) passed.
@@ -24,15 +26,6 @@ The C02 release record below is historical context.
 - [Release evidence](cloudflare/full-migration.md#c02-dependency-release--12-october-2026) separates reviewed, merged, deployed and accepted states.
 - No gameplay, schema or shipped SQL-history changes. Preserve current students and live data.
 - Documentation-only handoff: `release/c02-2026-10-12`; exact pushed SHA recorded in its PR.
-
-## Exact next action
-
-Fetch current main and inspect open PRs. If the release handoff PR remains open,
-finish that existing documentation PR before starting another package. Then register
-**C03 — schema baseline** with one branch and draft PR before substantive work.
-Read AGENTS.md, Source_of_Truth.md and CLEANUP_PLAN.md. C03 must reconcile snapshots,
-table declarations and intentional handwritten SQL without rewriting shipped history.
-C03–C12 are NOT STARTED. Do not reopen C02 merely because an advisory is explicitly deferred.
 
 ## Historical C01 release record
 
