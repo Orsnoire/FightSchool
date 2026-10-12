@@ -1,6 +1,6 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C03 schema baseline COMPLETE and merged.**
+**CURRENT — October 12, 2026. C03 schema baseline COMPLETE and merged; HP preview deployed and accepted.**
 
 ## C03 completion checkpoint
 
@@ -9,7 +9,7 @@
 - All 214 tests, typecheck and client/Worker builds passed, including existing-data preservation.
 - No-op generation writes no files; all 27 tables/246 columns match the migrated PostgreSQL catalog. Shipped SQL hashes and journal entries are unchanged.
 - [Schema ownership and future migration workflow](cloudflare/schema-baseline.md) documents the repaired 0014 snapshot and SQL-owned reward functions.
-- This is a tooling/declaration repair with no new SQL migration. No production database operation or deployment was performed for C03; live runtime remains the C02 release below.
+- This is a tooling/declaration repair with no new SQL migration. No production database operation or deployment was performed during the C03 task. C03 is included in the later HP preview deployment below; the existing migrator passed with no new SQL.
 - `cleanup/c03-schema-baseline` is now historical. No cleanup implementation package is active.
 - Next cleanup package: C04, not started. Check current main and open PRs, then register its branch/PR before implementation; preserve any separately authorized work.
 
@@ -96,12 +96,14 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
    Record merge and deployment separately; do not reuse an old feature branch or
    infer that another package started merely because it is next in the plan.
 
-## HP preview — merged October 12, 2026
+## HP preview — deployed and accepted October 12, 2026
 
 - [PR #59](https://github.com/Orsnoire/FightSchool/pull/59) reviewed with no blocking findings and merged as `02392ef1c6fb6978a6602e470a336290a6886193`.
 - Reviewed head: `13713d5b13feea53d728e42155ab378df9faa7a1`; branch `fix/waiting-room-hp-preview` is now historical.
 - Implemented: read-only enemy HP preview using the real Start Fight calculator; joins/leaves and reconnects refresh estimates; empty rooms show Waiting for players. Actual combat balance is preserved.
 - Verification: original 215 tests, typecheck and both production builds passed; review against merged C03 also passed all 218 tests, typecheck and both builds. CI 38274186846 and browser acceptance 38274186815 passed on the reviewed head.
 - C03 / PR #58 and its completion record are preserved. The two PRs merged cleanly; no schema, migration or dependency changes were introduced by #59.
-- Status: merged, not deployed by this task. No live acceptance was dispatched for this change.
-- Next: deploy the reviewed main revision when authorized, then record deployment and live acceptance separately. C04 sequencing remains governed by the cleanup checkpoint above.
+- Owner explicitly authorized deployment after review/merge. Deployed checkout: `274dbfe1d29dcb8897b675e85a3edb0343866f0c`; immutable Worker `50f91c4d-1cdb-4b04-bf69-8f3c715eff82`, published at 16:13:11 UTC.
+- [Deployment 38275647965](https://github.com/Orsnoire/FightSchool/actions/runs/38275647965) passed: all 218 tests, typecheck, both builds, R2, existing migration gate and both hostname smoke checks.
+- [Canonical live acceptance 38275889570](https://github.com/Orsnoire/FightSchool/actions/runs/38275889570) passed on the same checkout, including combat/economy, R2, 30 participants, reconnects, room isolation, moderation and exactly-once rewards.
+- Status: complete, merged, deployed and accepted. Next: C04 remains unstarted; register it before implementation. C04 sequencing remains governed by the cleanup checkpoint above.

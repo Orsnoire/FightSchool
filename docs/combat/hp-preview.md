@@ -1,6 +1,6 @@
 # Waiting-room HP preview
 
-Owner-approved scope — October 12, 2026. **Reviewed and merged in [PR #59](https://github.com/Orsnoire/FightSchool/pull/59); deployment pending.**
+Owner-approved scope — October 12, 2026. **Reviewed and merged in [PR #59](https://github.com/Orsnoire/FightSchool/pull/59); deployed and accepted.**
 
 Before Start Fight, display estimated enemy HP calculated from the current joined roster and the frozen fight template, using the same `scaleEncounter` calculation as combat start. Recompute after joins/leaves and on reconnect. Empty rooms show `Waiting for players` instead of numeric placeholder HP. After start, show actual HP without an estimate label.
 
@@ -16,4 +16,6 @@ Review and verification:
 - Reviewed head `13713d5b13feea53d728e42155ab378df9faa7a1`: [CI 38274186846](https://github.com/Orsnoire/FightSchool/actions/runs/38274186846) and [browser acceptance 38274186815](https://github.com/Orsnoire/FightSchool/actions/runs/38274186815) passed.
 - Merge commit: `02392ef1c6fb6978a6602e470a336290a6886193`. C03 / PR #58 and its later documentation completion remain intact. The only shared file was the work log, updated in separate sections.
 
-The owner authorized the independent branch alongside C03 and then explicitly authorized review/merge. No deployment or live acceptance was performed by this task. Record those outcomes separately when authorized.
+The owner authorized the independent branch alongside C03, review/merge, and then deployment. [Deployment 38275647965](https://github.com/Orsnoire/FightSchool/actions/runs/38275647965) passed on `274dbfe1d29dcb8897b675e85a3edb0343866f0c`, publishing Worker `50f91c4d-1cdb-4b04-bf69-8f3c715eff82` at 16:13:11 UTC. All 218 tests, typecheck, builds, R2, existing migration gate and both hostname checks passed. No SQL migration was added by this release.
+
+[Canonical live acceptance 38275889570](https://github.com/Orsnoire/FightSchool/actions/runs/38275889570) passed on the same revision against `https://questacademy.bookwyrminteractive.studio`. The four HP-specific boundary tests cover preview/start equality and accessible labels; the standard live harness separately checks deployed combat and operational flows.

@@ -1,6 +1,6 @@
 # Worker migration and combat recovery
 
-> **RELEASE HISTORY + OPEN OPERATIONS — updated October 9, 2026.**
+> **RELEASE HISTORY + OPEN OPERATIONS — updated October 12, 2026.**
 > The application migration is deployed; full operational signoff remains open.
 > [Current status](../CURRENT_STATUS.md) names the latest runtime. Dated entries
 > below retain earlier evidence and historical blockers; they are not competing
@@ -8,11 +8,10 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Latest verified runtime, October 9 review:** `e158194`, released October 8
-with PR #52. It includes the preceding equipment, guild-quest and explicit
-host-session releases plus enemy AI, recovery, individuals and waves. CI,
-deployment and canonical live acceptance passed; see the [latest release entry](#enemy-ai-recovery-and-waves-release--8-october-2026)
-and [current status](../CURRENT_STATUS.md). Earlier R2 failures are historical.
+**Latest verified runtime:** `274dbfe`, released October 12 with C03 and HP preview
+PR #59. Deployment and canonical acceptance passed. See the
+[HP preview release entry](#hp-preview-release--12-october-2026) and
+[current status](../CURRENT_STATUS.md). Earlier R2 failures are historical.
 Full infrastructure recovery/rollback signoff remains open.
 
 ## Root cause and corrected behavior
@@ -585,3 +584,42 @@ The October 12 30-answer burst measured p50 1,659 ms, p95 3,217 ms and maximum
 trend or evidence that C05/C06 targets have been met. Live checks also passed
 R2 integrity/ranges, room isolation, reconnect, exactly-once results, host session
 controls, moderated late entry, fractional rewards and logout socket revocation.
+
+
+## HP preview release — 12 October 2026
+
+**COMPLETE — reviewed, merged, deployed and accepted.** PR #59 merged as
+`02392ef1c6fb6978a6602e470a336290a6886193`. The owner then explicitly authorized
+deployment. Checkout `274dbfe1d29dcb8897b675e85a3edb0343866f0c` adds the review/merge
+checkpoint and includes C03 / PR #58. Immutable Worker
+`50f91c4d-1cdb-4b04-bf69-8f3c715eff82` was published at 16:13:11 UTC.
+
+Waiting rooms now show enemy HP calculated by the real Start Fight scaler for
+the joined roster. Joins, leaves and reconnects refresh the estimate; empty rooms
+show Waiting for players. Starting an unchanged roster uses the previewed HP.
+The preview is read-only and preserves combat balance and authored quantities.
+See the [HP preview specification](../combat/hp-preview.md).
+
+| Evidence | Result |
+| --- | --- |
+| [Deployment 38275647965](https://github.com/Orsnoire/FightSchool/actions/runs/38275647965), [job 114900336120](https://github.com/Orsnoire/FightSchool/actions/runs/38275647965/job/114900336120) | Passed on `274dbfe`: typecheck, all 218 tests, client/Worker builds, R2, migration gate, Worker publication and both hostname smoke checks |
+| [Canonical live acceptance 38275889570](https://github.com/Orsnoire/FightSchool/actions/runs/38275889570), [job 114901147536](https://github.com/Orsnoire/FightSchool/actions/runs/38275889570/job/114901147536) | Passed on the same revision against `https://questacademy.bookwyrminteractive.studio`, 16:13–16:15 UTC |
+| [PR CI 38274186846](https://github.com/Orsnoire/FightSchool/actions/runs/38274186846) / [browser acceptance 38274186815](https://github.com/Orsnoire/FightSchool/actions/runs/38274186815) | Passed on reviewed head `13713d5`; the combined C03/preview tree passed all 218 tests and both builds |
+| Database evidence | Existing migrator succeeded at 16:12:52 UTC with the unchanged journal through `0014`. C03 repaired declarations/snapshot metadata; neither C03 nor HP preview adds SQL migrations |
+
+Live checks passed combat/resources, reconnect, stale/retried commands, durable
+XP, guilds, quests, shop, reward claims, solo hosting, history, owner isolation,
+R2 integrity/ranges, 30 participants, simultaneous answers, room isolation,
+exactly-once results, host controls, late entry/moderation, fractional host-end
+rewards and logout socket revocation. The 30-answer burst recorded p50 **905 ms**,
+p95 **1,809 ms**, maximum **1,909 ms** within the existing 15-second maximum gate.
+This is one burst, not a sustained or fully seeded performance benchmark.
+
+The four HP-specific boundary tests cover preview/start equality, roster changes,
+restored snapshots, non-mutation and visible/accessible labels. The standard live
+harness complements those tests; it does not reproduce every HP-specific case.
+No current classroom data was reset. Previous Worker
+`81387a2a-9084-410f-b773-3726713f8544` remains the preceding release checkpoint;
+no rollback rehearsal was performed. C12 infrastructure drills remain open.
+Hosts and students should refresh existing tabs for the new client. C04 remains
+unstarted, and documentation-only release records require no redeployment.
