@@ -1,11 +1,9 @@
-# Active work
+# Usability Patch 1 — released October 12, 2026
 
-Active package: **Usability Patch 1**. Branch: `feat/usability-patch-1`. Draft review: [PR #64](https://github.com/Orsnoire/FightSchool/pull/64).
-
-Scope: searchable/filterable teacher session statistics; restore question Edit; shared attack/damage placeholders and flying numbers; completion-driven resolution; enemy/equipment color variants. **Question and action/ability selection clocks remain.**
-
-The branch checkpoint is `docs/USABILITY_PATCH_1.md`; the live PR records the latest pushed SHA and verification. Implementation is complete. The 253 automated tests, typecheck/build, avatar acceptance and full browser acceptance pass; the live PR records current-head checks. No merge or deployment has occurred. C06 remains unstarted while this user-approved patch is active.
-
-Next: review PR #64 and obtain approval before merge/deployment. Earlier package checkpoints remain in this file's Git history and the cleanup plan; this pointer intentionally contains only the current work.
-
-The direct main-pointer update was blocked by automatic approval review; this branch proposes the checkpoint update for review with the patch.
+- Owner authorized merge and deployment. [PR #64](https://github.com/Orsnoire/FightSchool/pull/64) merged as `2bf216e20f7b17e29e2f33857e5522eba94717a7`; `feat/usability-patch-1` is historical.
+- Searchable/filterable teacher session statistics, question Edit/save/cancel, combat effect placeholders and flying numbers, completion-driven resolution, and enemy/equipment color variants are deployed. **Question and action/ability selection clocks remain.**
+- Reviewed head `dcae53070468da9d5023f95c96ca54641a1bec0f`: [CI 38307437157](https://github.com/Orsnoire/FightSchool/actions/runs/38307437157), [Combat UI Acceptance 38307437169](https://github.com/Orsnoire/FightSchool/actions/runs/38307437169) and [Avatar Workshop Acceptance 38307437222](https://github.com/Orsnoire/FightSchool/actions/runs/38307437222) passed. All 253 tests, typecheck, production client/Worker builds and browser checks passed, including every effect, editor persistence, filters and 30/60-player playback.
+- [Deployment 38308382242](https://github.com/Orsnoire/FightSchool/actions/runs/38308382242) passed on the exact merge: 253 tests, typecheck/builds, R2, additive migrations 0015/0016 before publication, and both hostname smoke checks. Worker `7a3a6b26-a1cb-4f86-be80-073d64ef5696`, published at 21:07:10 UTC. No live-data reset.
+- [Canonical live acceptance 38308668953](https://github.com/Orsnoire/FightSchool/actions/runs/38308668953): failed because the legacy harness waits for an empty final enemy phase after victory. The deployed playback system correctly skips empty batches.
+- [Scope, verification and rollout limits](USABILITY_PATCH_1.md). Existing totals remain; pre-patch question detail cannot be reconstructed. Additive schema can remain in place during application rollback.
+- Active release follow-up: `release/usability-patch-1-2026-10-12`. Correct the live acceptance harness to acknowledge playback batches and accept victory without an empty enemy phase, then rerun acceptance and publish the release checkpoint. No runtime correction is currently indicated. C06 remains next, not started; register its branch/PR before implementation. Earlier package checkpoints remain in Git history and the cleanup plan.
