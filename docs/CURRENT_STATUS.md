@@ -1,25 +1,24 @@
 # Current status
 
-**CURRENT — verified October 12, 2026.** Cleanup Phase 1 is in progress.
-**C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted.**
+**CURRENT — verified October 12, 2026.** Cleanup Phases 1–2 are complete; C05 is next, not started.
+**C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
 ## Verified release baseline
 
-The latest verified application runtime is `274dbfe1d29dcb8897b675e85a3edb0343866f0c`, containing the October 12
-C03 schema baseline and PR #59 HP preview merges plus documentation checkpoints. Immutable Worker `50f91c4d-1cdb-4b04-bf69-8f3c715eff82` was
-published October 12 at 16:13:11 UTC. Subsequent documentation-only commits do not
-change this runtime.
+The deployed application runtime is `a2f13673de9bccbf044ef27f67a96fa4adf2431a`, the C04 follow-up merge.
+Immutable Worker `94a6a8f1-462d-4b1c-98c1-365de92066f1` was published October 12 at
+17:37:35 UTC. Subsequent documentation commits do not change this runtime.
 
 | Evidence | Result |
 | --- | --- |
-| [Deployment 38275647965](https://github.com/Orsnoire/FightSchool/actions/runs/38275647965) | Passed on `274dbfe`; 218 tests, typecheck, builds, R2, migration and both hostnames |
-| [Canonical live acceptance 38275889570](https://github.com/Orsnoire/FightSchool/actions/runs/38275889570) | Passed on `274dbfe`; combat/economy, R2 and 30-player checks |
-| [Review CI 38274186846](https://github.com/Orsnoire/FightSchool/actions/runs/38274186846) / [browser 38274186815](https://github.com/Orsnoire/FightSchool/actions/runs/38274186815) | Passed on HP preview head `13713d5`; combined C03/HP preview checks also passed |
-| Database evidence | Existing migrator succeeded through journal `0014`. C03 repaired generation drift in PR #58; neither C03 nor HP preview adds SQL migrations. |
+| [Deployment 38285264787](https://github.com/Orsnoire/FightSchool/actions/runs/38285264787) | Passed on `a2f1367`; 224 tests, typecheck, builds, R2, existing migration gate and both hostnames |
+| [Canonical live acceptance 38285499681](https://github.com/Orsnoire/FightSchool/actions/runs/38285499681) | Passed on `a2f1367`; combat/economy, R2, 30-player concurrency, reconnects, moderation and exactly-once rewards |
+| [Review CI 38284897429](https://github.com/Orsnoire/FightSchool/actions/runs/38284897429) / [browser 38284897183](https://github.com/Orsnoire/FightSchool/actions/runs/38284897183) | Passed on C04 follow-up head `5fdfe6c`; merged-main CI 38285235793 passed |
+| Database evidence | Existing migrator succeeded through journal `0014`. C04 adds no SQL migration; current live data is preserved. |
 
-See [HP preview release record](cloudflare/full-migration.md#hp-preview-release--12-october-2026).
+See [C04 release record](cloudflare/full-migration.md#c04-contracts-and-diagnostics--12-october-2026).
 
 The October 8 queue is reconciled: every October 8 merged PR (#37–50 and #52)
 is already included in the verified October 8 runtime `e158194` and this release.
@@ -71,16 +70,15 @@ plan and [active-work checkpoint](ACTIVE_WORK.md).
 - **Dependency maintenance (C02 released):** audit entries reduced from 32 to 12.
   Remaining build/CLI chains have scoped deferrals in the [triage record](reviews/2026-10-12-dependency-triage.md).
   Production-only audit still reports 7 Tailwind peer-chain entries; not a clean audit.
-- **Performance/refactoring work:** API contracts, query/index patterns, room
-  projection and persistence, quest evaluation, bundle loading, avatar surfaces,
-  broad timer updates, mixed modules and delivery diagnostics (F05–F16).
+- **Contracts/diagnostics F05/F16 (C04 released):** shared boundary contracts, explicit public projections, bounded JSON parsing, typed queries and redacted logs. Intended CI checks run on every PR; branch protection enforcement remains off.
+- **Remaining performance/refactoring work:** query/index patterns, room encoding and persistence, quest evaluation, bundle loading, avatar surfaces, broad timer updates and mixed modules (C05–C11).
 - **Documentation reconciliation (F17): COMPLETE for this baseline.** Status,
   history and plans are now separated; updating them remains part of each release.
 
 ## Open acceptance and operational work
 
-The latest October 12 30-answer burst measured p50 **905 ms**, p95 **1,809 ms**, maximum
-**1,909 ms**. Its current maximum threshold is 15 seconds. One burst is not a
+The latest October 12 30-answer burst measured p50 **809 ms**, p95 **1,513 ms**, maximum
+**1,562 ms**. Its current maximum threshold is 15 seconds. One burst is not a
 performance trend or evidence of meeting the proposed cleanup target; it does not establish
 performance for a guild with fully seeded quests, realistic history and many
 distinct avatars. Cleanup C05–C08 and C12 own repeated 30/60-player measurements.
