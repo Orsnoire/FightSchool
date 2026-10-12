@@ -1,3 +1,4 @@
+import { recordAttempt } from "../../shared/combat/attempts";
 import { CombatRuleError } from "../../shared/combat/errors";
 import { enemyAISchema, inferEnemyType, resolveEnemyType } from "../../shared/combat/enemy-ai";
 import { cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
@@ -54,6 +55,7 @@ export interface CombatProfile {
   questGuildId?: string | null;
   limitTier?: number;
   equipmentLoadout?: CombatPlayer["equipmentLoadout"];
+  equipmentVisuals?: CombatPlayer["equipmentVisuals"];
   equipmentEffects?: CombatPlayer["equipmentEffects"];
   appearance?: AvatarAppearance | null;
   levels: Partial<Record<CharacterClass, number>>;
@@ -133,6 +135,7 @@ export function addStudent(
     ...(profile.questGuildId!==undefined?{questGuildId:profile.questGuildId}:{}),
     ...(profile.limitTier!==undefined?{limitTier:profile.limitTier}:{}), correctQuestionKeys: [],
     ...(profile.equipmentLoadout ? {equipmentLoadout:{...profile.equipmentLoadout}} : {}),
+    equipmentVisuals: profile.equipmentVisuals,
     equipmentEffects: {...profile.equipmentEffects, healingBonus:profile.equipmentEffects?.healingBonus || 0, potionAttackBonus:profile.equipmentEffects?.potionAttackBonus || 0},
     roundsParticipated: 0,
     joinOrder: Object.values({...state.departedPlayers,...state.pendingPlayers,...state.players}).reduce((n,p)=>Math.max(n,p.joinOrder??-1),-1)+1,
@@ -279,6 +282,7 @@ export function applyAnswer(
   player.currentAnswer = answer;
   player.lastAnswerCorrect = answersMatch(answer, q.correctAnswer, "trimmed");
   player.questionAction ||= defaultQuestionAction(player, next);
+  recordAttempt(next, player, q, true);
   return next;
 }
 export function allLivingPlayersAnswered(state: CombatSnapshot): boolean {
@@ -1037,6 +1041,7 @@ export function advancePhase(
     for (const p of Object.values(s.players))
       if (!p.isDead) {
         if (!p.hasAnswered) {
+          recordAttempt(s, p, fight.questions[s.currentQuestionIndex], false);
           p.hasAnswered = true;
           p.lastAnswerCorrect = false;
           p.currentAnswer = "";

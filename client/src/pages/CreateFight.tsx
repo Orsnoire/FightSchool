@@ -1,3 +1,5 @@
+import { PaletteEditor } from "@/components/PaletteEditor";
+import { RecoloredSprite } from "@/components/RecoloredSprite";
 import { ENEMY_CATALOG } from "@shared/combat/enemy-catalog";
 import { ENEMY_TYPES } from "@shared/combat/enemy-ai";
 import { EnemyAIEditor } from "@/components/EnemyAIEditor";
@@ -88,7 +90,7 @@ function SortableEnemyItem({ enemy, index, onEdit, onDelete }: SortableEnemyItem
         >
           <GripVertical className="h-5 w-5 text-muted-foreground" />
         </button>
-        <img src={enemyImage(enemy)} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
+        <RecoloredSprite src={enemyImage(enemy)} palette={enemy.palette} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
         <div>
           <p className="font-medium">{enemy.name} × {enemy.quantity||1} · Wave {enemy.wave||index+1}</p>
           {enemy.swarm && <p className="text-xs text-muted-foreground">Swarm: +{enemy.swarm.enemiesPerFourPlayers} at 8 players and every 4 after</p>}
@@ -130,6 +132,8 @@ export default function CreateFight() {
   const isEditMode = !!fightId;
   
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const questionEditorRef = useRef<HTMLDivElement>(null);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [lootTable, setLootTable] = useState<LootItem[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Partial<Question>>({
@@ -251,14 +255,16 @@ export default function CreateFight() {
     }
     
     const newQuestion: Question = {
-      id: Date.now().toString(),
+      id: editingQuestionId || crypto.randomUUID(),
       type: currentQuestion.type as any,
       question: currentQuestion.question,
       options: currentQuestion.options,
       correctAnswer: correctAnswer,
       timeLimit: currentQuestion.timeLimit || 30,
     };
-    const updatedQuestions = [...questions, newQuestion];
+    const updatedQuestions = editingQuestionId
+      ? questions.map(q => q.id === editingQuestionId ? newQuestion : q)
+      : [...questions, newQuestion];
     setQuestions(updatedQuestions);
     form.setValue("questions", updatedQuestions);
     setCurrentQuestion({
@@ -267,6 +273,21 @@ export default function CreateFight() {
       options: ["", "", "", ""],
     });
     setSelectedOptionIndex(null);
+    setEditingQuestionId(null);
+  };
+
+  const cancelQuestionEdit = () => {
+    setEditingQuestionId(null);
+    setCurrentQuestion({ type: "multiple_choice", timeLimit: 30, options: ["", "", "", ""] });
+    setSelectedOptionIndex(null);
+  };
+
+  const editQuestion = (question: Question) => {
+    setEditingQuestionId(question.id);
+    setCurrentQuestion(structuredClone(question));
+    const selected = question.options?.indexOf(question.correctAnswer) ?? -1;
+    setSelectedOptionIndex(selected < 0 ? null : selected);
+    questionEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const resizeImage = (file: File): Promise<string> => {
@@ -341,6 +362,7 @@ export default function CreateFight() {
       const updatedEnemies = [...enemies];
       updatedEnemies[editingEnemyIndex] = {
         id: enemies[editingEnemyIndex].id,
+        palette: currentEnemy.palette,
         swarm: currentEnemy.swarm,
         quantity:Math.max(ENEMY_CATALOG[type].minimumQuantity,currentEnemy.quantity||1), wave:currentEnemy.wave||1, species:type==="goblin"?"goblin":"other",
         name: currentEnemy.name,
@@ -357,6 +379,7 @@ export default function CreateFight() {
       // Add new enemy
       const newEnemy: Enemy = {
         id: Date.now().toString(),
+        palette: currentEnemy.palette,
         swarm: currentEnemy.swarm,
         quantity:Math.max(ENEMY_CATALOG[type].minimumQuantity,currentEnemy.quantity||1), wave:currentEnemy.wave||1, species:type==="goblin"?"goblin":"other",
         name: currentEnemy.name,
@@ -379,6 +402,7 @@ export default function CreateFight() {
     const enemy = enemies[index];
     const type = enemy.enemyType || inferEnemyType(enemy.image);
     setCurrentEnemy({
+      palette: enemy.palette,
       swarm: enemy.swarm,
       quantity:enemy.quantity||1,wave:enemy.wave||index+1,species:enemy.species||(enemyImage(enemy)===GOBLIN_IMAGE?"goblin":"other"),
       name: enemy.name,
@@ -887,10 +911,13 @@ export default function CreateFight() {
                       </section>
                     )}
 
-                    <Button type="button" onClick={addQuestion} className="w-full" data-testid="button-add-question">
+                    <div ref={questionEditorRef} className="scroll-mt-24" />
+                    {editingQuestionId && <p role="status">Editing question {questions.findIndex(q => q.id === editingQuestionId) + 1}</p>}
+                    <Button type="button" onClick={addQuestion} className="w-full" data-testid={editingQuestionId ? "button-save-question" : "button-add-question"}>
                       <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Question
+                      {editingQuestionId ? "Save question changes" : "Add Question"}
                     </Button>
+                    {editingQuestionId && <Button type="button" variant="outline" onClick={cancelQuestionEdit}>Cancel</Button>}
                   </CardContent>
                 </Card>
 
@@ -910,11 +937,13 @@ export default function CreateFight() {
                               <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3">{q.question}</pre>
                             </details>
                           </div>
+                          <Button type="button" variant="outline" size="sm" onClick={() => editQuestion(q)} aria-label={`Edit question ${i + 1}`} data-testid={`button-edit-question-${i}`}><Edit className="mr-1 h-4 w-4" />Edit</Button>
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => {
+                              if (editingQuestionId === q.id) cancelQuestionEdit();
                               const updated = questions.filter((_, idx) => idx !== i);
                               setQuestions(updated);
                               form.setValue("questions", updated);
@@ -1014,6 +1043,8 @@ export default function CreateFight() {
                       <p className="text-sm text-muted-foreground">{Math.round(ROLE_SHARES[currentEnemy.role||'normal']*100)}% of the full fight HP budget is shared by all enemies of this role across every wave. Missing roles leave their allocation unused. Goblin trash gets +1% of its allocation per three goblins.</p>
                     </fieldset>
 
+                    <div className="flex items-center justify-center rounded bg-slate-800 p-3"><RecoloredSprite src={currentEnemy.image || ENEMY_CATALOG.zombie.image} palette={currentEnemy.palette} alt="Enemy color preview" className="h-36 w-36 object-contain" /></div>
+                    <PaletteEditor value={currentEnemy.palette} onChange={palette=>setCurrentEnemy({...currentEnemy,palette})} />
                     <EnemySwarmEditor enemy={currentEnemy} onChange={setCurrentEnemy} />
                     <EnemyAIEditor enemy={currentEnemy} onChange={setCurrentEnemy} />
                     <Button type="button" onClick={addEnemy} className="w-full" data-testid={editingEnemyIndex !== null ? "button-update-enemy" : "button-add-enemy"}>

@@ -1,3 +1,4 @@
+import { paletteSchema, equipmentVisualSchema, validVisualSlot } from "./avatar/visuals";
 import type { EnemySwarm } from "./combat/swarm";
 import { TIER_ONE_EQUIPMENT } from "./tier-one-equipment";
 import { EQUIPMENT_SLOTS, type EquipmentSlot } from "./equipment-slots";
@@ -178,6 +179,7 @@ export interface Question {
 
 // Enemy schema
 export interface Enemy {
+  palette?: import("./avatar/visuals").SpritePalette;
   enemyType?: Exclude<import("./combat/enemy-ai").EnemyType, "basic">;
   ai?: import("./combat/enemy-ai").EnemyAI;
   quantity?: number;
@@ -926,6 +928,7 @@ export interface PartyDamageData {
 // Compatibility exports; transport definitions do not import Worker/Drizzle.
 export type * from "./contracts/dto";
 export const insertEquipmentItemSchema = z.object({
+ visual:equipmentVisualSchema.nullable().optional(),
  teacherId:z.string(),name:z.string().min(1),iconUrl:z.string().nullable().optional(),
  itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable','spellbook','shield','potion','quiver','bracers','gloves','leggings','boots']),
  quality:z.enum(['common','rare','epic','legendary']),tier:z.number().int().min(1).max(10).default(1),slot:z.enum(EQUIPMENT_SLOTS),

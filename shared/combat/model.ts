@@ -53,6 +53,7 @@ export interface CombatPlayer {
   limitTier?: number;
   correctQuestionKeys?: string[];
   equipmentLoadout?: EquipmentLoadout;
+  equipmentVisuals?: import("../avatar/visuals").EquipmentVisuals;
   equipmentEffects?: { healingBonus:number; potionAttackBonus:number };
   roundsParticipated?: number;
   appearance?: AvatarAppearance | null;
@@ -86,6 +87,7 @@ export interface CombatPlayer {
   totals: CombatTotals;
 }
 export interface CombatEnemy {
+  palette?: import("../avatar/visuals").SpritePalette;
   enemyType?: EnemyType;
   ai?: EnemyAI;
   aiState?: EnemyAIState;
@@ -120,6 +122,8 @@ export interface CombatEvent {
   message: string;
 }
 export interface CombatSnapshot {
+  /** Server-only durable reporting outbox, removed after confirmed projection. */
+  pendingAttempts?: import("./attempts").QuestionAttempt[];
   encounterRules?: 2;
   autoAdvanceWaves?: boolean;
   activeWave?: number;

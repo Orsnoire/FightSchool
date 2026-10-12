@@ -1,3 +1,5 @@
+import { paletteSchema, equipmentVisualSchema, validVisualSlot } from "../../shared/avatar/visuals";
+import { sessionReport } from "../reporting/session-report";
 import { readJson, bodyErrorResponse } from "../http/json";
 import { questInput } from "../../shared/quests";
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
@@ -37,6 +39,7 @@ const uuid = z.string().uuid();
 const text = z.string().trim().min(1).max(200);
 const bounded = z.number().int().min(0).max(1000);
 const itemSchema = z.object({
+  visual: equipmentVisualSchema.nullable().optional(),
   name: text,
   iconUrl: z.string().max(2000).nullable().optional(),
   itemType: z.enum([
@@ -672,6 +675,7 @@ export async function handleGame(
     if (path === "/api/equipment-items" && method(request, "POST")) {
       requireTeacher();
       const input = itemSchema.parse(await readJson(request));
+      if (!validVisualSlot(input.visual,input.slot)) throw new ApiError("Base sprite must match the equipment slot");
       const classificationError = armorClassificationError(input);
       if (classificationError) throw new ApiError(classificationError);
       return json(
@@ -705,6 +709,7 @@ export async function handleGame(
       requireTeacher();
       if (method(request, "PATCH")) {
         const input = itemSchema.partial().parse(await readJson(request));
+if (!validVisualSlot(input.visual===undefined?item.visual:input.visual,input.slot||item.slot)) throw new ApiError("Base sprite must match the equipment slot");
         // Older unspecified armor can receive unrelated edits without changing its category.
         if ('slot' in input || 'itemType' in input || 'armorCategory' in input || item.armorCategory) {
           const classificationError = armorClassificationError({...item,...input});
@@ -958,6 +963,10 @@ export async function handleGame(
       }
       if (tail === "award-xp")
         throw new ApiError("XP is awarded from server combat results", 403);
+    }
+    if (path === "/api/combat-stats/report" && method(request,"GET")) {
+      requireTeacher();
+      return json(await sessionReport(db, actor.actorId, url.searchParams));
     }
     const stats = path.match(
       /^\/api\/combat-stats\/(fight|student|class)\/([^/]+)$/,

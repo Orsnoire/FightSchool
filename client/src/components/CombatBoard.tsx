@@ -1,3 +1,4 @@
+import { RecoloredSprite } from "./RecoloredSprite";
 import { isHypnosis, statusSummary } from "@shared/combat/status-effects";
 import { activeEnemies, enemyImage, hpLabel } from "@shared/combat/encounters";
 import { useState, type CSSProperties } from "react";
@@ -57,7 +58,7 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate 
       {p.health < p.maxHealth && <Bar current={p.health} max={p.maxHealth} label={`${p.nickname} HP`} />}
       <button type="button" className="battle-avatar" aria-label={canRevive ? `Resurrect ${p.nickname} with 1 HP` : `${p.nickname}${isSelf ? " (you)" : ""}, ${p.isDead ? "knocked out" : `${p.health}/${p.maxHealth} HP`}${queued ? ", joining next round" : ""}`}
         onClick={() => { setSelected(selected === p.studentId ? null : p.studentId); if (canRevive) onResurrect(p.studentId); }}>
-        <StaticAvatar appearance={p.appearance || initialAppearance(null, p.gender === "B" ? "human-female-v1" : "human-male-v1", () => .35)} job={p.characterClass} loadout={p.equipmentLoadout} className="battle-paperdoll" />
+        <StaticAvatar appearance={p.appearance || initialAppearance(null, p.gender === "B" ? "human-female-v1" : "human-male-v1", () => .35)} job={p.characterClass} loadout={p.equipmentLoadout} visuals={p.equipmentVisuals} className="battle-paperdoll" />
       </button>
       <span className="battle-name">{p.nickname}{isSelf ? " · You" : ""}{queued ? " · Next round" : p.isDead ? " · KO" : ""}</span>
       {!!p.statuses?.length && <span className="rounded bg-black/80 px-1 text-[10px] text-amber-200" title={statusSummary(p).join("; ")} aria-label={`${p.nickname}: ${statusSummary(p).join("; ")}`}>{p.statuses.some(isHypnosis) ? `Hypnotized ${p.statuses.find(isHypnosis)?.correctAnswers || 0}/3` : p.statuses.some(x => x.type === "stun" || x.type === "paralysis") ? `Recovery ${p.recoveryCorrectAnswers || 0}/2` : "Status effect"}</span>}
@@ -74,7 +75,7 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate 
     <div className={`battle-enemy-field ${shownEnemies.length>8?'is-swarm':''}`} aria-label="Enemy formation">
       {shownEnemies.map((e,i)=><div role="group" tabIndex={0} key={e.id} data-enemy-id={e.id} className="battle-enemy" aria-label={`${e.name}, ${enemyHP(e)}`} title={`${e.name} · ${enemyHP(e)}`}
         style={{left:`${(.5+(i%columns)*.78)/spanX*100}%`,top:`${(.5+Math.floor(i/columns)*.7)/spanY*100}%`,width:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,height:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,zIndex:Math.floor(i/columns)+1} as CSSProperties}>
-        <img src={enemyImage(e)} alt={e.name}/>
+        <RecoloredSprite src={enemyImage(e)} palette={e.palette} alt={e.name}/>
         <div className="battle-enemy-info">      {Object.values(state.players).some(p => !p.isDead && p.statuses?.some(x => isHypnosis(x) && x.sourceId === e.id)) && <span className="rounded bg-black/80 px-2 text-xs text-amber-200">Maintaining hypnosis · cannot act</span>}
       {e.aiState?.buffs.filter(b => b.type !== "flatten" && b.throughRound >= state.round).map((b, index) => <span className="rounded bg-black/80 px-1 text-xs text-amber-200" key={`${b.type}:${index}`}>{b.type === "attack" ? "Soul inflamed · +100% ATK" : b.type === "defense" ? "+50% DEF" : "Faded · immune"}</span>)}
 <div className="battle-enemy-name">{e.name}</div>{!awaitingPlayers && <Bar current={e.health} max={e.maxHealth} label={`${e.name} ${waiting ? "Estimated HP" : "HP"}`}/>}<span className="battle-enemy-hp">{waiting ? enemyHP(e) : `${hpLabel(e.health)} / ${hpLabel(e.maxHealth)}`}</span></div>

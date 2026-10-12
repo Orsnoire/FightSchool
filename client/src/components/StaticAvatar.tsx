@@ -1,3 +1,4 @@
+import type { EquipmentVisuals } from "@shared/avatar/visuals";
 import { useEffect, useRef, useState } from 'react';
 import { composeStaticAvatar, STATIC_CANVAS, type StaticAssetUrls } from '@shared/avatar/static-renderer';
 import type { AvatarAppearance, AvatarJob } from '@shared/avatar/appearance';
@@ -38,13 +39,13 @@ export const staticAvatarUrls:StaticAssetUrls = {
   herbalist,
 };
 
-export function StaticAvatar({ appearance, job, loadout, className='', label }: { appearance:AvatarAppearance; job:AvatarJob; loadout?:AvatarLoadout; className?:string; label?:string }) {
+export function StaticAvatar({ appearance, job, loadout, visuals, className='', label }: { appearance:AvatarAppearance; job:AvatarJob; loadout?:AvatarLoadout; visuals?:EquipmentVisuals; className?:string; label?:string }) {
   const canvas=useRef<HTMLCanvasElement>(null),[error,setError]=useState('');
-  const equipment=avatarEquipment(job,loadout),equipmentKey=JSON.stringify(equipment);
+  const equipment=avatarEquipment(job,loadout),equipmentKey=JSON.stringify([equipment,visuals]);
   const missing=unknownEquipment(equipment);
   useEffect(()=>{
     let active=true;setError('');
-    composeStaticAvatar(staticAvatarUrls,appearance,job,equipment).then(source=>{
+    composeStaticAvatar(staticAvatarUrls,appearance,job,equipment,visuals).then(source=>{
       if(!active||!canvas.current)return;const c=canvas.current,ctx=c.getContext('2d')!;
       ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(source,0,0);
     }).catch(()=>{if(active)setError('Avatar artwork could not load.');});

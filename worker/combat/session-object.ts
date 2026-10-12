@@ -1,3 +1,4 @@
+import { reportingSignature } from "../db/session-reporting";
 import { CombatRuleError } from "../../shared/combat/errors";
 import { diagnostic } from "../diagnostics";
 import { combatCommandSchema, type CombatCommand } from "../../shared/contracts/combat";
@@ -47,6 +48,8 @@ interface StoredRoom {
   receipts: string[];
   results?: unknown[];
   resultsPersisted?: boolean;
+  reportingSignature?: string;
+  reportingPending?: boolean;
   evidenceSignature?: string;
   evidencePending?: boolean;
   removals?: Record<string, { nickname: string; blocked: boolean; requestedAt?: number; deniedAt?: number }>;
@@ -184,6 +187,17 @@ export class CombatSessionObject {
   }
   private async save(room: StoredRoom) {
     await this.checkpoint(room);
+    const reportKey = reportingSignature(room.snapshot);
+    if (this.repository?.recordSessionReporting && (room.reportingPending || room.snapshot.pendingAttempts?.length || reportKey !== room.reportingSignature)) {
+      try {
+        await this.repository.recordSessionReporting(room.snapshot, room.fight);
+        room.reportingSignature = reportKey;
+        room.reportingPending = false;
+        room.snapshot.pendingAttempts = [];
+      } catch { room.reportingPending = true; }
+      await this.checkpoint(room);
+      if (room.reportingPending) await this.syncAlarm(room);
+    }
     const entries=Object.values({...room.snapshot.players,...room.snapshot.departedPlayers}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0);
     const signature=JSON.stringify([room.snapshot.victory,entries.map(p=>[p.studentId,p.totals.questionsAnswered,p.totals.questionsCorrect,!!room.snapshot.players[p.studentId]])]);
     if(this.repository?.recordQuestEvidence && entries.length && signature!==room.evidenceSignature){
@@ -195,7 +209,7 @@ export class CombatSessionObject {
     }
   }
   private async syncAlarm(room: StoredRoom) {
-    const retry=room.evidencePending||(room.snapshot.currentPhase==='game_over'&&!room.resultsPersisted)?Date.now()+5000:Infinity;
+    const retry=room.reportingPending||room.evidencePending||(room.snapshot.currentPhase==='game_over'&&!room.resultsPersisted)?Date.now()+5000:Infinity;
     const deadline=Math.min(room.snapshot.phaseDeadline||Infinity,retry);
     if(Number.isFinite(deadline))await this.state.storage.setAlarm(deadline);
     else await this.state.storage.deleteAlarm();
@@ -789,7 +803,7 @@ export class CombatSessionObject {
     return this.serialized(async () => {
       const room = await this.room();
       if (!room) return;
-      if(room.evidencePending){await this.save(room);await this.syncAlarm(room);}
+      if(room.evidencePending||room.reportingPending){await this.save(room);await this.syncAlarm(room);}
       if (room.snapshot.currentPhase === "game_over") {
         await this.complete(room);
         return;

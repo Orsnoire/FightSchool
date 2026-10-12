@@ -92,6 +92,7 @@ export interface FightQuestion {
 }
 
 export interface FightEnemy {
+  palette?: import("../../shared/avatar/visuals").SpritePalette;
   enemyType?: Exclude<import("../../shared/combat/enemy-ai").EnemyType, "basic">;
   ai?: import("../../shared/combat/enemy-ai").EnemyAI;
   quantity?: number;
@@ -234,6 +235,7 @@ export const equipmentItems = pgTable("equipment_items", {
     .references(() => teachers.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   iconUrl: text("icon_url"),
+  visual: jsonb("visual").$type<import("../../shared/avatar/visuals").EquipmentVisual>(),
   itemType: text("item_type").notNull().$type<ItemType>(),
   quality: text("quality").notNull().$type<ItemQuality>(),
   tier: integer("tier").notNull().default(1), // Equipment tier (1-10)
@@ -655,4 +657,46 @@ export const personalQuestReceipts = pgTable("personal_quest_receipts", {
 }, (t) => ({
   pk: primaryKey({ name: "personal_quest_receipts_pkey", columns: [t.studentId, t.milestone] }),
   student: foreignKey({ name: "personal_quest_receipts_student_id_fkey", columns: [t.studentId], foreignColumns: [students.id] }),
+}));
+
+// Reporting projections retain session-time identity and are independent of rewards.
+export const sessionParticipants = pgTable('session_participants', {
+  sessionId: text('session_id').notNull().references(() => liveCombatSessions.sessionId),
+  studentId: uuid('student_id').notNull().references(() => students.id),
+  teacherId: uuid('teacher_id').notNull().references(() => teachers.id),
+  fightId: uuid('fight_id').notNull().references(() => fights.id),
+  guildId: uuid('guild_id').references(() => guilds.id),
+  nickname: text('nickname').notNull(),
+  quizTitle: text('quiz_title').notNull(),
+  job: text('job').notNull().$type<CharacterClass>(),
+  status: text('status').notNull(),
+  victory: boolean('victory'),
+  survived: boolean('survived').notNull(),
+  totals: jsonb('totals').notNull().$type<import('../../shared/combat/model').CombatTotals>(),
+  revision: integer('revision').notNull(),
+  updatedAt: bigint('updated_at', {mode:'number'}).notNull(),
+}, t => ({
+  pk: primaryKey({columns:[t.sessionId,t.studentId]}),
+  teacherSession: index('session_participants_teacher_session_idx').on(t.teacherId,t.sessionId),
+  guildPlayer: index('session_participants_guild_player_idx').on(t.guildId,t.studentId),
+}));
+
+export const questionAttempts = pgTable('question_attempts', {
+  sessionId: text('session_id').notNull().references(() => liveCombatSessions.sessionId),
+  studentId: uuid('student_id').notNull().references(() => students.id),
+  round: integer('round').notNull(),
+  teacherId: uuid('teacher_id').notNull().references(() => teachers.id),
+  fightId: uuid('fight_id').notNull().references(() => fights.id),
+  guildId: uuid('guild_id').references(() => guilds.id),
+  job: text('job').notNull().$type<CharacterClass>(),
+  questionId: text('question_id').notNull(),
+  questionVersion: text('question_version').notNull(),
+  question: jsonb('question').notNull().$type<FightQuestion>(),
+  outcome: text('outcome').notNull().$type<'correct'|'incorrect'|'unanswered'>(),
+  recordedAt: bigint('recorded_at', {mode:'number'}).notNull(),
+}, t => ({
+  pk: primaryKey({columns:[t.sessionId,t.studentId,t.round]}),
+  teacherQuestion: index('question_attempts_teacher_question_idx').on(t.teacherId,t.questionId,t.sessionId),
+  sessionRound: index('question_attempts_session_round_idx').on(t.sessionId,t.round),
+  validOutcome: check('question_attempts_outcome_check',sql`${t.outcome} IN ('correct','incorrect','unanswered')`),
 }));
