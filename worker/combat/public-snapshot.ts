@@ -33,9 +33,10 @@ export function publicSnapshot(snapshot:CombatSnapshot,fight?:FightRecord):Publi
   const reveal=!['question','actions','waiting'].includes(snapshot.currentPhase);
   return {
     ...pick(snapshot,snapshotFields),seed:0,
+    playback:snapshot.playback?{...pick(snapshot.playback,['id','round','phase']),eventIds:[...snapshot.playback.eventIds],initialHealth:{...snapshot.playback.initialHealth}}:undefined,
     players:Object.fromEntries(Object.entries(snapshot.players).map(([id,p])=>[id,player(p,reveal)])),
     pendingPlayers:Object.fromEntries(Object.entries(snapshot.pendingPlayers||{}).map(([id,p])=>[id,player(p,false)])),
     enemies:enemies.map(e=>({...pick(e,enemyFields),palette:e.palette?paletteSchema.parse(e.palette):undefined,effects:e.effects.map(v=>pick(v,['ownerId','type','rounds','damage'])),aiState:e.aiState?{readyRounds:{},buffs:e.aiState.buffs.filter(b=>b.type!=='flatten').map(b=>pick(b,['type','throughRound']))}:undefined})),
-    events:snapshot.events.map(e=>pick(e,['id','round','phase','type','actorId','targetId','amount','message'])),
+    events:snapshot.events.map(e=>pick(e,['id','round','phase','type','actorId','targetId','amount','message','actionId','abilityId','effect','healthBefore','healthAfter'])),
   };
 }

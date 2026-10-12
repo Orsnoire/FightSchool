@@ -420,6 +420,7 @@ export default function CreateFight() {
   };
 
   const onSubmit = (data: InsertFight) => {
+    if(editingQuestionId){toast({title:"Save or cancel your question changes before saving the fight",variant:"destructive"});return;}
     if (enemies.some(e => (e.enemyType || inferEnemyType(e.image)) === "basic")) {
       toast({ title: "Choose a supported type for each retired enemy before saving", variant: "destructive" }); return;
     }
@@ -747,11 +748,11 @@ export default function CreateFight() {
                 <TabsTrigger value="loot" data-testid="tab-loot">Loot ({lootTable.length})</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="questions" className="space-y-4">
+              <TabsContent value="questions" className="space-y-4"><div ref={questionEditorRef} className="scroll-mt-24" />
                 <Card>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <CardTitle>Add Question</CardTitle>
+                      <CardTitle>{editingQuestionId ? "Edit Question" : "Add Question"}</CardTitle>
                       <div className="flex gap-2">
                         <input
                           type="file"
@@ -911,7 +912,7 @@ export default function CreateFight() {
                       </section>
                     )}
 
-                    <div ref={questionEditorRef} className="scroll-mt-24" />
+                    
                     {editingQuestionId && <p role="status">Editing question {questions.findIndex(q => q.id === editingQuestionId) + 1}</p>}
                     <Button type="button" onClick={addQuestion} className="w-full" data-testid={editingQuestionId ? "button-save-question" : "button-add-question"}>
                       <PlusCircle className="mr-2 h-4 w-4" />

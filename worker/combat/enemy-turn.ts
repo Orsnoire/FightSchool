@@ -7,7 +7,7 @@ import { addStatus, effectiveDefense, isHypnosis, releaseInvalidStatuses, STATUS
 export interface EnemyTurnPorts {
   random: () => number;
   damage: (id: string, raw: number, source: string, ignoreDefense: boolean, limit: number, fractional?: boolean) => number;
-  say: (actor: string, target: string, message: string, amount?: number) => void;
+  say: (actor: string, target: string, message: string, amount?: number, healing?: boolean) => void;
   possess: (enemy: CombatEnemy, copied: CombatPlayer, target: CombatPlayer, damage: (id: string, raw: number) => number) => boolean;
 }
 
@@ -90,7 +90,7 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
       if (enemy.health <= 0) return;
       const actual = Math.min(enemy.maxHealth - enemy.health, Math.max(0, Math.floor(amount)));
       enemy.health += actual;
-      ports.say(enemy.id, enemy.id, `${enemy.name} restored ${actual} HP`, actual);
+      ports.say(enemy.id, enemy.id, `${enemy.name} restored ${actual} HP`, actual, true);
     };
     ai.lastMove = rule.move;
     // Cooldown N means N full future rounds without this move.

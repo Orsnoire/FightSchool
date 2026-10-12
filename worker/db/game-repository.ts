@@ -75,6 +75,7 @@ export async function combatProfile(
     equipment,
     equipmentEffects: equipmentEffects(equipped),
     equipmentLoadout: snapshotEquipmentLoadout(equipped),
+    weaponKind: custom.find(i=>i.id===equipped.weapon)?.weaponType || EQUIPMENT_ITEMS[equipped.weapon||""]?.weaponType,
     equipmentVisuals: Object.fromEntries(EQUIPMENT_SLOTS.flatMap(slot => {const item=custom.find(i=>i.id===equipped[slot]);return item?.visual ? [[slot,item.visual]] : [];})),
     crossClass: [student.crossClassAbility1, student.crossClassAbility2].filter(
       Boolean,

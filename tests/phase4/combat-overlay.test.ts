@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 import { JSDOM } from "jsdom";
 import { started, student } from "./fixtures.ts";
 
-test("student question, action, waiting, and resolution share a focused non-dismissible overlay", async () => {
+test("student selection uses focused overlays while waiting and resolution reveal the battlefield", async () => {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: "https://qa.example/student/combat", pretendToBeVisual: true });
   const keys = ["window", "document", "addEventListener", "removeEventListener", "dispatchEvent", "requestAnimationFrame", "cancelAnimationFrame", "location", "history", "localStorage", "navigator", "MutationObserver", "HTMLElement", "HTMLInputElement", "Node", "NodeFilter", "CustomEvent", "Event", "getComputedStyle", "WebSocket", "fetch", "IS_REACT_ACT_ENVIRONMENT"];
   const saved = keys.map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
@@ -92,14 +92,14 @@ test("student question, action, waiting, and resolution share a focused non-dism
     state.players[student().id].lastAnswerCorrect = true;
     state.events = [{ id: "1:0", round: 1, phase: "question_resolution", type: "heal", actorId: student().id, targetId: student().id, amount: 2, message: "Herbalist healed for 2" }];
     await emit();
-    assert.match(dialog().textContent!, /Healing potions 4\/5/);
-    assert.match(dialog().textContent!, /Herbalist healed for 2/);
+    assert.equal(dialog(), null);
+    assert.match(document.querySelector('[aria-label="Your character"]')!.textContent!, /Healing potions 4\/5/);
+    assert.match(document.querySelector('[data-testid="battle-wait"]')!.textContent!, /Your party attacks/);
     state.currentPhase = "enemy_ai";
     state.events.push({ id: "1:1", round: 1, phase: "enemy_ai", type: "enemy_attack", actorId: "e1", targetId: student().id, amount: 3, message: "Damage" });
     await emit();
-    assert.match(dialog().textContent!, /Slime counterattacks herbalist for 3 damage/);
-    assert.doesNotMatch(dialog().textContent!, /Herbalist healed for 2/);
-    assert.equal(document.querySelectorAll('[role="dialog"]').length, 1);
+    assert.match(document.querySelector('[data-testid="battle-wait"]')!.textContent!, /Enemy counterattacks/);
+    assert.equal(document.querySelectorAll('[role="dialog"]').length, 0);
     const keyboard = { container: document.body, hide: () => {} };
     (dom.window as any).mathVirtualKeyboard = keyboard;
     state.round++;

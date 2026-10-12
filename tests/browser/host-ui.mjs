@@ -8,7 +8,7 @@ import { verifyEnemyAuthoring } from './enemy-ai.mjs';
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
-const browser = await chromium.launch();
+const browser = await chromium.launch({executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE});
 const enemyImage = 'data:image/png;base64,' + (await readFile('client/public/enemies/goblin-v1.png')).toString('base64');
 try {
   await verifyEnemyAuthoring(browser, origin);

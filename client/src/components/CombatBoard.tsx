@@ -1,7 +1,9 @@
+import { useCombatPlayback } from "@/hooks/useCombatPlayback";
+import { BattleEffect } from "./BattleEffect";
 import { RecoloredSprite } from "./RecoloredSprite";
 import { isHypnosis, statusSummary } from "@shared/combat/status-effects";
 import { activeEnemies, enemyImage, hpLabel } from "@shared/combat/encounters";
-import { useState, type CSSProperties } from "react";
+import { useState, useRef, type CSSProperties } from "react";
 import type { CombatPlayer, CombatSnapshot } from "@shared/combat/model";
 import { initialAppearance } from "@shared/avatar/appearance";
 import { StaticAvatar } from "./StaticAvatar";
@@ -25,9 +27,11 @@ function Bar({ current, max, label }: { current: number; max: number; label: str
     <span style={{ width: `${Math.max(0, Math.min(100, current / Math.max(.001, max) * 100))}%` }} />
   </div>;
 }
-export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate }: {
-  state: CombatSnapshot; selfId?: string | null; onResurrect?: (id: string) => void; onRemove?: (id: string) => void; onEliminate?: (id: string) => void;
+export function CombatBoard({ state: sourceState, selfId, onResurrect, onRemove, onEliminate, onPlaybackComplete }: {
+  state: CombatSnapshot; onPlaybackComplete?:(batchId:string)=>void; selfId?: string | null; onResurrect?: (id: string) => void; onRemove?: (id: string) => void; onEliminate?: (id: string) => void;
 }) {
+  const board=useRef<HTMLElement>(null);
+  const {display:state,active,completeCue,showing}=useCombatPlayback(sourceState,onPlaybackComplete);
   const [selected, setSelected] = useState<string | null>(null);
   const waiting = state.currentPhase === "waiting";
   const awaitingPlayers = waiting && !Object.keys(state.players).length;
@@ -40,7 +44,7 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate 
   const slots = formationSlots(others.length, !!self);
   const topDamage = Object.values(state.players).filter(p => p.totals.damageDealt > 0).sort((a,b) => b.totals.damageDealt-a.totals.damageDealt)[0]?.studentId;
   const damageLeader = state.damageLeaderId === undefined ? topDamage : state.damageLeaderId;
-  const shownEnemies=activeEnemies(state);
+  const shownEnemies=state.enemies.filter(e=>activeEnemies(state).some(a=>a.id===e.id)||(showing&&(sourceState.playback?.initialHealth[e.id]||0)>0&&(!state.activeWave||(e.wave||1)===state.activeWave)));
   const columns=Math.max(1,Math.ceil(Math.sqrt(shownEnemies.length*1.15)));
   const rows=Math.max(1,Math.ceil(shownEnemies.length/columns));
   const spanX=1+(columns-1)*.78,spanY=1+(rows-1)*.7;
@@ -65,8 +69,9 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate 
       {onRemove && <button className="battle-remove" aria-label={`Remove ${p.nickname} from fight`} onClick={event => { event.stopPropagation(); onRemove(p.studentId); }}><XCircle size={23} /></button>}
     </div>;
   };
-  return <section aria-label="Battlefield" className={`battlefield ${all.length > 12 ? "is-crowded" : ""}`} data-testid="battlefield">
+  return <section ref={board} aria-label="Battlefield" className={`battlefield ${all.length > 12 ? "is-crowded" : ""}`} data-testid="battlefield">
     <BattleScenery />
+    <div className="combat-effects-layer" aria-hidden="true">{active.map(cue=><BattleEffect key={cue.event.id} cue={cue} board={board} onComplete={completeCue}/>)}</div>
     <div className="battle-scene-label"><span>THE PARTY</span><span>{state.currentPhase === "waiting" ? "GATHER YOUR PARTY" : `ROUND ${state.round}`}</span><span>THE ENEMY</span></div>
     {others.map((p, i) => renderPlayer(p, slots[i].x, slots[i].y, slots[i].size))}
     {self && renderPlayer(self, 32, 89, 180, true)}
