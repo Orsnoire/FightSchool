@@ -1,7 +1,7 @@
 # Current status
 
 **CURRENT — verified October 12, 2026.** Cleanup Phase 1 is in progress.
-**C01 and C02 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53) and [#56](https://github.com/Orsnoire/FightSchool/pull/56) are merged, deployed and accepted. **C03 — schema baseline is next, not started.**
+**C01 and C02 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53) and [#56](https://github.com/Orsnoire/FightSchool/pull/56) are merged, deployed and accepted. **C03 — schema baseline is active in draft PR #58.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
