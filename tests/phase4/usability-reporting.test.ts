@@ -1,3 +1,4 @@
+import { questionKey } from "../../worker/progression/question-key";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -40,35 +41,31 @@ test("session reports retain immutable attempts, compose filters and preserve le
           "utf8",
         ),
       );
-    await db
-      .insert(s.teachers)
-      .values({
-        id: fight.teacherId,
-        firstName: "Test",
-        lastName: "Teacher",
-        email: "report@example.invalid",
-        emailNormalized: "report@example.invalid",
-        passwordHash: "unused",
-        guildCode: "REPORT",
-        billingAddress: "Test",
-        schoolDistrict: "Test",
-        school: "Test",
-        subject: "Math",
-        gradeLevel: "9",
-      });
+    await db.insert(s.teachers).values({
+      id: fight.teacherId,
+      firstName: "Test",
+      lastName: "Teacher",
+      email: "report@example.invalid",
+      emailNormalized: "report@example.invalid",
+      passwordHash: "unused",
+      guildCode: "REPORT",
+      billingAddress: "Test",
+      schoolDistrict: "Test",
+      school: "Test",
+      subject: "Math",
+      gradeLevel: "9",
+    });
     await db.insert(s.fights).values(fight);
     const p = student("warrior"),
       p2 = student("wizard", "00000000-0000-4000-8000-000000000002");
     p2.nickname = "Second";
     p2.nicknameNormalized = "second";
     await db.insert(s.students).values([p, p2]);
-    await db
-      .insert(s.liveCombatSessions)
-      .values({
-        sessionId: "REPORT01",
-        fightId: fight.id,
-        teacherId: fight.teacherId,
-      });
+    await db.insert(s.liveCombatSessions).values({
+      sessionId: "REPORT01",
+      fightId: fight.id,
+      teacherId: fight.teacherId,
+    });
     let state = startQuestion(
       addStudent(addStudent(initialCombatState("REPORT01", fight), p), p2),
     );
@@ -107,8 +104,12 @@ test("session reports retain immutable attempts, compose filters and preserve le
       fight.questions[0].question,
     );
     const changed = structuredClone(state);
-    changed.pendingAttempts![0].question.question = "New question";
-    await recordSessionReporting(db, changed, fight);
+    const editedFight = structuredClone(fight);
+    editedFight.questions[0].question = "New question";
+    changed.pendingAttempts!.forEach(
+      (a) => (a.questionVersion = questionKey(editedFight.questions[0])),
+    );
+    await recordSessionReporting(db, changed, editedFight);
     assert.equal(
       (await get("view=questions")).rows[0].question?.question,
       fight.questions[0].question,
@@ -129,31 +130,27 @@ test("session reports retain immutable attempts, compose filters and preserve le
       ).total,
       0,
     );
-    await db
-      .insert(s.liveCombatSessions)
-      .values({
-        sessionId: "LEGACY01",
-        fightId: fight.id,
-        teacherId: fight.teacherId,
-      });
-    await db
-      .insert(s.combatResults)
-      .values({
-        sessionId: "LEGACY01",
-        studentId: p.id,
-        fightId: fight.id,
-        characterClass: "warrior",
-        victory: false,
-        survived: true,
-        totals: {
-          ...state.players[p.id].totals,
-          questionsCorrect: 3,
-          questionsAnswered: 5,
-          questionsIncorrect: 2,
-        },
-        xpEarned: 3,
-        goldReward: 0,
-      });
+    await db.insert(s.liveCombatSessions).values({
+      sessionId: "LEGACY01",
+      fightId: fight.id,
+      teacherId: fight.teacherId,
+    });
+    await db.insert(s.combatResults).values({
+      sessionId: "LEGACY01",
+      studentId: p.id,
+      fightId: fight.id,
+      characterClass: "warrior",
+      victory: false,
+      survived: true,
+      totals: {
+        ...state.players[p.id].totals,
+        questionsCorrect: 3,
+        questionsAnswered: 5,
+        questionsIncorrect: 2,
+      },
+      xpEarned: 3,
+      goldReward: 0,
+    });
     report = await get();
     assert.equal(report.summary.sessions, 2);
     assert.equal(report.summary.historicalParticipants, 1);
@@ -325,6 +322,34 @@ test("session reports retain immutable attempts, compose filters and preserve le
     );
     assert.equal(scoped.summary.correct, 1);
     assert.equal(scoped.rows[0].damage, 0);
+    const questionView = await get("view=questions");
+    assert.equal(questionView.summary.sessions, 1);
+    assert.equal(questionView.summary.correct, 1);
+    assert.equal(questionView.summary.attempts, 2);
+    const later = structuredClone(partial),
+      laterFight = structuredClone(fight);
+    const nextQuestion = {
+      ...fight.questions[0],
+      id: "q2",
+      question: "Unrelated lesson",
+    };
+    laterFight.questions.push(nextQuestion);
+    later.pendingAttempts = [
+      {
+        ...state.pendingAttempts![0],
+        round: 2,
+        questionId: "q2",
+        questionVersion: questionKey(nextQuestion),
+      },
+    ];
+    later.revision++;
+    await recordSessionReporting(db, later, laterFight);
+    const searched = await get("view=questions&search=Unrelated");
+    assert.equal(searched.total, 1);
+    assert.equal(searched.summary.correct, 1);
+    assert.equal(searched.summary.attempts, 1);
+    assert.equal(searched.summary.players, 1);
+    assert.equal(searched.rows[0].questionId, "q2");
   } finally {
     await pg.close();
   }

@@ -1,11 +1,16 @@
 import { sql } from "drizzle-orm";
+import { questionKey } from "../progression/question-key";
 import type { CombatSnapshot } from "../../shared/combat/model";
 import type { FightRecord } from "./schema";
 import type { GameDatabase } from "./game-repository";
 
 export function reportingSignature(state: CombatSnapshot) {
   return JSON.stringify([
-    state.currentPhase === "game_over",
+    state.currentPhase === "game_over"
+      ? "completed"
+      : state.currentPhase === "waiting"
+        ? "waiting"
+        : "active",
     state.victory,
     Object.values({
       ...state.departedPlayers,
@@ -60,9 +65,23 @@ export async function recordSessionReporting(
     FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) AS x(session text,student text,teacher text,fight text,guild text,nickname text,title text,job text,status text,victory boolean,survived boolean,totals jsonb,revision integer)
     ON CONFLICT(session_id,student_id) DO UPDATE SET status=EXCLUDED.status,victory=EXCLUDED.victory,survived=EXCLUDED.survived,totals=EXCLUDED.totals,revision=EXCLUDED.revision,updated_at=EXCLUDED.updated_at
     WHERE EXCLUDED.revision>=session_participants.revision`);
-  if (state.pendingAttempts?.length)
+  if (state.pendingAttempts?.length) {
+    const frozenQuestions = new Map(
+      fight.questions.map((q) => [questionKey(q), q]),
+    );
+    const versions = [
+      ...new Set(state.pendingAttempts.map((a) => a.questionVersion)),
+    ];
+    const questions = versions.map((version) => {
+      const question = frozenQuestions.get(version);
+      if (!question)
+        throw new Error("Recorded question is missing from the frozen fight");
+      return { version, question };
+    });
     await db.execute(sql`INSERT INTO question_attempts(session_id,student_id,round,teacher_id,fight_id,guild_id,job,question_id,question_version,question,outcome,recorded_at)
-    SELECT ${state.sessionId},x."studentId"::uuid,x.round,${fight.teacherId}::uuid,${fight.id}::uuid,x."guildId"::uuid,x.job,x."questionId",x."questionVersion",x.question,x.outcome,${Date.now()}::bigint
-    FROM jsonb_to_recordset(${JSON.stringify(state.pendingAttempts)}::jsonb) AS x("studentId" text,round integer,"guildId" text,job text,"questionId" text,"questionVersion" text,question jsonb,outcome text)
+    SELECT ${state.sessionId},x."studentId"::uuid,x.round,${fight.teacherId}::uuid,${fight.id}::uuid,x."guildId"::uuid,x.job,x."questionId",x."questionVersion",q.question,x.outcome,${Date.now()}::bigint
+    FROM jsonb_to_recordset(${JSON.stringify(state.pendingAttempts)}::jsonb) AS x("studentId" text,round integer,"guildId" text,job text,"questionId" text,"questionVersion" text,outcome text)
+    JOIN jsonb_to_recordset(${JSON.stringify(questions)}::jsonb) AS q(version text,question jsonb) ON q.version=x."questionVersion"
     ON CONFLICT(session_id,student_id,round) DO NOTHING`);
+  }
 }

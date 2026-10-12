@@ -22,6 +22,7 @@ export function PaletteEditor({
           >
             <input
               type="checkbox"
+              aria-label={`Enable ${channel} color`}
               checked={!!value[channel]}
               onChange={(e) =>
                 onChange({

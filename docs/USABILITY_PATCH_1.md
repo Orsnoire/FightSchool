@@ -18,8 +18,8 @@ Deploy the additive migrations before the Worker/client. Old in-flight resolutio
 
 ## Checkpoint
 
-Implementation complete; browser acceptance in progress. Local verification: typecheck, 252 automated tests (including the new batch-handoff regression) and production client/Worker builds pass. Focused HTTP checks also cover report permissions, invalid filters, palette ownership/validation, saved equipment visuals through combat snapshots, and preserving pre-patch live totals.
+Implementation complete; browser acceptance in progress. Local verification: typecheck, 253 automated tests (including batch handoff and a 60-player rich-question timeout) and production client/Worker builds pass. Focused HTTP checks also cover report permissions, invalid filters, palette ownership/validation, saved equipment visuals through combat snapshots, and preserving pre-patch live totals.
 
-CI test/build and avatar acceptance pass at 7aad9ea. Browser smoke tests pass; the new editor fixture incorrectly used an unsupported species enum and is corrected for the next run. A completion-state handoff regression and partial-ID filter feedback are also fixed.
+CI test/build and avatar acceptance pass at 7aad9ea. Browser smoke tests and question Edit/save/cancel/reload pass. Palette controls now have explicit accessible names; the new browser color-picker interaction is corrected. Batch handoff, partial-ID filter feedback and question-view summary scoping are fixed. The attempt outbox references the frozen question bank to avoid repeated HTML in classroom checkpoints.
 
 Next: run the updated GitHub browser acceptance workflow, inspect screenshots, resolve any failures, then update this checkpoint and PR with the verified head. Local Chromium launch is blocked by this workspace's socket restrictions, so browser verification uses the existing isolated CI job. No merge or deployment has been performed.

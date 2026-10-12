@@ -25,23 +25,36 @@ export async function sessionReport(
     terms.push(
       sql`EXISTS(SELECT 1 FROM question_attempts a WHERE a.session_id=p.session_id AND a.student_id=p.student_id AND a.question_id=${q.questionId})`,
     );
-  if (q.search) {
-    const term = "%" + q.search.replace(/[\\%_]/g, "\\$&") + "%";
+  const term = "%" + q.search.replace(/[\\%_]/g, "\\$&") + "%";
+  const metadataSearch = (alias: "p" | "e") => {
+    const t = sql.raw(alias);
+    return sql`(${t}.nickname ILIKE ${term} OR ${t}.quiz_title ILIKE ${term} OR ${t}.session_id ILIKE ${term} OR ${t}.student_id::text ILIKE ${term})`;
+  };
+  const questionSearch = sql`(a.question->>'question' ILIKE ${term} OR a.question_id ILIKE ${term})`;
+  if (q.search)
     terms.push(
-      sql`(p.nickname ILIKE ${term} OR p.quiz_title ILIKE ${term} OR p.session_id ILIKE ${term} OR p.student_id::text ILIKE ${term} OR EXISTS(SELECT 1 FROM question_attempts a WHERE a.session_id=p.session_id AND a.student_id=p.student_id AND (a.question->>'question' ILIKE ${term} OR a.question_id ILIKE ${term})))`,
+      sql`(${metadataSearch("p")} OR EXISTS(SELECT 1 FROM question_attempts a WHERE a.session_id=p.session_id AND a.student_id=p.student_id AND ${questionSearch}))`,
     );
-  }
+  if (q.view === "questions")
+    terms.push(
+      sql`EXISTS(SELECT 1 FROM question_attempts a WHERE a.session_id=p.session_id AND a.student_id=p.student_id)`,
+    );
+  const attemptSearch = (alias: "p" | "e") =>
+    q.view === "questions" && q.search
+      ? sql`AND (${metadataSearch(alias)} OR ${questionSearch})`
+      : sql``;
+  const academicOnly = q.view === "questions" || !!q.questionId;
   const question = q.questionId
     ? sql`AND a.question_id=${q.questionId}`
     : sql``;
   const answeredTotal = sql`coalesce((totals->>'questionsAnswered')::int,0)`;
-  const correctCount = q.questionId
+  const correctCount = academicOnly
     ? sql`recorded_correct`
     : sql`greatest(recorded_correct,coalesce((totals->>'questionsCorrect')::int,0))`;
-  const incorrectCount = q.questionId
+  const incorrectCount = academicOnly
     ? sql`recorded_incorrect`
     : sql`greatest(recorded_incorrect,coalesce((totals->>'questionsIncorrect')::int,0))`;
-  const missingHistory = q.questionId
+  const missingHistory = academicOnly
     ? sql`false`
     : sql`(historical OR ${answeredTotal}>recorded_correct+recorded_incorrect)`;
   const cte = sql`WITH population AS (
@@ -56,7 +69,7 @@ export async function sessionReport(
       coalesce(a.correct,0) AS recorded_correct,coalesce(a.incorrect,0) AS recorded_incorrect,coalesce(a.unanswered,0) AS unanswered,coalesce(a.attempts,0) AS recorded_attempts
     FROM population p JOIN live_combat_sessions l ON l.session_id=p.session_id
     LEFT JOIN guilds g ON g.id=p.guild_id LEFT JOIN combat_results r ON r.session_id=p.session_id AND r.student_id=p.student_id
-    LEFT JOIN LATERAL (SELECT count(*) AS attempts,count(*) FILTER(WHERE outcome='correct') AS correct,count(*) FILTER(WHERE outcome='incorrect') AS incorrect,count(*) FILTER(WHERE outcome='unanswered') AS unanswered FROM question_attempts a WHERE a.session_id=p.session_id AND a.student_id=p.student_id ${question}) a ON true
+    LEFT JOIN LATERAL (SELECT count(*) AS attempts,count(*) FILTER(WHERE outcome='correct') AS correct,count(*) FILTER(WHERE outcome='incorrect') AS incorrect,count(*) FILTER(WHERE outcome='unanswered') AS unanswered FROM question_attempts a WHERE a.session_id=p.session_id AND a.student_id=p.student_id ${question} ${attemptSearch("p")}) a ON true
     WHERE ${sql.join(terms, sql` AND `)}
   ), evidence AS (
     SELECT *, ${missingHistory} AS incomplete_history, ${correctCount} AS correct,
@@ -80,7 +93,7 @@ export async function sessionReport(
       ? sql`SELECT session_id AS "sessionId",max(quiz_title) AS "quizTitle",string_agg(DISTINCT guild_name,', ') AS "guildName",max(started_at)::float AS "startedAt",count(*)::float AS players,CASE WHEN bool_and(status='completed') THEN 'completed' ELSE 'active' END AS status,bool_or(victory) AS victory,${metrics} FROM evidence GROUP BY session_id`
       : q.view === "players"
         ? sql`SELECT session_id AS "sessionId",student_id AS "studentId",nickname,quiz_title AS "quizTitle",guild_name AS "guildName",job,status,victory,survived,started_at::float AS "startedAt",correct::float,incorrect::float,CASE WHEN incomplete_history THEN NULL ELSE unanswered::float END AS unanswered,attempts::float,recorded_attempts::float AS "recordedAttempts",${combatColumns} FROM evidence`
-        : sql`SELECT e.session_id AS "sessionId",e.student_id AS "studentId",e.nickname,e.quiz_title AS "quizTitle",e.guild_name AS "guildName",a.job,e.status,e.started_at::float AS "startedAt",a.round,a.question_id AS "questionId",a.question_version AS "questionVersion",a.question,a.outcome,(a.outcome='correct')::int AS correct,(a.outcome='incorrect')::int AS incorrect,(a.outcome='unanswered')::int AS unanswered,1 AS attempts,1 AS "recordedAttempts",0 AS damage,0 AS healing,0 AS blocked,0 AS deaths,0 AS xp,0 AS gold FROM evidence e JOIN question_attempts a ON a.session_id=e.session_id AND a.student_id=e.student_id WHERE true ${question}`;
+        : sql`SELECT e.session_id AS "sessionId",e.student_id AS "studentId",e.nickname,e.quiz_title AS "quizTitle",e.guild_name AS "guildName",a.job,e.status,e.started_at::float AS "startedAt",a.round,a.question_id AS "questionId",a.question_version AS "questionVersion",a.question,a.outcome,(a.outcome='correct')::int AS correct,(a.outcome='incorrect')::int AS incorrect,(a.outcome='unanswered')::int AS unanswered,1 AS attempts,1 AS "recordedAttempts",0 AS damage,0 AS healing,0 AS blocked,0 AS deaths,0 AS xp,0 AS gold FROM evidence e JOIN question_attempts a ON a.session_id=e.session_id AND a.student_id=e.student_id WHERE true ${question} ${attemptSearch("e")}`;
   const order =
     q.sort === "accuracy"
       ? sql`correct::float/nullif(attempts,0) DESC NULLS LAST, "startedAt" DESC`

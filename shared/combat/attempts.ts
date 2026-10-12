@@ -2,7 +2,8 @@ import type { CombatPlayer, CombatSnapshot } from "./model";
 import type { FightQuestion } from "../../worker/db/schema";
 import { questionKey } from "../../worker/progression/question-key";
 
-/** Server-only outbox. No submitted answers are broadcast or written to diagnostics. */
+/** Server-only outbox. Question content is read from the room's frozen fight on flush,
+ * so a classroom timeout does not checkpoint the same rich HTML once per student. */
 export interface QuestionAttempt {
   round: number;
   studentId: string;
@@ -10,7 +11,6 @@ export interface QuestionAttempt {
   job: CombatPlayer["characterClass"];
   questionId: string;
   questionVersion: string;
-  question: FightQuestion;
   outcome: "correct" | "incorrect" | "unanswered";
 }
 export function recordAttempt(
@@ -33,7 +33,6 @@ export function recordAttempt(
     job: player.characterClass,
     questionId: question.id,
     questionVersion: questionKey(question),
-    question: structuredClone(question),
     outcome: !submitted
       ? "unanswered"
       : player.lastAnswerCorrect

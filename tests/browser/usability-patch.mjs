@@ -19,6 +19,32 @@ async function page(options = {}) {
   p.on("pageerror", (error) => errors.push(error.message));
   return p;
 }
+async function setColor(p, color) {
+  await p
+    .getByLabel("primary color", { exact: true })
+    .evaluate((input, color) => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      ).set.call(input, color);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    }, color);
+}
+async function painted(p, label) {
+  await p.waitForFunction((label) => {
+    const canvas = [...document.querySelectorAll("canvas")].find(
+      (c) => c.getAttribute("aria-label") === label,
+    );
+    return (
+      canvas &&
+      canvas
+        .getContext("2d")
+        .getImageData(0, 0, canvas.width, canvas.height)
+        .data.some((v, i) => i % 4 === 3 && v > 0)
+    );
+  }, label);
+}
 try {
   // Real editor state, network boundary mocked with a saved/reloaded authored fight.
   const editor = await page();
@@ -101,11 +127,14 @@ try {
   await editor.getByRole("button", { name: "Cancel", exact: true }).click();
   await editor.getByTestId("tab-enemies").click();
   await editor.getByTestId("button-edit-enemy-0").click();
-  await editor.getByRole("checkbox", { name: "Primary", exact: true }).check();
-  await editor.getByLabel("primary color", { exact: true }).fill("#cc3344");
+  await editor
+    .getByRole("checkbox", { name: "Enable primary color", exact: true })
+    .check();
+  await setColor(editor, "#cc3344");
   await editor
     .getByRole("img", { name: "Enemy color preview", exact: true })
     .waitFor();
+  await painted(editor, "Enemy color preview");
   await editor.screenshot({
     path: `${output}/usability-enemy-colors.png`,
     fullPage: true,
@@ -160,10 +189,11 @@ try {
     await items.getByLabel("Base sprite", { exact: true }).inputValue(),
     "basic_armor",
   );
-  await items.getByLabel("primary color", { exact: true }).fill("#55cc44");
+  await setColor(items, "#55cc44");
   await items
     .getByRole("img", { name: "Equipment color preview", exact: true })
     .waitFor();
+  await painted(items, "Equipment color preview");
   await items.screenshot({ path: `${output}/usability-equipment-colors.png` });
   await items
     .getByRole("button", { name: "Create as new variant", exact: true })

@@ -1,3 +1,4 @@
+import { recordAttempt } from "../../shared/combat/attempts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { roomFixture } from "../support/room-costs";
@@ -206,4 +207,21 @@ test("palette validation and pixel recoloring preserve alpha, ink, highlights an
   });
   assert.ok(validVisualSlot(visual, "armor"));
   assert.ok(!validVisualSlot(visual, "weapon"));
+});
+
+test("a full classroom timeout references rich questions without duplicating HTML in the outbox", () => {
+  const f = roomFixture(60),
+    state = f.saved().snapshot;
+  const rich = {
+    ...fight.questions[0],
+    question: "<p>Detailed question content.</p>".repeat(500),
+  };
+  for (const p of Object.values(state.players))
+    recordAttempt(state, p as any, rich, false);
+  assert.equal(state.pendingAttempts.length, 60);
+  assert.ok(JSON.stringify(state.pendingAttempts).length < 25000);
+  assert.equal(
+    JSON.stringify(state.pendingAttempts).includes("Detailed question content"),
+    false,
+  );
 });
