@@ -26,7 +26,7 @@ function Glyph({ cue }: { cue: PlaybackCue }) {
             key={i}
             className="slash"
             style={{ animationDelay: `${i * 45}ms` }}
-            d={`M${24 + i * 20} 88 L${50 + i * 20} 32`}
+            d={`M${22 + i * 18} 84 L${58 + i * 18} 48`}
           />
         ))}
       {["fire", "ice", "curse", "heal", "herbalist", "block"].includes(
@@ -157,16 +157,23 @@ export function BattleEffect({
       animations.push(
         sprite.animate(
           [
-            { filter: "none", translate: "0 0" },
+            { filter: "none", translate: "0 0", offset: 0 },
             {
               filter: "sepia(1) saturate(12) hue-rotate(-45deg)",
               translate: "-4px 0",
+              offset: 0.05,
             },
             {
               filter: "sepia(1) saturate(12) hue-rotate(-45deg)",
               translate: "4px 0",
+              offset: 0.45,
             },
-            { filter: "none", translate: "0 0" },
+            {
+              filter: "sepia(1) saturate(12) hue-rotate(-45deg)",
+              translate: "-2px 0",
+              offset: 0.8,
+            },
+            { filter: "none", translate: "0 0", offset: 1 },
           ],
           { delay: 180, duration: 280 },
         ),

@@ -912,7 +912,6 @@ export default function CreateFight() {
                       </section>
                     )}
 
-                    
                     {editingQuestionId && <p role="status">Editing question {questions.findIndex(q => q.id === editingQuestionId) + 1}</p>}
                     <Button type="button" onClick={addQuestion} className="w-full" data-testid={editingQuestionId ? "button-save-question" : "button-add-question"}>
                       <PlusCircle className="mr-2 h-4 w-4" />

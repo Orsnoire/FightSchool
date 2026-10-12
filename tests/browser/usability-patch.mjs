@@ -135,10 +135,10 @@ try {
     .getByRole("img", { name: "Enemy color preview", exact: true })
     .waitFor();
   await painted(editor, "Enemy color preview");
-  await editor.screenshot({
-    path: `${output}/usability-enemy-colors.png`,
-    fullPage: true,
-  });
+  await editor
+    .getByRole("img", { name: "Enemy color preview", exact: true })
+    .scrollIntoViewIfNeeded();
+  await editor.screenshot({ path: `${output}/usability-enemy-colors.png` });
   await editor.getByTestId("button-update-enemy").click();
   await editor.getByTestId("button-create-fight-submit").click();
   await editor.waitForURL("**/teacher");
@@ -194,6 +194,9 @@ try {
     .getByRole("img", { name: "Equipment color preview", exact: true })
     .waitFor();
   await painted(items, "Equipment color preview");
+  await items
+    .getByRole("img", { name: "Equipment color preview", exact: true })
+    .scrollIntoViewIfNeeded();
   await items.screenshot({ path: `${output}/usability-equipment-colors.png` });
   await items
     .getByRole("button", { name: "Create as new variant", exact: true })
