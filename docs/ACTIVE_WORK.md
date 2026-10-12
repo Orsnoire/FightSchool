@@ -96,14 +96,12 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
    Record merge and deployment separately; do not reuse an old feature branch or
    infer that another package started merely because it is next in the plan.
 
-## Parallel HP preview — owner-authorized October 12, 2026
+## HP preview — merged October 12, 2026
 
-- Separate branch: `fix/waiting-room-hp-preview`; draft [PR #59](https://github.com/Orsnoire/FightSchool/pull/59).
-- Baseline: `72b945d265a2b95db396a057957a2401ab95f1d4` from main.
-- Scope: genuine waiting-room HP using the same calculation as Start Fight, recalculated from the joined roster; estimated labels and no numeric HP for empty rooms.
-- C03 remains on `cleanup/c03-schema-baseline` / PR #58. Do not alter its schema, migrations, package files or checkpoint section.
-- Implemented: read-only HP projection through the real start calculator, once per broadcast; shared host/student battlefield shows estimated HP or an empty-room message. Reconnect and initial host snapshots use the same projection.
-- Verification: all 215 tests, typecheck and client/Worker production builds pass. Before the fix, three focused tests failed on placeholder HP/empty-room display; the active-room non-rescaling test already passed.
-- Published implementation: `2721640e1687dfffb3dabd75cac7dd4119982a08`. A simulated merge with PR #58 at `cd34f1a90a7330c5386f8fcba235a539abea0ac2` is clean; only this shared log overlaps, in separate sections.
-- Next: inspect final-head CI and browser acceptance; the live PR carries exact run results and newest SHA. Merge/deployment are not part of this task.
-- This explicitly requested parallel fix is an exception to the cleanup-first queue, not another cleanup package.
+- [PR #59](https://github.com/Orsnoire/FightSchool/pull/59) reviewed with no blocking findings and merged as `02392ef1c6fb6978a6602e470a336290a6886193`.
+- Reviewed head: `13713d5b13feea53d728e42155ab378df9faa7a1`; branch `fix/waiting-room-hp-preview` is now historical.
+- Implemented: read-only enemy HP preview using the real Start Fight calculator; joins/leaves and reconnects refresh estimates; empty rooms show Waiting for players. Actual combat balance is preserved.
+- Verification: original 215 tests, typecheck and both production builds passed; review against merged C03 also passed all 218 tests, typecheck and both builds. CI 38274186846 and browser acceptance 38274186815 passed on the reviewed head.
+- C03 / PR #58 and its completion record are preserved. The two PRs merged cleanly; no schema, migration or dependency changes were introduced by #59.
+- Status: merged, not deployed by this task. No live acceptance was dispatched for this change.
+- Next: deploy the reviewed main revision when authorized, then record deployment and live acceptance separately. C04 sequencing remains governed by the cleanup checkpoint above.
