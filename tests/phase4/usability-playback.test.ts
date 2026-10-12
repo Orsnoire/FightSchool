@@ -160,16 +160,25 @@ test("disconnected renderer and recovery watchdog release a saved playback gate"
   }
 });
 test("classroom answer burst checkpoints evidence and projects once when the question closes", async () => {
-  const f = roomFixture(30), room = f.saved();
+  const f = roomFixture(30, false), room = f.saved();
   room.reportingSignature = reportingSignature(room.snapshot);
   f.save(room);
   const projected: any[] = [];
+  let acknowledged = false;
+  const send = f.players[0].send;
+  f.players[0].send = (raw: string) => {
+    if (JSON.parse(raw).type === "command_ack") {
+      assert.equal(f.saved().snapshot.pendingAttempts.length, 1);
+      acknowledged = true;
+    }
+    send(raw);
+  };
   f.repository.recordSessionReporting = async (state: any) => projected.push(structuredClone(state));
   const answer = () => command("answer", { round: 1, questionId: room.fight.questions[0].id, answer: "4" });
   await f.obj.webSocketMessage(f.players[0], answer());
   assert.equal(projected.length, 0, "Do not run reporting SQL on each individual answer");
   assert.equal(f.saved().snapshot.pendingAttempts.length, 1, "Acknowledged evidence remains durably checkpointed");
-  assert.ok(f.players[0].messages.some((message: any) => message.type === "command_ack"));
+  assert.ok(acknowledged, "Acknowledgement follows the durable checkpoint");
   const restored = f.object();
   await Promise.all(f.players.slice(1).map(socket => restored.webSocketMessage(socket, answer())));
   assert.equal(f.saved().snapshot.currentPhase, "actions");
