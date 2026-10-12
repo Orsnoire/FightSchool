@@ -2,7 +2,7 @@
 
 **CURRENT — updated October 12, 2026.** Cleanup is the next development priority.
 Cleanup Phase 1 is active. **C01 and C02 are COMPLETE: merged, deployed and accepted.**
-**C03 schema baseline is active in draft PR #58.** New features wait for the
+**C03 schema baseline is COMPLETE, merged in PR #58.** New features wait for the
 cleanup exit gates.
 Read [active work](ACTIVE_WORK.md) before editing.
 
@@ -12,7 +12,7 @@ Read [active work](ACTIVE_WORK.md) before editing.
 | --- | --- | --- |
 | [Active work / resume here](ACTIVE_WORK.md) | One package, branch/PR, checkpoint and next action | CURRENT COORDINATION |
 | [Current status](CURRENT_STATUS.md) | Shipped features, verified runtime, known defects and open acceptance | CURRENT |
-| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01/C02 COMPLETE; C03 active in PR #58 |
+| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01/C02 COMPLETE; C03 COMPLETE; C04 not started |
 | [Expansion plan](EXPANSION_PLAN.md) | Deferred features, design dependencies and long-term direction | FUTURE — after cleanup |
 | [October 9 engineering review](reviews/2026-10-09-code-review.md) | Findings F01–F17 and measured baseline behind the cleanup plan | BASELINE RECORD |
 | [Source of Truth](Source_of_Truth.md) | Product authority, design rules and conflict resolution | CURRENT AUTHORITY |

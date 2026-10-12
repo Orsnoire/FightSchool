@@ -4,7 +4,7 @@
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
 > Phase 1 is active with the [resume safeguard](ACTIVE_WORK.md). C01 and C02
-> are COMPLETE: PRs #53 and #56 merged, deployed and accepted. C03 is active in draft PR #58.
+> are COMPLETE: PRs #53 and #56 merged, deployed and accepted. C03 is COMPLETE, merged in PR #58.
 > Historical migration phases are not the active queue.
 
 This document defines the authority hierarchy for all QuestAcademy design, development, migration, and agent-based work.

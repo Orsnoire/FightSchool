@@ -1,7 +1,7 @@
 # Current status
 
 **CURRENT — verified October 12, 2026.** Cleanup Phase 1 is in progress.
-**C01 and C02 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53) and [#56](https://github.com/Orsnoire/FightSchool/pull/56) are merged, deployed and accepted. **C03 — schema baseline is active in draft PR #58.**
+**C01 and C02 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53) and [#56](https://github.com/Orsnoire/FightSchool/pull/56) are merged, deployed and accepted. **C03 — schema baseline is COMPLETE, merged in PR #58.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
@@ -17,7 +17,7 @@ change this runtime.
 | [Deployment 38270833735](https://github.com/Orsnoire/FightSchool/actions/runs/38270833735) | Passed on `5d89fb0`; 211 tests, typecheck, builds, R2, migration and both hostnames |
 | [Canonical live acceptance 38271115093](https://github.com/Orsnoire/FightSchool/actions/runs/38271115093) | Passed on `5d89fb0` |
 | [Review CI 38265412023](https://github.com/Orsnoire/FightSchool/actions/runs/38265412023) / [browser 38265412210](https://github.com/Orsnoire/FightSchool/actions/runs/38265412210) | Passed on implementation head `5bb7949` |
-| Database evidence | Upgraded migrator succeeded through existing journal `0014`; no C02 DDL. C03 generation drift remains open. |
+| Database evidence | Upgraded migrator succeeded through existing journal `0014`; no C02 DDL. C03 repaired generation drift in PR #58; no new migration or live database operation was needed. |
 
 See [C02 release record](cloudflare/full-migration.md#c02-dependency-release--12-october-2026).
 

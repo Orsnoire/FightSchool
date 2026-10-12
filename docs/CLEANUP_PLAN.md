@@ -1,6 +1,6 @@
 # Current cleanup plan
 
-**CURRENT PLAN — October 12, 2026. Phase 1 active; C01 and C02 COMPLETE; C03 active in draft PR #58.**
+**CURRENT PLAN — October 12, 2026. Phase 1 active; C01 and C02 COMPLETE; C03 COMPLETE; C04 not started.**
 
 Complete the engineering cleanup before new feature development. This plan
 translates the [October 9 review](reviews/2026-10-09-code-review.md) into six phases
@@ -11,7 +11,7 @@ requires it; each should leave `main` deployable.
 Preparation is **COMPLETE**: reconcile shipped status, retain historical release
 evidence, mark older documents, and publish this queue and the
 [expansion backlog](EXPANSION_PLAN.md). This closes F17's initial reconciliation;
-C03 owns the active schema work in draft PR #58. See [current status](CURRENT_STATUS.md)
+C03 schema work is COMPLETE in merged PR #58. See [current status](CURRENT_STATUS.md)
 for the deployed baseline. Do not confuse these phases with the old Cloudflare
 migration phases.
 
@@ -35,7 +35,7 @@ a historical feature branch. Register handoffs when a package finishes.
 | --- | --- | --- | --- |
 | **1 — C01: correctness** (small) | F01–F03: shared built-in/custom equipment ID validation; correct leaderboard URL and visible errors; weighted aggregate accuracy | HTTP/UI reproductions fail on baseline and pass after fixes; unauthorized/unearned claims rejected; duplicate claims remain harmless; zero-answer and mixed-size fights covered | COMPLETE — [PR #53](https://github.com/Orsnoire/FightSchool/pull/53) merged, deployed and accepted; 208 tests; [release evidence](cloudflare/full-migration.md#c01-correctness-release--9-october-2026) |
 | **1 — C02: dependencies** (medium) | F15: triage exposure; update editor chain first, then ORM and build/test tools in compatible groups | Record advisory disposition and versions; rich HTML/SVG/math, paste/undo, auth, SQL, migration and build checks pass; no forced blanket audit fix | COMPLETE — [PR #56](https://github.com/Orsnoire/FightSchool/pull/56) merged, deployed and accepted; 211 tests/build, CI/browser and live acceptance pass; scoped advisory deferrals in [triage](reviews/2026-10-12-dependency-triage.md) |
-| **1 — C03: schema baseline** (medium) | F04: reconcile Drizzle snapshots, table declarations and intentional hand-written SQL; documentation portion F17 already completed in preparation | No-op generation proposes no duplicate DDL; all migrations apply to a disposable database; existing-data preservation and catalog/schema comparison pass; shipped SQL history is not rewritten | IN PROGRESS / [#58](https://github.com/Orsnoire/FightSchool/pull/58) |
+| **1 — C03: schema baseline** (medium) | F04: reconcile Drizzle snapshots, table declarations and intentional hand-written SQL; documentation portion F17 already completed in preparation | No-op generation proposes no duplicate DDL; all migrations apply to a disposable database; existing-data preservation and catalog/schema comparison pass; shipped SQL history is not rewritten | COMPLETE / [#58](https://github.com/Orsnoire/FightSchool/pull/58) |
 | **2 — C04: contracts and diagnostics** (medium) | F05, F16: request/response/command contracts, public snapshot allowlists, typed query factories, bounded JSON parsing, structured diagnostics and intended required CI checks | Built-in and custom content covered through real boundaries; explicit ownership and revocation preserved; logs identify request/room/revision and timing without credentials or submitted answers | NOT STARTED / — |
 | **3 — C05: room costs** (medium) | F07–F08: encode once per role/revision, suppress unchanged broadcasts, avoid redundant established-player profile reads, instrument queue/DB/checkpoint costs | Equivalent 30/60-player comparisons; immediate acknowledgements and phase transitions, reconnect, moderation, expiry and saved clocks preserved | NOT STARTED / — |
 | **3 — C06: data costs** (larger) | F06, F08–F09: durable evidence projection, affected-quest evaluation, indexed evidence/levels, bounded history, SQL aggregates and measured indexes | Populated guild fixtures plus fault/retry and cross-room reward tests; no lost evidence or duplicate awards; query plans justify indexes; read/query/payload costs recorded | NOT STARTED / — |
