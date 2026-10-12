@@ -1,3 +1,4 @@
+import { enemySwarmSchema, type EnemySwarm } from "./combat/swarm";
 import { enemyAISchema, ENEMY_TYPES, validEnemyAI } from "./combat/enemy-ai";
 import { TIER_ONE_EQUIPMENT } from "./tier-one-equipment";
 import { EQUIPMENT_SLOTS, type EquipmentSlot } from "./equipment-slots";
@@ -190,6 +191,7 @@ export interface Enemy {
   enemyType?: Exclude<import("./combat/enemy-ai").EnemyType, "basic">;
   ai?: import("./combat/enemy-ai").EnemyAI;
   quantity?: number;
+  swarm?: EnemySwarm;
   wave?: number;
   species?: "goblin" | "other";
   role?: import("./encounter-tiers").EnemyRole;
@@ -203,6 +205,7 @@ export const enemySchema = z.object({
   enemyType: z.enum(ENEMY_TYPES).optional(),
   ai: enemyAISchema.optional(),
   quantity:z.number().int().min(1).max(60).optional(),
+  swarm: enemySwarmSchema.optional(),
   wave:z.number().int().min(1).max(20).optional(),
   species:z.enum(["goblin","other"]).optional(),
   role:z.enum(["trash","normal","leader","boss"]).optional(),

@@ -39,6 +39,7 @@ import {
 } from "../../shared/combat/abilities.ts";
 import type {
   CombatSnapshot,
+  CombatEnemy,
   CombatPlayer,
   CombatEvent,
 } from "../../shared/combat/model.ts";
@@ -59,6 +60,20 @@ export interface CombatProfile {
   crossClass?: string[];
 }
 const integer = (n: number) => Math.max(0, Math.floor(n));
+function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
+  return expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive', players).map((e) => ({
+      ...e,
+      enemyType: e.enemyType || (e.species === "goblin" ? "goblin" : inferEnemyType(e.image)),
+      ai: enemyAISchema.parse(e.ai || {}),
+      aiState: { readyRounds: {}, buffs: [] },
+      attackPower: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 1,
+      defense: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 0,
+      health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
+      maxHealth: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
+      effects: [],
+    }));
+}
+
 export function initialCombatState(
   sessionId: string,
   fight: FightRecord,
@@ -81,18 +96,8 @@ export function initialCombatState(
     departedPlayers: {},
     completedRounds: 0,
     damageLeaderId: null,
-    ...(fight.enemies.some(e=>e.quantity!==undefined || resolveEnemyType(e) === "goblin")?{encounterRules:2 as const,activeWave:Math.min(...fight.enemies.map((e,i)=>fight.enemyDisplayMode==='consecutive'?(e.wave||i+1):1))}:{}),
-    enemies: expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive').map((e) => ({
-      ...e,
-      enemyType: e.enemyType || (e.species === "goblin" ? "goblin" : inferEnemyType(e.image)),
-      ai: enemyAISchema.parse(e.ai || {}),
-      aiState: { readyRounds: {}, buffs: [] },
-      attackPower: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 1,
-      defense: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 0,
-      health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
-      maxHealth: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
-      effects: [],
-    })),
+    ...(fight.enemies.some(e=>e.quantity!==undefined || e.swarm || resolveEnemyType(e) === "goblin")?{encounterRules:2 as const,activeWave:Math.min(...fight.enemies.map((e,i)=>fight.enemyDisplayMode==='consecutive'?(e.wave||i+1):1))}:{}),
+    enemies: initialEnemies(fight),
     questionStartTime: null,
     phaseStartTime: now,
     phaseDeadline: null,
@@ -205,7 +210,8 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   const players = Object.values(state.players);
   if(state.encounterRules===2){
     const budget=encounterBudget(players,fight.encounterTier||1,fight.questions.length);
-    const enemies=allocateHP(state.enemies,budget.hp);
+    const individuals = fight.enemies.some(e => e.swarm) ? initialEnemies(fight, players.length) : state.enemies;
+    const enemies=allocateHP(individuals,budget.hp);
     const present=new Set(enemies.map(e=>e.role||'normal'));
     return {...state,enemies,entryPerformance:Object.fromEntries(players.map(p=>[p.studentId,performance(p,Math.max(1,fight.questions.length))])),autoAdvanceWaves:solo,encounterAttendance:players.length,referenceDamage:budget.damage,enemyRoundBudget:budget.rawPressure,encounterXpFraction:[...present].reduce((n,r)=>n+ROLE_SHARES[r],0)};
   }

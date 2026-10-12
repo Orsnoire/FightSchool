@@ -126,4 +126,8 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 - Counts and HP preview follow the joined waiting roster; counts lock at Start Fight. Existing late-entry HP budgeting remains in effect.
 - Preserve fixed quantities when disabled, species behavior, waves, individual IDs and current data. Store the optional setting in existing enemy JSON; no SQL migration.
 - Retain 60 enemies per group and 120 per encounter. Reserve authored counts first, then distribute capped additions fairly in author order.
-- Baseline: 3 of 4 new tests intentionally fail on unchanged code: no extra enemies at 8 players, no capped additions, and swarm settings stripped by validation. Active-fight count stability already passes. Next: implement editor, shared count calculation and persistence validation, then rerun all boundaries.
+- Implemented: editor enable/increment/save/reload, shared bounded count calculation, API validation, waiting preview/start equality and locked active counts.
+- Owner added previous-tier reference gear: tier 1 uses real tier 0 starter sets; tier 2 full tier 1; later provisional gear estimates shift down one tier. Character level midpoints remain 2/6/9/13. Solo/duo entry-loadout budgeting is unchanged.
+- Verification: 12 focused tests pass, including real mounted editor and Durable Object join/leave/reconnect/start. Swarm baseline failed 3/4 new checks; reference-gear baseline failed both new checks. Full suite/type/build for the final scope still pending.
+- New owner scope: teacher Next phase control and mouseover enemy elimination ×. Not implemented in this checkpoint.
+- Next: implement host-only controls with stale-command/ownership/idempotency coverage; inspect integration with C04 head `84ce8e8`, whose shared fight/command contracts overlap, before final review. Not merged or deployed.

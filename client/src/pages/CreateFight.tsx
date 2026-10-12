@@ -1,6 +1,7 @@
 import { ENEMY_CATALOG } from "@shared/combat/enemy-catalog";
 import { ENEMY_TYPES } from "@shared/combat/enemy-ai";
 import { EnemyAIEditor } from "@/components/EnemyAIEditor";
+import { EnemySwarmEditor } from "@/components/EnemySwarmEditor";
 import { inferEnemyType, enemyAISchema } from "@shared/combat/enemy-ai";
 import { GOBLIN_IMAGE, enemyImage, ROLE_SHARES } from "@shared/combat/encounters";
 import { ENCOUNTER_TIERS, ENEMY_ROLES, ENEMY_ROLE_LABELS, enemyTuning, inferEnemyRole, type EnemyRole } from "@shared/encounter-tiers";
@@ -90,6 +91,7 @@ function SortableEnemyItem({ enemy, index, onEdit, onDelete }: SortableEnemyItem
         <img src={enemyImage(enemy)} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
         <div>
           <p className="font-medium">{enemy.name} × {enemy.quantity||1} · Wave {enemy.wave||index+1}</p>
+          {enemy.swarm && <p className="text-xs text-muted-foreground">Swarm: +{enemy.swarm.enemiesPerFourPlayers} at 8 players and every 4 after</p>}
           <p className="text-sm text-muted-foreground">
             {enemy.role ? ENEMY_ROLE_LABELS[enemy.role] : `Legacy difficulty ${enemy.difficultyMultiplier}`}
           </p>
@@ -339,6 +341,7 @@ export default function CreateFight() {
       const updatedEnemies = [...enemies];
       updatedEnemies[editingEnemyIndex] = {
         id: enemies[editingEnemyIndex].id,
+        swarm: currentEnemy.swarm,
         quantity:Math.max(ENEMY_CATALOG[type].minimumQuantity,currentEnemy.quantity||1), wave:currentEnemy.wave||1, species:type==="goblin"?"goblin":"other",
         name: currentEnemy.name,
         image: currentEnemy.image || ENEMY_CATALOG.zombie.image,
@@ -354,6 +357,7 @@ export default function CreateFight() {
       // Add new enemy
       const newEnemy: Enemy = {
         id: Date.now().toString(),
+        swarm: currentEnemy.swarm,
         quantity:Math.max(ENEMY_CATALOG[type].minimumQuantity,currentEnemy.quantity||1), wave:currentEnemy.wave||1, species:type==="goblin"?"goblin":"other",
         name: currentEnemy.name,
         image: currentEnemy.image || ENEMY_CATALOG.zombie.image,
@@ -375,6 +379,7 @@ export default function CreateFight() {
     const enemy = enemies[index];
     const type = enemy.enemyType || inferEnemyType(enemy.image);
     setCurrentEnemy({
+      swarm: enemy.swarm,
       quantity:enemy.quantity||1,wave:enemy.wave||index+1,species:enemy.species||(enemyImage(enemy)===GOBLIN_IMAGE?"goblin":"other"),
       name: enemy.name,
       image: enemy.image,
@@ -1009,6 +1014,7 @@ export default function CreateFight() {
                       <p className="text-sm text-muted-foreground">{Math.round(ROLE_SHARES[currentEnemy.role||'normal']*100)}% of the full fight HP budget is shared by all enemies of this role across every wave. Missing roles leave their allocation unused. Goblin trash gets +1% of its allocation per three goblins.</p>
                     </fieldset>
 
+                    <EnemySwarmEditor enemy={currentEnemy} onChange={setCurrentEnemy} />
                     <EnemyAIEditor enemy={currentEnemy} onChange={setCurrentEnemy} />
                     <Button type="button" onClick={addEnemy} className="w-full" data-testid={editingEnemyIndex !== null ? "button-update-enemy" : "button-add-enemy"}>
                       <PlusCircle className="mr-2 h-4 w-4" />

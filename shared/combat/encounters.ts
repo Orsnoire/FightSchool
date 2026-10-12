@@ -4,6 +4,8 @@ import type { CombatEnemy, CombatPlayer, CombatSnapshot } from "./model";
 import type { EnemyRole } from "../encounter-tiers";
 import {
   calculateCharacterStats,
+  calculateLoadoutEquipmentStats,
+  getStartingEquipment,
   calculatePlayerBaseDamage,
   type CharacterClass,
   type EquipmentStats,
@@ -19,6 +21,7 @@ import {
   ULTIMATES,
 } from "./abilities";
 import { abilityDamage, abilityHealing } from "./abilityValues";
+import { swarmCounts, type EnemySwarm } from "./swarm";
 
 export const ROLE_SHARES: Record<EnemyRole, number> = {
   boss: 0.5,
@@ -59,16 +62,21 @@ export function expandEnemies(
     difficultyMultiplier: number;
     role?: EnemyRole;
     quantity?: number;
+    swarm?: EnemySwarm;
     wave?: number;
     species?: "goblin" | "other";
     enemyType?: EnemyType;
     ai?: EnemyAI;
   }>,
   consecutive: boolean,
+  players = 0,
 ): CombatEnemy[] {
-  const modern = enemies.some((e) => e.quantity !== undefined || resolveEnemyType(e) === "goblin");
+  const modern = enemies.some((e) => e.quantity !== undefined || e.swarm || resolveEnemyType(e) === "goblin");
+  const counts = swarmCounts(enemies.map(e => ({ ...e,
+    quantity: resolveEnemyType(e) === "goblin" ? Math.max(5, e.quantity || 5) : e.quantity || 1,
+  })), players);
   return enemies.flatMap((e, i) =>
-    Array.from({ length: resolveEnemyType(e) === "goblin" ? Math.max(5, e.quantity || 5) : e.quantity || 1 }, (_, j) => ({
+    Array.from({ length: counts[i] }, (_, j) => ({
       ...e,
       enemyType: resolveEnemyType(e),
       ...(modern
@@ -83,7 +91,7 @@ export function expandEnemies(
                 | "other"),
           }
         : {}),
-      name: (e.quantity || 1) > 1 ? `${e.name} ${j + 1}` : e.name,
+      name: counts[i] > 1 ? `${e.name} ${j + 1}` : e.name,
       image: enemyImage(e),
       health: Math.max(1, 10 * e.difficultyMultiplier),
       maxHealth: Math.max(1, 10 * e.difficultyMultiplier),
@@ -139,9 +147,11 @@ export function performance(player: CombatPlayer, questions: number) {
     mitigation: player.stats.def + Math.floor(player.stats.vit / 2),
   };
 }
-/** Explicit reference gear budgets. Tier 1 uses the shipped full sets; later tiers extrapolate their bonuses until their collections are authored. */
+/** Use the previous tier's full gear: real starters for tier 1, then tier 1 sets
+ * extrapolated for unshipped tiers. Character levels remain at the encounter midpoint. */
 export function referenceParty(tier: number): CombatPlayer[] {
   const level = [2, 6, 9, 13][tier - 1] || 2;
+  const gearTier = Math.max(0, tier - 1);
   return (["warrior", "priest", "wizard", "scout"] as CharacterClass[]).map(
     (job) => {
       const family =
@@ -166,7 +176,7 @@ export function referenceParty(tier: number): CombatPlayer[] {
       ids.push(`t1_${weapon}`);
       if (job === "warrior") ids.push("t1_fighter_shield");
       if (job === "scout") ids.push("t1_forester_quiver");
-      const gear = {
+      const gear = gearTier === 0 ? calculateLoadoutEquipmentStats(getStartingEquipment(job)) : {
         str: 0,
         int: 0,
         agi: 0,
@@ -177,9 +187,9 @@ export function referenceParty(tier: number): CombatPlayer[] {
         rtk: 0,
         def: 0,
       } as EquipmentStats;
-      for (const id of ids)
+      if (gearTier > 0) for (const id of ids)
         for (const [k, v] of Object.entries(TIER_ONE_EQUIPMENT[id].stats))
-          gear[k as keyof EquipmentStats] += (v || 0) * tier;
+          gear[k as keyof EquipmentStats] += (v || 0) * gearTier;
       const levels = { [job]: level } as Record<CharacterClass, number>;
       const stats = calculateCharacterStats(
         job,
@@ -201,7 +211,7 @@ export function referenceParty(tier: number): CombatPlayer[] {
         shieldPotions: 0,
         cooldowns: {},
         equipmentEffects: {
-          healingBonus: job === "priest" ? tier : 0,
+          healingBonus: job === "priest" ? gearTier : 0,
           potionAttackBonus: 0,
         },
       } as CombatPlayer;

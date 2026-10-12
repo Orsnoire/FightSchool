@@ -46,8 +46,8 @@ test("empty rooms and combat already in progress are not rescaled by public proj
   assert.deepEqual(s, before);
 });
 
-function harness() {
-  let room: any = { fight: swarm, snapshot: initialCombatState("ABC234", swarm), receipts: [] };
+function harness(template = swarm) {
+  let room: any = { fight: template, snapshot: initialCombatState("ABC234", template), receipts: [] };
   const sockets: any[] = [];
   const socket = (actorId: string, role = "student") => {
     const messages: any[] = [];
@@ -94,6 +94,29 @@ test("host/student broadcasts, departures and restored-host snapshots preview th
   const preview = hp(latest(host));
   await h.send(host, "start_fight");
   assert.equal(h.room().snapshot.currentPhase, "question");
+  assert.deepEqual(hp(h.room().snapshot), preview);
+  assert.deepEqual(hp(latest(host)), preview);
+});
+
+test("swarm counts cross eight players in live room messages and survive host restoration and start", async () => {
+  const template: FightRecord = { ...swarm, enemies: [{ ...swarm.enemies[0], quantity: 5, swarm: { enemiesPerFourPlayers: 3 } }] };
+  const h = harness(template);
+  const host = h.socket(fight.teacherId, "teacher");
+  const learners = Array.from({ length: 8 }, (_, i) => h.socket(`p${i}`));
+  const latest = (ws: any) => ws.messages.filter((m: any) => m.type === "combat_state").at(-1).state as CombatSnapshot;
+  for (const learner of learners) await h.send(learner, "join");
+  assert.equal(latest(host).enemies.length, 8);
+  assert.equal(h.room().snapshot.enemies.length, 5, "preview must leave stored base count intact");
+  assert.deepEqual(hp(latest(learners[7])), hp(latest(host)));
+  await h.send(learners[7], "leave_fight");
+  assert.equal(latest(host).enemies.length, 5);
+  await h.send(learners[7], "join");
+  h.restore();
+  await h.send(host, "host");
+  const recovered = host.messages.filter((m: any) => m.type === "session_created").at(-1).state;
+  assert.equal(recovered.enemies.length, 8);
+  const preview = hp(recovered);
+  await h.send(host, "start_fight");
   assert.deepEqual(hp(h.room().snapshot), preview);
   assert.deepEqual(hp(latest(host)), preview);
 });
