@@ -1,3 +1,5 @@
+import { abilityEffect, makePlayback } from "../../shared/combat/presentation";
+import { recordAttempt } from "../../shared/combat/attempts";
 import { CombatRuleError } from "../../shared/combat/errors";
 import { enemyAISchema, inferEnemyType, resolveEnemyType } from "../../shared/combat/enemy-ai";
 import { cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
@@ -54,6 +56,8 @@ export interface CombatProfile {
   questGuildId?: string | null;
   limitTier?: number;
   equipmentLoadout?: CombatPlayer["equipmentLoadout"];
+  equipmentVisuals?: CombatPlayer["equipmentVisuals"];
+  weaponKind?: string;
   equipmentEffects?: CombatPlayer["equipmentEffects"];
   appearance?: AvatarAppearance | null;
   levels: Partial<Record<CharacterClass, number>>;
@@ -133,6 +137,8 @@ export function addStudent(
     ...(profile.questGuildId!==undefined?{questGuildId:profile.questGuildId}:{}),
     ...(profile.limitTier!==undefined?{limitTier:profile.limitTier}:{}), correctQuestionKeys: [],
     ...(profile.equipmentLoadout ? {equipmentLoadout:{...profile.equipmentLoadout}} : {}),
+    ...(profile.equipmentVisuals?{equipmentVisuals:profile.equipmentVisuals}:{}),
+    ...(profile.weaponKind?{weaponKind:profile.weaponKind}:{}),
     equipmentEffects: {...profile.equipmentEffects, healingBonus:profile.equipmentEffects?.healingBonus || 0, potionAttackBonus:profile.equipmentEffects?.potionAttackBonus || 0},
     roundsParticipated: 0,
     joinOrder: Object.values({...state.departedPlayers,...state.pendingPlayers,...state.players}).reduce((n,p)=>Math.max(n,p.joinOrder??-1),-1)+1,
@@ -279,6 +285,7 @@ export function applyAnswer(
   player.currentAnswer = answer;
   player.lastAnswerCorrect = answersMatch(answer, q.correctAnswer, "trimmed");
   player.questionAction ||= defaultQuestionAction(player, next);
+  recordAttempt(next, player, q, true);
   return next;
 }
 export function allLivingPlayersAnswered(state: CombatSnapshot): boolean {
@@ -432,6 +439,7 @@ function event(
   targetId: string,
   amount: number,
   message: string,
+  details: Partial<CombatEvent> = {},
 ) {
   s.events.push({
     id: `${s.round}:${s.events.length}`,
@@ -442,6 +450,9 @@ function event(
     targetId,
     amount,
     message,
+    ...(s.currentPhase === 'enemy_ai' ? {abilityId:s.enemies.find(e=>e.id===actorId)?.aiState?.lastMove||'attack',actionId:`${s.round}:enemy:${actorId}`} : {}),
+    effect: type==='heal'?'heal':type==='block'?'block':abilityEffect(s.currentPhase==='enemy_ai'?(s.enemies.find(e=>e.id===actorId)?.aiState?.lastMove||'attack'):'attack',s.players[actorId]),
+    ...details,
   });
 }
 function leader(s: CombatSnapshot) {
@@ -481,6 +492,7 @@ function heal(
     id,
     actual,
     `${p.nickname} healed ${t.nickname} for ${actual}`,
+    {healthBefore:t.health-actual,healthAfter:t.health},
   );
   return actual;
 }
@@ -571,6 +583,7 @@ function damagePlayer(
     id,
     actual,
     `${p.nickname} took ${actual} damage`,
+    {healthBefore:roundHP(p.health+actual),healthAfter:p.health},
   );
   return actual;
 }
@@ -607,6 +620,7 @@ function hit(
     id,
     actual,
     `${p.nickname} dealt ${actual} to ${e.name}`,
+    {healthBefore:roundHP(e.health+actual),healthAfter:e.health},
   );
   return actual;
 }
@@ -648,8 +662,15 @@ function applyAbility(s: CombatSnapshot, p: CombatPlayer, id: string, targetId: 
   }
   const bleedPenalty = p.statuses?.some(x => x.type === "bleed") ? Math.min(1, p.stats.atk) : 0;
   p.stats.atk -= bleedPenalty;
+  const start=s.events.length;
   try { executeAbility(s, p, id, targetId); }
-  finally { p.stats.atk += bleedPenalty; }
+  finally {
+    p.stats.atk += bleedPenalty;
+    for(const e of s.events.slice(start)) {
+      e.actionId=`${s.round}:player:${start}`;e.abilityId=id;
+      e.effect=e.type==='heal'?'heal':e.type==='block'?'block':abilityEffect(id,p);
+    }
+  }
 }
 
 function executeAbility(
@@ -1029,6 +1050,7 @@ export function advancePhase(
   const s = structuredClone(state);
   s.revision++;
   s.phaseStartTime = now;
+  delete s.playback;
   if(s.currentPhase==='wave_break'){
     s.currentPhase='question';s.questionStartTime=now+3000;
     s.phaseDeadline=now+3000+fight.questions[s.currentQuestionIndex].timeLimit*1000;return s;
@@ -1037,6 +1059,7 @@ export function advancePhase(
     for (const p of Object.values(s.players))
       if (!p.isDead) {
         if (!p.hasAnswered) {
+          recordAttempt(s, p, fight.questions[s.currentQuestionIndex], false);
           p.hasAnswered = true;
           p.lastAnswerCorrect = false;
           p.currentAnswer = "";
@@ -1170,8 +1193,8 @@ export function advancePhase(
     }
     leader(s);
     s.currentPhase = "question_resolution";
-    s.phaseDeadline =
-      now + Math.max(2000, Math.min(14000, s.events.length * 2000));
+    s.phaseDeadline = null;
+    s.playback = makePlayback(state,s);
     return s;
   }
   if (s.currentPhase === "question_resolution") {
@@ -1180,7 +1203,11 @@ export function advancePhase(
     resolveEnemyTurn(s, fight, {
       random: () => rng(s),
       damage: (id, raw, source, ignoreDefense, limit, fractional) => damagePlayer(s, id, raw, source, ignoreDefense, limit, fractional),
-      say: (actor, target, message, amount = 0) => event(s, "ability", actor, target, amount, message),
+      say: (actor, target, message, amount = 0, healing = false) => {
+        const enemy=s.enemies.find(e=>e.id===target);
+        event(s, healing?"heal":"ability", actor, target, amount, message,
+          healing&&enemy?{healthBefore:enemy.health-amount,healthAfter:enemy.health}:{});
+      },
       possess: (enemy, copied, target, damage) => {
         const abilities = copied.availableAbilities.filter(id =>
           (abilityDamage(copied, id) || 0) > 0 && !ULTIMATES.has(id) && !abilityProblem(copied, id));
@@ -1201,7 +1228,8 @@ export function advancePhase(
       },
     });
     leader(s);
-    s.phaseDeadline = now + 3000;
+    s.phaseDeadline = null;
+    s.playback = makePlayback(state,s);
     return s;
   }
   if (s.currentPhase === "enemy_ai") {

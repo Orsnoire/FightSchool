@@ -1,6 +1,9 @@
+import { useCombatPlayback } from "@/hooks/useCombatPlayback";
+import { BattleEffect } from "./BattleEffect";
+import { RecoloredSprite } from "./RecoloredSprite";
 import { isHypnosis, statusSummary } from "@shared/combat/status-effects";
 import { activeEnemies, enemyImage, hpLabel } from "@shared/combat/encounters";
-import { useState, type CSSProperties } from "react";
+import { useState, useRef, type CSSProperties } from "react";
 import type { CombatPlayer, CombatSnapshot } from "@shared/combat/model";
 import { initialAppearance } from "@shared/avatar/appearance";
 import { StaticAvatar } from "./StaticAvatar";
@@ -24,9 +27,11 @@ function Bar({ current, max, label }: { current: number; max: number; label: str
     <span style={{ width: `${Math.max(0, Math.min(100, current / Math.max(.001, max) * 100))}%` }} />
   </div>;
 }
-export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate }: {
-  state: CombatSnapshot; selfId?: string | null; onResurrect?: (id: string) => void; onRemove?: (id: string) => void; onEliminate?: (id: string) => void;
+export function CombatBoard({ state: sourceState, selfId, onResurrect, onRemove, onEliminate, onPlaybackComplete }: {
+  state: CombatSnapshot; onPlaybackComplete?:(batchId:string)=>void; selfId?: string | null; onResurrect?: (id: string) => void; onRemove?: (id: string) => void; onEliminate?: (id: string) => void;
 }) {
+  const board=useRef<HTMLElement>(null);
+  const {display:state,active,completeCue,showing}=useCombatPlayback(sourceState,onPlaybackComplete);
   const [selected, setSelected] = useState<string | null>(null);
   const waiting = state.currentPhase === "waiting";
   const awaitingPlayers = waiting && !Object.keys(state.players).length;
@@ -39,7 +44,7 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate 
   const slots = formationSlots(others.length, !!self);
   const topDamage = Object.values(state.players).filter(p => p.totals.damageDealt > 0).sort((a,b) => b.totals.damageDealt-a.totals.damageDealt)[0]?.studentId;
   const damageLeader = state.damageLeaderId === undefined ? topDamage : state.damageLeaderId;
-  const shownEnemies=activeEnemies(state);
+  const shownEnemies=state.enemies.filter(e=>activeEnemies(state).some(a=>a.id===e.id)||(showing&&(sourceState.playback?.initialHealth[e.id]||0)>0&&(!state.activeWave||(e.wave||1)===state.activeWave)));
   const columns=Math.max(1,Math.ceil(Math.sqrt(shownEnemies.length*1.15)));
   const rows=Math.max(1,Math.ceil(shownEnemies.length/columns));
   const spanX=1+(columns-1)*.78,spanY=1+(rows-1)*.7;
@@ -57,15 +62,16 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate 
       {p.health < p.maxHealth && <Bar current={p.health} max={p.maxHealth} label={`${p.nickname} HP`} />}
       <button type="button" className="battle-avatar" aria-label={canRevive ? `Resurrect ${p.nickname} with 1 HP` : `${p.nickname}${isSelf ? " (you)" : ""}, ${p.isDead ? "knocked out" : `${p.health}/${p.maxHealth} HP`}${queued ? ", joining next round" : ""}`}
         onClick={() => { setSelected(selected === p.studentId ? null : p.studentId); if (canRevive) onResurrect(p.studentId); }}>
-        <StaticAvatar appearance={p.appearance || initialAppearance(null, p.gender === "B" ? "human-female-v1" : "human-male-v1", () => .35)} job={p.characterClass} loadout={p.equipmentLoadout} className="battle-paperdoll" />
+        <StaticAvatar appearance={p.appearance || initialAppearance(null, p.gender === "B" ? "human-female-v1" : "human-male-v1", () => .35)} job={p.characterClass} loadout={p.equipmentLoadout} visuals={p.equipmentVisuals} className="battle-paperdoll" />
       </button>
       <span className="battle-name">{p.nickname}{isSelf ? " · You" : ""}{queued ? " · Next round" : p.isDead ? " · KO" : ""}</span>
       {!!p.statuses?.length && <span className="rounded bg-black/80 px-1 text-[10px] text-amber-200" title={statusSummary(p).join("; ")} aria-label={`${p.nickname}: ${statusSummary(p).join("; ")}`}>{p.statuses.some(isHypnosis) ? `Hypnotized ${p.statuses.find(isHypnosis)?.correctAnswers || 0}/3` : p.statuses.some(x => x.type === "stun" || x.type === "paralysis") ? `Recovery ${p.recoveryCorrectAnswers || 0}/2` : "Status effect"}</span>}
       {onRemove && <button className="battle-remove" aria-label={`Remove ${p.nickname} from fight`} onClick={event => { event.stopPropagation(); onRemove(p.studentId); }}><XCircle size={23} /></button>}
     </div>;
   };
-  return <section aria-label="Battlefield" className={`battlefield ${all.length > 12 ? "is-crowded" : ""}`} data-testid="battlefield">
+  return <section ref={board} aria-label="Battlefield" className={`battlefield ${all.length > 12 ? "is-crowded" : ""}`} data-testid="battlefield">
     <BattleScenery />
+    <div className="combat-effects-layer" aria-hidden="true">{active.map(cue=><BattleEffect key={cue.event.id} cue={cue} board={board} onComplete={completeCue}/>)}</div>
     <div className="battle-scene-label"><span>THE PARTY</span><span>{state.currentPhase === "waiting" ? "GATHER YOUR PARTY" : `ROUND ${state.round}`}</span><span>THE ENEMY</span></div>
     {others.map((p, i) => renderPlayer(p, slots[i].x, slots[i].y, slots[i].size))}
     {self && renderPlayer(self, 32, 89, 180, true)}
@@ -74,7 +80,7 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove, onEliminate 
     <div className={`battle-enemy-field ${shownEnemies.length>8?'is-swarm':''}`} aria-label="Enemy formation">
       {shownEnemies.map((e,i)=><div role="group" tabIndex={0} key={e.id} data-enemy-id={e.id} className="battle-enemy" aria-label={`${e.name}, ${enemyHP(e)}`} title={`${e.name} · ${enemyHP(e)}`}
         style={{left:`${(.5+(i%columns)*.78)/spanX*100}%`,top:`${(.5+Math.floor(i/columns)*.7)/spanY*100}%`,width:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,height:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,zIndex:Math.floor(i/columns)+1} as CSSProperties}>
-        <img src={enemyImage(e)} alt={e.name}/>
+        <RecoloredSprite src={enemyImage(e)} palette={e.palette} alt={e.name}/>
         <div className="battle-enemy-info">      {Object.values(state.players).some(p => !p.isDead && p.statuses?.some(x => isHypnosis(x) && x.sourceId === e.id)) && <span className="rounded bg-black/80 px-2 text-xs text-amber-200">Maintaining hypnosis · cannot act</span>}
       {e.aiState?.buffs.filter(b => b.type !== "flatten" && b.throughRound >= state.round).map((b, index) => <span className="rounded bg-black/80 px-1 text-xs text-amber-200" key={`${b.type}:${index}`}>{b.type === "attack" ? "Soul inflamed · +100% ATK" : b.type === "defense" ? "+50% DEF" : "Faded · immune"}</span>)}
 <div className="battle-enemy-name">{e.name}</div>{!awaitingPlayers && <Bar current={e.health} max={e.maxHealth} label={`${e.name} ${waiting ? "Estimated HP" : "HP"}`}/>}<span className="battle-enemy-hp">{waiting ? enemyHP(e) : `${hpLabel(e.health)} / ${hpLabel(e.maxHealth)}`}</span></div>

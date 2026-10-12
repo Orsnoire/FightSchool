@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 import { fight } from '../phase4/fixtures.ts';
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 await mkdir('artifacts/combat-ui', {recursive:true});
-const browser = await chromium.launch();
+const browser = await chromium.launch({executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE});
 try {
   for (const viewport of [{width:1366,height:768},{width:390,height:844}]) {
     const page=await browser.newPage({viewport});const errors=[];

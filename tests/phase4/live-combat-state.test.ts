@@ -6,7 +6,7 @@ import {
 } from "../../worker/combat/session-object.ts";
 import { applyAnswer } from "../../worker/combat/engine.ts";
 import { started, fight, student } from "./fixtures.ts";
-function harness(initial?: unknown) {
+function harness(initial?: unknown, observer = false) {
   const data = new Map<string, any>();
   if (initial) data.set("room", structuredClone(initial));
   let alarm: number | null = null;
@@ -36,7 +36,7 @@ function harness(initial?: unknown) {
         alarm = null;
       },
     },
-    getWebSockets: () => [socket],
+    getWebSockets: () => observer ? [socket, { ...socket, deserializeAttachment: () => ({ actorId: fight.teacherId, role: "teacher", sessionId: "ABC234", tokenHash: "host-session-hash" }) }] : [socket],
     acceptWebSocket: () => {},
   };
   const object = new CombatSessionObject(state as any, {
@@ -235,7 +235,7 @@ test("student leave removes only the authenticated player and unblocks each inpu
     s.currentPhase = phase;
     s.phaseDeadline = Date.now() + 100000;
     s.players.other = { ...structuredClone(s.players[student().id]), studentId: "other", nickname: "Remaining", hasAnswered: true, ready: true };
-    const h = harness({ fight, snapshot: s, receipts: [] });
+    const h = harness({ fight, snapshot: s, receipts: [] }, true);
     const command = JSON.stringify({ type: "leave_fight", commandId: "leave-command-001", round: 999, targetId: "other" });
     await h.object.webSocketMessage(h.socket as any, command);
     const room = h.data.get("room");

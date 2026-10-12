@@ -1,3 +1,6 @@
+import { createPlaybackGate, acknowledgePlayback, rendererKey, type PlaybackGate } from "./playback-gate";
+import { isResolution } from "../../shared/combat/presentation";
+import { reportingSignature } from "../db/session-reporting";
 import { CombatRuleError } from "../../shared/combat/errors";
 import { diagnostic } from "../diagnostics";
 import { combatCommandSchema, type CombatCommand } from "../../shared/contracts/combat";
@@ -47,6 +50,9 @@ interface StoredRoom {
   receipts: string[];
   results?: unknown[];
   resultsPersisted?: boolean;
+  playbackGate?: PlaybackGate;
+  reportingSignature?: string;
+  reportingPending?: boolean;
   evidenceSignature?: string;
   evidencePending?: boolean;
   removals?: Record<string, { nickname: string; blocked: boolean; requestedAt?: number; deniedAt?: number }>;
@@ -182,8 +188,30 @@ export class CombatSessionObject {
     finally { if(this.commandCosts){this.commandCosts.checkpointCount++;this.commandCosts.checkpointMs+=performance.now()-startedAt;} }
     diagnostic({event:'combat_checkpoint',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-startedAt,outcome:'ok'});
   }
+  private activeRenderers(room:StoredRoom) {
+    return [...new Set(this.state.getWebSockets().filter(ws=>ws.readyState!==3).flatMap(ws=>{
+      const a=ws.deserializeAttachment() as SocketAttachment;
+      if(a.sessionId!==room.snapshot.sessionId || (a.expiresAt&&a.expiresAt<Date.now()))return [];
+      if(a.role==='teacher'&&a.actorId===room.fight.teacherId || a.role==='student'&&room.snapshot.players[a.actorId])return [rendererKey(a.role,a.actorId)];
+      return [];
+    }))];
+  }
   private async save(room: StoredRoom) {
+    if(!isResolution(room.snapshot.currentPhase))delete room.snapshot.playback;
+    if(!isResolution(room.snapshot.currentPhase)||!room.snapshot.playback)delete room.playbackGate;
+    else if(room.playbackGate?.batchId!==room.snapshot.playback.id)room.playbackGate=createPlaybackGate(room.snapshot,this.activeRenderers(room));
     await this.checkpoint(room);
+    const reportKey = reportingSignature(room.snapshot);
+    if (this.repository?.recordSessionReporting && (room.reportingPending || room.snapshot.pendingAttempts?.length || reportKey !== room.reportingSignature)) {
+      try {
+        await this.repository.recordSessionReporting(room.snapshot, room.fight);
+        room.reportingSignature = reportKey;
+        room.reportingPending = false;
+        room.snapshot.pendingAttempts = [];
+      } catch { room.reportingPending = true; }
+      await this.checkpoint(room);
+      if (room.reportingPending) await this.syncAlarm(room);
+    }
     const entries=Object.values({...room.snapshot.players,...room.snapshot.departedPlayers}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0);
     const signature=JSON.stringify([room.snapshot.victory,entries.map(p=>[p.studentId,p.totals.questionsAnswered,p.totals.questionsCorrect,!!room.snapshot.players[p.studentId]])]);
     if(this.repository?.recordQuestEvidence && entries.length && signature!==room.evidenceSignature){
@@ -195,8 +223,8 @@ export class CombatSessionObject {
     }
   }
   private async syncAlarm(room: StoredRoom) {
-    const retry=room.evidencePending||(room.snapshot.currentPhase==='game_over'&&!room.resultsPersisted)?Date.now()+5000:Infinity;
-    const deadline=Math.min(room.snapshot.phaseDeadline||Infinity,retry);
+    const retry=room.reportingPending||room.evidencePending||(room.snapshot.currentPhase==='game_over'&&!room.resultsPersisted)?Date.now()+5000:Infinity;
+    const deadline=Math.min(room.snapshot.phaseDeadline||Infinity,room.playbackGate?.recoveryAt||Infinity,retry);
     if(Number.isFinite(deadline))await this.state.storage.setAlarm(deadline);
     else await this.state.storage.deleteAlarm();
   }
@@ -598,7 +626,18 @@ export class CombatSessionObject {
           if (["question", "actions", "abilities"].includes(room.snapshot.currentPhase) && allLivingPlayersAnswered(room.snapshot))
             await this.advance(room);
           else if (room.snapshot.currentPhase === "game_over") await this.complete(room);
-          else await this.publish(room);
+          else if(!await this.finishPlayback(room)) await this.publish(room);
+          return;
+        }
+        if(command.type === 'playback_complete') {
+          if(actor.role==='student'&&!room.snapshot.players[actor.actorId])throw new CombatRuleError('Student participant required');
+          // Late acknowledgements are harmless after overrides, reconnect or phase advancement.
+          if(room.playbackGate && command.round===room.snapshot.round && command.batchId===room.snapshot.playback?.id) {
+            acknowledgePlayback(room.playbackGate,command.batchId,rendererKey(actor.role,actor.actorId));
+            await this.checkpoint(room);
+          }
+          this.send(ws,{type:'command_ack',commandId:command.commandId,revision:room.snapshot.revision});
+          await this.finishPlayback(room);
           return;
         }
         if (room.snapshot.currentPhase === "game_over")
@@ -651,6 +690,7 @@ export class CombatSessionObject {
           if (command.round !== room.snapshot.round) throw new CombatRuleError("Command belongs to another round");
           if (typeof command.targetId !== "string" || command.targetId.length > 220) throw new CombatRuleError("Invalid enemy");
           room.snapshot = eliminateEnemy(room.snapshot, command.targetId);
+          delete room.snapshot.playback;
         } else if (command.type === "resurrect") {
           if (actor.role !== "teacher") throw new CombatRuleError("Teacher role required");
           const live = await this.repository.findLiveCombatSession(actor.sessionId);
@@ -659,6 +699,7 @@ export class CombatSessionObject {
           if (command.round !== room.snapshot.round) throw new CombatRuleError("Command belongs to another round");
           if (typeof command.targetId !== "string") throw new CombatRuleError("Invalid player");
           room.snapshot = resurrectPlayer(room.snapshot, command.targetId);
+          delete room.snapshot.playback;
         } else if (command.type === "end_fight") {
           if (actor.role !== "teacher")
             throw new CombatRuleError("Teacher role required");
@@ -740,7 +781,7 @@ export class CombatSessionObject {
           await this.advance(room);
         else if (room.snapshot.currentPhase === "game_over")
           await this.complete(room);
-        else await this.publish(room);
+        else if(!await this.finishPlayback(room)) await this.publish(room);
       } catch (error) {
         outcome=error instanceof CombatRuleError?"rejected":"failed";
         this.send(ws, {
@@ -778,22 +819,44 @@ export class CombatSessionObject {
       });
     }
   }
+  private async finishPlayback(room:StoredRoom):Promise<boolean> {
+    if(!isResolution(room.snapshot.currentPhase))return false;
+    // A legacy room retains its old deadline until it next resolves a new batch.
+    if(!room.snapshot.playback && room.snapshot.phaseDeadline)return false;
+    const gate=room.playbackGate;
+    if(gate) {
+      const active=new Set(this.activeRenderers(room));
+      gate.pending=gate.pending.filter(key=>active.has(key));
+      if(gate.pending.length && Date.now()<gate.recoveryAt && room.snapshot.playback?.eventIds.length)return false;
+    }
+    await this.advance(room);return true;
+  }
+  async webSocketClose(ws:WebSocket) {
+    return this.serialized(async()=>{
+      const room=await this.room();if(!room?.playbackGate)return;
+      const a=ws.deserializeAttachment() as SocketAttachment,key=rendererKey(a.role,a.actorId);
+      const another=this.state.getWebSockets().some(other=>other!==ws&&other.readyState!==3&&rendererKey((other.deserializeAttachment() as SocketAttachment).role,(other.deserializeAttachment() as SocketAttachment).actorId)===key);
+      if(!another)room.playbackGate.pending=room.playbackGate.pending.filter(x=>x!==key);
+      await this.checkpoint(room);await this.finishPlayback(room);
+    });
+  }
   private async advance(room: StoredRoom) {
     room.snapshot = advancePhase(room.snapshot, room.fight);
     await this.save(room);
     await this.syncAlarm(room);
     if (room.snapshot.currentPhase === "game_over") await this.complete(room);
-    else await this.publish(room);
+    else if(!await this.finishPlayback(room)) await this.publish(room);
   }
   async alarm() {
     return this.serialized(async () => {
       const room = await this.room();
       if (!room) return;
-      if(room.evidencePending){await this.save(room);await this.syncAlarm(room);}
+      if(room.evidencePending||room.reportingPending){await this.save(room);await this.syncAlarm(room);}
       if (room.snapshot.currentPhase === "game_over") {
         await this.complete(room);
         return;
       }
+      if (await this.finishPlayback(room)) return;
       if (!room.snapshot.phaseDeadline) return;
       if (Date.now() < room.snapshot.phaseDeadline) {
         await this.syncAlarm(room);

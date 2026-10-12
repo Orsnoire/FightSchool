@@ -106,6 +106,20 @@
       "when": 1791464400000,
       "tag": "0014_guild_quests",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791836291397,
+      "tag": "0015_usability_patch_1",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791836465888,
+      "tag": "0016_equipment_color_variants",
+      "breakpoints": true
     }
   ]
 }

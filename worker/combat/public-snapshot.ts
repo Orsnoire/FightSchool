@@ -1,3 +1,4 @@
+import { equipmentVisualSchema, paletteSchema } from "../../shared/avatar/visuals";
 import { playerFields, snapshotFields, enemyFields, type PublicCombatSnapshot, type PublicCombatPlayer } from '../../shared/contracts/combat';
 import type { CombatSnapshot, CombatPlayer, CombatAction } from '../../shared/combat/model';
 import { EQUIPMENT_SLOTS } from '../../shared/equipment-slots';
@@ -16,6 +17,7 @@ function player(p:CombatPlayer, reveal:boolean):PublicCombatPlayer {
     statuses:p.statuses?.map(s=>({...pick(s,['type','sourceId','appliedRound','throughRound','amount','carry','chance','correctAnswers']),actionFailure:s.actionFailure?pick(s.actionFailure,['round','skip']):undefined})),
     actionBlocked:p.actionBlocked?pick(p.actionBlocked,['round','reason','attacksOnly']):undefined,
     equipmentLoadout:p.equipmentLoadout?pick(p.equipmentLoadout,EQUIPMENT_SLOTS):undefined,
+    equipmentVisuals:p.equipmentVisuals?Object.fromEntries(EQUIPMENT_SLOTS.filter(slot=>p.equipmentVisuals?.[slot]).map(slot=>[slot,equipmentVisualSchema.parse(p.equipmentVisuals![slot])])):undefined,
     equipmentEffects:p.equipmentEffects?pick(p.equipmentEffects,['healingBonus','potionAttackBonus']):undefined,
     appearance:p.appearance?pick(p.appearance,['modelId','hairColorId','eyeColorId','skinColorId']):p.appearance,
     stats:pick(p.stats,['str','int','agi','mnd','vit','def','atk','mat','rtk','hp','maxHp','mp','maxMp','comboPoints','maxComboPoints']),
@@ -31,9 +33,10 @@ export function publicSnapshot(snapshot:CombatSnapshot,fight?:FightRecord):Publi
   const reveal=!['question','actions','waiting'].includes(snapshot.currentPhase);
   return {
     ...pick(snapshot,snapshotFields),seed:0,
+    playback:snapshot.playback?{...pick(snapshot.playback,['id','round','phase']),eventIds:[...snapshot.playback.eventIds],initialHealth:{...snapshot.playback.initialHealth}}:undefined,
     players:Object.fromEntries(Object.entries(snapshot.players).map(([id,p])=>[id,player(p,reveal)])),
     pendingPlayers:Object.fromEntries(Object.entries(snapshot.pendingPlayers||{}).map(([id,p])=>[id,player(p,false)])),
-    enemies:enemies.map(e=>({...pick(e,enemyFields),effects:e.effects.map(v=>pick(v,['ownerId','type','rounds','damage'])),aiState:e.aiState?{readyRounds:{},buffs:e.aiState.buffs.filter(b=>b.type!=='flatten').map(b=>pick(b,['type','throughRound']))}:undefined})),
-    events:snapshot.events.map(e=>pick(e,['id','round','phase','type','actorId','targetId','amount','message'])),
+    enemies:enemies.map(e=>({...pick(e,enemyFields),palette:e.palette?paletteSchema.parse(e.palette):undefined,effects:e.effects.map(v=>pick(v,['ownerId','type','rounds','damage'])),aiState:e.aiState?{readyRounds:{},buffs:e.aiState.buffs.filter(b=>b.type!=='flatten').map(b=>pick(b,['type','throughRound']))}:undefined})),
+    events:snapshot.events.map(e=>pick(e,['id','round','phase','type','actorId','targetId','amount','message','actionId','abilityId','effect','healthBefore','healthAfter'])),
   };
 }

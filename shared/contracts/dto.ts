@@ -45,6 +45,7 @@ export type EquipmentItemDb = {
   createdAt: number;
   teacherId: string;
   iconUrl: string | null;
+  visual?: import("../avatar/visuals").EquipmentVisual | null;
   itemType: ItemType;
   quality: ItemQuality;
   tier: number;

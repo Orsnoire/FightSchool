@@ -219,6 +219,8 @@ export default function Lobby() {
     enabled: equippedItemIds.length > 0,
   });
 
+  const equippedVisuals = Object.fromEntries(EQUIPMENT_SLOTS.flatMap(slot=>{const item=equippedItems.find(i=>i.id===student?.[slot]);return item?.visual?[[slot,item.visual]]:[];}));
+
   // Fetch inventory items
   const inventoryIds = [...(student?.inventory || [])];
   const { data: inventoryItems = [] } = useQuery<EquipmentItemDb[]>({
@@ -398,7 +400,7 @@ export default function Lobby() {
                 <PlayerAvatar
                   characterClass={student.characterClass}
                   appearance={savedAppearance.data}
-                  loadout={student}
+                  loadout={student} visuals={equippedVisuals}
                   gender={student.gender}
                   size="lg"
                 />
@@ -973,7 +975,7 @@ export default function Lobby() {
           </DialogHeader>
           
           <div className="grid sm:grid-cols-2 gap-4 items-center">
-            <StaticAvatar appearance={appearanceDraft} job={previewJob} loadout={previewJob===student.characterClass?student:undefined} className="h-72 aspect-[1200/1950] mx-auto" />
+            <StaticAvatar appearance={appearanceDraft} job={previewJob} loadout={previewJob===student.characterClass?student:undefined} visuals={previewJob===student.characterClass?equippedVisuals:undefined} className="h-72 aspect-[1200/1950] mx-auto" />
             <div className="space-y-4">
               <label className="block text-sm">Preview job<select aria-label="Preview job" className="block w-full mt-1 rounded border p-2 bg-background" value={previewJob} onChange={e => setPreviewJob(e.target.value as AvatarJob)}>
                 {AVATAR_JOBS.map(job => <option key={job} value={job}>{JOB_PRESENTATION[job].name}</option>)}
@@ -1014,7 +1016,7 @@ export default function Lobby() {
                         <PlayerAvatar
                           characterClass={classType}
                           appearance={appearanceDraft}
-                          loadout={classType===student.characterClass?student:undefined}
+                          loadout={classType===student.characterClass?student:undefined} visuals={classType===student.characterClass?equippedVisuals:undefined}
                           gender={student.gender || undefined}
                           size="md"
                         />

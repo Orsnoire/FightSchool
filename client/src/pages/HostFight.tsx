@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -25,6 +25,7 @@ export default function HostFight() {
   const [questionOpen, setQuestionOpen] = useState(true), [fullscreen, setFullscreen] = useState(false), [blockRejoin, setBlockRejoin] = useState(false);
   const shell = useRef<HTMLElement>(null);
   const { state, question, status, error, send, seconds, rejoinRequests } = useCombatSession(sessionId, "teacher");
+  const playbackComplete=useCallback((batchId:string)=>{if(status==="connected")send("playback_complete",{batchId});},[send,status]);
   const request = rejoinRequests[0];
   useEffect(() => setBlockRejoin(false), [request?.studentId]);
   useEffect(() => { const update = () => setFullscreen(document.fullscreenElement === shell.current); document.addEventListener("fullscreenchange", update); return () => document.removeEventListener("fullscreenchange", update); }, []);
@@ -100,7 +101,7 @@ export default function HostFight() {
     {question && active && questionOpen && <section className="battle-question" data-testid="host-question"><p className="mb-2 text-[10px] uppercase tracking-widest font-bold text-[#61705a]">Current question · {state!.currentQuestionIndex + 1}</p><RichContentRenderer html={question.question}/></section>}
     {state && <>
       {phase === "game_over" && <div className="bg-[#edf0df] px-6 py-3"><h2 className="font-bold">{state.victory ? "Victory!" : "Fight ended"}</h2><p className="text-sm">{state.endReason}</p></div>}
-      <CombatBoard state={state} onEliminate={status === "connected" && active ? targetId => {
+      <CombatBoard state={state} onPlaybackComplete={playbackComplete} onEliminate={status === "connected" && active ? targetId => {
         const enemy = state.enemies.find(e => e.id === targetId);
         if (window.confirm(`Eliminate ${enemy?.name || "this enemy"} from the fight? This counts as defeating it.`)) send("eliminate_enemy", { targetId });
       } : undefined} onResurrect={status === "connected" && active ? targetId => send("resurrect", { targetId }) : undefined} onRemove={status === "connected" && phase !== "game_over" ? targetId => {

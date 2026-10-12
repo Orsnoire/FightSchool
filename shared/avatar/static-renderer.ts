@@ -1,3 +1,4 @@
+import { recolorPixels, type SpritePalette, type EquipmentVisuals } from "./visuals";
 import { appearanceColors, type AvatarAppearance, type AvatarJob } from './appearance';
 import { avatarEquipment, armorStyle, headStyle, propStyle, ARMOR_RENDER_ORDER, type AvatarLoadout } from './equipment-visuals';
 import { armorSource, partRegions, PROP_SPRITES } from './equipment-parts';
@@ -36,9 +37,10 @@ async function tintedHead(urls: StaticAssetUrls, appearance: AvatarAppearance) {
   }
   ctx.putImageData(pixels,0,0);return c;
 }
-async function tintedAtlas(url: string, skin: string) {
+async function tintedAtlas(url: string, skin: string, palette?:SpritePalette) {
   const img=await image(url), c=canvas(img.width,img.height),ctx=c.getContext('2d',{willReadFrequently:true})!;
   ctx.drawImage(img,0,0);const pixels=ctx.getImageData(0,0,c.width,c.height), color=rgb(skin);
+  if(palette)recolorPixels(pixels.data,palette,true);
   // Source art reserves magenta for exposed hands; garments and ink never use it.
   for(let i=0;i<pixels.data.length;i+=4) {
     const r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2];
@@ -73,8 +75,8 @@ function sprite(ctx:CanvasRenderingContext2D, source:CanvasImageSource, fit:Spri
 }
 
 /** Palette changes happen at render time and retain the source ink/alpha. */
-async function paletteImage(url:string, kind:string) {
-  const source=await image(url);if(!kind)return source;
+async function paletteImage(url:string, kind:string, palette?:SpritePalette) {
+  const source=await image(url);if(!kind&&!palette)return source;
   const c=canvas(source.width,source.height),ctx=c.getContext('2d')!;
   ctx.drawImage(source,0,0);const pixels=ctx.getImageData(0,0,c.width,c.height),d=pixels.data;
   for(let i=0;i<d.length;i+=4) {
@@ -90,9 +92,10 @@ async function paletteImage(url:string, kind:string) {
     }
     if(color)for(let k=0;k<3;k++)d[i+k]=Math.round(color[k]);
   }
+  if(palette)recolorPixels(d,palette,true);
   ctx.putImageData(pixels,0,0);return c;
 }
-async function equipmentBody(urls:StaticAssetUrls,appearance:AvatarAppearance,loadout:EquipmentLoadout) {
+async function equipmentBody(urls:StaticAssetUrls,appearance:AvatarAppearance,loadout:EquipmentLoadout,visuals:EquipmentVisuals={}) {
   const female=appearance.modelId==='human-female-v1',skin=appearanceColors(appearance).skin;
   const atlases=new Map<string,Promise<CanvasImageSource>>();
   const cached=(key:string,load:()=>Promise<CanvasImageSource>)=>{if(!atlases.has(key))atlases.set(key,load());return atlases.get(key)!;};
@@ -103,9 +106,9 @@ async function equipmentBody(urls:StaticAssetUrls,appearance:AvatarAppearance,lo
     if(slot==='legs'&&cloth)source=armorSource('leather');
     const fit=EMPTY_BODY_FITS[source.material][female?'female':'male'];
     const handColor=slot==='hands'&&loadout.hands&&style==='linen'?'#ded8cf':skin;
-    let atlas:CanvasImageSource=await cached(`${source.atlas}:${handColor}`,()=>tintedAtlas(urls[source.atlas],handColor));
+    let atlas:CanvasImageSource=await cached(`${source.atlas}:${handColor}:${JSON.stringify(visuals[slot]?.palette)}`,()=>tintedAtlas(urls[source.atlas],handColor,visuals[slot]?.palette));
     if(cloth&&(slot==='legs'||(slot==='feet'&&style==='linen'))) {
-      atlas=await paletteImage(urls[source.atlas],`cloth:${style==='caster'?'#644182':style==='healer'?'#f2eee6':'#cbc5ba'}`);
+      atlas=await paletteImage(urls[source.atlas],`cloth:${style==='caster'?'#644182':style==='healer'?'#f2eee6':'#cbc5ba'}`,visuals[slot]?.palette);
     }
     const regions=partRegions(slot,source.material).map(poly=>poly.map(([x,y])=>[x+source.column*418,y+(female?590:0)]));
     return {slot,atlas,fit,regions};
@@ -115,14 +118,14 @@ async function equipmentBody(urls:StaticAssetUrls,appearance:AvatarAppearance,lo
       sprite(ctx,part.atlas,{...part.fit,polygon},[],front&&part.slot==='armor');
   };
 }
-async function equipmentProps(urls:StaticAssetUrls,loadout:EquipmentLoadout) {
+async function equipmentProps(urls:StaticAssetUrls,loadout:EquipmentLoadout,visuals:EquipmentVisuals={}) {
   const result=await Promise.all((['weapon','offhand'] as const).map(async slot=>{
     const id=loadout[slot];let kind:string|null=propStyle(id);if(!kind)return null;
     if(id==='t1_healer_ankh')kind='ankh';
     if(id==='basic_shield')kind='blue-shield';
     const geometry=PROP_SPRITES[kind!];if(!geometry)return null;
-    const atlas=id==='basic_harp'?await image(urls['starter-harp']):
-      id?.startsWith('basic_')&&['staff','bow','quiver'].includes(kind!)?await paletteImage(urls.props,'brown'):await image(urls.props);
+    const atlas=id==='basic_harp'?await paletteImage(urls['starter-harp'],'',visuals[slot]?.palette):
+      id?.startsWith('basic_')&&['staff','bow','quiver'].includes(kind!)?await paletteImage(urls.props,'brown',visuals[slot]?.palette):await paletteImage(urls.props,'',visuals[slot]?.palette);
     return {id,kind,geometry,atlas};
   }));
   return (ctx:CanvasRenderingContext2D,back=false)=>{
@@ -145,16 +148,17 @@ async function equipmentProps(urls:StaticAssetUrls,loadout:EquipmentLoadout) {
 }
 
 /** Static rendering has no combat state, timers, persistence, or equipment grants. */
-export function composeStaticAvatar(urls:StaticAssetUrls, appearance:AvatarAppearance, job:AvatarJob, loadout?:AvatarLoadout):Promise<HTMLCanvasElement> {
+export function composeStaticAvatar(urls:StaticAssetUrls, appearance:AvatarAppearance, job:AvatarJob, loadout?:AvatarLoadout,visuals:EquipmentVisuals={}):Promise<HTMLCanvasElement> {
   if(!assetSetIds.has(urls))assetSetIds.set(urls,nextAssetSetId++);
   const equipment=avatarEquipment(job,loadout);
-  const key=JSON.stringify([appearance,equipment,assetSetIds.get(urls)]);
+  for(const [slot,visual] of Object.entries(visuals))if(visual)equipment[slot as keyof EquipmentLoadout]=visual.baseItemId;
+  const key=JSON.stringify([appearance,equipment,visuals,assetSetIds.get(urls)]);
   let result=composedCache.get(key);
   if(!result) {
     result=(async()=>{
       const visual={headwear:headStyle(equipment.headgear)},hatFit=visual.headwear?STATIC_FITS[visual.headwear].headwear:null;
       const tierOneHat=equipment.headgear?.startsWith('t1_');
-      const [head,body,props,hat]=await Promise.all([tintedHead(urls,appearance),equipmentBody(urls,appearance,equipment),equipmentProps(urls,equipment),visual.headwear?paletteImage(urls[visual.headwear],tierOneHat?({warrior:'red',scout:'green',wizard:'violet',herbalist:''}[visual.headwear]):''):null]);
+      const [head,body,props,hat]=await Promise.all([tintedHead(urls,appearance),equipmentBody(urls,appearance,equipment,visuals),equipmentProps(urls,equipment,visuals),visual.headwear?paletteImage(urls[visual.headwear],tierOneHat?({warrior:'red',scout:'green',wizard:'violet',herbalist:''}[visual.headwear]):'',visuals.headgear?.palette):null]);
       const c=canvas(STATIC_CANVAS.width,STATIC_CANVAS.height),ctx=c.getContext('2d')!;
       ctx.translate(STATIC_CANVAS.offsetX,STATIC_CANVAS.offsetY);
       const isFemale=appearance.modelId==='human-female-v1';

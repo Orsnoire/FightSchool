@@ -8,6 +8,7 @@ const simple = <T extends string>(type: T) => z.object({ type:z.literal(type), c
 export const combatCommandSchema = z.discriminatedUnion('type', [
   simple('host'), simple('join'), simple('start_fight'), simple('end_fight'), simple('leave_fight'),
   simple('ready').extend({round}),
+  simple('playback_complete').extend({round,batchId:z.string().min(1).max(240)}),
   simple('answer').extend({round,questionId:targetId,answer:z.string().max(5000)}),
   simple('action').extend({round,ability:z.string().min(1).max(200),targetId,ready:z.boolean().optional()}),
   simple('resurrect').extend({round,targetId}),
@@ -23,9 +24,9 @@ export type CommandPayload<T extends CombatCommandType> = Omit<Extract<CombatCom
 export const snapshotFields = ['schemaVersion','revision','sessionId','fightId','enemyDisplayMode','currentQuestionIndex','round','currentPhase','questionStartTime','phaseStartTime','phaseDeadline','threatLeaderId','damageLeaderId','victory','endReason','encounterRules','activeWave','autoAdvanceWaves','completedRounds','endedByHost'] as const;
 export const playerFields = ['studentId','nickname','characterClass','gender','health','maxHealth','mp','maxMp','comboPoints','maxComboPoints','consecutiveCorrectAnswers','threat','isDead','hasAnswered','ready','healingPotions','shieldPotions','joinOrder','limitTier','roundsParticipated','recoveryCorrectAnswers','controlImmuneThroughRound'] as const;
 export const enemyFields = ['id','name','image','difficultyMultiplier','health','maxHealth','enemyType','attackPower','defense','role','templateId','quantity','wave','species'] as const;
-export type PublicCombatPlayer = Pick<CombatPlayer,typeof playerFields[number] | 'statuses' | 'actionBlocked' | 'equipmentLoadout' | 'equipmentEffects' | 'appearance' | 'stats' | 'jobLevels' | 'availableAbilities' | 'questionAction' | 'supportActions' | 'cooldowns' | 'ultimatesUsed' | 'buffs' | 'totals'> & {currentAnswer:null;lastAnswerCorrect?:boolean};
-export type PublicCombatEnemy = Pick<CombatEnemy,typeof enemyFields[number] | 'effects' | 'aiState'>;
-export type PublicCombatSnapshot = Pick<CombatSnapshot,typeof snapshotFields[number] | 'events'> & {seed:0;players:Record<string,PublicCombatPlayer>;pendingPlayers:Record<string,PublicCombatPlayer>;enemies:PublicCombatEnemy[]};
+export type PublicCombatPlayer = Pick<CombatPlayer,typeof playerFields[number] | 'statuses' | 'actionBlocked' | 'equipmentVisuals' | 'equipmentLoadout' | 'equipmentEffects' | 'appearance' | 'stats' | 'jobLevels' | 'availableAbilities' | 'questionAction' | 'supportActions' | 'cooldowns' | 'ultimatesUsed' | 'buffs' | 'totals'> & {currentAnswer:null;lastAnswerCorrect?:boolean};
+export type PublicCombatEnemy = Pick<CombatEnemy,typeof enemyFields[number] | 'palette' | 'effects' | 'aiState'>;
+export type PublicCombatSnapshot = Pick<CombatSnapshot,typeof snapshotFields[number] | 'events' | 'playback'> & {seed:0;players:Record<string,PublicCombatPlayer>;pendingPlayers:Record<string,PublicCombatPlayer>;enemies:PublicCombatEnemy[]};
 
 export interface EarnedResult {
   id:string;studentId:string;xpEarned:number;baseXp?:number;xpMultiplier?:number;

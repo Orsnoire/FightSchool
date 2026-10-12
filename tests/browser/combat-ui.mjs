@@ -7,7 +7,7 @@ import { started, student } from '../phase4/fixtures.ts';
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
-const browser = await chromium.launch();
+const browser = await chromium.launch({executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE});
 const id = student().id;
 const enemyImage = 'data:image/png;base64,' + (await readFile('attached_assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png')).toString('base64');
 try {
@@ -50,7 +50,7 @@ try {
       }, { state, question });
     }
     async function screenshot(name) {
-      if (name === 'waiting') {
+      if (['waiting','resolution','counterattack'].includes(name)) {
         await page.getByTestId('battle-wait').waitFor();
         assert.equal(await page.getByRole('dialog').count(), 0);
         await page.getByRole('complementary', { name: 'Your character' }).waitFor();
@@ -112,6 +112,7 @@ try {
     state.players[id].availableAbilities = ['attack', 'healing_potion', 'craft_healing_potion'];
 
     state.currentPhase = 'question_resolution';
+    state.phaseDeadline = null;
     state.players[id].lastAnswerCorrect = true;
     state.players[id].healingPotions = 4;
     state.events = [{ id: '1:0', round: 1, phase: 'question_resolution', type: 'heal', actorId: id, targetId: id, amount: 2, message: 'Herbalist healed for 2 HP' }];
@@ -121,7 +122,7 @@ try {
     state.currentPhase = 'enemy_ai';
     state.events.push({ id: '1:1', round: 1, phase: 'enemy_ai', type: 'enemy_attack', actorId: 'e1', targetId: id, amount: 3, message: 'Damage' });
     await emit();
-    await page.getByText('Goblins counterattacks herbalist for 3 damage!', { exact: true }).waitFor();
+    await page.getByText('Enemy counterattacks', { exact: true }).waitFor();
     assert.equal(await page.getByText('Herbalist healed for 2 HP', { exact: true }).count(), 0);
     await screenshot('counterattack');
     state.round++;

@@ -1,3 +1,4 @@
+import { recordSessionReporting } from "./session-reporting";
 import { EQUIPMENT_ITEMS } from "../../shared/schema";
 import { switchStudentJob } from "./job-loadouts";
 import {
@@ -35,6 +36,7 @@ import {
 export interface IdentityRepository extends SessionRepository {
   validateLoot?(teacherId: string, itemIds: string[]): Promise<boolean>;
   getCombatProfile?(student: StudentRecord, sessionId?: string): Promise<CombatProfile>;
+  recordSessionReporting?(state: CombatSnapshot, fight: FightRecord): Promise<void>;
   recordQuestEvidence?(state: CombatSnapshot, fight: FightRecord): Promise<void>;
   persistResults?(
     state: CombatSnapshot,
@@ -102,6 +104,7 @@ export function createIdentityRepository(
         );
       return new Set(rows.map((r) => r.id)).size === new Set(itemIds).size;
     },
+    async recordSessionReporting(state, fight) { await recordSessionReporting(database, state, fight); },
     async recordQuestEvidence(state, fight) { await recordQuestEvidence(gameDatabase(databaseUrl), state, fight); },
     async getCombatProfile(student, sessionId) {
       return combatProfile(gameDatabase(databaseUrl), student, sessionId);

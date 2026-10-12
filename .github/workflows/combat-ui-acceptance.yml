@@ -35,6 +35,7 @@ jobs:
           node --import tsx tests/browser/combat-ui.mjs
           node --import tsx tests/browser/host-ui.mjs
           node --import tsx tests/browser/host-sessions.mjs
+          node --import tsx tests/browser/usability-patch.mjs
       - name: Preserve browser screenshots
         if: always()
         uses: actions/upload-artifact@v7

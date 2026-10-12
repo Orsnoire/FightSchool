@@ -1,3 +1,7 @@
+import { PaletteEditor } from "@/components/PaletteEditor";
+import { StaticAvatar } from "@/components/StaticAvatar";
+import { initialAppearance } from "@shared/avatar/appearance";
+import { VISUAL_BASES, validVisualSlot } from "@shared/avatar/visuals";
 import { armorClassificationError } from "@shared/equipment-rules";
 import { SLOT_LABELS, EQUIPMENT_SLOTS as ALL_EQUIPMENT_SLOTS } from "@shared/equipment-catalog";
 import { useState, useEffect, useRef } from "react";
@@ -32,6 +36,7 @@ const itemFormSchema = insertEquipmentItemSchema.extend({
     def: z.coerce.number().min(0).optional(),
   }).optional(),
 }).superRefine((item, context) => {
+  if(!validVisualSlot(item.visual,item.slot)) context.addIssue({code:"custom",path:["visual"],message:"Base sprite must match this equipment slot"});
   const error = armorClassificationError(item);
   if (error) context.addIssue({code:'custom',path:['armorCategory'],message:error});
 });
@@ -168,6 +173,7 @@ export default function ItemManagement() {
       armorCategory: item.armorCategory,
       offhandType: item.offhandType,
       iconUrl: item.iconUrl,
+      visual: item.visual,
       stats: {
         str: item.stats?.str || 0,
         int: item.stats?.int || 0,
@@ -188,6 +194,7 @@ export default function ItemManagement() {
     form.reset();
   };
 
+  const visual=form.watch("visual"),visualSlot=form.watch("slot");
   const initialEdit=useRef(false);
   useEffect(()=>{if(initialEdit.current||!items)return;const id=new URLSearchParams(window.location.search).get('edit');const item=items.find(i=>i.id===id);if(item){initialEdit.current=true;setEditingItem(item);form.reset({...item,teacherId:teacherId||''});}},[items,teacherId,form]);
   if (isChecking) {
@@ -348,6 +355,13 @@ export default function ItemManagement() {
                     )}
                   />
 
+                  <section className="space-y-3 rounded-lg border p-4" aria-label="Equipment appearance">
+                    <h3 className="font-semibold">Equipment appearance</h3>
+                    <label className="block text-sm">Base sprite<select aria-label="Base sprite" className="mt-1 block w-full rounded border bg-background p-2" value={visual?.baseItemId||''} onChange={e=>form.setValue('visual',e.target.value?{baseItemId:e.target.value,palette:visual?.palette||{}}:null,{shouldDirty:true,shouldValidate:true})}><option value="">Default appearance</option>{Object.values(VISUAL_BASES).filter(item=>item.slot===visualSlot).map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+                    {visual&&<><PaletteEditor value={visual.palette} onChange={palette=>form.setValue('visual',{...visual,palette},{shouldDirty:true})}/><div className="rounded bg-slate-800"><StaticAvatar appearance={initialAppearance(null,'human-male-v1',()=>.35)} job="warrior" visuals={{[visualSlot]:visual}} className="mx-auto h-60 aspect-[1200/1950]" label="Equipment color preview"/></div></>}
+                    {form.formState.errors.visual&&<p role="alert" className="text-sm text-destructive">Choose a base sprite for the selected slot.</p>}
+                    {editingItem&&<Button type="button" variant="outline" onClick={()=>{setEditingItem(null);setCreateDialogOpen(true);form.setValue('name',`${form.getValues('name')} variant`);}}>Create as new variant</Button>}
+                  </section>
                   <div className="space-y-4">
                     <h3 className="text-sm font-semibold text-muted-foreground">Base Stats</h3>
                     <div className="grid grid-cols-3 gap-4">

@@ -53,6 +53,8 @@ export interface CombatPlayer {
   limitTier?: number;
   correctQuestionKeys?: string[];
   equipmentLoadout?: EquipmentLoadout;
+  weaponKind?: string;
+  equipmentVisuals?: import("../avatar/visuals").EquipmentVisuals;
   equipmentEffects?: { healingBonus:number; potionAttackBonus:number };
   roundsParticipated?: number;
   appearance?: AvatarAppearance | null;
@@ -86,6 +88,7 @@ export interface CombatPlayer {
   totals: CombatTotals;
 }
 export interface CombatEnemy {
+  palette?: import("../avatar/visuals").SpritePalette;
   enemyType?: EnemyType;
   ai?: EnemyAI;
   aiState?: EnemyAIState;
@@ -110,6 +113,11 @@ export interface CombatEnemy {
   }>;
 }
 export interface CombatEvent {
+  actionId?: string;
+  abilityId?: string;
+  effect?: import("./presentation").AttackEffect;
+  healthBefore?: number;
+  healthAfter?: number;
   id: string;
   round: number;
   phase?: "question_resolution" | "enemy_ai";
@@ -120,6 +128,9 @@ export interface CombatEvent {
   message: string;
 }
 export interface CombatSnapshot {
+  playback?: import("./presentation").PlaybackBatch;
+  /** Server-only durable reporting outbox, removed after confirmed projection. */
+  pendingAttempts?: import("./attempts").QuestionAttempt[];
   encounterRules?: 2;
   autoAdvanceWaves?: boolean;
   activeWave?: number;

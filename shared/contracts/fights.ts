@@ -1,3 +1,4 @@
+import { paletteSchema, equipmentVisualSchema, validVisualSlot } from "../avatar/visuals";
 import { z } from "zod";
 import { enemySwarmSchema } from "../combat/swarm";
 import { enemyAISchema, ENEMY_TYPES, validEnemyAI } from "../combat/enemy-ai";
@@ -13,6 +14,7 @@ export const questionSchema = z.object({
 });
 
 export const enemySchema = z.object({
+  palette: paletteSchema.optional(),
   enemyType: z.enum(ENEMY_TYPES).optional(),
   ai: enemyAISchema.optional(),
   quantity:z.number().int().min(1).max(60).optional(),

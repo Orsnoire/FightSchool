@@ -1,0 +1,207 @@
+.combat-effects-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 130;
+  overflow: visible;
+}
+.combat-cue {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px #131324);
+}
+.combat-glyph {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.combat-glyph .slash {
+  stroke: #fff;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 130;
+  stroke-dashoffset: 130;
+  animation: qa-slash 350ms ease-out forwards;
+}
+.combat-glyph .spell-ring {
+  fill: currentColor;
+  fill-opacity: 0.15;
+  stroke: currentColor;
+  stroke-width: 5;
+  transform-origin: center;
+  animation: qa-ring 500ms ease-out both;
+}
+.combat-glyph .arrow {
+  stroke: #fff;
+  stroke-width: 4;
+  stroke-linecap: round;
+  fill: none;
+  animation: qa-arrow 550ms ease-out both;
+}
+.combat-glyph .note-up,
+.combat-glyph .note-down {
+  transform-origin: center;
+  animation: qa-note 520ms ease-out both;
+}
+.combat-glyph .note-down {
+  rotate: 180deg;
+}
+.combat-glyph .web {
+  stroke: #fff;
+  stroke-width: 2;
+  fill: none;
+  transform-origin: 60px 0;
+  animation: qa-web 600ms ease-out both;
+}
+.combat-glyph .fangs {
+  transform-origin: center;
+  animation: qa-bite 500ms ease-out both;
+}
+.combat-flying-number {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  font-size: clamp(18px, 2.2vw, 30px);
+  font-weight: 900;
+  white-space: nowrap;
+  color: #fff;
+  text-shadow:
+    2px 2px #202032,
+    -1px -1px #202032,
+    1px -1px #202032,
+    -1px 1px #202032;
+  animation: qa-number 480ms 180ms ease-out both;
+}
+.number-heal {
+  color: #8ff9b4;
+}
+.number-block {
+  color: #ffe58f;
+  font-size: 16px;
+}
+.number-enemy_attack {
+  color: #ffb1a9;
+}
+@keyframes qa-slash {
+  0% {
+    stroke-dashoffset: 130;
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  65% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes qa-ring {
+  0% {
+    transform: scale(0.12);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+@keyframes qa-arrow {
+  0% {
+    transform: translate(-90px, 60px);
+    opacity: 0;
+  }
+  32% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  85% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes qa-note {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+}
+@keyframes qa-web {
+  0% {
+    transform: translateY(-65px) scaleX(0.01);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  35% {
+    transform: translateY(-35px) scaleX(0.05);
+  }
+  80% {
+    transform: translateY(0) scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(10px) scaleX(1);
+    opacity: 0;
+  }
+}
+@keyframes qa-bite {
+  0% {
+    transform: scale(1.4) translateY(-15px);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(0.85);
+    opacity: 1;
+  }
+  65% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes qa-number {
+  0% {
+    transform: translate(-50%, 10px) scale(0.7);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -5px) scale(1.2);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -55px) scale(1);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .combat-cue {
+    display: none;
+  }
+}
