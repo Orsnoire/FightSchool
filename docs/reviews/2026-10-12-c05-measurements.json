@@ -1,0 +1,80 @@
+{
+  "runtime": "v24.19.0",
+  "baselineCommit": "de0ddfd7ab51385e2f01998755341f9aeea55d6d",
+  "baseline": [
+    {
+      "players": 30,
+      "runs": 12,
+      "changedPublishes": 10,
+      "unchangedPublishes": 10,
+      "publishMs": 67.19174199999998,
+      "reconnectMs": 137.01272199999994,
+      "encodes": 1550,
+      "encodedBytes": 55988550,
+      "auth": 30,
+      "student": 30,
+      "profile": 30,
+      "live": 30,
+      "writes": 30,
+      "checkpointBytes": 1311240,
+      "sends": 1550,
+      "wireBytes": 55988550
+    },
+    {
+      "players": 60,
+      "runs": 12,
+      "changedPublishes": 10,
+      "unchangedPublishes": 10,
+      "publishMs": 241.9265919999998,
+      "reconnectMs": 836.4821170000014,
+      "encodes": 4880,
+      "encodedBytes": 344685760,
+      "auth": 60,
+      "student": 60,
+      "profile": 60,
+      "live": 60,
+      "writes": 60,
+      "checkpointBytes": 5102640,
+      "sends": 4880,
+      "wireBytes": 344685760
+    }
+  ],
+  "candidate": [
+    {
+      "players": 30,
+      "runs": 12,
+      "changedPublishes": 10,
+      "unchangedPublishes": 10,
+      "publishMs": 12.997500999999943,
+      "reconnectMs": 22.975393999999937,
+      "encodes": 70,
+      "encodedBytes": 2527790,
+      "auth": 30,
+      "student": 0,
+      "profile": 0,
+      "live": 0,
+      "writes": 0,
+      "checkpointBytes": 0,
+      "sends": 340,
+      "wireBytes": 12281340
+    },
+    {
+      "players": 60,
+      "runs": 12,
+      "changedPublishes": 10,
+      "unchangedPublishes": 10,
+      "publishMs": 30.054045000000087,
+      "reconnectMs": 79.889412,
+      "encodes": 100,
+      "encodedBytes": 7062520,
+      "auth": 60,
+      "student": 0,
+      "profile": 0,
+      "live": 0,
+      "writes": 0,
+      "checkpointBytes": 0,
+      "sends": 670,
+      "wireBytes": 47323640
+    }
+  ]
+}

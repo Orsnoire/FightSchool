@@ -1,6 +1,14 @@
 # C05 room costs — active October 12, 2026
 
-Branch `cleanup/c05-room-costs`; draft PR registration follows. Baseline c4ed753009e1b8204079696afaaef0694c182f89 includes accepted PR #61 and C04. Scope: shared per-role encoding, unchanged broadcast suppression, established-player reconnect reads, and safe queue/DB/checkpoint cost measurements. Preserve immediate acknowledgements/transitions, revocation, moderation, durable retries, saved clocks, swarm and host controls. No SQL changes or live load testing. Next: publish baseline regressions and repeated isolated 30/60-player measurements, then implement and run full gates. Not merged or deployed. Previous release records below remain historical evidence.
+- Branch `cleanup/c05-room-costs`; [draft PR #63](https://github.com/Orsnoire/FightSchool/pull/63). Read PR for exact published SHA.
+- Baseline includes accepted PR #61/C04. Published regression checkpoint `de0ddfd7ab51385e2f01998755341f9aeea55d6d` intentionally fails three cost tests.
+- Implemented shared per-role encoding, unchanged public-payload suppression, established/pending reconnect without redundant profiles/checkpoints, and allowlisted repository/storage/publish counters and timing.
+- Isolated 12-run 30/60-player comparisons show encodes 1550→70 / 4880→100; reconnect profile reads/checkpoints drop to zero while every revocation check remains. See [method, results and limits](cloudflare/room-costs.md). These are local CPU/operation fixtures, not live latency claims.
+- Local full suite: 242 tests, typecheck/builds pass; two additional burst/admission tests pass in the six-test targeted suite. Final exact-head CI/browser pending (244 expected total).
+- Preserve immediate acknowledgements/transitions, moderation, retries, saved clocks and released swarm/host controls. No SQL change, live load test, merge or deployment.
+- Next: publish implementation, run exact-head full CI/browser and review failure/reconnect boundaries. C06 not started.
+
+The following release records predate C05 and remain historical evidence.
 
 # Active work and interruption checkpoint
 

@@ -2,7 +2,7 @@
 
 **CURRENT — updated October 12, 2026.** Cleanup is the next development priority.
 Cleanup Phases 1–2 are complete. **C01 and C02 are COMPLETE: merged, deployed and accepted.**
-**C03 schema baseline and C04 contracts/diagnostics are COMPLETE and released. C05 is next, not started.** New features wait for the
+**C03 schema baseline and C04 contracts/diagnostics are COMPLETE and released. C05 is active in PR #63.** New features wait for the
 cleanup exit gates. The separately authorized [swarm, previous-tier gear and host controls](combat/swarm-scaling.md) are deployed and accepted in PR #61.
 Read [active work](ACTIVE_WORK.md) before editing.
 
@@ -12,7 +12,7 @@ Read [active work](ACTIVE_WORK.md) before editing.
 | --- | --- | --- |
 | [Active work / resume here](ACTIVE_WORK.md) | One package, branch/PR, checkpoint and next action | CURRENT COORDINATION |
 | [Current status](CURRENT_STATUS.md) | Shipped features, verified runtime, known defects and open acceptance | CURRENT |
-| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01/C02 COMPLETE; C03 COMPLETE; C04 COMPLETE, deployed and accepted; C05 next |
+| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01/C02 COMPLETE; C03 COMPLETE; C04 COMPLETE, deployed and accepted; C05 active in PR #63 |
 | [Expansion plan](EXPANSION_PLAN.md) | Deferred features, design dependencies and long-term direction | FUTURE — after cleanup |
 | [October 9 engineering review](reviews/2026-10-09-code-review.md) | Findings F01–F17 and measured baseline behind the cleanup plan | BASELINE RECORD |
 | [Source of Truth](Source_of_Truth.md) | Product authority, design rules and conflict resolution | CURRENT AUTHORITY |
@@ -47,7 +47,7 @@ to the historical Cloudflare migration phase numbers.
 | Progression | [Guild quests and tiers](guild-quests-and-tiers.md) | Released; classroom tuning open, AA purchases future |
 | Hosting and team race | [Host sessions and team-race feasibility](combat/host-sessions-and-team-race.md) | Explicit Join / End / Launch, Next wave and enemy elimination released; team race future |
 | Avatars | [Database foundation](avatar-database.md), [art and animation direction](avatar-art-direction.md) | Static avatars released; full animation gate remains open |
-| Contracts and diagnostics | [Boundary ownership and CI policy](cloudflare/contracts-and-diagnostics.md) | C04 COMPLETE, deployed and accepted; C05 next |
+| Contracts and diagnostics | [Boundary ownership and CI policy](cloudflare/contracts-and-diagnostics.md) | C04 COMPLETE, deployed and accepted; C05 active in PR #63 |
 | Database | [Schema baseline and ownership](cloudflare/schema-baseline.md) | C03 declaration/snapshot repair; shipped SQL remains immutable |
 | Operations | [Custom domain](cloudflare/custom-domain.md), [workshop routing](workshop-routing.md), [release and recovery record](cloudflare/full-migration.md) | Workshop and live application are separate; infrastructure drills remain open |
 
@@ -75,3 +75,5 @@ deployment and acceptance runs, and append the release record. Keep old evidence
 dated; move remaining scope into the active plans instead of leaving competing
 “current” queues. Product rule changes also update the relevant specification and
 [Source of Truth](Source_of_Truth.md).
+
+C05 [room-cost methods and measurements](cloudflare/room-costs.md) are in progress; no C05 release is claimed.
