@@ -1,3 +1,7 @@
+# C04 deployment follow-up — October 12, 2026
+
+C04 / PR #60 is merged and deployed at `097081c11692c3526714d34628a29b0b0f28815c` (deployment 38284111710; Worker ad902178-71c9-443c-a1d3-d987beb416b6), but live acceptance 38284362252 failed at host launch. **Not yet accepted.** [PR #62](https://github.com/Orsnoire/FightSchool/pull/62), branch `fix/c04-forwarded-response`, reproduces immutable-header mutation and contains the forward fix; full verification is running. Resume there and redeploy after exact-head gates. Preserve separate PR #61. The checkpoint below predates this release.
+
 # Active work and interruption checkpoint
 
 **CURRENT — October 12, 2026. C04 contracts and diagnostics active.**
