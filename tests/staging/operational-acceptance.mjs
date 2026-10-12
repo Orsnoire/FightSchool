@@ -40,13 +40,14 @@ class Actor {
       if (this.error) throw new Error(this.error);
       await sleep(50);
     }
-    throw new Error(`Timed out; event types: ${this.messages.slice(-5).map(m => m.type)}`);
+    const recent = this.messages.slice(-5).map(m => ({ type: m.type, error: m.error, phase: m.state?.currentPhase, round: m.state?.round }));
+    throw new Error(`Timed out; recent protocol state: ${JSON.stringify(recent)}`);
   }
-  state(phase) { return this.wait(m => m.type === "combat_state" && m.state.currentPhase === phase); }
+  state(phase) { return this.wait(m => m.type === "combat_state" && m.state.currentPhase === phase).catch(error => { throw new Error(`Waiting for ${phase}: ${error.message}`); }); }
   async ack(type, fields = {}) {
     const start = Date.now(), id = this.send(type, fields);
     const result = await this.wait(m => m.commandId === id && ["command_ack", "protocol_error"].includes(m.type));
-    assert.equal(result.type, "command_ack", result.message);
+    assert.equal(result.type, "command_ack", `${type}: ${result.error || result.message || "Command rejected"}`);
     return Date.now() - start;
   }
 }
@@ -114,7 +115,7 @@ try {
     assert.equal(reused.payload.sessionId, main.room);
   });
   await check("30 simultaneous answers and reconnect preserve shared state", async () => {
-    main.host.send("start_fight"); const opened = await players[0].state("question");
+    await main.host.ack("start_fight"); const opened = await players[0].state("question");
     await sleep(Math.max(0, opened.state.questionStartTime - Date.now()) + 100);
     const times = await Promise.all(players.map(player => player.ack("answer", { round: 1, questionId: "q1", answer: "4" })));
     times.sort((a, b) => a - b);
