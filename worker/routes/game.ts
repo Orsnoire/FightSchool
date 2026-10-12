@@ -1,3 +1,4 @@
+import { readJson, bodyErrorResponse } from "../http/json";
 import { questInput } from "../../shared/quests";
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
 import { equipmentIdSchema } from "../../shared/equipment-id.ts";
@@ -114,15 +115,31 @@ function json(body: unknown, status = 200) {
   );
 }
 export function safeStudent(student: s.StudentRecord) {
-  const {
-    jobLoadouts: _remembered,
-    loadoutRevision: _revision,
-    passwordHash: _,
-    nicknameNormalized: __,
-    createdAt: ___,
-    ...safe
-  } = student;
-  return { ...safe, inventory: ownedEquipment([...safe.inventory, ...EQUIPMENT_SLOTS.map(slot => safe[slot]).filter((id): id is string => !!id)]) };
+  return {
+    id: student.id,
+    guildCode: student.guildCode,
+    grantedJobs: student.grantedJobs,
+    aaExperience: student.aaExperience,
+    staminaDay: student.staminaDay,
+    dailyCombats: student.dailyCombats,
+    xpRemainder: student.xpRemainder,
+    nickname: student.nickname,
+    guildId: student.guildId,
+    weapon: student.weapon,
+    headgear: student.headgear,
+    armor: student.armor,
+    offhand: student.offhand,
+    hands: student.hands,
+    legs: student.legs,
+    feet: student.feet,
+    arms: student.arms,
+    crossClassAbility1: student.crossClassAbility1,
+    crossClassAbility2: student.crossClassAbility2,
+    gold: student.gold,
+    characterClass: student.characterClass,
+    gender: student.gender,
+    inventory: ownedEquipment([...student.inventory, ...EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id)]),
+  };
 }
 const method = (r: Request, m: string) => r.method === m;
 function safeFight(fight: any) {
@@ -222,7 +239,7 @@ export async function handleGame(
           name: text,
           description: z.string().max(3000).nullable().optional(),
         })
-        .parse(await request.json());
+        .parse(await readJson(request));
       const [g] = await db
         .insert(s.guilds)
         .values({
@@ -249,7 +266,7 @@ export async function handleGame(
       if (tail === "members" && method(request, "POST")) {
         if (teacher)
           throw new ApiError("Students join using their own accounts", 403);
-        const input = z.object({ studentId: uuid }).parse(await request.json());
+        const input = z.object({ studentId: uuid }).parse(await readJson(request));
         ownStudent(input.studentId);
         const [g] = await db
           .select()
@@ -285,7 +302,7 @@ export async function handleGame(
               name: text.optional(),
               description: z.string().max(3000).nullable().optional(),
             })
-            .parse(await request.json());
+            .parse(await readJson(request));
           return json(
             (
               await db
@@ -315,7 +332,7 @@ export async function handleGame(
             experience: z.number().int().min(0).max(10000000).optional(),
             unlockedTier: z.number().int().min(1).max(10).optional(),
           })
-          .parse(await request.json());
+          .parse(await readJson(request));
         return json(
           (
             await db
@@ -403,7 +420,7 @@ export async function handleGame(
               enableGroupQuests: z.boolean().optional(),
               enableChat: z.literal(false).optional(),
             })
-            .parse(await request.json());
+            .parse(await readJson(request));
           return json(
             (
               await db
@@ -436,7 +453,7 @@ export async function handleGame(
         if (method(request, "POST")) {
           const { fightId } = z
             .object({ fightId: uuid })
-            .parse(await request.json());
+            .parse(await readJson(request));
           const fight = await repository.findFightById(fightId);
           if (fight?.teacherId !== actor.actorId)
             throw new ApiError("Forbidden", 403);
@@ -465,7 +482,7 @@ export async function handleGame(
         if (method(request, "PATCH") && assignment[2]) {
           const { enabled } = z
             .object({ enabled: z.boolean() })
-            .parse(await request.json());
+            .parse(await readJson(request));
           return json(
             (
               await db
@@ -518,7 +535,7 @@ export async function handleGame(
         return {...input,criteria:input.criteria as import("../../shared/schema").QuestCriteria};
       };
       if (tail === 'quests' && method(request,'POST')) {
-        requireTeacher();const input=await validateQuest(await request.json());
+        requireTeacher();const input=await validateQuest(await readJson(request));
         const {assignToAll,...fields}=input;
         const recipients=assignToAll?await db.select({studentId:s.guildMemberships.studentId}).from(s.guildMemberships).where(eq(s.guildMemberships.guildId,id)):[];
         if(assignToAll&&!recipients.length)throw new ApiError('Add guild members before assigning personal quests.');
@@ -535,7 +552,7 @@ export async function handleGame(
         if(g.isArchived)throw new ApiError('Archived guilds are read-only.',409);
         if(method(request,'DELETE')){await db.update(s.quests).set({isArchived:true}).where(where);return json({success:true});}
         if(method(request,'PATCH')){
-          const body=await request.json() as Record<string,unknown>;
+          const body=await readJson(request) as Record<string,unknown>;
           if(body.isCompleted===true){
             if(existing.isArchived)throw new ApiError('Archived quests cannot be completed.',409);
             await evaluateQuests(db,id,qm[1]);return json((await db.select().from(s.quests).where(where))[0]);
@@ -654,7 +671,7 @@ export async function handleGame(
     }
     if (path === "/api/equipment-items" && method(request, "POST")) {
       requireTeacher();
-      const input = itemSchema.parse(await request.json());
+      const input = itemSchema.parse(await readJson(request));
       const classificationError = armorClassificationError(input);
       if (classificationError) throw new ApiError(classificationError);
       return json(
@@ -687,7 +704,7 @@ export async function handleGame(
       if (method(request, "GET")) return json(item);
       requireTeacher();
       if (method(request, "PATCH")) {
-        const input = itemSchema.partial().parse(await request.json());
+        const input = itemSchema.partial().parse(await readJson(request));
         // Older unspecified armor can receive unrelated edits without changing its category.
         if ('slot' in input || 'itemType' in input || 'armorCategory' in input || item.armorCategory) {
           const classificationError = armorClassificationError({...item,...input});
@@ -817,7 +834,7 @@ export async function handleGame(
             crossClassAbility1: z.string().max(100).nullable().optional(),
             crossClassAbility2: z.string().max(100).nullable().optional(),
           })
-          .parse(await request.json());
+          .parse(await readJson(request));
         const jobs = await db
           .select()
           .from(s.studentJobLevels)
@@ -882,7 +899,7 @@ export async function handleGame(
       if (tail === "purchase-item" && method(request, "POST")) {
         const { itemId } = z
           .object({ itemId: uuid })
-          .parse(await request.json());
+          .parse(await readJson(request));
         if (!student.guildId) throw new ApiError("Join a guild first");
         const g = await guild(student.guildId);
         const [item] = await db
@@ -926,7 +943,7 @@ export async function handleGame(
             resultId: uuid.optional(),
             itemId: equipmentIdSchema.optional(),
           })
-          .parse(await request.json());
+          .parse(await readJson(request));
         if (tail === "claim-loot" && !input.itemId)
           throw new ApiError("Choose an item");
         return json(
@@ -1050,11 +1067,12 @@ export async function handleGame(
     }
     return json({ error: "Route not found" }, 404);
   } catch (error) {
+      const bodyFailure=bodyErrorResponse(error);if(bodyFailure)return bodyFailure;
     if (error instanceof ApiError || error instanceof RewardError)
       return json({ error: error.message }, error.status);
     if (error instanceof z.ZodError || error instanceof SyntaxError)
       return json({ error: "Invalid request" }, 400);
-    console.error("game_api_failed", path);
+
     return json({ error: "Unable to complete request" }, 503);
   }
 }

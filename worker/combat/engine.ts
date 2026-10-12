@@ -1,3 +1,4 @@
+import { CombatRuleError } from "../../shared/combat/errors";
 import { enemyAISchema, inferEnemyType, resolveEnemyType } from "../../shared/combat/enemy-ai";
 import { cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
 import { resolveEnemyTurn } from "./enemy-turn";
@@ -115,7 +116,7 @@ export function addStudent(
 ): CombatSnapshot {
   if (state.players[student.id]) return state;
   if (state.pendingPlayers?.[student.id]) return state;
-  if (state.currentPhase === "game_over") throw new Error("Fight has ended");
+  if (state.currentPhase === "game_over") throw new CombatRuleError("Fight has ended");
   const returning = state.departedPlayers?.[student.id];
   if (returning) return admitStudent(state, structuredClone(returning));
   const job = (student.characterClass || "warrior") as CharacterClass;
@@ -254,7 +255,7 @@ export function startQuestion(
 ): CombatSnapshot {
   if (state.currentPhase !== "waiting") return state;
   if (!Object.keys(state.players).length)
-    throw new Error("At least one student must join");
+    throw new CombatRuleError("At least one student must join");
   return {
     ...state,
     currentPhase: "question",
@@ -271,7 +272,7 @@ export function applyAnswer(
 ): CombatSnapshot {
   const p = state.players[id];
   if (state.currentPhase !== "question" || !p || p.isDead || p.hasAnswered)
-    throw new Error("Answer is unavailable in this round");
+    throw new CombatRuleError("Answer is unavailable in this round");
   const next = structuredClone(state);
   const player = next.players[id];
   player.hasAnswered = true;
@@ -315,18 +316,18 @@ export function selectAction(
 ): CombatSnapshot {
   const p = state.players[id];
   if (!p || p.isDead || !p.hasAnswered)
-    throw new Error("Submit an answer first");
+    throw new CombatRuleError("Submit an answer first");
   const support = state.currentPhase === "abilities";
   // Accept early selections from clients opened before the independent action phase shipped.
   if (!support && !["question", "actions"].includes(state.currentPhase))
-    throw new Error("Actions are closed");
+    throw new CombatRuleError("Actions are closed");
   if (SUPPORT.has(ability) !== support)
-    throw new Error("Ability belongs to another phase");
+    throw new CombatRuleError("Ability belongs to another phase");
   const error = selectionProblem(p, ability);
-  if (error) throw new Error(error);
+  if (error) throw new CombatRuleError(error);
   if (ALLIES.has(ability)) {
     if (!state.players[targetId] || state.players[targetId].isDead)
-      throw new Error("Choose a living ally");
+      throw new CombatRuleError("Choose a living ally");
   } else if (
     !SUPPORT.has(ability) &&
     !["craft_healing_potion", "craft_shield_potion", "pact_surge"].includes(
@@ -334,20 +335,20 @@ export function selectAction(
     ) &&
     !state.enemies.some((e) => e.id === targetId && e.health > 0)
   )
-    throw new Error("Choose a living enemy");
+    throw new CombatRuleError("Choose a living enemy");
   if (
     state.enemyDisplayMode === "consecutive" &&
     state.enemies.some((e) => e.id === targetId) &&
     !activeEnemies(state).some(e=>e.id===targetId)
   )
-    throw new Error("That enemy is not active yet");
+    throw new CombatRuleError("That enemy is not active yet");
   const next = structuredClone(state);
   const player = next.players[id];
   if (support) {
     if (player.supportActions.some((a) => a.ability === ability))
-      throw new Error("Ability already selected");
+      throw new CombatRuleError("Ability already selected");
     if (player.supportActions.length >= 3)
-      throw new Error("Maximum three support actions");
+      throw new CombatRuleError("Maximum three support actions");
     player.supportActions.push({ ability, targetId });
   } else player.questionAction = { ability, targetId };
   player.ready = false;
@@ -361,7 +362,7 @@ export function setReady(state: CombatSnapshot, id: string): CombatSnapshot {
     !p.hasAnswered ||
     !["question", "actions", "abilities"].includes(state.currentPhase)
   )
-    throw new Error("Cannot finish actions now");
+    throw new CombatRuleError("Cannot finish actions now");
   return {
     ...state,
     players: { ...state.players, [id]: { ...p, ready: true } },
@@ -369,7 +370,7 @@ export function setReady(state: CombatSnapshot, id: string): CombatSnapshot {
 }
 /** Skip the current wave without inventing player damage or answer credit. */
 export function nextWave(state: CombatSnapshot, fight: FightRecord, now = Date.now()): CombatSnapshot {
-  if (!canAdvanceWave(state)) throw new Error("No next wave is available");
+  if (!canAdvanceWave(state)) throw new CombatRuleError("No next wave is available");
   if (state.currentPhase === "wave_break") return advancePhase(state, fight, now);
   const next = structuredClone(state);
   for (const enemy of activeEnemies(next)) {
@@ -386,9 +387,9 @@ export function nextWave(state: CombatSnapshot, fight: FightRecord, now = Date.n
 /** Host intervention defeats one active enemy without attributing damage to a player. */
 export function eliminateEnemy(state: CombatSnapshot, id: string): CombatSnapshot {
   if (["waiting", "game_over"].includes(state.currentPhase))
-    throw new Error("Fight is not active");
+    throw new CombatRuleError("Fight is not active");
   if (!activeEnemies(state).some(e => e.id === id))
-    throw new Error("Choose a living enemy in the active wave");
+    throw new CombatRuleError("Choose a living enemy in the active wave");
   const next = structuredClone(state);
   const enemy = next.enemies.find(e => e.id === id)!;
   enemy.health = 0;
@@ -405,10 +406,10 @@ export function eliminateEnemy(state: CombatSnapshot, id: string): CombatSnapsho
 }
 export function resurrectPlayer(state: CombatSnapshot, id: string): CombatSnapshot {
   if (["waiting", "game_over"].includes(state.currentPhase))
-    throw new Error("Fight is not active");
+    throw new CombatRuleError("Fight is not active");
   const player = state.players[id];
-  if (!player) throw new Error("Player is not in this fight");
-  if (!player.isDead) throw new Error("Player is already alive");
+  if (!player) throw new CombatRuleError("Player is not in this fight");
+  if (!player.isDead) throw new CombatRuleError("Player is already alive");
   const next = structuredClone(state);
   const revived = next.players[id];
   revived.health = 1;
@@ -992,7 +993,7 @@ function executeAbility(
       buff("doubleDamage", 1);
       break;
     default:
-      throw new Error(`Ability has no rule: ${id}`);
+      throw new CombatRuleError(`Ability has no rule: ${id}`);
   }
   if (damage > 0) {
     const dealt = hit(s, p, targetId, damage, id !== "attack");

@@ -3,15 +3,6 @@ name: Combat UI Acceptance
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'package.json'
-      - 'package-lock.json'
-      - 'client/**'
-      - 'shared/combat/**'
-      - 'tests/browser/combat-ui.mjs'
-      - 'tests/browser/host-ui.mjs'
-      - 'tests/browser/host-sessions.mjs'
-      - '.github/workflows/combat-ui-acceptance.yml'
 
 permissions:
   contents: read

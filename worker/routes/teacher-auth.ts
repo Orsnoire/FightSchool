@@ -1,3 +1,4 @@
+import { readJson, bodyErrorResponse } from "../http/json";
 import { z } from "zod";
 import { hashPassword, verifyPassword } from "../auth/crypto.ts";
 import {
@@ -40,14 +41,6 @@ function response(body: unknown, status = 200, cookie?: string): Response {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
-async function readJson(request: Request): Promise<unknown> {
-  const declaredLength = Number(request.headers.get("content-length") || 0);
-  if (declaredLength > 16_384) throw new Error("REQUEST_TOO_LARGE");
-  const raw = await request.text();
-  if (raw.length > 16_384) throw new Error("REQUEST_TOO_LARGE");
-  return JSON.parse(raw);
-}
-
 function publicTeacher(teacher: TeacherRecord) {
   return {
     id: teacher.id,
@@ -86,7 +79,7 @@ export async function handleTeacherAuth(
 ): Promise<Response | null> {
   if (request.method === "POST" && url.pathname === "/api/teacher/signup") {
     try {
-      const input = signupSchema.parse(await readJson(request));
+      const input = signupSchema.parse(await readJson(request,16_384));
       const emailNormalized = input.email.toLowerCase();
       if (await context.repository.findTeacherByEmail(emailNormalized)) {
         return response({ error: "Email already registered" }, 409);
@@ -111,6 +104,7 @@ export async function handleTeacherAuth(
         cookie,
       );
     } catch (error) {
+      const bodyFailure=bodyErrorResponse(error);if(bodyFailure)return bodyFailure;
       if (error instanceof Error && error.message === "REQUEST_TOO_LARGE") {
         return response({ error: "Request body too large" }, 413);
       }
@@ -123,7 +117,7 @@ export async function handleTeacherAuth(
 
   if (request.method === "POST" && url.pathname === "/api/teacher/login") {
     try {
-      const input = loginSchema.parse(await readJson(request));
+      const input = loginSchema.parse(await readJson(request,16_384));
       const teacher = await context.repository.findTeacherByEmail(
         input.email.toLowerCase(),
       );
@@ -152,6 +146,7 @@ export async function handleTeacherAuth(
         cookie,
       );
     } catch (error) {
+      const bodyFailure=bodyErrorResponse(error);if(bodyFailure)return bodyFailure;
       if (error instanceof Error && error.message === "REQUEST_TOO_LARGE") {
         return response({ error: "Request body too large" }, 413);
       }

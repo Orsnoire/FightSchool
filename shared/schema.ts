@@ -1,5 +1,4 @@
-import { enemySwarmSchema, type EnemySwarm } from "./combat/swarm";
-import { enemyAISchema, ENEMY_TYPES, validEnemyAI } from "./combat/enemy-ai";
+import type { EnemySwarm } from "./combat/swarm";
 import { TIER_ONE_EQUIPMENT } from "./tier-one-equipment";
 import { EQUIPMENT_SLOTS, type EquipmentSlot } from "./equipment-slots";
 import { z } from "zod";
@@ -177,15 +176,6 @@ export interface Question {
   timeLimit: number; // in seconds
 }
 
-export const questionSchema = z.object({
-  id: z.string(),
-  type: z.enum(["multiple_choice", "true_false", "short_answer"]),
-  question: z.string().min(1),
-  options: z.array(z.string()).optional(),
-  correctAnswer: z.string().min(1),
-  timeLimit: z.number().min(5).max(300),
-});
-
 // Enemy schema
 export interface Enemy {
   enemyType?: Exclude<import("./combat/enemy-ai").EnemyType, "basic">;
@@ -200,20 +190,6 @@ export interface Enemy {
   image: string;
   difficultyMultiplier: number; // 1-100: counterattack damage and share of the encounter HP budget
 }
-
-export const enemySchema = z.object({
-  enemyType: z.enum(ENEMY_TYPES).optional(),
-  ai: enemyAISchema.optional(),
-  quantity:z.number().int().min(1).max(60).optional(),
-  swarm: enemySwarmSchema.optional(),
-  wave:z.number().int().min(1).max(20).optional(),
-  species:z.enum(["goblin","other"]).optional(),
-  role:z.enum(["trash","normal","leader","boss"]).optional(),
-  id: z.string(),
-  name: z.string().min(1),
-  image: z.string(),
-  difficultyMultiplier: z.number().min(1).max(100).default(10),
-}).refine(validEnemyAI, "Invalid enemy AI rules");
 
 // Fight schema (teacher creates)
 export interface Fight {
@@ -236,20 +212,8 @@ export interface Fight {
   createdAt: number;
 }
 
-export const insertFightSchema = z.object({
-  encounterTier:z.number().int().min(1).max(4).nullable().optional(),
-  teacherId: z.string().min(1),
-  title: z.string().min(1),
-  guildCode: z.string().optional().nullable(), // Deprecated: use guild_fights table
-  questions: z.array(questionSchema).min(1),
-  enemies: z.array(enemySchema).default([]),
-  baseXP: z.number().min(1).max(100).default(10),
-  baseEnemyDamage: z.number().min(1).max(10).default(1),
-  enemyDisplayMode: z.enum(["simultaneous", "consecutive"]).default("consecutive"),
-  lootTable: z.array(z.object({ itemId: z.string() })).default([]),
-  randomizeQuestions: z.boolean().default(false),
-  shuffleOptions: z.boolean().default(true),
-});
+export { questionSchema, enemySchema, insertFightSchema } from "./contracts/fights";
+import { insertFightSchema } from "./contracts/fights";
 
 export type InsertFight = z.infer<typeof insertFightSchema>;
 
@@ -959,29 +923,8 @@ export interface PartyDamageData {
   }>;
 }
 
-// Public transport types. Database tables and credential fields live only in worker/db/schema.ts.
-import type * as DB from '../worker/db/schema';
-export type Teacher = Omit<DB.TeacherRecord,'passwordHash'|'emailNormalized'>;
-export type Student = Omit<DB.StudentRecord,'passwordHash'|'nicknameNormalized'|'createdAt'>;
-export type EquipmentItemDb = typeof DB.equipmentItems.$inferSelect;
-export type StudentJobLevel = typeof DB.studentJobLevels.$inferSelect;
-export type Guild = typeof DB.guilds.$inferSelect;
-export type GuildMembership = typeof DB.guildMemberships.$inferSelect;
-export type GuildMember = Student & {joinedAt:number;studentId:string};
-export type GuildFight = typeof DB.guildFights.$inferSelect;
-export type GuildSettings = typeof DB.guildSettings.$inferSelect;
-export type Quest = typeof DB.quests.$inferSelect;
-export type GuildQuest = Quest;
-export type CombatStat = Omit<typeof DB.combatResults.$inferSelect,'totals'> & import('./combat/model').CombatTotals & {nickname:string;lootItemClaimed:string|null};
-export type DbFight = DB.FightRecord;
-export type InsertQuest = typeof DB.quests.$inferInsert;
-export type InsertEquipmentItem = typeof DB.equipmentItems.$inferInsert;
-export type InsertGuild = typeof DB.guilds.$inferInsert;
-export type InsertGuildQuest = InsertQuest;
-export type InsertGuildSettings = typeof DB.guildSettings.$inferInsert;
-export type InsertStudentJobLevel = typeof DB.studentJobLevels.$inferInsert;
-export type InsertGuildMembership = typeof DB.guildMemberships.$inferInsert;
-export type InsertGuildFight = typeof DB.guildFights.$inferInsert;
+// Compatibility exports; transport definitions do not import Worker/Drizzle.
+export type * from "./contracts/dto";
 export const insertEquipmentItemSchema = z.object({
  teacherId:z.string(),name:z.string().min(1),iconUrl:z.string().nullable().optional(),
  itemType:z.enum(['sword','wand','bow','staff','herbs','two-handed-sword','fist','claws','harp','spoon','light_armor','leather_armor','armor','helmet','cap','hat','consumable','spellbook','shield','potion','quiver','bracers','gloves','leggings','boots']),

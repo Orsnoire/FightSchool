@@ -1,53 +1,10 @@
-import { enemyAISchema, ENEMY_TYPES, validEnemyAI } from "../../shared/combat/enemy-ai";
+import { readJson, bodyErrorResponse } from "../http/json";
+import { insertFightSchema as fightSchema } from "../../shared/contracts/fights";
 import { enemyTuning } from "../../shared/encounter-tiers";
 import { z } from "zod";
-import { enemySwarmSchema } from "../../shared/combat/swarm";
 import { authenticateSession, type SessionConfig } from "../auth/session.ts";
 import type { IdentityRepository } from "../db/repository.ts";
 import type { FightRecord } from "../db/schema.ts";
-
-const questionSchema = z.object({
-  id: z.string().min(1).max(200),
-  type: z.enum(["multiple_choice", "true_false", "short_answer"]),
-  question: z.string().min(1).max(20_000),
-  options: z.array(z.string().max(5_000)).max(20).optional(),
-  correctAnswer: z.string().min(1).max(5_000),
-  timeLimit: z.number().int().min(5).max(300),
-});
-
-const enemySchema = z.object({
-  enemyType: z.enum(ENEMY_TYPES).optional(),
-  ai: enemyAISchema.optional(),
-  quantity:z.number().int().min(1).max(60).optional(),
-  swarm: enemySwarmSchema.optional(),
-  wave:z.number().int().min(1).max(20).optional(),
-  species:z.enum(["goblin","other"]).optional(),
-  role:z.enum(["trash","normal","leader","boss"]).optional(),
-  id: z.string().min(1).max(200),
-  name: z.string().min(1).max(200),
-  image: z.string().max(2_000),
-  difficultyMultiplier: z.number().min(1).max(100).default(10),
-}).refine(validEnemyAI, "Invalid enemy AI rules");
-
-const fightSchema = z.object({
-  encounterTier:z.number().int().min(1).max(4).nullable().optional(),
-  teacherId: z.string().uuid(),
-  title: z.string().trim().min(1).max(200),
-  guildCode: z.string().max(100).optional().nullable(),
-  questions: z.array(questionSchema).min(1).max(1_000),
-  enemies: z.array(enemySchema).min(1).max(100),
-  baseXP: z.number().int().min(1).max(100).default(10),
-  baseEnemyDamage: z.number().int().min(1).max(10).default(1),
-  enemyDisplayMode: z
-    .enum(["simultaneous", "consecutive"])
-    .default("consecutive"),
-  lootTable: z
-    .array(z.object({ itemId: z.string().uuid() }))
-    .max(500)
-    .default([]),
-  randomizeQuestions: z.boolean().default(false),
-  shuffleOptions: z.boolean().default(true),
-});
 
 const uuidSchema = z.string().uuid();
 
@@ -63,26 +20,33 @@ function json(body: unknown, status = 200): Response {
 
 function publicFight(fight: FightRecord) {
   return {
-    ...fight,
+    id: fight.id,
+    teacherId: fight.teacherId,
+    title: fight.title,
+    guildCode: fight.guildCode,
+    encounterTier: fight.encounterTier,
+    isArchived: fight.isArchived,
+    questions: fight.questions,
+    enemies: fight.enemies,
+    baseXP: fight.baseXP,
+    baseEnemyDamage: fight.baseEnemyDamage,
+    enemyDisplayMode: fight.enemyDisplayMode,
+    lootTable: fight.lootTable,
+    randomizeQuestions: fight.randomizeQuestions,
+    shuffleOptions: fight.shuffleOptions,
     createdAt: fight.createdAt.getTime(),
     updatedAt: fight.updatedAt.getTime(),
   };
 }
 
 async function readFight(request: Request) {
-  const declaredLength = Number(request.headers.get("content-length") || 0);
-  if (declaredLength > 1_048_576) throw new Error("REQUEST_TOO_LARGE");
-  const raw = await request.text();
-  if (raw.length > 1_048_576) throw new Error("REQUEST_TOO_LARGE");
-  const fight=fightSchema.parse(JSON.parse(raw));
-  if(new Set(fight.enemies.map(e=>e.id)).size!==fight.enemies.length || fight.enemies.reduce((n,e)=>n+(e.quantity||1),0)>120) throw new z.ZodError([{code:"custom",path:["enemies"],message:"Use unique groups and at most 120 enemies per fight."}]);
+  const fight=fightSchema.parse(await readJson(request,1_048_576));
   if(fight.enemies.some(e=>e.quantity!==undefined || e.swarm)){
     fight.encounterTier ||= 1;
     fight.enemies=fight.enemies.map((e,i)=>({...e,quantity:e.quantity||1,wave:e.wave||(fight.enemyDisplayMode==="consecutive"?i+1:1),role:e.role||"normal"}));
   }
   if(fight.encounterTier){
     const tier=fight.encounterTier;
-    if(fight.enemies.some(e=>!e.role))throw new z.ZodError([{code:'custom',path:['enemies'],message:'Choose enemy roles for tiered fights.'}]);
     fight.enemies=fight.enemies.map(e=>({...e,difficultyMultiplier:enemyTuning(tier,e.role!).difficultyMultiplier}));
     fight.baseEnemyDamage=enemyTuning(tier,'normal').baseEnemyDamage;
   }
@@ -144,6 +108,7 @@ export async function handleFights(
         return json({ error: "Loot must belong to this teacher" }, 403);
       return json(publicFight(await repository.createFight(input)), 201);
     } catch (error) {
+      const bodyFailure=bodyErrorResponse(error);if(bodyFailure)return bodyFailure;
       if (error instanceof Error && error.message === "REQUEST_TOO_LARGE")
         return json({ error: "Request body too large" }, 413);
       if (error instanceof z.ZodError || error instanceof SyntaxError)
@@ -178,6 +143,7 @@ export async function handleFights(
         ? json(publicFight(fight))
         : json({ error: "Fight not found" }, 404);
     } catch (error) {
+      const bodyFailure=bodyErrorResponse(error);if(bodyFailure)return bodyFailure;
       if (error instanceof Error && error.message === "REQUEST_TOO_LARGE")
         return json({ error: "Request body too large" }, 413);
       if (error instanceof z.ZodError || error instanceof SyntaxError)

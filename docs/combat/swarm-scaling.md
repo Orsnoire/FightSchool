@@ -8,7 +8,7 @@ The waiting room recalculates both count and HP from the joined roster and the r
 
 Retain the current limits of 60 individuals per group and 120 across the encounter. Authored base counts are reserved first. Remaining capacity is allocated one extra enemy per eligible group in author order repeatedly, until requested additions or the cap are reached. The editor explains these caps. More individuals share the existing role HP budget; count scaling must not multiply that budget a second time.
 
-Persist only the optional swarm setting in existing enemy JSON. Existing templates/rooms remain compatible; no migration or live-data modification is required. C04 / PR #60 is independent and in progress; shared contract changes must be reconciled before merge.
+Persist only the optional swarm setting in existing enemy JSON. Existing templates/rooms remain compatible; no migration or live-data modification is required. C04 / PR #60 merged on October 12 and is integrated here. Swarm settings and host commands extend its shared contracts; public wave mode remains allowlisted.
 
 Required verification: 0/1/4/7/8/11/12/16/30/60-player boundaries, caps and mixed fixed groups, unique stable IDs, preview/start equality, join/leave/reconnect, no active count changes, API create/update/read validation, and rendered authoring controls.
 

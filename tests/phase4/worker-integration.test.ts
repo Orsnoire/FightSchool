@@ -297,6 +297,16 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
       baseXP: 10, baseEnemyDamage: 1, enemyDisplayMode: "consecutive", lootTable: [{ itemId: item.payload.id }],
       randomizeQuestions: false, shuffleOptions: false,
     }, 201);
+    // Shared authoring IDs: registered built-ins and owned custom items work;
+    // unknown catalog keys and another teacher's custom UUID cannot be assigned.
+    await api('/api/fights','POST',teacher.cookie,{...fight.payload,lootTable:[{itemId:'t1_caster_wand'},{itemId:item.payload.id}]},201);
+    await api('/api/fights','POST',teacher.cookie,{...fight.payload,lootTable:[{itemId:'not-a-catalog-key'}]},400);
+    await api('/api/fights','POST',other.cookie,{...fight.payload,teacherId:other.payload.id,lootTable:[{itemId:item.payload.id}]},403);
+    // Multibyte/chunked parsing is bounded even without Content-Length.
+    const oversized=await worker.fetch(new Request(env.PUBLIC_ORIGIN+'/api/fights',{
+      method:'POST',headers:{Origin:env.PUBLIC_ORIGIN,Cookie:teacher.cookie!},body:JSON.stringify({...fight.payload,title:'é'.repeat(600_000)}),
+    }),env as any);
+    assert.equal(oversized.status,413);
     await api(`/api/fights/${fight.payload.id}`, "GET", other.cookie, undefined, 403);
     await api(`/api/fights/${fight.payload.id}`, "GET", student.cookie, undefined, 401);
     await api(`/api/guilds/${guild.payload.id}/fights`, "POST", teacher.cookie, { fightId: fight.payload.id });

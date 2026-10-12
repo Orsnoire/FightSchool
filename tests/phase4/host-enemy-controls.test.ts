@@ -63,8 +63,8 @@ test("Next wave clears only the current wave, preserves future HP and starts one
   assert.equal(opened.currentPhase, "question");
 });
 
-function harness() {
-  let room: any = { fight: template, snapshot: setup(), receipts: [] }, saves = 0;
+function harness(snapshot = setup()) {
+  let room: any = { fight: template, snapshot, receipts: [] }, saves = 0;
   let revoked = false;
   const sockets: any[] = [];
   const socket = (actorId: string, role = "student") => {
@@ -117,6 +117,10 @@ test("host elimination broadcasts defeat, saves victory once and preserves the r
   await h.send(host, "eliminate_enemy", { targetId: "e1:1" }, "kill-enemy-once");
   const defeated = structuredClone(h.room().snapshot);
   assert.equal(learner.messages.filter((m: any) => m.type === "combat_state").at(-1).state.enemies[0].health, 0);
+  const projected = learner.messages.filter((m: any) => m.type === "combat_state").at(-1).state;
+  assert.equal(projected.encounterRules, 2, "public contract must preserve individual-wave mode");
+  assert.equal(activeEnemies(projected).length, 1, "future waves must stay hidden after projection");
+  assert.equal(canAdvanceWave(projected), true, "host's public snapshot must expose the Next wave control");
   h.restore();
   await h.send(host, "eliminate_enemy", { targetId: "e1:1" }, "kill-enemy-once");
   assert.deepEqual(h.room().snapshot, defeated);
@@ -130,4 +134,15 @@ test("host elimination broadcasts defeat, saves victory once and preserves the r
   await h.send(host, "eliminate_enemy", { targetId: "boss:1" }, "kill-final-once");
   assert.deepEqual(h.room().snapshot, won);
   assert.equal(h.saves(), 1);
+});
+
+test("two distinct clicks on a between-wave button cannot skip the newly opened wave", async () => {
+  const s = setup(); s.currentPhase = "wave_break";
+  const h = harness(s), host = h.socket(fight.teacherId, "teacher");
+  await h.send(host, "next_wave", { phase: "wave_break" });
+  const opened = structuredClone(h.room().snapshot);
+  assert.equal(opened.currentPhase, "question");
+  await h.send(host, "next_wave", { phase: "wave_break" });
+  assert.equal(host.messages.at(-1).type, "protocol_error");
+  assert.deepEqual(h.room().snapshot, opened);
 });

@@ -86,6 +86,7 @@ export default function HostFight() {
         <div className="flex flex-wrap items-center gap-2">{phase === "waiting" && <Button disabled={status !== "connected" || !players.length} onClick={() => send("start_fight")}>Start fight</Button>}{active && <>
           {phase !== "wave_break" && <Button size="sm" disabled={status !== "connected"} onClick={() => apiRequest("POST", `/api/combat/${sessionId}/force-question`).catch(e => setHostingError(e.message))}>Advance current phase</Button>}
           {canAdvanceWave(state) && <Button size="sm" disabled={status !== "connected"} onClick={() => {
+            if (state.currentPhase === "waiting" || state.currentPhase === "game_over") return;
             const remaining = activeEnemies(state).length;
             if (phase === "wave_break" || !remaining || window.confirm(`Skip wave ${state.activeWave || 1}? Its ${remaining} remaining enemies will be defeated and the next wave will start.`)) send("next_wave", { phase: state.currentPhase });
           }}>Next wave</Button>}

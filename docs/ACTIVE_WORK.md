@@ -4,12 +4,17 @@
 
 ## C04 active checkpoint
 
-- Branch: `cleanup/c04-contracts-diagnostics`; draft PR registration follows this claim. Read its checkpoint and PR for newer progress.
+- Branch: `cleanup/c04-contracts-diagnostics`; [draft PR #60](https://github.com/Orsnoire/FightSchool/pull/60). Read its PR for exact published commits.
 - Baseline: `ee95602ca229bf4cc19f6458afa8271055dc675d`; C03 complete and HP preview deployed/accepted; no open PRs at start.
 - Scope: F05/F16 shared request/response/command contracts, public snapshot allowlists, typed query factories, bounded JSON parsing, redacted structured diagnostics and intended CI checks.
 - Preserve ownership, session revocation, saved rooms, rewards, approved gameplay and current live data. No production database changes.
-- Verification: not yet run for C04. Implementation not started.
-- Next: inspect boundaries, publish failing regression checks, implement in coherent checkpoints and run full gates.
+- Published baseline `051ad3a`: two intentional failing tests reproduced shared fight validation drift and future-field snapshot leakage.
+- Implemented: shared authoring/command/JSON DTO contracts, allowlisted public projections, typed query factories, bounded UTF-8 readers, redacted diagnostics and unconditional browser CI.
+- Local verification: all 224 tests, typecheck and client/Worker production builds pass on implementation checkpoint `168de11`.
+- CI 38282804787 passed on documentation reconciliation `dd088ef`. Final diagnostics refinement labels revoked/expired commands rejected and dependency errors failed, and logs the latest room revision; typecheck and 22 targeted tests pass. Final-head CI/browser pending.
+- [Ownership, limits and intended CI policy](cloudflare/contracts-and-diagnostics.md). GitHub reports main unprotected; protection enforcement is not claimed.
+- Next: review exact-head CI/browser checks for PR #60. Not merged or deployed.
+- Concurrent feature: preserve PR #61 (`feat/swarm-party-count`); its enemy JSON setting must be incorporated into the shared fight contract when integrating branches. Only its main discovery note is included here.
 
 The records below are historical.
 
@@ -21,8 +26,8 @@ The records below are historical.
 - No-op generation writes no files; all 27 tables/246 columns match the migrated PostgreSQL catalog. Shipped SQL hashes and journal entries are unchanged.
 - [Schema ownership and future migration workflow](cloudflare/schema-baseline.md) documents the repaired 0014 snapshot and SQL-owned reward functions.
 - This is a tooling/declaration repair with no new SQL migration. No production database operation or deployment was performed during the C03 task. C03 is included in the later HP preview deployment below; the existing migrator passed with no new SQL.
-- `cleanup/c03-schema-baseline` is now historical. No cleanup implementation package is active.
-- Next cleanup package: C04, not started. Check current main and open PRs, then register its branch/PR before implementation; preserve any separately authorized work.
+- `cleanup/c03-schema-baseline` is now historical. C04 is active above.
+- At C03 closeout C04 was next; it is now active above. Check current main and open PRs, then register its branch/PR before implementation; preserve any separately authorized work.
 
 The C02 release record below is historical context.
 
@@ -117,12 +122,12 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 - Owner explicitly authorized deployment after review/merge. Deployed checkout: `274dbfe1d29dcb8897b675e85a3edb0343866f0c`; immutable Worker `50f91c4d-1cdb-4b04-bf69-8f3c715eff82`, published at 16:13:11 UTC.
 - [Deployment 38275647965](https://github.com/Orsnoire/FightSchool/actions/runs/38275647965) passed: all 218 tests, typecheck, both builds, R2, existing migration gate and both hostname smoke checks.
 - [Canonical live acceptance 38275889570](https://github.com/Orsnoire/FightSchool/actions/runs/38275889570) passed on the same checkout, including combat/economy, R2, 30 participants, reconnects, room isolation, moderation and exactly-once rewards.
-- Status: complete, merged, deployed and accepted. Next: C04 remains unstarted; register it before implementation. C04 sequencing remains governed by the cleanup checkpoint above.
+- Status: complete, merged, deployed and accepted. C04 is now registered above. C04 sequencing remains governed by the cleanup checkpoint above.
 
 ## Swarm count scaling — separate feature work
 
 - Owner request, October 12: optional Swarm control per enemy group, adding a configurable x enemies at 8, 12, 16, etc. players. Base count through 7 players.
-- Branch: `feat/swarm-party-count`; [draft PR #61](https://github.com/Orsnoire/FightSchool/pull/61). C04 / PR #60 remains the active cleanup package and must be preserved.
+- Branch: `feat/swarm-party-count`; [draft PR #61](https://github.com/Orsnoire/FightSchool/pull/61). C04 / PR #60 is merged; its contracts and diagnostics are preserved.
 - Counts and HP preview follow the joined waiting roster; counts lock at Start Fight. Existing late-entry HP budgeting remains in effect.
 - Preserve fixed quantities when disabled, species behavior, waves, individual IDs and current data. Store the optional setting in existing enemy JSON; no SQL migration.
 - Retain 60 enemies per group and 120 per encounter. Reserve authored counts first, then distribute capped additions fairly in author order.
@@ -130,4 +135,4 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 - Owner added previous-tier reference gear: tier 1 uses real tier 0 starter sets; tier 2 full tier 1; later provisional gear estimates shift down one tier. Character level midpoints remain 2/6/9/13. Solo/duo entry-loadout budgeting is unchanged.
 - Verification: 12 focused tests pass, including real mounted editor and Durable Object join/leave/reconnect/start. Swarm baseline failed 3/4 new checks; reference-gear baseline failed both new checks. Full pre-integration suite (231 tests), typecheck and both builds pass; final stale-phase guard also passes its 4 targeted tests.
 - Owner corrected the new control to Next wave, not Next phase. Implemented teacher-only wave skip/start with confirmation when living enemies remain, and enemy elimination × with matching hover/focus/touch affordances. Existing phase advance remains available.
-- Host controls: all 5 focused checks pass, including stale-round/ownership/revocation/retry checks, wave selection, status release, no fabricated player credit, victory and exactly-once result persistence. C04 / PR #60 has merged as `097081c11692c3526714d34628a29b0b0f28815c`. Next: integrate current main, preserve unified contracts and diagnostics, then rerun gates and browser acceptance. Not merged or deployed.
+- Host controls: all 5 focused checks pass, including stale-round/ownership/revocation/retry checks, wave selection, status release, no fabricated player credit, victory and exactly-once result persistence. C04 / PR #60 has merged as `097081c11692c3526714d34628a29b0b0f28815c`. Integrated main `097081c` with shared fight/command contracts and structured rule errors. Added `encounterRules` to the public allowlist so wave UI and active enemy selection survive the refactor. Integrated typecheck and client/Worker builds pass; 19 focused checks pass. Full suite and browser acceptance pending final verification. Next: verify exact-head CI/browser and mark ready for review. Not merged or deployed.
