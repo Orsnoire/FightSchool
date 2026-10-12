@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { ArrowLeft, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -66,8 +66,19 @@ export default function TeacherStats() {
         params.set(key, String(date.getTime()));
       } else params.set(key, value);
     }
+  const filterError =
+    filters.playerId &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      filters.playerId,
+    )
+      ? "Enter the full player ID, or use search for part of an ID."
+      : filters.from && filters.to && filters.from > filters.to
+        ? "The start date must be on or before the end date."
+        : null;
   const report = useQuery<SessionReport>({
     queryKey: [`/api/combat-stats/report?${params}`],
+    enabled: !filterError,
+    placeholderData: keepPreviousData,
     refetchOnWindowFocus: true,
     refetchInterval: 15000,
   });
@@ -228,6 +239,11 @@ export default function TeacherStats() {
             </Button>
           </CardContent>
         </Card>
+        {filterError && (
+          <p role="status" className="text-sm text-muted-foreground">
+            {filterError}
+          </p>
+        )}
         {report.isError ? (
           <Card>
             <CardContent className="pt-5" role="alert">
@@ -240,7 +256,7 @@ export default function TeacherStats() {
             </CardContent>
           </Card>
         ) : null}
-        {data && (
+        {data && !filterError && (
           <>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {[
@@ -312,7 +328,7 @@ export default function TeacherStats() {
         )}
         {report.isLoading ? (
           <p role="status">Loading statistics…</p>
-        ) : data && !report.isError ? (
+        ) : data && !report.isError && !filterError ? (
           <>
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full text-left text-sm">

@@ -29,7 +29,7 @@ try {
       {
         ...fight.enemies[0],
         image: "/enemies/slime-v2.png",
-        species: "slime",
+        species: "other",
         enemyType: "slime",
         role: "trash",
         wave: 1,
@@ -327,15 +327,13 @@ try {
       };
       await combat.evaluate(
         (state) =>
-          window.usability.sockets
-            .at(-1)
-            .onmessage({
-              data: JSON.stringify({
-                type: "combat_state",
-                state,
-                serverTime: Date.now(),
-              }),
+          window.usability.sockets.at(-1).onmessage({
+            data: JSON.stringify({
+              type: "combat_state",
+              state,
+              serverTime: Date.now(),
             }),
+          }),
         state,
       );
       return state.playback.id;
@@ -422,6 +420,20 @@ try {
   console.log(
     "Usability patch browser acceptance passed: editing, variants, filters, animation completion, reduced motion, 30/60 players.",
   );
+} catch (error) {
+  for (const [i, context] of browser.contexts().entries())
+    for (const [j, p] of context.pages().entries()) {
+      console.error(
+        "Browser failure at",
+        p.url(),
+        (await p.locator("body").innerText()).slice(-6000),
+      );
+      await p.screenshot({
+        path: `${output}/usability-failure-${i}-${j}.png`,
+        fullPage: true,
+      });
+    }
+  throw error;
 } finally {
   await browser.close();
 }

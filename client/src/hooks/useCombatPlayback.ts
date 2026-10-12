@@ -98,8 +98,14 @@ export function useCombatPlayback(
   }, [batchId]);
   // Re-send a completed batch after a connection recovery; server acknowledgements are idempotent.
   useEffect(() => {
-    if (finished && batchId) onComplete?.(batchId);
-  }, [onComplete, finished, batchId]);
+    if (
+      finished &&
+      batchId &&
+      renderedBatch === batchId &&
+      completed.current === batchId
+    )
+      onComplete?.(batchId);
+  }, [onComplete, finished, batchId, renderedBatch]);
   const showing = !!batch && !(renderedBatch === batchId && finished);
   const hp = renderedBatch === batchId ? health : batch?.initialHealth || {};
   const display = showing
