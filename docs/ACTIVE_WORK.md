@@ -1,3 +1,7 @@
+# C04 release follow-up — October 12, 2026
+
+C04 PR #60 merged as `097081c11692c3526714d34628a29b0b0f28815c` and deployed (run 38284111710; Worker ad902178-71c9-443c-a1d3-d987beb416b6). Canonical acceptance 38284362252 failed at host launch with 503. Branch `fix/c04-forwarded-response` investigates immutable forwarded response headers; reproduction and fix pending. Deployment is not accepted. Preserve separate PR #61. The prior checkpoint below is historical.
+
 # Active work and interruption checkpoint
 
 **CURRENT — October 12, 2026. C04 contracts and diagnostics active.**
