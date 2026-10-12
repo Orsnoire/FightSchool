@@ -28,6 +28,11 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove }: {
   state: CombatSnapshot; selfId?: string | null; onResurrect?: (id: string) => void; onRemove?: (id: string) => void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const waiting = state.currentPhase === "waiting";
+  const awaitingPlayers = waiting && !Object.keys(state.players).length;
+  const enemyHP = (e: CombatSnapshot["enemies"][number]) => awaitingPlayers
+    ? "Waiting for players"
+    : waiting ? `Estimated HP ${hpLabel(e.maxHealth)}` : `${hpLabel(e.health)}/${hpLabel(e.maxHealth)} HP`;
   const all = Object.values({ ...state.players, ...state.pendingPlayers });
   const self = all.find(p => p.studentId === selfId);
   const others = all.filter(p => p !== self);
@@ -67,12 +72,12 @@ export function CombatBoard({ state, selfId, onResurrect, onRemove }: {
     {!all.length && <p className="battle-empty">The field is ready.<br/><span>Share the join code to gather your party.</span></p>}
     <div className="battle-enemy-summary">{state.encounterRules===2&&state.enemyDisplayMode==='consecutive'&&<strong>Wave {state.activeWave} · </strong>}{groups.map(([name,n])=>`${name} × ${n}`).join(' · ')}</div>
     <div className={`battle-enemy-field ${shownEnemies.length>8?'is-swarm':''}`} aria-label="Enemy formation">
-      {shownEnemies.map((e,i)=><button type="button" key={e.id} data-enemy-id={e.id} className="battle-enemy" aria-label={`${e.name}, ${hpLabel(e.health)} of ${hpLabel(e.maxHealth)} HP`} title={`${e.name} · ${hpLabel(e.health)}/${hpLabel(e.maxHealth)} HP`}
+      {shownEnemies.map((e,i)=><button type="button" key={e.id} data-enemy-id={e.id} className="battle-enemy" aria-label={`${e.name}, ${enemyHP(e)}`} title={`${e.name} · ${enemyHP(e)}`}
         style={{left:`${(.5+(i%columns)*.78)/spanX*100}%`,top:`${(.5+Math.floor(i/columns)*.7)/spanY*100}%`,width:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,height:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,zIndex:Math.floor(i/columns)+1} as CSSProperties}>
         <img src={enemyImage(e)} alt={e.name}/>
         <div className="battle-enemy-info">      {Object.values(state.players).some(p => !p.isDead && p.statuses?.some(x => isHypnosis(x) && x.sourceId === e.id)) && <span className="rounded bg-black/80 px-2 text-xs text-amber-200">Maintaining hypnosis · cannot act</span>}
       {e.aiState?.buffs.filter(b => b.type !== "flatten" && b.throughRound >= state.round).map((b, index) => <span className="rounded bg-black/80 px-1 text-xs text-amber-200" key={`${b.type}:${index}`}>{b.type === "attack" ? "Soul inflamed · +100% ATK" : b.type === "defense" ? "+50% DEF" : "Faded · immune"}</span>)}
-<div className="battle-enemy-name">{e.name}</div><Bar current={e.health} max={e.maxHealth} label={`${e.name} HP`}/><span className="battle-enemy-hp">{hpLabel(e.health)} / {hpLabel(e.maxHealth)}</span></div>
+<div className="battle-enemy-name">{e.name}</div>{!awaitingPlayers && <Bar current={e.health} max={e.maxHealth} label={`${e.name} ${waiting ? "Estimated HP" : "HP"}`}/>}<span className="battle-enemy-hp">{waiting ? enemyHP(e) : `${hpLabel(e.health)} / ${hpLabel(e.maxHealth)}`}</span></div>
       </button>)}
     </div>
     <details className="battle-roster"><summary>Party · {all.length}</summary><div className="battle-roster-list">{all.map(p => <button key={p.studentId} onClick={() => setSelected(p.studentId)}>{p.nickname}<span>{p.isDead ? "KO" : `${p.health}/${p.maxHealth} HP`}{state.pendingPlayers?.[p.studentId] ? " · Next round" : ""}</span></button>)}</div></details>
