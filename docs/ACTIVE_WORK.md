@@ -110,6 +110,7 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 - Scope: genuine waiting-room HP using the same calculation as Start Fight, recalculated from the joined roster; estimated labels and no numeric HP for empty rooms.
 - C03 remains on `cleanup/c03-schema-baseline` / PR #58. Do not alter its schema, migrations, package files or checkpoint section.
 - Implemented: read-only HP projection through the real start calculator, once per broadcast; shared host/student battlefield shows estimated HP or an empty-room message. Reconnect and initial host snapshots use the same projection.
-- Verification: four focused tests and typecheck pass. Before the fix, three focused tests failed on placeholder HP/empty-room display; the active-room non-rescaling test already passed.
-- Next: run the full existing suite and both builds, review against current PR #58, publish and inspect CI. Merge/deployment are not part of this task.
+- Verification: all 215 tests, typecheck and client/Worker production builds pass. Before the fix, three focused tests failed on placeholder HP/empty-room display; the active-room non-rescaling test already passed.
+- Published implementation: `2721640e1687dfffb3dabd75cac7dd4119982a08`. A simulated merge with PR #58 at `cd34f1a90a7330c5386f8fcba235a539abea0ac2` is clean; only this shared log overlaps, in separate sections.
+- Next: inspect final-head CI and browser acceptance; the live PR carries exact run results and newest SHA. Merge/deployment are not part of this task.
 - This explicitly requested parallel fix is an exception to the cleanup-first queue, not another cleanup package.
