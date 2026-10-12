@@ -1,6 +1,6 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C03 schema baseline implemented; full verification pending.**
+**CURRENT — October 12, 2026. C03 schema baseline locally verified; PR review/CI pending.**
 
 ## C03 active checkpoint
 
@@ -10,8 +10,10 @@
 - Implemented: two missing quest tables, nine checks, nickname unique-constraint kind and guild FK name; additive 0014 snapshot linked to retained 0007.
 - Focused verification: 3/3 schema tests pass. No-op CLI writes no files; migrated catalog matches all 27 tables/246 columns; shipped SQL hashes and journal prefix match.
 - Ownership and future migration workflow: [schema baseline](cloudflare/schema-baseline.md).
-- Pending: full typecheck, tests (including existing-data preservation), production builds and exact-head CI. Not merged or deployed.
-- Next: run full verification, review diff and publish results on this same branch/PR. No production database change is needed.
+- Full local verification: typecheck, all 214 tests (including existing-data preservation), client and Worker production builds pass.
+- Pending: exact-head CI and PR review. Not merged or deployed.
+- Next: inspect exact-head CI for PR #58 and review for merge. No production database change is needed.
+- Published implementation checkpoint: `0dad8654fbbcee1f8d257ee310d116d0f0037f9c`; this handoff also reconciles main’s registration pointer. Exact newest SHA is in the PR.
 
 The C02 release record below is historical context.
 

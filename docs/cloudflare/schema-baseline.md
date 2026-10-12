@@ -37,6 +37,10 @@ future migrations. No baseline SQL should be executed on an existing database.
 
 ## Verification and future changes
 
+October 12 local verification: 3/3 focused schema checks, all 214 tests (including
+existing-data preservation), typecheck and both production builds pass. CI/review
+status and the exact published head are tracked in PR #58 and ACTIVE_WORK.md.
+
 Run `node --import tsx --test tests/phase4/schema-baseline.test.ts` (also included
 in `npm test`). The gate:
 
