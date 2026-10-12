@@ -1,10 +1,10 @@
 # QuestAcademy — Source of Truth
 
-> **CURRENT AUTHORITY — October 9, 2026.** Start with the [documentation index](README.md),
+> **CURRENT AUTHORITY — October 12, 2026.** Start with the [documentation index](README.md),
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
-> Phase 1 is active with the [resume safeguard](ACTIVE_WORK.md). C01 (F01–F03)
-> is COMPLETE: PR #53 merged, deployed and accepted. C02 is next, not started.
+> Phase 1 is active with the [resume safeguard](ACTIVE_WORK.md). C01 and C02
+> are COMPLETE: PRs #53 and #56 merged, deployed and accepted. C03 is next, not started.
 > Historical migration phases are not the active queue.
 
 This document defines the authority hierarchy for all QuestAcademy design, development, migration, and agent-based work.
@@ -151,7 +151,7 @@ stun/paralysis; three release each player from single-target Hypnotic Stare or
 party-wide Hypnosis. Hypnotizing sources cannot act until their victims are free.
 This supersedes the initial damage-threshold and fixed-turn hypnosis proposals.
 PR #52 was released in runtime `e158194` and remains included in the current
-C01 runtime `8bf9df7`; CI, deployment and canonical live acceptance passed.
+C02 runtime `5d89fb0`; CI, deployment and canonical live acceptance passed.
 See [current status](CURRENT_STATUS.md) for exact runs.
 
 ## Combat Flow Refactor

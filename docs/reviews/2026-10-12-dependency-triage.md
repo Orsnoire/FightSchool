@@ -1,6 +1,6 @@
 # C02 dependency triage — October 12, 2026
 
-Status: draft PR #56; local verification passed; final CI/browser checks pending. No merge or deployment.
+Status: PR #56 merged, deployed and accepted. [Release evidence](../cloudflare/full-migration.md#c02-dependency-release--12-october-2026).
 
 ## Scope and method
 
@@ -64,7 +64,7 @@ These are scoped deferrals, not claims that the full dependency audit is clean. 
 
 - Baseline: npm ci, TypeScript and all 208 tests passed.
 - Editor checkpoint: TypeScript and 7 rich-content tests passed (existing HTML/SVG/math sanitization plus real paste/undo/redo and MathLive hostile text serialization).
-- Updated TypeScript, all 211 tests (5 + 7 + 192 + 7), and client/Worker production builds pass. Final exact-head CI/browser evidence pending.
+- Updated TypeScript, all 211 tests (5 + 7 + 192 + 7), and client/Worker production builds pass. Exact-head CI 38265412023 and browser acceptance 38265412210 passed; deployment 38270833735 and canonical live acceptance 38271115093 passed.
 - Full suite applies all 15 shipped migrations in disposable PGlite and checks preserved student data, auth/session boundaries, rewards and SQL paths. No shipped SQL history changed; schema generation reconciliation remains C03.
 - Local Chromium install failed: upstream download returned invalid/truncated ZIPs. Browser checks run in the existing GitHub acceptance workflow. Added package manifest/lockfile path triggers so future dependency-only changes cannot skip it.
 - Existing large client bundle warning belongs to C07.

@@ -1,22 +1,27 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C02 merged; deployment and live acceptance pending.**
+**CURRENT — October 12, 2026. C02 COMPLETE: merged, deployed and accepted. C03 next, not started.**
 
 ## Registered work
 
-- Package: C02 dependency triage (F15), only active cleanup package.
-- Implementation branch: `cleanup/c02-dependencies`; [PR #56](https://github.com/Orsnoire/FightSchool/pull/56) merged at `a0983ffcff3775404fdfd70c4299e7731108696c`. Do not reopen or duplicate this work.
-- Baseline: `af8d389`, C01 handoff merged. C01 remains the deployed runtime.
-- Completed: editor/math updates, compatible ORM/Vite/transitive updates, duplicate underline registration fix, security/paste/undo tests, dependency-only browser CI triggers.
-- [Version and advisory disposition](reviews/2026-10-12-dependency-triage.md): 32 → 12 entries; remaining build/CLI chains explicitly deferred. Production-only audit still reports 7 Tailwind-chain entries; not a clean audit.
-- Local verification: baseline 208 tests; updated typecheck, all 211 tests and both production builds pass. Disposable-database auth/SQL/migration preservation gates included.
-- Verified implementation head `5bb79490a9c42ce16eef9ce297a4ad28a7dd2d19`: [CI 38265412023](https://github.com/Orsnoire/FightSchool/actions/runs/38265412023) and [browser acceptance 38265412210](https://github.com/Orsnoire/FightSchool/actions/runs/38265412210) passed. Local browser download failed; GitHub supplied the successful Chromebook/phone checks.
-- No schema/history/gameplay change. C02 is merged, NOT YET DEPLOYED. C03–C12 unstarted.
-- Owner authorized merge and deployment verification October 12. Merge completed. GitHub connector cannot dispatch workflows; browser-fallback permission requested before launching deployment.
-- Next: launch Deploy Cloudflare Staging from current main, record exact checkout SHA and Worker version, then run Live Combat Staging Acceptance against https://questacademy.bookwyrminteractive.studio. Deployment has not been launched. Verify current main and queued runs first; preserve newer unrelated work. Record deployment and acceptance separately, then close C02 and register C03 only in its own session.
+- No active implementation package. C01 and C02 are COMPLETE.
+- [PR #56](https://github.com/Orsnoire/FightSchool/pull/56) merged; `cleanup/c02-dependencies` is historical, not a resume target.
+- Deployed runtime: `5d89fb0bc4d160754ceb9645019f465809742ef2`; immutable Worker `81387a2a-9084-410f-b773-3726713f8544`.
+- [Deployment 38270833735](https://github.com/Orsnoire/FightSchool/actions/runs/38270833735) and [canonical live acceptance 38271115093](https://github.com/Orsnoire/FightSchool/actions/runs/38271115093) passed.
+- Updated typecheck, all 211 tests and both production builds pass; exact review-head CI and Chromebook/phone checks passed.
+- [Advisory disposition](reviews/2026-10-12-dependency-triage.md): 32 → 12 entries; scoped build/CLI deferrals remain. Production-only audit reports 7 Tailwind peer-chain entries.
+- [Release evidence](cloudflare/full-migration.md#c02-dependency-release--12-october-2026) separates reviewed, merged, deployed and accepted states.
+- No gameplay, schema or shipped SQL-history changes. Preserve current students and live data.
+- Documentation-only handoff: `release/c02-2026-10-12`; exact pushed SHA recorded in its PR.
 
-Exact pushed SHA is in the PR description (a commit cannot contain its own hash).
-Verify the remote head before resuming and preserve unexpected new changes.
+## Exact next action
+
+Fetch current main and inspect open PRs. If the release handoff PR remains open,
+finish that existing documentation PR before starting another package. Then register
+**C03 — schema baseline** with one branch and draft PR before substantive work.
+Read AGENTS.md, Source_of_Truth.md and CLEANUP_PLAN.md. C03 must reconcile snapshots,
+table declarations and intentional handwritten SQL without rewriting shipped history.
+C03–C12 are NOT STARTED. Do not reopen C02 merely because an advisory is explicitly deferred.
 
 ## Historical C01 release record
 
