@@ -549,3 +549,39 @@ must be preserved. The [active-work checkpoint](../ACTIVE_WORK.md) records C01
 complete and C02 unstarted; documentation-only handoff commits require no redeploy.
 
 [Deployment success screenshot](../releases/2026-10-09-c01-deployed.jpg).
+
+## C02 dependency release — 12 October 2026
+
+C02 is complete with scoped advisory deferrals: [PR #56](https://github.com/Orsnoire/FightSchool/pull/56)
+merged at `a0983ffcff3775404fdfd70c4299e7731108696c`. Deployed checkout `5d89fb0bc4d160754ceb9645019f465809742ef2`
+adds only the interruption checkpoint to that merge. Worker `81387a2a-9084-410f-b773-3726713f8544` was
+published October 12 at 15:32:49 UTC. No gameplay, migration history or schema changed.
+
+| Evidence | Result |
+| --- | --- |
+| [PR CI 38265412023](https://github.com/Orsnoire/FightSchool/actions/runs/38265412023) | Passed at `5bb7949` |
+| [Chromebook/phone acceptance 38265412210](https://github.com/Orsnoire/FightSchool/actions/runs/38265412210) | Passed at `5bb7949`, including MathLive keyboard |
+| [Deployment 38270833735](https://github.com/Orsnoire/FightSchool/actions/runs/38270833735) | Passed at `5d89fb0`; 211 tests, typecheck, builds, R2, migration gate and both hostname smoke checks |
+| [Canonical live acceptance 38271115093](https://github.com/Orsnoire/FightSchool/actions/runs/38271115093) | Passed at `5d89fb0` against https://questacademy.bookwyrminteractive.studio |
+
+The migration command completed using the upgraded Drizzle Kit and existing
+journal through `0014`; C02 adds no DDL. This is migrator evidence, not a direct
+production catalog/ledger audit. C03 still owns generation metadata reconciliation.
+Local tests apply all 15 migrations in disposable PGlite and check preserved student data.
+
+[Dependency triage](../reviews/2026-10-12-dependency-triage.md) records versions
+and exposure: 32 audit entries reduced to 12 (5 high, 7 moderate). Remaining
+Tailwind build and Drizzle Kit loader findings are explicitly deferred; production-only
+audit still lists 7 Tailwind peer-chain entries. Do not call the audit clean.
+No forced downgrade, cross-major override or Tailwind framework migration was applied.
+
+C03 is next and NOT STARTED. Register one branch/draft PR before implementation.
+C12 rollback/isolation/retention drills remain open; passing this release does not
+complete those broader operational gates. Subsequent documentation-only handoff
+commits do not require another application deployment.
+
+The October 12 30-answer burst measured p50 1,659 ms, p95 3,217 ms and maximum
+3,367 ms (existing 15-second maximum gate). A single burst is not a performance
+trend or evidence that C05/C06 targets have been met. Live checks also passed
+R2 integrity/ranges, room isolation, reconnect, exactly-once results, host session
+controls, moderated late entry, fractional rewards and logout socket revocation.
