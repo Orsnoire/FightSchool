@@ -1,44 +1,24 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C02 dependency triage registered; editor updates verified locally; ORM/tooling next.**
-
-## C02 active checkpoint
-
-- Branch: `cleanup/c02-dependencies`; draft [PR #56](https://github.com/Orsnoire/FightSchool/pull/56).
-- Baseline: `af8d389` (C01 release handoff merged). No open PRs at start.
-- Scope: F15 exposure triage; editor chain first, then compatible ORM/build groups.
-- Fresh npm audit: 32 entries (21 high, 9 moderate, 2 low). No exploit established.
-- Verification: baseline typecheck and all 208 tests passed. Editor upgrades pass typecheck and 7 rich-content tests, including hostile MathLive text and paste/undo/redo. Browser/full final gates pending.
-- Completed: Tiptap 3.31.4, ProseMirror view 1.42.6, MathLive 0.111.1, KaTeX 0.19.0; avoid duplicate Underline registration.
-- Next: compatible ORM/tooling updates, advisory disposition, full tests/build/browser gates.
-- Main discovery pointer update was blocked by approval review (authorization covers branch/PR only); draft PR is published.
-- C01 remains deployed; no C02 changes merged or deployed. C03–C12 untouched.
-
-The C01 record below is historical release evidence.
-
-Read this file on `main` to find the active package, then read the same file on
-its registered branch and inspect the live PR. Branch progress can be newer than
-this discovery pointer. Follow [AGENTS.md](../AGENTS.md#start-or-resume-work) before
-editing. The [cleanup plan](CLEANUP_PLAN.md) controls scope; the
-[current status](CURRENT_STATUS.md) controls release reporting.
+**CURRENT — October 12, 2026. C02 implemented; final CI/browser and review pending.**
 
 ## Registered work
 
-| Field | Checkpoint |
-| --- | --- |
-| Active package | **None. C01 is COMPLETE; C02 is next and NOT STARTED.** |
-| C01 disposition | F01–F03 implemented, reviewed, merged, deployed and accepted on the canonical domain |
-| Completed PR / branch | [#53 — C01 correctness](https://github.com/Orsnoire/FightSchool/pull/53), merged; `cleanup/c01-correctness` is historical, not a resume target |
-| Deployed runtime | `8bf9df71629c9ba8933b63a24ca5f35da655e3cc`, PR #53 merge |
-| Immutable Worker | `68cf4f65-c163-4018-ad6f-a718489dbb46`, published October 9 at 16:07:27 UTC |
-| Release handoff | `release/c01-2026-10-09` records this documentation-only checkpoint; inspect its PR state if interrupted during publication |
-| Release evidence | [C01 release record](cloudflare/full-migration.md#c01-correctness-release--9-october-2026) |
-| Other packages | C02–C12 not started; register C02 before dependency implementation |
+- Package: C02 dependency triage (F15), only active cleanup package.
+- Branch: `cleanup/c02-dependencies`; [draft PR #56](https://github.com/Orsnoire/FightSchool/pull/56).
+- Baseline: `af8d389`, C01 handoff merged. C01 remains the deployed runtime.
+- Completed: editor/math updates, compatible ORM/Vite/transitive updates, duplicate underline registration fix, security/paste/undo tests, dependency-only browser CI triggers.
+- [Version and advisory disposition](reviews/2026-10-12-dependency-triage.md): 32 → 12 entries; remaining build/CLI chains explicitly deferred. Production-only audit still reports 7 Tailwind-chain entries; not a clean audit.
+- Local verification: baseline 208 tests; updated typecheck, all 211 tests and both production builds pass. Disposable-database auth/SQL/migration preservation gates included.
+- Local browser download returned invalid ZIPs; GitHub browser acceptance is required. Final exact-head CI/browser results pending.
+- No schema/history/gameplay change; nothing from C02 merged or deployed. C03–C12 unstarted.
+- Main discovery pointer write was rejected by automatic approval review; authorization covers feature branch/draft PR. This branch and PR are the current checkpoint. Main pointer remains C01 until approved publication/merge.
+- Next: inspect final pushed SHA’s CI and browser acceptance; fix failures on this branch, then request review/merge authorization. Never treat passing local tests as live release evidence.
 
-A commit cannot contain its own SHA. The handoff PR description records its exact
-pushed SHA; this file records the work and next action contained in that commit.
-Verify the remote head and PR state rather than trusting a stale copied SHA.
-If they differ, inspect newer commits and reconcile before editing.
+Exact pushed SHA is in the PR description (a commit cannot contain its own hash).
+Verify the remote head before resuming and preserve unexpected new changes.
+
+## Historical C01 release record
 
 ## Completed implementation
 
@@ -90,18 +70,6 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 - **Yesterday's queue:** all October 8 merged PRs (#37–50 and #52) were already
   ancestors of the verified October 8 runtime `e158194`; this release includes
   them. No separate older open PR or undeployed merged runtime change remained.
-
-## Exact next action
-
-Fetch current `main`, check for newer commits and open PRs, and verify this release
-handoff is merged. If publication was interrupted, resume the existing
-`release/c01-2026-10-09` documentation PR before starting another branch.
-
-For the next implementation session, register **C02 — dependency triage** with
-one branch and draft PR, and publish that claim in this checkpoint before
-substantive dependency changes. Follow the C02 scope and exit gates in the
-cleanup plan. C02 is not started by this release; do not reopen C01 or combine
-schema repair, broad refactors or expansion with dependency maintenance.
 
 ## Resume and handoff checklist
 
