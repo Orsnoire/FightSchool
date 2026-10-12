@@ -83,7 +83,13 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
               setAlarm: async () => {}, deleteAlarm: async () => {}}, getWebSockets: () => []};
             combatObjects.set(name, new CombatSession(state as any, env as any));
           }
-          return combatObjects.get(name)!.fetch(input instanceof Request ? input : new Request(input, init));
+          const response = await combatObjects.get(name)!.fetch(input instanceof Request ? input : new Request(input, init));
+          // Cloudflare fetch subresponses have immutable headers. A plain local
+          // Response does not, so model that boundary for real host launch/end.
+          for (const method of ["set", "append", "delete"] as const) {
+            Object.defineProperty(response.headers, method, { value: () => { throw new TypeError("immutable headers"); } });
+          }
+          return response;
         } }),
       },
       OBJECTS: {
