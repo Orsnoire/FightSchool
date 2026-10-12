@@ -196,13 +196,19 @@ export class CombatSessionObject {
       return [];
     }))];
   }
-  private async save(room: StoredRoom) {
+  private async save(room: StoredRoom, flushReporting = false) {
     if(!isResolution(room.snapshot.currentPhase))delete room.snapshot.playback;
     if(!isResolution(room.snapshot.currentPhase)||!room.snapshot.playback)delete room.playbackGate;
     else if(room.playbackGate?.batchId!==room.snapshot.playback.id)room.playbackGate=createPlaybackGate(room.snapshot,this.activeRenderers(room));
     await this.checkpoint(room);
     const reportKey = reportingSignature(room.snapshot);
-    if (this.repository?.recordSessionReporting && (room.reportingPending || room.snapshot.pendingAttempts?.length || reportKey !== room.reportingSignature)) {
+    // Answers are durably checkpointed above. Drain their outbox when the question
+    // closes, instead of repeating whole-roster SQL writes for every answer in a
+    // classroom burst. Membership/status changes still project immediately;
+    // alarms explicitly flush retries, including after object restoration.
+    const reportingChanged = reportKey !== room.reportingSignature;
+    const canFlushAttempts = flushReporting || room.snapshot.currentPhase !== "question";
+    if (this.repository?.recordSessionReporting && (reportingChanged || (canFlushAttempts && (room.reportingPending || room.snapshot.pendingAttempts?.length)))) {
       try {
         await this.repository.recordSessionReporting(room.snapshot, room.fight);
         room.reportingSignature = reportKey;
@@ -851,7 +857,7 @@ export class CombatSessionObject {
     return this.serialized(async () => {
       const room = await this.room();
       if (!room) return;
-      if(room.evidencePending||room.reportingPending){await this.save(room);await this.syncAlarm(room);}
+      if(room.evidencePending||room.reportingPending){await this.save(room,true);await this.syncAlarm(room);}
       if (room.snapshot.currentPhase === "game_over") {
         await this.complete(room);
         return;

@@ -68,6 +68,17 @@ class Actor {
     );
   }
 }
+// Headless clients have no DOM clips; explicitly settle each received batch.
+// Real browser animation completion is covered by Combat UI Acceptance.
+async function completePlayback(state, actors) {
+  assert.equal(state.phaseDeadline, null, "Resolution must not use a selection clock");
+  assert.ok(state.playback?.id, "Resolution must identify its playback batch");
+  await Promise.all(actors.map(async (actor) => {
+    const commandId = actor.send("playback_complete", { round: state.round, batchId: state.playback.id });
+    const reply = await actor.wait(m => m.commandId === commandId && ["command_ack", "protocol_error"].includes(m.type));
+    assert.equal(reply.type, "command_ack", reply.message);
+  }));
+}
 const teacherBody = (i) => ({
   firstName: "Acceptance",
   lastName: `Test ${i}`,
@@ -114,9 +125,11 @@ try {
       tier: 1,
       stats: { mat: 1 },
       shopPrice: 1,
+      visual: { baseItemId: "basic_staff", palette: { primary: "#496fda" } },
     },
     status: 201,
   });
+  assert.equal(item.payload.visual.palette.primary, "#496fda", "Equipment palette must survive SQL persistence");
   const guild = await api("/api/guilds", {
     method: "POST",
     cookie: teacher.cookie,
@@ -207,6 +220,7 @@ try {
           name: "Acceptance slime",
           image: "/enemies/slime-v2.png",
           enemyType: "slime",
+          palette: { primary: "#cf493c" },
           ai: { mode: "basic" },
           difficultyMultiplier: 1,
         },
@@ -220,6 +234,7 @@ try {
     },
     status: 201,
   });
+  assert.equal(fight.payload.enemies[0].palette.primary, "#cf493c");
   await api(`/api/guilds/${guildId}/fights`, {
     method: "POST",
     cookie: teacher.cookie,
@@ -277,16 +292,9 @@ try {
     wrong.state.players[studentId].health <
       wrong.state.players[studentId].maxHealth,
   );
-  // Accelerate visual feedback phases through the authorized teacher control.
-  await api(`/api/combat/${room.payload.sessionId}/force-question`, {
-    method: "POST",
-    cookie: teacher.cookie,
-  });
-  await player.state(1, "enemy_ai");
-  await api(`/api/combat/${room.payload.sessionId}/force-question`, {
-    method: "POST",
-    cookie: teacher.cookie,
-  });
+  await completePlayback(wrong.state, [host, player]);
+  const firstEnemy = await player.state(1, "enemy_ai");
+  await completePlayback(firstEnemy.state, [host, player]);
   const next = await player.state(2, "question");
   assert.equal(next.state.victory, null);
   assert.equal(next.state.currentQuestionIndex, 0);
@@ -336,16 +344,11 @@ try {
     const resolved = await restored.state(round, "question_resolution");
     assert.equal(resolved.state.players[studentId].mp, before.state.players[studentId].mp - (ability === "fireball" ? 1 : 0),
       "Fireball spends exactly 1 MP; basic attacks remain available after MP runs out");
-    await api(`/api/combat/${room.payload.sessionId}/force-question`, {
-      method: "POST",
-      cookie: teacher.cookie,
-    });
-    await restored.state(round, "enemy_ai");
-    await api(`/api/combat/${room.payload.sessionId}/force-question`, {
-      method: "POST",
-      cookie: teacher.cookie,
-    });
+    await completePlayback(resolved.state, [host, restored]);
+    // A defeated enemy produces an empty batch, which advances directly to victory.
     if (resolved.state.enemies.every(enemy => enemy.health <= 0)) break;
+    const enemy = await restored.state(round, "enemy_ai");
+    await completePlayback(enemy.state, [host, restored]);
   }
   const victory = await restored.wait(
     (m) => m.type === "game_over" && m.victory === true,
@@ -359,6 +362,24 @@ try {
   assert.ok(stats.payload[0].questionsAnswered >= 2);
   assert.equal(stats.payload[0].questionsCorrect, stats.payload[0].questionsAnswered - 1);
   assert.equal(stats.payload[0].damageDealt, opened.state.enemies[0].maxHealth);
+  const reportParams = new URLSearchParams({ sessionId: room.payload.sessionId, quizId: fight.payload.id, playerId: studentId, job: "wizard" });
+  const sessionReport = (await api(`/api/combat-stats/report?${reportParams}`, { cookie: teacher.cookie })).payload;
+  assert.equal(sessionReport.total, 1);
+  assert.equal(sessionReport.rows[0].status, "completed");
+  assert.equal(sessionReport.summary.recordedAttempts, stats.payload[0].questionsAnswered);
+  assert.equal(sessionReport.summary.historicalParticipants, 0);
+  assert.equal(sessionReport.rows[0].damage, stats.payload[0].damageDealt);
+  reportParams.set("view", "questions");
+  reportParams.set("questionId", "q1");
+  reportParams.set("search", "2+2");
+  const questionReport = (await api(`/api/combat-stats/report?${reportParams}`, { cookie: teacher.cookie })).payload;
+  assert.equal(questionReport.total, stats.payload[0].questionsAnswered);
+  assert.equal(questionReport.summary.correct, stats.payload[0].questionsCorrect);
+  assert.ok(questionReport.rows.every(row => row.question.correctAnswer === "4" && row.questionVersion));
+  assert.equal(questionReport.rows.filter(row => row.outcome === "incorrect").length, 1);
+  assert.equal((await api(`/api/combat-stats/report?${reportParams}`, { cookie: other.cookie })).payload.total, 0);
+  await api(`/api/combat-stats/report?${reportParams}`, { cookie: student.cookie, status: 403 });
+  console.log("PASS: completion-driven resolution, empty victory, persisted palettes and teacher-scoped question reports");
   const stamina = await api(`/api/student/${studentId}/stamina`, { cookie: student.cookie });
   assert.equal(stamina.payload.completedCombats, 1);
   assert.ok(Math.abs(stamina.payload.xpMultiplier - 0.9) < 1e-10);
