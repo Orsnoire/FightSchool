@@ -200,8 +200,8 @@ try {
     assert.equal(returned.state.pendingPlayers[aId].health, first.players[aId].health);
     assert.equal(returned.state.pendingPlayers[aId].totals.damageDealt, first.players[aId].totals.damageDealt);
     const late = await open(2); await late.wait(m => m.type === "combat_state" && m.state.pendingPlayers?.[lateId]);
-    // Let the authoritative resolution/counterattack deadlines open round two.
-    // Forcing twice can race a natural phase transition during moderation.
+    // These legacy headless clients do not acknowledge playback: the recovery
+    // watchdog opens round two. The combat fixture tests explicit completion.
     const second = await resolve([a,b,late], 2);
     assert.equal(second.players[lateId].roundsParticipated, 1);
     assert.equal(second.players[aId].roundsParticipated, 2);
