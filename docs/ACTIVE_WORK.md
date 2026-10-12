@@ -1,6 +1,18 @@
-# C04 release follow-up — October 12, 2026
+# Active work and interruption checkpoint
 
-C04 PR #60 merged as `097081c11692c3526714d34628a29b0b0f28815c` and deployed (run 38284111710; Worker ad902178-71c9-443c-a1d3-d987beb416b6). Canonical acceptance 38284362252 failed at host launch with 503. Branch `fix/c04-forwarded-response`, [PR #62](https://github.com/Orsnoire/FightSchool/pull/62). Baseline `13b8bcc6eeef5817c6b1b38f676158e173834c4c` reproduces the exact 503/201 failure using immutable subresponse headers. Fixed by copying HTTP responses before adding request IDs, preserving WebSocket response identity. All 224 tests, typecheck and client/Worker builds pass locally. Exact-head CI/browser pending; merge and redeploy after they pass under the owner’s existing release authorization. Main blocker note ae317f9 is reconciled here. Deployment is not accepted. Preserve separate PR #61. The prior checkpoint below is historical.
+**CURRENT — October 12, 2026. C04 COMPLETE: merged, deployed and accepted.**
+
+## C04 release checkpoint
+
+- [PR #60](https://github.com/Orsnoire/FightSchool/pull/60) merged as `097081c11692c3526714d34628a29b0b0f28815c`; follow-up [PR #62](https://github.com/Orsnoire/FightSchool/pull/62) merged as `a2f13673de9bccbf044ef27f67a96fa4adf2431a`, with owner authorization to merge and deploy.
+- Original verified head `84ce8e87983ebd49c69bac9dea33f0b212b20a93` passed CI 38283049347/browser 38283049357. Follow-up head `5fdfe6c2f2e6d0ca715335e2a2e3538e8fb7dc54` passed all 224 tests, typecheck and builds plus CI 38284897429/browser 38284897183. Merged-main CI 38285235793 passed.
+- Implemented F05/F16: shared authoring/command/JSON DTO contracts, explicit public projections, typed query factories, bounded UTF-8 JSON and redacted diagnostics. Ownership, revocation, saved rooms, rewards and gameplay remain covered.
+- First deployment 38284111710 passed smoke, but live acceptance 38284362252 caught host-launch 503 from immutable Durable Object response headers. Published baseline `13b8bcc` reproduced it. PR #62 copies HTTP responses before adding request IDs and preserves WebSocket upgrades.
+- Corrected [deployment 38285264787](https://github.com/Orsnoire/FightSchool/actions/runs/38285264787) passed on exact checkout `a2f13673de9bccbf044ef27f67a96fa4adf2431a`: all 224 tests, typecheck, builds, R2, existing migration gate and both hostnames.
+- Deployed Worker: `94a6a8f1-462d-4b1c-98c1-365de92066f1`, published October 12 at 17:37:35 UTC. No new SQL migration or live-data reset.
+- [Canonical live acceptance 38285499681](https://github.com/Orsnoire/FightSchool/actions/runs/38285499681) passed on the same checkout: combat/economy, R2, 30 participants, reconnects, room isolation, moderation, revocation and exactly-once rewards.
+- [Contract ownership, limits and intended CI policy](cloudflare/contracts-and-diagnostics.md). Both intended required checks run on every PR; main remains unprotected, so administrative enforcement is not claimed.
+- C05 is next and not started; register it before implementation. Preserve separate PR #61 below; its code is not included in this release. Both C04 implementation branches are historical. No cleanup implementation package is active.
 
 ## PR #61 — swarm, gear baseline and host controls ready for review
 
@@ -11,23 +23,6 @@ C04 PR #60 merged as `097081c11692c3526714d34628a29b0b0f28815c` and deployed (ru
 - Not merged or deployed. Preserve the independent PR #62 live fix above; refresh main and reconcile its result before merging/releasing #61. No SQL migration or production data operation.
 - The older swarm section below is superseded by this pointer and the PR's verified checkpoint.
 
-# Active work and interruption checkpoint
-
-**CURRENT — October 12, 2026. C04 contracts and diagnostics active.**
-
-## C04 active checkpoint
-
-- Branch: `cleanup/c04-contracts-diagnostics`; [draft PR #60](https://github.com/Orsnoire/FightSchool/pull/60). Read its PR for exact published commits.
-- Baseline: `ee95602ca229bf4cc19f6458afa8271055dc675d`; C03 complete and HP preview deployed/accepted; no open PRs at start.
-- Scope: F05/F16 shared request/response/command contracts, public snapshot allowlists, typed query factories, bounded JSON parsing, redacted structured diagnostics and intended CI checks.
-- Preserve ownership, session revocation, saved rooms, rewards, approved gameplay and current live data. No production database changes.
-- Published baseline `051ad3a`: two intentional failing tests reproduced shared fight validation drift and future-field snapshot leakage.
-- Implemented: shared authoring/command/JSON DTO contracts, allowlisted public projections, typed query factories, bounded UTF-8 readers, redacted diagnostics and unconditional browser CI.
-- Local verification: all 224 tests, typecheck and client/Worker production builds pass on implementation checkpoint `168de11`.
-- CI 38282804787 passed on documentation reconciliation `dd088ef`. Final diagnostics refinement labels revoked/expired commands rejected and dependency errors failed, and logs the latest room revision; typecheck and 22 targeted tests pass. Final-head CI/browser pending.
-- [Ownership, limits and intended CI policy](cloudflare/contracts-and-diagnostics.md). GitHub reports main unprotected; protection enforcement is not claimed.
-- Next: review exact-head CI/browser checks for PR #60. Not merged or deployed.
-- Concurrent feature: preserve PR #61 (`feat/swarm-party-count`); its enemy JSON setting must be incorporated into the shared fight contract when integrating branches. Only its main discovery note is included here.
 
 The records below are historical.
 

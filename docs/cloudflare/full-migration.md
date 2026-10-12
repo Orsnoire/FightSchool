@@ -623,3 +623,41 @@ No current classroom data was reset. Previous Worker
 no rollback rehearsal was performed. C12 infrastructure drills remain open.
 Hosts and students should refresh existing tabs for the new client. C04 remains
 unstarted, and documentation-only release records require no redeployment.
+
+## C04 contracts and diagnostics — 12 October 2026
+
+Owner authorized merge and live deployment. PR #60 merged as
+`097081c11692c3526714d34628a29b0b0f28815c`; its reviewed head `84ce8e8` passed
+224 tests, typecheck/builds, CI 38283049347 and browser 38283049357.
+
+The first deployment, 38284111710 (Worker
+`ad902178-71c9-443c-a1d3-d987beb416b6`), passed both hostname smoke checks but
+canonical acceptance 38284362252 failed host-session creation with 503.
+The new request-ID wrapper attempted to mutate immutable Durable Object
+subresponse headers. PR #62 published the exact failing regression at `13b8bcc`,
+then copied ordinary HTTP responses before decorating headers while preserving
+WebSocket upgrade identity. Follow-up head `5fdfe6c` passed all 224 tests,
+typecheck/builds, CI 38284897429 and browser 38284897183 before merge.
+
+The corrected runtime is merge `a2f13673de9bccbf044ef27f67a96fa4adf2431a`.
+[Deployment 38285264787](https://github.com/Orsnoire/FightSchool/actions/runs/38285264787)
+passed all 224 tests, typecheck, client/Worker builds, R2, the existing migration
+gate and both hostname smoke checks. Immutable Worker
+`94a6a8f1-462d-4b1c-98c1-365de92066f1` was published at 17:37:35 UTC.
+Merged-main CI 38285235793 also passed. C04 introduces no SQL migration and
+preserves current live data; the migration runner succeeded but individual
+production ledger rows were not independently queried.
+
+[Canonical live acceptance 38285499681](https://github.com/Orsnoire/FightSchool/actions/runs/38285499681)
+passed on the same checkout. Combat/economy, R2, 30 participants, reconnects,
+room isolation, host controls, moderation, revocation and exactly-once rewards
+all passed. The answer burst measured p50 809 ms, p95 1,513 ms, max 1,562 ms;
+a single burst is not a performance trend. C04 is complete, merged, deployed
+and accepted. C05 is next and not started.
+
+
+Shared contract ownership, body limits, public projections, diagnostic privacy
+and intended CI checks are documented in [contracts and diagnostics](contracts-and-diagnostics.md).
+Main branch protection enforcement remains off. C05 owns cost comparisons;
+this release does not claim a performance improvement. PR #61 is separate and
+is not deployed in this runtime.
