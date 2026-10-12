@@ -1,19 +1,19 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C02 implemented; final CI/browser and review pending.**
+**CURRENT — October 12, 2026. C02 merged; deployment and live acceptance pending.**
 
 ## Registered work
 
 - Package: C02 dependency triage (F15), only active cleanup package.
-- Branch: `cleanup/c02-dependencies`; [draft PR #56](https://github.com/Orsnoire/FightSchool/pull/56).
+- Implementation branch: `cleanup/c02-dependencies`; [PR #56](https://github.com/Orsnoire/FightSchool/pull/56) merged at `a0983ffcff3775404fdfd70c4299e7731108696c`. Do not reopen or duplicate this work.
 - Baseline: `af8d389`, C01 handoff merged. C01 remains the deployed runtime.
 - Completed: editor/math updates, compatible ORM/Vite/transitive updates, duplicate underline registration fix, security/paste/undo tests, dependency-only browser CI triggers.
 - [Version and advisory disposition](reviews/2026-10-12-dependency-triage.md): 32 → 12 entries; remaining build/CLI chains explicitly deferred. Production-only audit still reports 7 Tailwind-chain entries; not a clean audit.
 - Local verification: baseline 208 tests; updated typecheck, all 211 tests and both production builds pass. Disposable-database auth/SQL/migration preservation gates included.
-- Local browser download returned invalid ZIPs; GitHub browser acceptance is required. Final exact-head CI/browser results pending.
-- No schema/history/gameplay change; nothing from C02 merged or deployed. C03–C12 unstarted.
-- Main discovery pointer write was rejected by automatic approval review; authorization covers feature branch/draft PR. This branch and PR are the current checkpoint. Main pointer remains C01 until approved publication/merge.
-- Next: inspect final pushed SHA’s CI and browser acceptance; fix failures on this branch, then request review/merge authorization. Never treat passing local tests as live release evidence.
+- Verified implementation head `5bb79490a9c42ce16eef9ce297a4ad28a7dd2d19`: [CI 38265412023](https://github.com/Orsnoire/FightSchool/actions/runs/38265412023) and [browser acceptance 38265412210](https://github.com/Orsnoire/FightSchool/actions/runs/38265412210) passed. Local browser download failed; GitHub supplied the successful Chromebook/phone checks.
+- No schema/history/gameplay change. C02 is merged, NOT YET DEPLOYED. C03–C12 unstarted.
+- Owner authorized merge and deployment verification October 12. Merge completed. GitHub connector cannot dispatch workflows; browser-fallback permission requested before launching deployment.
+- Next: launch Deploy Cloudflare Staging from current main, record exact checkout SHA and Worker version, then run Live Combat Staging Acceptance against https://questacademy.bookwyrminteractive.studio. Deployment has not been launched. Verify current main and queued runs first; preserve newer unrelated work. Record deployment and acceptance separately, then close C02 and register C03 only in its own session.
 
 Exact pushed SHA is in the PR description (a commit cannot contain its own hash).
 Verify the remote head before resuming and preserve unexpected new changes.
