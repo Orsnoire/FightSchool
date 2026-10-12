@@ -41,7 +41,7 @@ function publicFight(fight: FightRecord) {
 
 async function readFight(request: Request) {
   const fight=fightSchema.parse(await readJson(request,1_048_576));
-  if(fight.enemies.some(e=>e.quantity!==undefined)){
+  if(fight.enemies.some(e=>e.quantity!==undefined || e.swarm)){
     fight.encounterTier ||= 1;
     fight.enemies=fight.enemies.map((e,i)=>({...e,quantity:e.quantity||1,wave:e.wave||(fight.enemyDisplayMode==="consecutive"?i+1:1),role:e.role||"normal"}));
   }

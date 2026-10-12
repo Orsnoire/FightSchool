@@ -14,13 +14,13 @@
 - [Contract ownership, limits and intended CI policy](cloudflare/contracts-and-diagnostics.md). Both intended required checks run on every PR; main remains unprotected, so administrative enforcement is not claimed.
 - C05 is next and not started; register it before implementation. Preserve separate PR #61 below; its code is not included in this release. Both C04 implementation branches are historical. No cleanup implementation package is active.
 
-## PR #61 — swarm, gear baseline and host controls ready for review
+## PR #61 — authorized merge and deployment in progress
 
 - Branch: `feat/swarm-party-count`; [PR #61](https://github.com/Orsnoire/FightSchool/pull/61), ready for review at `8d78de7ef593e9812e833950d282c7395488c178`.
 - Implemented: optional swarm batches at 8/12/16 players, exact waiting count/HP preview, previous-tier reference gear, teacher **Next wave** override and enemy elimination ×.
 - Integrated C04 merge `097081c` without restoring duplicate contracts. Public wave mode, authenticated host commands, stale-phase guards and durable retries are covered.
 - Verified: all 238 tests, typecheck and both builds; [CI 38284666305](https://github.com/Orsnoire/FightSchool/actions/runs/38284666305) and [browser acceptance 38284666286](https://github.com/Orsnoire/FightSchool/actions/runs/38284666286) passed on that head.
-- Not merged or deployed. Preserve the independent PR #62 live fix above; refresh main and reconcile its result before merging/releasing #61. No SQL migration or production data operation.
+- Owner authorized merge and deployment on October 12. Integrated current main `87d45a5`, including the released PR #62 response-forwarding fix and C04 release records; merge was clean. Combined-revision CI/browser checks are pending; exact head/results are recorded in the PR. Next: pass those gates, merge, deploy the merged revision and run canonical live acceptance. No SQL migration or live-data reset.
 - The older swarm section below is superseded by this pointer and the PR's verified checkpoint.
 
 
@@ -135,8 +135,12 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 ## Swarm count scaling — separate feature work
 
 - Owner request, October 12: optional Swarm control per enemy group, adding a configurable x enemies at 8, 12, 16, etc. players. Base count through 7 players.
-- Branch: `feat/swarm-party-count`; [draft PR #61](https://github.com/Orsnoire/FightSchool/pull/61). C04 / PR #60 remains the active cleanup package and must be preserved.
+- Branch: `feat/swarm-party-count`; [draft PR #61](https://github.com/Orsnoire/FightSchool/pull/61). C04 / PR #60 is merged; its contracts and diagnostics are preserved.
 - Counts and HP preview follow the joined waiting roster; counts lock at Start Fight. Existing late-entry HP budgeting remains in effect.
 - Preserve fixed quantities when disabled, species behavior, waves, individual IDs and current data. Store the optional setting in existing enemy JSON; no SQL migration.
 - Retain 60 enemies per group and 120 per encounter. Reserve authored counts first, then distribute capped additions fairly in author order.
-- Verification: not yet run. Next: implement shared count calculation, editor/save/read validation, and preview/start boundary tests; inspect C04 overlap before review.
+- Implemented: editor enable/increment/save/reload, shared bounded count calculation, API validation, waiting preview/start equality and locked active counts.
+- Owner added previous-tier reference gear: tier 1 uses real tier 0 starter sets; tier 2 full tier 1; later provisional gear estimates shift down one tier. Character level midpoints remain 2/6/9/13. Solo/duo entry-loadout budgeting is unchanged.
+- Verification: 12 focused tests pass, including real mounted editor and Durable Object join/leave/reconnect/start. Swarm baseline failed 3/4 new checks; reference-gear baseline failed both new checks. Full pre-integration suite (231 tests), typecheck and both builds pass; final stale-phase guard also passes its 4 targeted tests.
+- Owner corrected the new control to Next wave, not Next phase. Implemented teacher-only wave skip/start with confirmation when living enemies remain, and enemy elimination × with matching hover/focus/touch affordances. Existing phase advance remains available.
+- Host controls: all 5 focused checks pass, including stale-round/ownership/revocation/retry checks, wave selection, status release, no fabricated player credit, victory and exactly-once result persistence. C04 / PR #60 has merged as `097081c11692c3526714d34628a29b0b0f28815c`. Integrated main `097081c` with shared fight/command contracts and structured rule errors. Added `encounterRules` to the public allowlist so wave UI and active enemy selection survive the refactor. Integrated typecheck and client/Worker builds pass; 19 focused checks pass. Full suite and browser acceptance pending final verification. Next: verify exact-head CI/browser and mark ready for review. Not merged or deployed.

@@ -1,3 +1,4 @@
+import type { EnemySwarm } from "./combat/swarm";
 import { TIER_ONE_EQUIPMENT } from "./tier-one-equipment";
 import { EQUIPMENT_SLOTS, type EquipmentSlot } from "./equipment-slots";
 import { z } from "zod";
@@ -180,6 +181,7 @@ export interface Enemy {
   enemyType?: Exclude<import("./combat/enemy-ai").EnemyType, "basic">;
   ai?: import("./combat/enemy-ai").EnemyAI;
   quantity?: number;
+  swarm?: EnemySwarm;
   wave?: number;
   species?: "goblin" | "other";
   role?: import("./encounter-tiers").EnemyRole;

@@ -2,7 +2,7 @@ import { CombatRuleError } from "../../shared/combat/errors";
 import { enemyAISchema, inferEnemyType, resolveEnemyType } from "../../shared/combat/enemy-ai";
 import { cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
 import { resolveEnemyTurn } from "./enemy-turn";
-import { activeEnemies, bounceTarget, expandEnemies, encounterBudget, allocateHP, ROLE_SHARES, goblinTargets, roundHP, performance } from "../../shared/combat/encounters";
+import { activeEnemies, canAdvanceWave, bounceTarget, expandEnemies, encounterBudget, allocateHP, ROLE_SHARES, goblinTargets, roundHP, performance } from "../../shared/combat/encounters";
 import { enemyTuning } from "../../shared/encounter-tiers";
 import { questionKey } from "../progression/question-key";
 import { abilityDamage, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
@@ -40,6 +40,7 @@ import {
 } from "../../shared/combat/abilities.ts";
 import type {
   CombatSnapshot,
+  CombatEnemy,
   CombatPlayer,
   CombatEvent,
 } from "../../shared/combat/model.ts";
@@ -60,6 +61,20 @@ export interface CombatProfile {
   crossClass?: string[];
 }
 const integer = (n: number) => Math.max(0, Math.floor(n));
+function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
+  return expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive', players).map((e) => ({
+      ...e,
+      enemyType: e.enemyType || (e.species === "goblin" ? "goblin" : inferEnemyType(e.image)),
+      ai: enemyAISchema.parse(e.ai || {}),
+      aiState: { readyRounds: {}, buffs: [] },
+      attackPower: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 1,
+      defense: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 0,
+      health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
+      maxHealth: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
+      effects: [],
+    }));
+}
+
 export function initialCombatState(
   sessionId: string,
   fight: FightRecord,
@@ -82,18 +97,8 @@ export function initialCombatState(
     departedPlayers: {},
     completedRounds: 0,
     damageLeaderId: null,
-    ...(fight.enemies.some(e=>e.quantity!==undefined || resolveEnemyType(e) === "goblin")?{encounterRules:2 as const,activeWave:Math.min(...fight.enemies.map((e,i)=>fight.enemyDisplayMode==='consecutive'?(e.wave||i+1):1))}:{}),
-    enemies: expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive').map((e) => ({
-      ...e,
-      enemyType: e.enemyType || (e.species === "goblin" ? "goblin" : inferEnemyType(e.image)),
-      ai: enemyAISchema.parse(e.ai || {}),
-      aiState: { readyRounds: {}, buffs: [] },
-      attackPower: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 1,
-      defense: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 0,
-      health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
-      maxHealth: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
-      effects: [],
-    })),
+    ...(fight.enemies.some(e=>e.quantity!==undefined || e.swarm || resolveEnemyType(e) === "goblin")?{encounterRules:2 as const,activeWave:Math.min(...fight.enemies.map((e,i)=>fight.enemyDisplayMode==='consecutive'?(e.wave||i+1):1))}:{}),
+    enemies: initialEnemies(fight),
     questionStartTime: null,
     phaseStartTime: now,
     phaseDeadline: null,
@@ -206,7 +211,8 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   const players = Object.values(state.players);
   if(state.encounterRules===2){
     const budget=encounterBudget(players,fight.encounterTier||1,fight.questions.length);
-    const enemies=allocateHP(state.enemies,budget.hp);
+    const individuals = fight.enemies.some(e => e.swarm) ? initialEnemies(fight, players.length) : state.enemies;
+    const enemies=allocateHP(individuals,budget.hp);
     const present=new Set(enemies.map(e=>e.role||'normal'));
     return {...state,enemies,entryPerformance:Object.fromEntries(players.map(p=>[p.studentId,performance(p,Math.max(1,fight.questions.length))])),autoAdvanceWaves:solo,encounterAttendance:players.length,referenceDamage:budget.damage,enemyRoundBudget:budget.rawPressure,encounterXpFraction:[...present].reduce((n,r)=>n+ROLE_SHARES[r],0)};
   }
@@ -361,6 +367,42 @@ export function setReady(state: CombatSnapshot, id: string): CombatSnapshot {
     ...state,
     players: { ...state.players, [id]: { ...p, ready: true } },
   };
+}
+/** Skip the current wave without inventing player damage or answer credit. */
+export function nextWave(state: CombatSnapshot, fight: FightRecord, now = Date.now()): CombatSnapshot {
+  if (!canAdvanceWave(state)) throw new CombatRuleError("No next wave is available");
+  if (state.currentPhase === "wave_break") return advancePhase(state, fight, now);
+  const next = structuredClone(state);
+  for (const enemy of activeEnemies(next)) {
+    enemy.health = 0;
+    enemy.effects = [];
+  }
+  releaseInvalidStatuses(next);
+  event(next, "ability", "host", "", 0, `Host skipped wave ${next.activeWave || 1}`);
+  // Reuse round cleanup, late admissions and wave selection, then open its question.
+  next.currentPhase = "enemy_ai";
+  const between = advancePhase(next, fight, now);
+  return between.currentPhase === "wave_break" ? advancePhase(between, fight, now) : between;
+}
+/** Host intervention defeats one active enemy without attributing damage to a player. */
+export function eliminateEnemy(state: CombatSnapshot, id: string): CombatSnapshot {
+  if (["waiting", "game_over"].includes(state.currentPhase))
+    throw new CombatRuleError("Fight is not active");
+  if (!activeEnemies(state).some(e => e.id === id))
+    throw new CombatRuleError("Choose a living enemy in the active wave");
+  const next = structuredClone(state);
+  const enemy = next.enemies.find(e => e.id === id)!;
+  enemy.health = 0;
+  enemy.effects = [];
+  releaseInvalidStatuses(next);
+  event(next, "ability", "host", id, 0, `Host eliminated ${enemy.name}`);
+  if (next.enemies.every(e => e.health <= 0)) {
+    next.currentPhase = "game_over";
+    next.victory = true;
+    next.endReason = "All enemies defeated";
+    next.phaseDeadline = null;
+  }
+  return next;
 }
 export function resurrectPlayer(state: CombatSnapshot, id: string): CombatSnapshot {
   if (["waiting", "game_over"].includes(state.currentPhase))

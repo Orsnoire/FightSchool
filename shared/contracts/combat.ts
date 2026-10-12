@@ -11,6 +11,8 @@ export const combatCommandSchema = z.discriminatedUnion('type', [
   simple('answer').extend({round,questionId:targetId,answer:z.string().max(5000)}),
   simple('action').extend({round,ability:z.string().min(1).max(200),targetId,ready:z.boolean().optional()}),
   simple('resurrect').extend({round,targetId}),
+  simple('eliminate_enemy').extend({round,targetId:z.string().min(1).max(220)}),
+  simple('next_wave').extend({round,phase:z.enum(['question','actions','abilities','question_resolution','enemy_ai','wave_break'])}),
   simple('remove_player').extend({targetId}),
   simple('review_rejoin').extend({targetId,decision:z.enum(['allow','deny','block'])}),
 ]);
@@ -18,7 +20,7 @@ export type CombatCommand = z.infer<typeof combatCommandSchema>;
 export type CombatCommandType = CombatCommand['type'];
 export type CommandPayload<T extends CombatCommandType> = Omit<Extract<CombatCommand,{type:T}>, 'type'|'commandId'|'round'>;
 // Explicit top-level allowlists. New internal fields are private by default.
-export const snapshotFields = ['schemaVersion','revision','sessionId','fightId','enemyDisplayMode','currentQuestionIndex','round','currentPhase','questionStartTime','phaseStartTime','phaseDeadline','threatLeaderId','damageLeaderId','victory','endReason','activeWave','autoAdvanceWaves','completedRounds','endedByHost'] as const;
+export const snapshotFields = ['schemaVersion','revision','sessionId','fightId','enemyDisplayMode','currentQuestionIndex','round','currentPhase','questionStartTime','phaseStartTime','phaseDeadline','threatLeaderId','damageLeaderId','victory','endReason','encounterRules','activeWave','autoAdvanceWaves','completedRounds','endedByHost'] as const;
 export const playerFields = ['studentId','nickname','characterClass','gender','health','maxHealth','mp','maxMp','comboPoints','maxComboPoints','consecutiveCorrectAnswers','threat','isDead','hasAnswered','ready','healingPotions','shieldPotions','joinOrder','limitTier','roundsParticipated','recoveryCorrectAnswers','controlImmuneThroughRound'] as const;
 export const enemyFields = ['id','name','image','difficultyMultiplier','health','maxHealth','enemyType','attackPower','defense','role','templateId','quantity','wave','species'] as const;
 export type PublicCombatPlayer = Pick<CombatPlayer,typeof playerFields[number] | 'statuses' | 'actionBlocked' | 'equipmentLoadout' | 'equipmentEffects' | 'appearance' | 'stats' | 'jobLevels' | 'availableAbilities' | 'questionAction' | 'supportActions' | 'cooldowns' | 'ultimatesUsed' | 'buffs' | 'totals'> & {currentAnswer:null;lastAnswerCorrect?:boolean};

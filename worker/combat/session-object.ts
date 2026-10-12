@@ -18,6 +18,8 @@ import {
   selectAction,
   setReady,
   resurrectPlayer,
+  eliminateEnemy,
+  nextWave,
   removeStudent,
   upgradePriestActions,
   deterministicShuffle,
@@ -579,6 +581,16 @@ export class CombatSessionObject {
             actor.sessionId,
             "active",
           );
+        } else if (command.type === "next_wave") {
+          if (actor.role !== "teacher") throw new CombatRuleError("Teacher role required");
+          if (command.round !== room.snapshot.round) throw new CombatRuleError("Command belongs to another round");
+          if (command.phase !== room.snapshot.currentPhase) throw new CombatRuleError("Phase has changed; try again");
+          room.snapshot = nextWave(room.snapshot, room.fight);
+        } else if (command.type === "eliminate_enemy") {
+          if (actor.role !== "teacher") throw new CombatRuleError("Teacher role required");
+          if (command.round !== room.snapshot.round) throw new CombatRuleError("Command belongs to another round");
+          if (typeof command.targetId !== "string" || command.targetId.length > 220) throw new CombatRuleError("Invalid enemy");
+          room.snapshot = eliminateEnemy(room.snapshot, command.targetId);
         } else if (command.type === "resurrect") {
           if (actor.role !== "teacher") throw new CombatRuleError("Teacher role required");
           const live = await this.repository.findLiveCombatSession(actor.sessionId);

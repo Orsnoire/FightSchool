@@ -62,7 +62,9 @@ try {
     state.players[student().id].hasAnswered = true;
     state.events = Array.from({ length: 45 }, (_, i) => ({ id: `1:${i}`, round: 1, phase: 'question_resolution', type: 'damage', actorId: student().id, targetId: 'e1', amount: 3, message: `Player ${i % 24} dealt 3 damage to Goblins (${i + 1}).` }));
     await emit();
-    await panel.getByRole('button', { name: 'Advance current phase' }).waitFor();
+    const advanceRequest = page.waitForRequest('**/api/combat/ABC234/force-question');
+    await panel.getByRole('button', { name: 'Advance current phase', exact: true }).click();
+    assert.equal((await advanceRequest).method(), 'POST');
     assert.match(await page.getByTestId('host-status').innerText(), /1\/29 answered/);
     await page.getByTestId('host-question').waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'no horizontal overflow');
@@ -85,6 +87,14 @@ try {
     await page.getByRole('button', { name: 'Show question' }).click();
     await page.getByRole('button', { name: 'Minimize combat log' }).click();
     // Removal requires confirmation and does not trigger resurrection.
+    const eliminate = page.getByRole('button', { name: 'Eliminate Goblins from fight', exact: true });
+    await eliminate.focus();
+    assert.equal(await eliminate.evaluate(el => getComputedStyle(el).opacity), '1');
+    page.once('dialog', dialog => dialog.dismiss()); await eliminate.click();
+    assert.equal(await page.evaluate(() => window.hostTest.sent.some(m => m.type === 'eliminate_enemy')), false);
+    page.once('dialog', dialog => dialog.accept()); await eliminate.click();
+    assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).type), 'eliminate_enemy');
+    assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).targetId), 'e1');
     page.once('dialog', dialog => dialog.dismiss());
     const remove = page.getByRole('button', { name: 'Remove Player 1 from fight', exact: true });
     await remove.focus(); await remove.click();
@@ -149,9 +159,18 @@ try {
       assert.ok(contained, `${count} goblins fit their fixed field`);
       await page.screenshot({path:`${output}/${viewport.width}-goblin-swarm-${count}.png`});
     }
-    state.currentPhase = 'wave_break'; state.phaseDeadline = null;
+    state.enemies.push({...templateEnemy,id:'next-wave-enemy',wave:2,health:20,maxHealth:20});
     await emit();
-    await panel.getByRole('button', {name:'Start next wave',exact:true}).waitFor();
+    page.once('dialog', dialog => dialog.dismiss());
+    await panel.getByRole('button', {name:'Next wave',exact:true}).click();
+    assert.equal(await page.evaluate(() => window.hostTest.sent.some(m => m.type === 'next_wave')), false);
+    page.once('dialog', dialog => dialog.accept());
+    await panel.getByRole('button', {name:'Next wave',exact:true}).click();
+    assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).type), 'next_wave');
+    state.currentPhase = 'wave_break'; state.phaseDeadline = null; state.activeWave = 2;
+    await emit();
+    await panel.getByRole('button', {name:'Next wave',exact:true}).click();
+    assert.equal(await page.evaluate(() => window.hostTest.sent.at(-1).type), 'next_wave');
     state.revision++;
     await page.evaluate(({ state, question }) => window.hostTest.sockets.filter(s => s.url.includes('sessionId=ABC234')).at(-1).onmessage({ data: JSON.stringify({ type:'combat_state', state, question, rejoinRequests:[{studentId:'removed',nickname:'Alex'}] }) }), {state,question});
     await page.getByRole('dialog').waitFor();

@@ -95,6 +95,7 @@ export interface FightEnemy {
   enemyType?: Exclude<import("../../shared/combat/enemy-ai").EnemyType, "basic">;
   ai?: import("../../shared/combat/enemy-ai").EnemyAI;
   quantity?: number;
+  swarm?: import("../../shared/combat/swarm").EnemySwarm;
   wave?: number;
   species?: "goblin" | "other";
   role?: import("../../shared/encounter-tiers").EnemyRole;
