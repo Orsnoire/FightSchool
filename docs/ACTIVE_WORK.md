@@ -1,6 +1,18 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 9, 2026. C01 COMPLETE: merged, deployed and accepted. C02 next, not started.**
+**CURRENT — October 12, 2026. C02 dependency triage registered; implementation pending.**
+
+## C02 active checkpoint
+
+- Branch: `cleanup/c02-dependencies`; draft PR being registered.
+- Baseline: `af8d389` (C01 release handoff merged). No open PRs at start.
+- Scope: F15 exposure triage; editor chain first, then compatible ORM/build groups.
+- Fresh npm audit: 32 entries (21 high, 9 moderate, 2 low). No exploit established.
+- Verification: dependency installation in progress; no new tests or builds completed.
+- Next: publish registration, update editor chain, verify rich content/paste/undo, then ORM and tools.
+- C01 remains deployed; no C02 changes merged or deployed. C03–C12 untouched.
+
+The C01 record below is historical release evidence.
 
 Read this file on `main` to find the active package, then read the same file on
 its registered branch and inspect the live PR. Branch progress can be newer than
