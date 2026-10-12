@@ -1,3 +1,7 @@
+# C05 room costs — active October 12, 2026
+
+Branch `cleanup/c05-room-costs`; [draft PR #63](https://github.com/Orsnoire/FightSchool/pull/63). Read branch/PR for latest progress. Baseline c4ed753009e1b8204079696afaaef0694c182f89 includes accepted PR #61 and C04. Scope: shared per-role encoding, unchanged broadcast suppression, established-player reconnect reads, and safe queue/DB/checkpoint cost measurements. Preserve immediate acknowledgements/transitions, revocation, moderation, durable retries, saved clocks, swarm and host controls. No SQL changes or live load testing. Next: publish baseline regressions and repeated isolated 30/60-player measurements, then implement and run full gates. Not merged or deployed. Previous release records below remain historical evidence.
+
 # Active work and interruption checkpoint
 
 **CURRENT — October 12, 2026. PR #61 COMPLETE: merged, deployed and accepted. C04 remains complete; C05 is next, not started.**
