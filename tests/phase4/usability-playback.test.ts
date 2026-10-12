@@ -1,4 +1,5 @@
 import { recordAttempt } from "../../shared/combat/attempts";
+import { reportingSignature } from "../../worker/db/session-reporting";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { roomFixture } from "../support/room-costs";
@@ -157,6 +158,25 @@ test("disconnected renderer and recovery watchdog release a saved playback gate"
       waiting.snapshot.playback?.id,
     );
   }
+});
+test("classroom answer burst checkpoints evidence and projects once when the question closes", async () => {
+  const f = roomFixture(30), room = f.saved();
+  room.reportingSignature = reportingSignature(room.snapshot);
+  f.save(room);
+  const projected: any[] = [];
+  f.repository.recordSessionReporting = async (state: any) => projected.push(structuredClone(state));
+  const answer = () => command("answer", { round: 1, questionId: room.fight.questions[0].id, answer: "4" });
+  await f.obj.webSocketMessage(f.players[0], answer());
+  assert.equal(projected.length, 0, "Do not run reporting SQL on each individual answer");
+  assert.equal(f.saved().snapshot.pendingAttempts.length, 1, "Acknowledged evidence remains durably checkpointed");
+  assert.ok(f.players[0].messages.some((message: any) => message.type === "command_ack"));
+  const restored = f.object();
+  await Promise.all(f.players.slice(1).map(socket => restored.webSocketMessage(socket, answer())));
+  assert.equal(f.saved().snapshot.currentPhase, "actions");
+  assert.equal(projected.length, 1);
+  assert.equal(projected[0].pendingAttempts.length, 30, "The single projection includes the pre-restart answer");
+  assert.deepEqual(f.saved().snapshot.pendingAttempts, []);
+  assert.equal(f.costs.auth, 30, "Every answer still rechecks session revocation");
 });
 test("reporting outbox survives SQL failure and object restoration before clearing confirmed attempts", async () => {
   const f = roomFixture(1);
