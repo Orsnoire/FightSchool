@@ -55,12 +55,26 @@ const ROOM_KEY = "room";
 export class CombatSessionObject {
   private repository: IdentityRepository | null = null;
   private queue: Promise<unknown> = Promise.resolve();
+  // Volatile delivery hints only: hibernation/reconnect always permits a full send.
+  private delivered = new WeakMap<WebSocket, { state?: string; end?: string }>();
+  private commandCosts: { repositoryCalls:number; repositoryMs:number; storageReads:number; storageReadMs:number; checkpointCount:number; checkpointMs:number } | null = null;
   constructor(
     private readonly state: DurableObjectState,
     private readonly env: CombatEnv,
   ) {}
   setRepository(repository: IdentityRepository) {
-    this.repository = repository;
+    this.repository = new Proxy(repository, {
+      get: (target, key) => {
+        const value = Reflect.get(target, key);
+        if (typeof value !== "function") return value;
+        return async (...args:unknown[]) => {
+          const costs=this.commandCosts, started=performance.now();
+          if(costs)costs.repositoryCalls++;
+          try { return await value.apply(target,args); }
+          finally { if(costs)costs.repositoryMs+=performance.now()-started; }
+        };
+      },
+    });
   }
   private serialized<T>(fn: () => Promise<T>): Promise<T> {
     const next = this.queue.then(fn, fn);
@@ -72,8 +86,12 @@ export class CombatSessionObject {
       ws.send(JSON.stringify(message));
     } catch {}
   }
+  private sendEncoded(ws:WebSocket, encoded:string):boolean {
+    try { ws.send(encoded); return true; } catch { return false; }
+  }
   private broadcast(message: unknown) {
-    for (const ws of this.state.getWebSockets()) this.send(ws, message);
+    const encoded=JSON.stringify(message);
+    for (const ws of this.state.getWebSockets()) this.sendEncoded(ws, encoded);
   }
   private acknowledgeLeave(ws: WebSocket, actorId: string, sessionId: string, commandId: string) {
     for (const socket of new Set([ws, ...this.state.getWebSockets()])) {
@@ -92,7 +110,10 @@ export class CombatSessionObject {
     }
   }
   private async room() {
-    const room = await this.state.storage.get<StoredRoom>(ROOM_KEY);
+    const readStarted=performance.now(), costs=this.commandCosts;
+    let room:StoredRoom|undefined;
+    try { room=await this.state.storage.get<StoredRoom>(ROOM_KEY); }
+    finally { if(costs){costs.storageReads++;costs.storageReadMs+=performance.now()-readStarted;} }
     if (!room) return room;
     if (room.snapshot.schemaVersion === 2) {
       const upgraded = upgradePriestActions(room.snapshot);
@@ -154,18 +175,22 @@ export class CombatSessionObject {
     await this.syncAlarm(room);
     return room;
   }
-  private async save(room: StoredRoom) {
+  private async checkpoint(room: StoredRoom) {
     const startedAt=performance.now();
     try { await this.state.storage.put(ROOM_KEY, room); }
     catch(error) { diagnostic({event:'combat_checkpoint',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-startedAt,outcome:'failed'});throw error; }
+    finally { if(this.commandCosts){this.commandCosts.checkpointCount++;this.commandCosts.checkpointMs+=performance.now()-startedAt;} }
     diagnostic({event:'combat_checkpoint',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-startedAt,outcome:'ok'});
+  }
+  private async save(room: StoredRoom) {
+    await this.checkpoint(room);
     const entries=Object.values({...room.snapshot.players,...room.snapshot.departedPlayers}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0);
     const signature=JSON.stringify([room.snapshot.victory,entries.map(p=>[p.studentId,p.totals.questionsAnswered,p.totals.questionsCorrect,!!room.snapshot.players[p.studentId]])]);
     if(this.repository?.recordQuestEvidence && entries.length && signature!==room.evidenceSignature){
       const evidenceStartedAt=performance.now();
       try {await this.repository.recordQuestEvidence(room.snapshot,room.fight);room.evidenceSignature=signature;room.evidencePending=false;diagnostic({event:'combat_evidence',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-evidenceStartedAt,outcome:'ok'});}
       catch {room.evidencePending=true;diagnostic({event:'combat_evidence',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-evidenceStartedAt,outcome:'retry'});}
-      await this.state.storage.put(ROOM_KEY,room);
+      await this.checkpoint(room);
       if(room.evidencePending)await this.syncAlarm(room);
     }
   }
@@ -211,14 +236,39 @@ export class CombatSessionObject {
     if (room.snapshot.currentPhase === "game_over") for (const [id, request] of Object.entries(room.removals || {})) {
       if (request.requestedAt) this.notifyStudent(id, { type: "join_status", status: "ended", sessionId: room.snapshot.sessionId }, true);
     }
-    // Calculate the roster preview once per broadcast, not once per recipient.
+    const started=performance.now();
     const projectedState = publicSnapshot(room.snapshot, room.fight);
+    const encodedByRole=new Map<string,{signature:string;encoded:string;bytes:number}>();
+    const end=room.snapshot.currentPhase==='game_over'
+      ? JSON.stringify({type:'game_over',victory:room.snapshot.victory,message:room.snapshot.endReason,results:this.publicResults(room)}) : undefined;
+    const endBytes=end ? new TextEncoder().encode(end).byteLength : 0;
+    let messages=0,bytes=0,skipped=0,failures=0;
     for (const ws of this.state.getWebSockets()) {
       const actor = ws.deserializeAttachment() as SocketAttachment;
-      if (actor.role !== "teacher" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) continue;
-      this.send(ws, this.snapshotMessage(room, actor.role, projectedState));
-      if (room.snapshot.currentPhase === "game_over") this.send(ws, { type: "game_over", victory: room.snapshot.victory, message: room.snapshot.endReason, results: this.publicResults(room) });
+      if (actor.role !== "teacher" && (actor.role !== "student" || (!room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]))) {
+        this.delivered.delete(ws);continue;
+      }
+      let payload=encodedByRole.get(actor.role);
+      if(!payload){
+        // Timestamp alone is not a state change. Encode the full public content
+        // once per role, including same-revision moderation/result updates.
+        const message=this.snapshotMessage(room,actor.role,projectedState);
+        const signature=JSON.stringify({...message,serverTime:undefined});
+        const encoded=signature.slice(0,-1)+',"serverTime":'+Date.now()+'}';
+        payload={signature,encoded,bytes:new TextEncoder().encode(encoded).byteLength};
+        encodedByRole.set(actor.role,payload);
+      }
+      const previous=this.delivered.get(ws)||{};
+      if(previous.state!==payload.signature){
+        if(this.sendEncoded(ws,payload.encoded)){previous.state=payload.signature;messages++;bytes+=payload.bytes;}else failures++;
+      }else skipped++;
+      if(end && previous.end!==end){
+        if(this.sendEncoded(ws,end)){previous.end=end;messages++;bytes+=endBytes;}else failures++;
+      }
+      this.delivered.set(ws,previous);
     }
+    diagnostic({event:'combat_publish',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,
+      durationMs:performance.now()-started,encodedMessages:encodedByRole.size+(end?1:0),messages,bytes,skipped,failures,outcome:failures?'failed':'ok'});
   }
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
@@ -349,6 +399,8 @@ export class CombatSessionObject {
       let room:StoredRoom|undefined;
       let outcome:'ok'|'rejected'|'failed'='ok';
       let command: CombatCommand | undefined;
+      const costs={repositoryCalls:0,repositoryMs:0,storageReads:0,storageReadMs:0,checkpointCount:0,checkpointMs:0};
+      this.commandCosts=costs;
       try {
         if (typeof message !== "string" || new TextEncoder().encode(message).byteLength > 16000)
           throw new CombatRuleError("Text command up to 16KB required");
@@ -482,16 +534,24 @@ export class CombatSessionObject {
             await this.publish(room);
             return;
           }
-          const student = await this.repository.findStudentById(actor.actorId);
-          if (!student) throw new CombatRuleError("Student unavailable");
-          room.snapshot = addStudent(
-            room.snapshot,
-            student,
-            await this.repository.getCombatProfile?.(student, actor.sessionId),
-          );
+          const established=room.snapshot.players[actor.actorId] || room.snapshot.pendingPlayers?.[actor.actorId];
+          if(established && room.snapshot.currentPhase!=="waiting") {
+            this.send(ws,this.snapshotMessage(room,actor.role));
+            return;
+          }
+          // Waiting solo rooms may still need their automatic start below.
+          // Established lobby participants retain their frozen entry profile.
+          const student = established ? null : await this.repository.findStudentById(actor.actorId);
+          if (!established) {
+            if (!student) throw new CombatRuleError("Student unavailable");
+            room.snapshot = addStudent(room.snapshot, student, await this.repository.getCombatProfile?.(student,actor.sessionId));
+          }
           const live = await this.repository.findLiveCombatSession(
             actor.sessionId,
           );
+          if(established && live?.soloStudentId!==actor.actorId) {
+            this.send(ws,this.snapshotMessage(room,actor.role));return;
+          }
           if (
             live?.soloStudentId === actor.actorId &&
             room.snapshot.currentPhase === "waiting"
@@ -689,7 +749,8 @@ export class CombatSessionObject {
           error: error instanceof CombatRuleError ? error.message : "Unable to process command",
         });
       } finally {
-        diagnostic({event:'combat_command',requestId:context.requestId||requestId,roomId:context.sessionId,revision:room?.snapshot.revision,queueMs:startedAt-queuedAt,durationMs:performance.now()-startedAt,outcome});
+        diagnostic({event:'combat_command',requestId:context.requestId||requestId,roomId:context.sessionId,revision:room?.snapshot.revision,queueMs:startedAt-queuedAt,durationMs:performance.now()-startedAt,...costs,outcome});
+        this.commandCosts=null;
       }
     });
   }
