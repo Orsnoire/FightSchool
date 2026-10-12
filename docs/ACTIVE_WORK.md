@@ -1,6 +1,17 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C02 COMPLETE: merged, deployed and accepted. C03 next, not started.**
+**CURRENT — October 12, 2026. C03 schema baseline registered; investigation starting.**
+
+## C03 active checkpoint
+
+- Branch: `cleanup/c03-schema-baseline`; draft PR registration in progress.
+- Baseline: `bdad601`; C02 release handoff merged, no open PRs at start.
+- Scope: F04 snapshots, schema declarations and handwritten SQL ownership. Preserve all applied SQL and current data.
+- Gates: no-op generation, all migrations on a disposable database, existing-data preservation and catalog/schema comparison.
+- Verification: not yet run for C03. No implementation or production database changes.
+- Next: reproduce generation drift in a disposable copy, inventory schema ownership, reconcile declarations/snapshot and add regression gates.
+
+The C02 release record below is historical context.
 
 ## Registered work
 
