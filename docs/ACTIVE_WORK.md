@@ -122,8 +122,8 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 ## Swarm count scaling — separate feature work
 
 - Owner request, October 12: optional Swarm control per enemy group, adding a configurable x enemies at 8, 12, 16, etc. players. Base count through 7 players.
-- Branch: `feat/swarm-party-count`; draft PR registration follows this claim. C04 / PR #60 remains the active cleanup package and must be preserved.
+- Branch: `feat/swarm-party-count`; [draft PR #61](https://github.com/Orsnoire/FightSchool/pull/61). C04 / PR #60 remains the active cleanup package and must be preserved.
 - Counts and HP preview follow the joined waiting roster; counts lock at Start Fight. Existing late-entry HP budgeting remains in effect.
 - Preserve fixed quantities when disabled, species behavior, waves, individual IDs and current data. Store the optional setting in existing enemy JSON; no SQL migration.
 - Retain 60 enemies per group and 120 per encounter. Reserve authored counts first, then distribute capped additions fairly in author order.
-- Verification: not yet run. Next: implement shared count calculation, editor/save/read validation, and preview/start boundary tests; inspect C04 overlap before review.
+- Baseline: 3 of 4 new tests intentionally fail on unchanged code: no extra enemies at 8 players, no capped additions, and swarm settings stripped by validation. Active-fight count stability already passes. Next: implement editor, shared count calculation and persistence validation, then rerun all boundaries.
