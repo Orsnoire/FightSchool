@@ -661,3 +661,43 @@ and intended CI checks are documented in [contracts and diagnostics](contracts-a
 Main branch protection enforcement remains off. C05 owns cost comparisons;
 this release does not claim a performance improvement. PR #61 is separate and
 is not deployed in this runtime.
+
+
+## Swarm, gear baseline and host controls — 12 October 2026
+
+Owner authorized review, merge and deployment. [PR #61](https://github.com/Orsnoire/FightSchool/pull/61)
+merged as `cda5fd42eea16690d60a81181474ba5fb4e28f5c`. Reviewed head `a9cd95f` incorporates
+current main `87d45a5`, including the C04 refactor, released PR #62 forwarding fix
+and release records; no blocking review findings remained.
+
+The release adds optional swarm batches at 8/12/16 players, roster-based count/HP
+preview with counts locked at Start Fight, previous-tier reference gear, teacher
+Next wave and individual enemy elimination ×. See the [current specification](../combat/swarm-scaling.md).
+
+| Evidence | Result |
+| --- | --- |
+| [Review CI 38295996875](https://github.com/Orsnoire/FightSchool/actions/runs/38295996875) | Passed all 238 tests, typecheck and both production builds on the integrated revision |
+| [Browser acceptance 38295996779](https://github.com/Orsnoire/FightSchool/actions/runs/38295996779) | Passed Chromebook, phone and large-screen flows, including confirmation and keyboard controls |
+| [Merged-main CI 38296325836](https://github.com/Orsnoire/FightSchool/actions/runs/38296325836) | Passed on exact merged revision `cda5fd4` |
+| [Deployment 38296345335](https://github.com/Orsnoire/FightSchool/actions/runs/38296345335), [job 114968246331](https://github.com/Orsnoire/FightSchool/actions/runs/38296345335/job/114968246331) | Passed 238 tests, typecheck, builds, R2, existing migration gate and both hostname smoke checks |
+| [Canonical live acceptance 38296638292](https://github.com/Orsnoire/FightSchool/actions/runs/38296638292) | Passed against the canonical domain on `cda5fd4`; combat/economy, R2, concurrency, reconnects, moderation, revocation and exactly-once rewards |
+
+Immutable Worker `26fa9a9e-5bb8-4ca7-a624-474421c1b20a` was published at 19:16:34 UTC.
+The existing migration runner succeeded at 19:16:18 UTC with the unchanged journal
+through `0014`; PR #61 adds no SQL migration or live-data reset. Individual production
+ledger rows were not independently queried. The local typecheck and 17 focused
+integration tests also passed.
+
+Boundary tests cover swarm counts/caps, preview/start equality, previous-tier gear,
+editor persistence, host ownership/revocation, stale commands, retries and exactly-once
+results. Standard live acceptance complements these checks; it does not reproduce
+every feature-specific fixture on the live service. Classroom balance observation
+and C12 operational drills remain open. Hosts/students should refresh existing tabs.
+C05 remains next and unstarted. Documentation-only release records do not require redeployment.
+
+Canonical acceptance ran at 19:17–19:19 UTC. The 30-answer burst recorded p50
+858 ms, p95 1,714 ms and maximum 1,815 ms within the existing 15-second maximum
+gate; this single burst is not a sustained performance benchmark. The release
+is complete, merged, deployed and accepted. Prior Worker
+`94a6a8f1-462d-4b1c-98c1-365de92066f1` remains the preceding release checkpoint;
+no rollback rehearsal was performed.

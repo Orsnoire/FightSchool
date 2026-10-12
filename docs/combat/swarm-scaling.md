@@ -1,6 +1,6 @@
 # Party-scaled swarm counts
 
-Owner decision — October 12, 2026. Implementation in PR #61; not released.
+Owner decision — October 12, 2026. PR #61 is merged, deployed and accepted. See [release evidence](../cloudflare/full-migration.md#swarm-gear-baseline-and-host-controls--12-october-2026).
 
 Each enemy group may enable Swarm and choose an integer enemies-per-four-players increment x. Its requested count is `base + x * max(0, floor(players / 4) - 1)`: base through 7 players, base+x at 8–11, base+2x at 12–15, and so on. Disabled or absent settings retain authored quantities. This setting is independent of goblin species/targeting and may be used with any supported species.
 

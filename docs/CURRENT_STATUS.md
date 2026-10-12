@@ -1,24 +1,24 @@
 # Current status
 
 **CURRENT — verified October 12, 2026.** Cleanup Phases 1–2 are complete; C05 is next, not started.
-**C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted.**
+**C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
 ## Verified release baseline
 
-The deployed application runtime is `a2f13673de9bccbf044ef27f67a96fa4adf2431a`, the C04 follow-up merge.
-Immutable Worker `94a6a8f1-462d-4b1c-98c1-365de92066f1` was published October 12 at
-17:37:35 UTC. Subsequent documentation commits do not change this runtime.
+The deployed application runtime is `cda5fd42eea16690d60a81181474ba5fb4e28f5c`, the PR #61 merge.
+Immutable Worker `26fa9a9e-5bb8-4ca7-a624-474421c1b20a` was published October 12 at
+19:16:34 UTC. Subsequent documentation commits do not change this runtime.
 
 | Evidence | Result |
 | --- | --- |
-| [Deployment 38285264787](https://github.com/Orsnoire/FightSchool/actions/runs/38285264787) | Passed on `a2f1367`; 224 tests, typecheck, builds, R2, existing migration gate and both hostnames |
-| [Canonical live acceptance 38285499681](https://github.com/Orsnoire/FightSchool/actions/runs/38285499681) | Passed on `a2f1367`; combat/economy, R2, 30-player concurrency, reconnects, moderation and exactly-once rewards |
-| [Review CI 38284897429](https://github.com/Orsnoire/FightSchool/actions/runs/38284897429) / [browser 38284897183](https://github.com/Orsnoire/FightSchool/actions/runs/38284897183) | Passed on C04 follow-up head `5fdfe6c`; merged-main CI 38285235793 passed |
-| Database evidence | Existing migrator succeeded through journal `0014`. C04 adds no SQL migration; current live data is preserved. |
+| [Deployment 38296345335](https://github.com/Orsnoire/FightSchool/actions/runs/38296345335) | Passed on `cda5fd4`; 238 tests, typecheck, builds, R2, existing migration gate and both hostnames |
+| [Canonical live acceptance 38296638292](https://github.com/Orsnoire/FightSchool/actions/runs/38296638292) | Passed on `cda5fd4`; combat/economy, R2, 30-player concurrency, reconnects, moderation and exactly-once rewards |
+| [Review CI 38295996875](https://github.com/Orsnoire/FightSchool/actions/runs/38295996875) / [browser 38295996779](https://github.com/Orsnoire/FightSchool/actions/runs/38295996779) | Passed on integrated head `a9cd95f`; merged-main CI 38296325836 passed |
+| Database evidence | Existing migrator succeeded through journal `0014`. PR #61 adds no SQL migration; current live data is preserved. |
 
-See [C04 release record](cloudflare/full-migration.md#c04-contracts-and-diagnostics--12-october-2026).
+See [PR #61 release record](cloudflare/full-migration.md#swarm-gear-baseline-and-host-controls--12-october-2026). The C04 refactor and its PR #62 forwarding fix are included.
 
 The October 8 queue is reconciled: every October 8 merged PR (#37–50 and #52)
 is already included in the verified October 8 runtime `e158194` and this release.
@@ -37,11 +37,11 @@ from the active runtime and is not a rollback target.
 
 | Area | Released behavior | Outstanding boundary |
 | --- | --- | --- |
-| Combat and classroom UI | Deterministic combat, current class rules, daily stamina, First Aid, calculated ability values, static battlefield, late entry, moderation, host resurrection and proportional host-end rewards | Refactors preserve these rules; classroom balance observation continues |
+| Combat and classroom UI | Deterministic combat, current class rules, daily stamina, First Aid, calculated ability values, static battlefield, late entry, moderation, host resurrection, Next wave, enemy elimination × and proportional host-end rewards | Refactors preserve these rules; classroom balance observation continues |
 | Equipment | Eight slots, full Tier 0 starters, permissions, remembered per-job gear/abilities, Tier 1 level-2 collection, comparisons, equipped static art | F01 built-in/custom claim validation released in C01; ownership, earned-loot checks and atomic rewards preserved |
 | Guilds and progression | Teacher/personal/shared quests, permanent progression with encounter caps, tier browsing, AA overflow banking, atomic reward receipts | AA purchases and additional balance tuning remain future work |
 | Host sessions | Explicit Join / End / Launch, exact-session reconnect, duplicate-launch protection, idempotent host-end rewards | Team race is not implemented |
-| Enemies | Seven defined species, configurable priorities, answer-based recovery, individual quantities, waves, goblin targeting, minimum-five additions and genuine roster-based HP estimates before Start Fight | Party-scaled enemy counts are not implemented; fixed authored quantities remain |
+| Enemies | Seven defined species, configurable priorities, answer-based recovery, individual quantities, waves, goblin targeting, minimum-five additions and genuine roster-based count/HP estimates, optional swarm batches at 8/12/16 players and previous-tier reference gear | Counts lock at Start Fight; tier 3/4 gear bonuses remain provisional |
 | Leaderboards | Student metric query and visible retryable errors; accuracy weighted by total answers | Guild scope, hidden metrics and additive metrics preserved |
 | Avatars | Saved independent appearance, Human models, starter wardrobe and front-facing equipped-item visuals | Full animation, near-profile fitting and custom-item artwork remain pending |
 

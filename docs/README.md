@@ -3,7 +3,7 @@
 **CURRENT — updated October 12, 2026.** Cleanup is the next development priority.
 Cleanup Phases 1–2 are complete. **C01 and C02 are COMPLETE: merged, deployed and accepted.**
 **C03 schema baseline and C04 contracts/diagnostics are COMPLETE and released. C05 is next, not started.** New features wait for the
-cleanup exit gates.
+cleanup exit gates. The separately authorized [swarm, previous-tier gear and host controls](combat/swarm-scaling.md) are deployed and accepted in PR #61.
 Read [active work](ACTIVE_WORK.md) before editing.
 
 ## Start here
@@ -42,10 +42,10 @@ to the historical Cloudflare migration phase numbers.
 | Area | Documents | Boundary |
 | --- | --- | --- |
 | Combat rules and presentation | [Balance and stamina](combat/classroom-balance-and-stamina.md), [student overlays](combat/student-overlays.md), [battlefield direction](combat-facelift.md) | Released static battlefield and current rules; later dated approvals supersede early proposals |
-| Enemies | [Enemy AI and recovery](combat/enemy-ai.md), [individual enemies and waves](combat/enemy-waves-and-goblins.md) | Seven defined species, goblin minimum five, fixed authored quantities |
+| Enemies | [Enemy AI and recovery](combat/enemy-ai.md), [individual enemies and waves](combat/enemy-waves-and-goblins.md) | Seven defined species, goblin minimum five, optional swarms and previous-tier gear |
 | Equipment | [Starter wardrobe](starter-wardrobe.md), [Tier 1](combat/tier-one-equipment.md), [comparisons](combat/equipment-comparisons.md), [equipped artwork](avatar-equipment-visuals.md) | Released; F01 claim correction deployed and accepted in C01 / PR #53 |
 | Progression | [Guild quests and tiers](guild-quests-and-tiers.md) | Released; classroom tuning open, AA purchases future |
-| Hosting and team race | [Host sessions and team-race feasibility](combat/host-sessions-and-team-race.md) | Explicit Join / End / Launch released; team race future |
+| Hosting and team race | [Host sessions and team-race feasibility](combat/host-sessions-and-team-race.md) | Explicit Join / End / Launch, Next wave and enemy elimination released; team race future |
 | Avatars | [Database foundation](avatar-database.md), [art and animation direction](avatar-art-direction.md) | Static avatars released; full animation gate remains open |
 | Contracts and diagnostics | [Boundary ownership and CI policy](cloudflare/contracts-and-diagnostics.md) | C04 COMPLETE, deployed and accepted; C05 next |
 | Database | [Schema baseline and ownership](cloudflare/schema-baseline.md) | C03 declaration/snapshot repair; shipped SQL remains immutable |

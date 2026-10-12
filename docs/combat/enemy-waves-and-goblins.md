@@ -25,8 +25,7 @@ midpoint (levels 2, 6, 9, 13). The October 12 owner correction in
 [swarm scaling and host controls](swarm-scaling.md) changes the reference to
 previous-tier gear: tier 1 uses complete tier 0 starters, tier 2 full tier 1, and
 tiers 3/4 provisional tier 1 bonuses multiplied by 2/3. Level midpoints stay the
-same. This correction is implemented in PR #61, not yet released; the current
-live runtime still uses same-tier gear.
+same. This correction is deployed in PR #61; see the current release evidence.
 
 A bounded rotation estimates damage and healing over the quiz length, including
 finite MP, combo points and cooldowns. Full HP is 1.10 times that damage. Three or
@@ -70,13 +69,13 @@ students do not repeatedly grow the budget. Attendance never shrinks the budget.
 Base fight XP follows the sum of present role shares; earned answer activity XP
 is unchanged.
 
-## Follow-up ideas, not implemented
+## Released swarms and deferred team race
 
 - Team race: one public join code backed by two independent child rooms, shared
   teacher controls and a progress/accuracy scoreboard, as specified in
   [host-session/race feasibility](host-sessions-and-team-race.md). Existing
   ordinary hosting reuses an open room.
-- Party-scaled swarm counts are now separately authorized and implemented in
-  [PR #61](swarm-scaling.md), pending review/release. The newer decision adds
+- Party-scaled swarm counts are deployed in
+  [PR #61](swarm-scaling.md). The newer decision adds
   batches at 8/12/16 players and locks all counts at Start Fight, superseding the
-  older per-wave proposal. Fixed quantities remain the deployed behavior.
+  older per-wave proposal. Groups without Swarm retain their authored quantities.

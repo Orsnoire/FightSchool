@@ -1,6 +1,6 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C04 COMPLETE: merged, deployed and accepted.**
+**CURRENT — October 12, 2026. PR #61 COMPLETE: merged, deployed and accepted. C04 remains complete; C05 is next, not started.**
 
 ## C04 release checkpoint
 
@@ -12,16 +12,17 @@
 - Deployed Worker: `94a6a8f1-462d-4b1c-98c1-365de92066f1`, published October 12 at 17:37:35 UTC. No new SQL migration or live-data reset.
 - [Canonical live acceptance 38285499681](https://github.com/Orsnoire/FightSchool/actions/runs/38285499681) passed on the same checkout: combat/economy, R2, 30 participants, reconnects, room isolation, moderation, revocation and exactly-once rewards.
 - [Contract ownership, limits and intended CI policy](cloudflare/contracts-and-diagnostics.md). Both intended required checks run on every PR; main remains unprotected, so administrative enforcement is not claimed.
-- C05 is next and not started; register it before implementation. Preserve separate PR #61 below; its code is not included in this release. Both C04 implementation branches are historical. No cleanup implementation package is active.
+- C05 is next and not started; register it before implementation. The later PR #61 release below includes this C04 baseline. Both C04 implementation branches are historical. No cleanup implementation package is active.
 
-## PR #61 — authorized merge and deployment in progress
+## PR #61 — swarm, gear baseline and host controls release
 
-- Branch: `feat/swarm-party-count`; [PR #61](https://github.com/Orsnoire/FightSchool/pull/61), ready for review at `8d78de7ef593e9812e833950d282c7395488c178`.
+- Owner authorized merge and deployment. [PR #61](https://github.com/Orsnoire/FightSchool/pull/61) merged as `cda5fd42eea16690d60a81181474ba5fb4e28f5c`; `feat/swarm-party-count` is historical after this release.
 - Implemented: optional swarm batches at 8/12/16 players, exact waiting count/HP preview, previous-tier reference gear, teacher **Next wave** override and enemy elimination ×.
-- Integrated C04 merge `097081c` without restoring duplicate contracts. Public wave mode, authenticated host commands, stale-phase guards and durable retries are covered.
-- Verified: all 238 tests, typecheck and both builds; [CI 38284666305](https://github.com/Orsnoire/FightSchool/actions/runs/38284666305) and [browser acceptance 38284666286](https://github.com/Orsnoire/FightSchool/actions/runs/38284666286) passed on that head.
-- Owner authorized merge and deployment on October 12. Integrated current main `87d45a5`, including the released PR #62 response-forwarding fix and C04 release records; merge was clean. Combined-revision CI/browser checks are pending; exact head/results are recorded in the PR. Next: pass those gates, merge, deploy the merged revision and run canonical live acceptance. No SQL migration or live-data reset.
-- The older swarm section below is superseded by this pointer and the PR's verified checkpoint.
+- Reviewed head `a9cd95fe9078c8c63c3fbf959fee78a43a73d7b3` integrates current main `87d45a5`, including PR #62's released response-forwarding fix and C04 records. No blocking review findings.
+- Verified: all 238 tests, typecheck and both builds; [CI 38295996875](https://github.com/Orsnoire/FightSchool/actions/runs/38295996875) and [browser acceptance 38295996779](https://github.com/Orsnoire/FightSchool/actions/runs/38295996779) passed. Merged-main CI 38296325836 passed. The local typecheck and 17 focused integration tests also passed.
+- [Deployment 38296345335](https://github.com/Orsnoire/FightSchool/actions/runs/38296345335) passed on the exact merged revision: 238 tests, typecheck, builds, R2, existing migration gate and both hostnames. Worker `26fa9a9e-5bb8-4ca7-a624-474421c1b20a`, published 19:16:34 UTC.
+- [Canonical live acceptance 38296638292](https://github.com/Orsnoire/FightSchool/actions/runs/38296638292) passed on the same revision: combat/economy, R2, 30 participants, reconnects, room isolation, moderation, revocation and exactly-once rewards.
+- No new SQL migration or live-data reset. C05 remains next and unstarted; no cleanup implementation package is active. The older swarm section below is historical and superseded by this release record.
 
 
 The records below are historical.

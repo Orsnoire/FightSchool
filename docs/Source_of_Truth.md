@@ -3,8 +3,9 @@
 > **CURRENT AUTHORITY — October 12, 2026.** Start with the [documentation index](README.md),
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
-> Phase 1 is active with the [resume safeguard](ACTIVE_WORK.md). C01 and C02
-> are COMPLETE: PRs #53 and #56 merged, deployed and accepted. C03 is COMPLETE, merged in PR #58.
+> Phases 1–2 are complete with the [resume safeguard](ACTIVE_WORK.md). C01–C04
+> are merged, deployed and accepted. C05 is next and not started. The separately
+> authorized PR #61 release is recorded in current status.
 > Historical migration phases are not the active queue.
 
 This document defines the authority hierarchy for all QuestAcademy design, development, migration, and agent-based work.
@@ -663,22 +664,23 @@ implicit session creation on page load and the proposed automatic end-on-launch.
 Use explicit Join / End / Launch controls and session-specific reconnect URLs.
 These controls were released in PR #49 and exercised by the live acceptance above.
 The same document records the code-level team-race feasibility review; team race
-and party-scaled swarm counts remain future implementation, not released features.
+remains future implementation. Party-scaled swarm counts are deployed in PR #61.
 
 ## Individual enemies and wave budgets
 
 The [October 8 enemy and goblin rules](combat/enemy-waves-and-goblins.md) record
 individual quantities, role HP shares, reference-party scaling, goblin targeting,
 wave pauses and the approved sprite. This implementation was integrated into
-PR #52 and is deployed. Party-scaled counts and team race remain future work in
-the [expansion plan](EXPANSION_PLAN.md).
+PR #52 and is deployed. PR #61 adds party-scaled counts as specified below; team
+race remains future work in the [expansion plan](EXPANSION_PLAN.md).
 
 
-## October 12 swarm, gear baseline and host controls — pending release
+## October 12 swarm, gear baseline and host controls — deployed and accepted
 
 The owner-authorized [swarm scaling specification](combat/swarm-scaling.md)
 supersedes the deferred count proposal: optional x-enemy batches begin at 8 players
 then 12/16, preview with HP and lock at Start Fight. It also shifts classroom
 reference gear to the previous tier (tier 0 starters for tier 1), and specifies
-teacher-only Next wave and individual elimination controls. PR #61 is separate
-from C04 cleanup; implementation does not imply merge or deployment.
+teacher-only Next wave and individual elimination controls. PR #61 is merged and
+deployed with C04 and the PR #62 forwarding fix preserved. Canonical live
+acceptance passed; see [current status](CURRENT_STATUS.md) for exact evidence.

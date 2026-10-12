@@ -1,8 +1,9 @@
 # Host sessions and team-race feasibility — October 8, 2026
 
-> **MIXED STATUS — reconciled October 9, 2026.** Explicit host-session controls
-> are RELEASED (PR #49, included in `e158194`). Team race and party-scaled swarm
-> counts are FUTURE. See [current status](../CURRENT_STATUS.md),
+> **MIXED STATUS — reconciled October 12, 2026.** Explicit host-session controls
+> are RELEASED (PR #49, included in `e158194`). Party-scaled swarm counts and
+> teacher Next wave / elimination controls are deployed in [PR #61](swarm-scaling.md).
+> Team race is FUTURE. See [current status](../CURRENT_STATUS.md),
 > the [cleanup plan](../CLEANUP_PLAN.md) and [expansion plan](../EXPANSION_PLAN.md).
 
 ## Approved session controls
@@ -46,7 +47,7 @@ race; the additions below remain future work after cleanup.
 | Start/pause/end together | Per-room serialized commands and alarms | Persisted shared command receipts, scheduled start and durable fan-out retries; a real pause/resume state with retained remaining time |
 | Independent race progression | Each room owns its snapshot, timer and rewards | Independent advancement; race summary based on server state, deterministic first-clear/tie rule and accuracy reporting |
 | Rejoin/late arrivals | Per-room pending entrants and moderation | Stable assignment ledger; late entry at next round boundary; moderation must not allow changing teams |
-| Swarm pressure | Released fixed quantities and attendance budgets | Optional party-scaled counts with pressure setting, locked per wave; avoid applying attendance scaling twice |
+| Swarm pressure | Released optional count increments at 8/12/16 players; all counts lock at Start Fight and share the existing HP budget | Validate swarm formation and performance across both race rooms |
 
 Use a hosting-session option rather than changing the reusable fight template.
 Suggest it for guilds over 30; do not interrupt ordinary launching with a modal.
