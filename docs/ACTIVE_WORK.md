@@ -1,15 +1,17 @@
 # Active work and interruption checkpoint
 
-**CURRENT — October 12, 2026. C02 dependency triage registered; implementation pending.**
+**CURRENT — October 12, 2026. C02 dependency triage registered; editor updates verified locally; ORM/tooling next.**
 
 ## C02 active checkpoint
 
-- Branch: `cleanup/c02-dependencies`; draft PR being registered.
+- Branch: `cleanup/c02-dependencies`; draft [PR #56](https://github.com/Orsnoire/FightSchool/pull/56).
 - Baseline: `af8d389` (C01 release handoff merged). No open PRs at start.
 - Scope: F15 exposure triage; editor chain first, then compatible ORM/build groups.
 - Fresh npm audit: 32 entries (21 high, 9 moderate, 2 low). No exploit established.
-- Verification: dependency installation in progress; no new tests or builds completed.
-- Next: publish registration, update editor chain, verify rich content/paste/undo, then ORM and tools.
+- Verification: baseline typecheck and all 208 tests passed. Editor upgrades pass typecheck and 7 rich-content tests, including hostile MathLive text and paste/undo/redo. Browser/full final gates pending.
+- Completed: Tiptap 3.31.4, ProseMirror view 1.42.6, MathLive 0.111.1, KaTeX 0.19.0; avoid duplicate Underline registration.
+- Next: compatible ORM/tooling updates, advisory disposition, full tests/build/browser gates.
+- Main discovery pointer update was blocked by approval review (authorization covers branch/PR only); draft PR is published.
 - C01 remains deployed; no C02 changes merged or deployed. C03–C12 untouched.
 
 The C01 record below is historical release evidence.
