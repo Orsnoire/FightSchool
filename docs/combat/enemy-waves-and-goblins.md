@@ -21,9 +21,12 @@ fields live in the existing enemy JSON. Conversion affects subsequent sessions.
 ## Encounter budget
 
 The four-person reference party is Warrior, Priest, Wizard and Scout at the tier
-midpoint (levels 2, 6, 9, 13). Tier 1 uses its shipped full equipment sets. Later
-tiers provisionally extrapolate those equipment bonuses by tier until their
-complete collections are authored; they need classroom tuning.
+midpoint (levels 2, 6, 9, 13). The October 12 owner correction in
+[swarm scaling and host controls](swarm-scaling.md) changes the reference to
+previous-tier gear: tier 1 uses complete tier 0 starters, tier 2 full tier 1, and
+tiers 3/4 provisional tier 1 bonuses multiplied by 2/3. Level midpoints stay the
+same. This correction is implemented in PR #61, not yet released; the current
+live runtime still uses same-tier gear.
 
 A bounded rotation estimates damage and healing over the quiz length, including
 finite MP, combo points and cooldowns. Full HP is 1.10 times that damage. Three or
@@ -73,6 +76,7 @@ is unchanged.
   teacher controls and a progress/accuracy scoreboard, as specified in
   [host-session/race feasibility](host-sessions-and-team-race.md). Existing
   ordinary hosting reuses an open room.
-- Optional party-scaled swarm count with an enemies-per-player control. Proposed
-  counts lock at wave start; subsequent arrivals affect the next wave. Fixed
-  quantities remain the released behavior. Do not apply party scaling twice.
+- Party-scaled swarm counts are now separately authorized and implemented in
+  [PR #61](swarm-scaling.md), pending review/release. The newer decision adds
+  batches at 8/12/16 players and locks all counts at Start Fight, superseding the
+  older per-wave proposal. Fixed quantities remain the deployed behavior.

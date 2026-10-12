@@ -46,6 +46,11 @@ export function activeEnemies(s: CombatSnapshot): CombatEnemy[] {
     return alive.filter((e) => (e.wave || 1) === (s.activeWave || 1));
   return alive.slice(0, 1);
 }
+export function canAdvanceWave(s: CombatSnapshot): boolean {
+  return s.encounterRules === 2 && s.enemyDisplayMode === "consecutive" &&
+    !["waiting", "game_over"].includes(s.currentPhase) &&
+    (s.currentPhase === "wave_break" || s.enemies.some(e => e.health > 0 && (e.wave || 1) > (s.activeWave || 1)));
+}
 export function bounceTarget(s: CombatSnapshot, id: string): string {
   const alive = activeEnemies(s);
   if (alive.some((e) => e.id === id)) return id;

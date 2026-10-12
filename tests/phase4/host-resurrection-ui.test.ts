@@ -25,7 +25,15 @@ test("only host boards expose clickable and keyboard-accessible resurrection on 
     state.players[student().id].health = 0;
     const chosen: string[] = [];
     const onResurrect = (id: string) => chosen.push(id);
-    await act(async () => root.render(createElement(CombatBoard, { state, onResurrect })));
+    const eliminated: string[] = [];
+    const onEliminate = (id: string) => eliminated.push(id);
+    await act(async () => root.render(createElement(CombatBoard, { state, onResurrect, onEliminate })));
+    const eliminate = document.querySelector('button[aria-label^="Eliminate"]') as HTMLButtonElement;
+    assert.ok(eliminate);
+    assert.equal(eliminate.tabIndex, 0);
+    assert.equal(eliminate.parentElement?.closest('button'), null, "no nested buttons");
+    await act(async () => eliminate.click());
+    assert.deepEqual(eliminated, [state.enemies[0].id]);
     const card = document.querySelector('button[aria-label^="Resurrect"]') as HTMLElement;
     assert.equal(card.getAttribute("aria-label"), "Resurrect warrior with 1 HP");
     assert.equal(card.tabIndex, 0);
@@ -34,6 +42,11 @@ test("only host boards expose clickable and keyboard-accessible resurrection on 
     assert.deepEqual(chosen, [student().id]);
     await act(async () => root.render(createElement(CombatBoard, { state })));
     assert.equal(document.querySelector('button[aria-label^="Resurrect"]'), null, "student view has no resurrection control");
+    assert.equal(document.querySelector('button[aria-label^="Eliminate"]'), null, "student view has no elimination control");
+    for (const currentPhase of ["waiting", "game_over"]) {
+      await act(async () => root.render(createElement(CombatBoard, { state: { ...state, currentPhase }, onEliminate })));
+      assert.equal(document.querySelector('button[aria-label^="Eliminate"]'), null);
+    }
     state.players[student().id].isDead = false;
     state.players[student().id].health = 1;
     await act(async () => root.render(createElement(CombatBoard, { state, onResurrect })));

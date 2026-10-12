@@ -11,6 +11,7 @@ import { RichContentRenderer } from "@/components/RichContentRenderer";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Fight } from "@shared/schema";
+import { activeEnemies, canAdvanceWave } from "@shared/combat/encounters";
 export default function HostFight() {
   const [, params] = useRoute("/teacher/host/:id"), [, navigate] = useLocation();
   const { isAuthenticated, isChecking } = useTeacherAuth();
@@ -83,7 +84,11 @@ export default function HostFight() {
           {question && active && <button className="flex items-center gap-1 text-xs underline underline-offset-4" aria-expanded={questionOpen} onClick={() => setQuestionOpen(!questionOpen)}>{questionOpen ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {questionOpen ? "Hide question" : "Show question"}</button>}
         </div>
         <div className="flex flex-wrap items-center gap-2">{phase === "waiting" && <Button disabled={status !== "connected" || !players.length} onClick={() => send("start_fight")}>Start fight</Button>}{active && <>
-          <Button size="sm" disabled={status !== "connected"} onClick={() => apiRequest("POST", `/api/combat/${sessionId}/force-question`).catch(e => setHostingError(e.message))}>{phase === "wave_break" ? "Start next wave" : "Advance current phase"}</Button>
+          {phase !== "wave_break" && <Button size="sm" disabled={status !== "connected"} onClick={() => apiRequest("POST", `/api/combat/${sessionId}/force-question`).catch(e => setHostingError(e.message))}>Advance current phase</Button>}
+          {canAdvanceWave(state) && <Button size="sm" disabled={status !== "connected"} onClick={() => {
+            const remaining = activeEnemies(state).length;
+            if (phase === "wave_break" || !remaining || window.confirm(`Skip wave ${state.activeWave || 1}? Its ${remaining} remaining enemies will be defeated and the next wave will start.`)) send("next_wave", { phase: state.currentPhase });
+          }}>Next wave</Button>}
           <Button size="sm" variant="outline" className="text-destructive border-destructive/30" disabled={status !== "connected"} onClick={() => { if (window.confirm("End this fight? Students receive activity XP plus base XP proportional to enemy damage and their participation. Victory gold and loot require defeating the enemies.")) send("end_fight"); }}>End fight</Button>
         </>}{phase === "waiting" && <Button size="sm" variant="outline" disabled={status !== "connected"} onClick={() => {
           if (window.confirm("End this waiting session?")) send("end_fight");
@@ -94,7 +99,10 @@ export default function HostFight() {
     {question && active && questionOpen && <section className="battle-question" data-testid="host-question"><p className="mb-2 text-[10px] uppercase tracking-widest font-bold text-[#61705a]">Current question · {state!.currentQuestionIndex + 1}</p><RichContentRenderer html={question.question}/></section>}
     {state && <>
       {phase === "game_over" && <div className="bg-[#edf0df] px-6 py-3"><h2 className="font-bold">{state.victory ? "Victory!" : "Fight ended"}</h2><p className="text-sm">{state.endReason}</p></div>}
-      <CombatBoard state={state} onResurrect={status === "connected" && active ? targetId => send("resurrect", { targetId }) : undefined} onRemove={status === "connected" && phase !== "game_over" ? targetId => {
+      <CombatBoard state={state} onEliminate={status === "connected" && active ? targetId => {
+        const enemy = state.enemies.find(e => e.id === targetId);
+        if (window.confirm(`Eliminate ${enemy?.name || "this enemy"} from the fight? This counts as defeating it.`)) send("eliminate_enemy", { targetId });
+      } : undefined} onResurrect={status === "connected" && active ? targetId => send("resurrect", { targetId }) : undefined} onRemove={status === "connected" && phase !== "game_over" ? targetId => {
         const player = state.players[targetId] || state.pendingPlayers?.[targetId];
         if (window.confirm(`Remove ${player?.nickname || "this player"} from the fight? They will need your approval to rejoin.`)) send("remove_player", { targetId });
       } : undefined}/>

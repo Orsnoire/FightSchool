@@ -16,6 +16,8 @@ Required verification: 0/1/4/7/8/11/12/16/30/60-player boundaries, caps and mixe
 
 Classroom groups (3+) now budget against the previous tier's full gear set while retaining the encounter tier's level midpoint. Tier 1 uses actual complete tier 0 starter loadouts, including starter weapon and defense stats; tier 2 uses full tier 1 equipment. Tiers 3/4 provisionally extrapolate tier 1 bonuses by 2/3 until those collections exist. The Priest healing bonus follows the same equipment tier. This lowers both reference HP and outgoing pressure; solo/duo still use their real capped entry loadouts. Waiting preview and Start Fight continue to share the calculator.
 
-## Host controls — requested, implementation pending
+## Host controls — October 12 owner direction
 
-The owner also requested a Next phase button and an enemy elimination × on mouseover, matching player removal. Both must be host-only, server-authoritative and safe across retries/reconnects; normal phase, wave and victory handling must remain intact.
+The owner corrected Next phase to **Next wave**. The new host control appears in consecutive individual-enemy fights when another wave is available (or during the between-wave pause). It confirms before defeating any living enemies left in the current wave, uses normal round cleanup and late admission, and opens the next wave. Between waves it starts the waiting wave without skipping it. The existing phase advance remains separate.
+
+Each active enemy also exposes an elimination × on hover, keyboard focus and touch, matching player removal. Confirmation defeats only that enemy, releases source-bound statuses and preserves the normal next-wave pause. Defeating the final enemy completes victory through existing result persistence. These interventions do not manufacture player damage, answer credit or participation. Waiting/finished rooms and future-wave targets are rejected; host ownership, session revocation, round checks and durable command receipts protect both controls.

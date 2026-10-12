@@ -672,3 +672,13 @@ individual quantities, role HP shares, reference-party scaling, goblin targeting
 wave pauses and the approved sprite. This implementation was integrated into
 PR #52 and is deployed. Party-scaled counts and team race remain future work in
 the [expansion plan](EXPANSION_PLAN.md).
+
+
+## October 12 swarm, gear baseline and host controls — pending release
+
+The owner-authorized [swarm scaling specification](combat/swarm-scaling.md)
+supersedes the deferred count proposal: optional x-enemy batches begin at 8 players
+then 12/16, preview with HP and lock at Start Fight. It also shifts classroom
+reference gear to the previous tier (tier 0 starters for tier 1), and specifies
+teacher-only Next wave and individual elimination controls. PR #61 is separate
+from C04 cleanup; implementation does not imply merge or deployment.
