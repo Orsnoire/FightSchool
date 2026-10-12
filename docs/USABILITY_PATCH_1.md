@@ -1,6 +1,6 @@
 # Usability Patch 1
 
-Branch: `feat/usability-patch-1`. Review: [PR #64](https://github.com/Orsnoire/FightSchool/pull/64).
+Historical implementation branch: `feat/usability-patch-1`. Merged review: [PR #64](https://github.com/Orsnoire/FightSchool/pull/64).
 
 ## Scope and behavior
 
@@ -12,14 +12,23 @@ Branch: `feat/usability-patch-1`. Review: [PR #64](https://github.com/Orsnoire/F
 
 ## Data and rollout
 
-Additive migrations `0015_usability_patch_1` and `0016_equipment_color_variants` add reporting projections/attempts and optional equipment visuals. Existing migrations are unchanged. Attempt writes are idempotent with a Durable Object outbox and retry alarm. Award calculations and receipts stay authoritative and independent of presentation. Live fights retain their frozen authored questions; subsequent sessions use teacher edits.
+Additive migrations `0015_usability_patch_1` and `0016_equipment_color_variants` add reporting projections/attempts and optional equipment visuals. Existing migrations are unchanged. Each submitted answer is checkpointed in a durable outbox before acknowledgement. Reporting attempts are projected together when the question closes; participant/status changes and failed-write alarm retries still project immediately. Attempt writes are idempotent. Award calculations and receipts stay authoritative and independent of presentation. Live fights retain their frozen authored questions; subsequent sessions use teacher edits.
 
 Deploy the additive migrations before the Worker/client. Old in-flight resolution phases retain their deadline until the next batch. Older records cannot acquire question-by-question history retroactively. Rollback may revert the Worker/client while retaining additive tables/columns.
 
-## Verification and review checkpoint
+## Verification and release checkpoint
 
-Implementation is complete and ready for review. At commit `e8fdadc9274ebe14cb86d9f1b7e9a03dca9dd5c9`, CI typecheck, all **253 automated tests**, production client/Worker builds, Avatar Workshop Acceptance and Combat UI Acceptance pass. Browser coverage includes desktop/phone selection clocks, question Edit/save/cancel/reload, palette previews and saved variants, composed statistics filters, every placeholder effect, actual animation completion (including a deliberately paused animation), reduced motion, and 30/60-player playback. Screenshots are attached to [browser run 38306652737](https://github.com/Orsnoire/FightSchool/actions/runs/38306652737).
+- Original reviewed head `dcae53070468da9d5023f95c96ca54641a1bec0f` passed [CI 38307437157](https://github.com/Orsnoire/FightSchool/actions/runs/38307437157), [Combat UI Acceptance 38307437169](https://github.com/Orsnoire/FightSchool/actions/runs/38307437169) and [Avatar Workshop Acceptance 38307437222](https://github.com/Orsnoire/FightSchool/actions/runs/38307437222): 253 tests, typecheck and production builds.
+- Browser coverage includes desktop/phone selection clocks, question Edit/save/cancel/reload, palette previews and saved variants, composed statistics filters, every placeholder effect, actual animation completion (including a deliberately paused animation), reduced motion, and 30/60-player playback. Screenshots were inspected.
+- PR #64 merged with owner authorization as `2bf216e20f7b17e29e2f33857e5522eba94717a7`. [Initial deployment 38308382242](https://github.com/Orsnoire/FightSchool/actions/runs/38308382242) passed migrations 0015/0016 before publication and both hostname smoke checks; Worker `7a3a6b26-a1cb-4f86-be80-073d64ef5696`, 21:07:10 UTC. That runtime is superseded by PR #65.
+- [PR #65](https://github.com/Orsnoire/FightSchool/pull/65) corrects reporting write amplification exposed by live classroom testing. Baseline `f4c47bb` fails the new burst regression. Fixed head `78af971770601c2fdc55ce1858867392eb887e7b` passes all **254 tests**, typecheck/builds, [CI 38311299763](https://github.com/Orsnoire/FightSchool/actions/runs/38311299763) and [browser acceptance 38311299742](https://github.com/Orsnoire/FightSchool/actions/runs/38311299742). The new regression verifies acknowledgement after a durable checkpoint, restoration before projection, one reporting batch for 30 answers and authentication of every command; database failure/retry coverage remains.
+- PR #65 merged as **`bef100b4a86574819fe12bceed901de0fbd1caac`**, the corrected deployed runtime. [Deployment 38311747151](https://github.com/Orsnoire/FightSchool/actions/runs/38311747151) passed all 254 tests, typecheck/builds, R2, the migration gate and both hostname smoke checks. Worker **`0951289e-d7c5-4243-b281-8ae0f61e4e9f`**, published October 12 at **21:38:56 UTC**.
+- [Canonical live acceptance 38311980245](https://github.com/Orsnoire/FightSchool/actions/runs/38311980245) passed on that same deployed merge: combat/economy, explicit completion, palette persistence, filtered reports and ownership, R2, 30-player concurrency/reconnects, host controls, moderation, revocation and exactly-once rewards.
 
-Focused tests cover signed-HTTP ownership/validation, visual persistence through combat snapshots, old/partial reporting coverage, immutable evidence, accurate filtered question summaries, retry/restart behavior, stale completion reports and compact classroom timeout checkpoints. The final follow-up aligns the three claw strokes to 45 degrees, makes the red hit flash immediate, improves screenshot framing and removes stray whitespace. Current-head check results and the exact pushed SHA are recorded in PR #64.
+The live acceptance harness now sends playback completion from headless actors, accepts direct victory for an empty enemy batch, and verifies persisted palettes, combined report filters and report ownership. Initial runs corrected two harness expectations: an empty final enemy phase (38308668953) and a 401 expectation for the route's correct 403 denial (38309280393). Runs 38309591901 and 38310256179 then reproduced the 30-player failure before the reporting correction; individual combat/reporting, R2, isolation, moderation, host controls and revocation passed. The exact provider resource failure was not observed; no account plan or specific resource limit is asserted.
 
-Next: review and approve PR #64, then separately authorize merging and deploying the additive migrations and application. Neither merge nor deployment has occurred. Automatic approval review blocked updating the main discovery pointer directly; this PR contains the proposed checkpoint update instead.
+The corrected live 30-answer burst measured p50 **818 ms**, p95 **1,477 ms**, and maximum **1,527 ms**, within the existing 15-second maximum gate. This single fixture is not a trend or a claim of meeting C12's proposed repeated-measurement target.
+
+The canonical site is <https://questacademy.bookwyrminteractive.studio/>. Current students, equipment, progression and results are preserved; no live-data reset occurred. Functional live acceptance complements disposable database and browser coverage; it does not complete C12's disruptive infrastructure drills.
+
+Status: COMPLETE — merged, deployed and accepted. C06 is next, not started; register its branch/PR before implementation.

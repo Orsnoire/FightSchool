@@ -4,6 +4,7 @@
 Cleanup Phases 1–2 are complete. **C01 and C02 are COMPLETE: merged, deployed and accepted.**
 **C03 schema baseline and C04 contracts/diagnostics are COMPLETE and released. C05 room costs is COMPLETE, deployed and accepted in PR #63. C06 is next.** New features wait for the
 cleanup exit gates. The separately authorized [swarm, previous-tier gear and host controls](combat/swarm-scaling.md) are deployed and accepted in PR #61.
+The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. It adds teacher reports, question editing, combat placeholders/completion and recoloring while retaining selection clocks.
 Read [active work](ACTIVE_WORK.md) before editing.
 
 ## Start here
@@ -76,4 +77,4 @@ dated; move remaining scope into the active plans instead of leaving competing
 “current” queues. Product rule changes also update the relevant specification and
 [Source of Truth](Source_of_Truth.md).
 
-C05 [room-cost methods and measurements](cloudflare/room-costs.md) are in progress; no C05 release is claimed.
+C05 [room-cost methods and measurements](cloudflare/room-costs.md) are complete and released; their documented measurement limits remain.

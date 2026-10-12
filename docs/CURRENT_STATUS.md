@@ -1,24 +1,24 @@
 # Current status
 
-**CURRENT — verified October 12, 2026.** Cleanup Phases 1–2 are complete; C05 is complete, deployed and accepted; C06 is next, not started.
+**CURRENT — verified October 12, 2026.** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is next, not started.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
 ## Verified release baseline
 
-The deployed application runtime is `fed94dc9da8c01490438af8cf343f8b6f43ae2b4`, the PR #63 / C05 merge.
-Immutable Worker `c2a367a6-d47d-47eb-a6f5-d447b27180cf` was published October 12 at
-19:48:43 UTC. Subsequent documentation commits do not change this runtime.
+The deployed application runtime is `bef100b4a86574819fe12bceed901de0fbd1caac`, the PR #65 correction to Usability Patch 1 / PR #64.
+Immutable Worker `0951289e-d7c5-4243-b281-8ae0f61e4e9f` was published October 12 at
+21:38:56 UTC. Subsequent documentation commits do not change this runtime.
 
 | Evidence | Result |
 | --- | --- |
-| [Deployment 38299904045](https://github.com/Orsnoire/FightSchool/actions/runs/38299904045) | Passed on `fed94dc9`; 244 tests, typecheck, builds, R2, existing migration gate and both hostnames |
-| [Canonical live acceptance 38300146217](https://github.com/Orsnoire/FightSchool/actions/runs/38300146217) | Passed on `fed94dc9`; combat/economy, R2, 30-player concurrency, reconnects, moderation, revocation and exactly-once rewards |
-| [Review CI 38299405641](https://github.com/Orsnoire/FightSchool/actions/runs/38299405641) / [browser 38299405650](https://github.com/Orsnoire/FightSchool/actions/runs/38299405650) | Passed on `03880a1`; merged-main CI 38299839108 passed |
-| Database evidence | Existing migrator succeeded; C05 adds no SQL migration or live-data reset. |
+| [Deployment 38311747151](https://github.com/Orsnoire/FightSchool/actions/runs/38311747151) | Passed on `bef100b`; 254 tests, typecheck, builds, R2, migration gate and both hostnames |
+| [Canonical live acceptance 38311980245](https://github.com/Orsnoire/FightSchool/actions/runs/38311980245) | Passed on `bef100b`; combat/economy, completion, palettes/reporting, R2, 30-player concurrency/reconnects, moderation, revocation and exactly-once rewards |
+| [Review CI 38311299763](https://github.com/Orsnoire/FightSchool/actions/runs/38311299763) / [browser 38311299742](https://github.com/Orsnoire/FightSchool/actions/runs/38311299742) | Passed on `78af971`; all effects/editors/filters, 30/60-player playback and the reporting batch correction |
+| Database evidence | Migrations 0015/0016 applied before the initial deployment; the corrected deployment's migration gate also passed. No live-data reset. |
 
-See [C05 release record](ACTIVE_WORK.md) and [measurements and limits](cloudflare/room-costs.md). PR #61 and the C04 refactor/forwarding fix remain included.
+See [Usability Patch 1 release record](USABILITY_PATCH_1.md), including earlier acceptance failures and corrections. C05 room-cost improvements, PR #61 and the C04 refactor/forwarding fix remain included. Every answer remains durably checkpointed; reporting attempts are projected together when the question closes.
 
 The October 8 queue is reconciled: every October 8 merged PR (#37–50 and #52)
 is already included in the verified October 8 runtime `e158194` and this release.
@@ -38,12 +38,13 @@ from the active runtime and is not a rollback target.
 | Area | Released behavior | Outstanding boundary |
 | --- | --- | --- |
 | Combat and classroom UI | Deterministic combat, current class rules, daily stamina, First Aid, calculated ability values, static battlefield, late entry, moderation, host resurrection, Next wave, enemy elimination × and proportional host-end rewards | Refactors preserve these rules; classroom balance observation continues |
-| Equipment | Eight slots, full Tier 0 starters, permissions, remembered per-job gear/abilities, Tier 1 level-2 collection, comparisons, equipped static art | F01 built-in/custom claim validation released in C01; ownership, earned-loot checks and atomic rewards preserved |
+| Equipment | Enemy/equipment color palettes, reusable equipment base sprites and variants; eight slots, full Tier 0 starters, permissions, remembered per-job gear/abilities, Tier 1 level-2 collection, comparisons, equipped static art | F01 built-in/custom claim validation released in C01; ownership, earned-loot checks and atomic rewards preserved |
 | Guilds and progression | Teacher/personal/shared quests, permanent progression with encounter caps, tier browsing, AA overflow banking, atomic reward receipts | AA purchases and additional balance tuning remain future work |
 | Host sessions | Explicit Join / End / Launch, exact-session reconnect, duplicate-launch protection, idempotent host-end rewards | Team race is not implemented |
 | Enemies | Seven defined species, configurable priorities, answer-based recovery, individual quantities, waves, goblin targeting, minimum-five additions and genuine roster-based count/HP estimates, optional swarm batches at 8/12/16 players and previous-tier reference gear | Counts lock at Start Fight; tier 3/4 gear bonuses remain provisional |
+| Teacher statistics and editing | Session/player/question reports with search and guild, session, quiz, question, job, player ID and date filters; question Edit/save/cancel restored | Historical totals remain; pre-patch question attempts cannot be reconstructed |
 | Leaderboards | Student metric query and visible retryable errors; accuracy weighted by total answers | Guild scope, hidden metrics and additive metrics preserved |
-| Avatars | Saved independent appearance, Human models, starter wardrobe and front-facing equipped-item visuals | Full animation, near-profile fitting and custom-item artwork remain pending |
+| Avatars and combat presentation | Saved appearance, equipped-item visuals, attack/damage effect placeholders, flying numbers and completion-driven resolution | Question and action/ability selection clocks remain. Full sprite animation, near-profile fitting and custom-item artwork remain pending |
 
 Release details: [October 7–8 completed batch](combat/release-queue.md),
 [current enemy specification](combat/enemy-ai.md), and
@@ -71,14 +72,14 @@ plan and [active-work checkpoint](ACTIVE_WORK.md).
   Remaining build/CLI chains have scoped deferrals in the [triage record](reviews/2026-10-12-dependency-triage.md).
   Production-only audit still reports 7 Tailwind peer-chain entries; not a clean audit.
 - **Contracts/diagnostics F05/F16 (C04 released):** shared boundary contracts, explicit public projections, bounded JSON parsing, typed queries and redacted logs. Intended CI checks run on every PR; branch protection enforcement remains off.
-- **Remaining performance/refactoring work:** query/index patterns, room encoding and persistence, quest evaluation, bundle loading, avatar surfaces, broad timer updates and mixed modules (C05–C11).
+- **Remaining performance/refactoring work:** query/index patterns, room encoding and persistence, quest evaluation, bundle loading, avatar surfaces, broad timer updates and mixed modules (C06–C11).
 - **Documentation reconciliation (F17): COMPLETE for this baseline.** Status,
   history and plans are now separated; updating them remains part of each release.
 
 ## Open acceptance and operational work
 
-The latest October 12 30-answer burst measured p50 **809 ms**, p95 **1,513 ms**, maximum
-**1,562 ms**. Its current maximum threshold is 15 seconds. One burst is not a
+The corrected Usability Patch 1 October 12 30-answer burst measured p50 **818 ms**, p95 **1,477 ms**, maximum
+**1,527 ms**. Its current maximum threshold is 15 seconds. One burst is not a
 performance trend or evidence of meeting the proposed cleanup target; it does not establish
 performance for a guild with fully seeded quests, realistic history and many
 distinct avatars. Cleanup C05–C08 and C12 own repeated 30/60-player measurements.
