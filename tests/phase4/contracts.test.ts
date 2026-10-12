@@ -66,6 +66,7 @@ test('diagnostics allowlist fields and redact command parse/dependency failures 
   await object.webSocketMessage(socket as any,JSON.stringify({type:'ready',commandId:'contract-ready-1',round:1}));
   assert.equal(messages[0].error,'Invalid combat command');
   assert.equal(messages[1].error,'Unable to process command');
+  assert.equal(JSON.parse(logs.at(-1)!).outcome,'failed');
   assert.equal(JSON.stringify([...logs,...messages]).includes('private-'),false);
   const command=logs.map(s=>JSON.parse(s)).find(s=>s.event==='combat_command');
   assert.equal(command.roomId,'ABC234');assert.ok(command.requestId);assert.ok(command.durationMs>=0);assert.ok(command.queueMs>=0);

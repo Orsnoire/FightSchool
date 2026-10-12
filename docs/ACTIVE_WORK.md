@@ -10,7 +10,8 @@
 - Preserve ownership, session revocation, saved rooms, rewards, approved gameplay and current live data. No production database changes.
 - Published baseline `051ad3a`: two intentional failing tests reproduced shared fight validation drift and future-field snapshot leakage.
 - Implemented: shared authoring/command/JSON DTO contracts, allowlisted public projections, typed query factories, bounded UTF-8 readers, redacted diagnostics and unconditional browser CI.
-- Local verification: all 224 tests, typecheck and client/Worker production builds pass. Exact-head CI/browser checks pending.
+- Local verification: all 224 tests, typecheck and client/Worker production builds pass on implementation checkpoint `168de11`.
+- CI 38282804787 passed on documentation reconciliation `dd088ef`. Final diagnostics refinement labels revoked/expired commands rejected and dependency errors failed, and logs the latest room revision; typecheck and 22 targeted tests pass. Final-head CI/browser pending.
 - [Ownership, limits and intended CI policy](cloudflare/contracts-and-diagnostics.md). GitHub reports main unprotected; protection enforcement is not claimed.
 - Next: review exact-head CI/browser checks for PR #60. Not merged or deployed.
 - Concurrent feature: preserve PR #61 (`feat/swarm-party-count`); its enemy JSON setting must be incorporated into the shared fight contract when integrating branches. Only its main discovery note is included here.

@@ -344,14 +344,15 @@ export class CombatSessionObject {
     return this.serialized(async () => {
       const startedAt=performance.now();
       const context=ws.deserializeAttachment() as SocketAttachment;
-      let revision:number|undefined;
-      let outcome:'ok'|'rejected'='ok';
+      let room:StoredRoom|undefined;
+      let outcome:'ok'|'rejected'|'failed'='ok';
       let command: CombatCommand | undefined;
       try {
         if (typeof message !== "string" || new TextEncoder().encode(message).byteLength > 16000)
           throw new CombatRuleError("Text command up to 16KB required");
         const actor = ws.deserializeAttachment() as SocketAttachment;
         if (actor.expiresAt && actor.expiresAt < Date.now()) {
+          outcome="rejected";
           ws.close(1008, "Session expired");
           return;
         }
@@ -377,11 +378,13 @@ export class CombatSessionObject {
         if (!actor.tokenHash) {
           // Old socket attachments predate session revocation checks. A normal
           // reconnect authenticates their existing cookie and upgrades them.
+          outcome="rejected";
           ws.close(1012, "Reconnect to verify session");
           return;
         }
         const session = await this.repository?.findActiveSession(actor.tokenHash, new Date());
         if (!session || session.actorId !== actor.actorId || session.actorType !== actor.role) {
+          outcome="rejected";
           ws.close(1008, "Session expired or revoked");
           return;
         }
@@ -390,8 +393,7 @@ export class CombatSessionObject {
         command = parsed.data;
         if (!this.repository) throw new CombatRuleError("Repository unavailable");
         const key = actor.actorId + ":" + command.commandId;
-        let room = await this.room();
-        revision=room?.snapshot.revision;
+        room = await this.room();
         if (command.type === "host") {
           if (actor.role !== "teacher")
             throw new CombatRuleError("Teacher role required");
@@ -646,7 +648,6 @@ export class CombatSessionObject {
           else throw new CombatRuleError("Unsupported command");
         }
         room.snapshot.revision++;
-        revision=room.snapshot.revision;
         room.receipts.push(key);
         room.receipts = room.receipts.slice(-512);
         await this.save(room);
@@ -669,14 +670,14 @@ export class CombatSessionObject {
           await this.complete(room);
         else await this.publish(room);
       } catch (error) {
-        outcome="rejected";
+        outcome=error instanceof CombatRuleError?"rejected":"failed";
         this.send(ws, {
           type: "protocol_error",
           commandId: command?.commandId,
           error: error instanceof CombatRuleError ? error.message : "Unable to process command",
         });
       } finally {
-        diagnostic({event:'combat_command',requestId:context.requestId||requestId,roomId:context.sessionId,revision,queueMs:startedAt-queuedAt,durationMs:performance.now()-startedAt,outcome});
+        diagnostic({event:'combat_command',requestId:context.requestId||requestId,roomId:context.sessionId,revision:room?.snapshot.revision,queueMs:startedAt-queuedAt,durationMs:performance.now()-startedAt,outcome});
       }
     });
   }
