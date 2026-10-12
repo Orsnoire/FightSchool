@@ -1,6 +1,6 @@
-# C04 deployment follow-up — October 12, 2026
+# C04 release follow-up — October 12, 2026
 
-C04 / PR #60 is merged and deployed at `097081c11692c3526714d34628a29b0b0f28815c` (deployment 38284111710; Worker ad902178-71c9-443c-a1d3-d987beb416b6), but live acceptance 38284362252 failed at host launch. **Not yet accepted.** [PR #62](https://github.com/Orsnoire/FightSchool/pull/62), branch `fix/c04-forwarded-response`, reproduces immutable-header mutation and contains the forward fix; full verification is running. Resume there and redeploy after exact-head gates. Preserve separate PR #61. The checkpoint below predates this release.
+C04 PR #60 merged as `097081c11692c3526714d34628a29b0b0f28815c` and deployed (run 38284111710; Worker ad902178-71c9-443c-a1d3-d987beb416b6). Canonical acceptance 38284362252 failed at host launch with 503. Branch `fix/c04-forwarded-response`, [PR #62](https://github.com/Orsnoire/FightSchool/pull/62). Baseline `13b8bcc6eeef5817c6b1b38f676158e173834c4c` reproduces the exact 503/201 failure using immutable subresponse headers. Fixed by copying HTTP responses before adding request IDs, preserving WebSocket response identity. All 224 tests, typecheck and client/Worker builds pass locally. Exact-head CI/browser pending; merge and redeploy after they pass under the owner’s existing release authorization. Main blocker note ae317f9 is reconciled here. Deployment is not accepted. Preserve separate PR #61. The prior checkpoint below is historical.
 
 ## PR #61 — swarm, gear baseline and host controls ready for review
 
