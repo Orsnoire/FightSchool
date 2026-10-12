@@ -118,3 +118,12 @@ combat/gameplay rules were changed. Deployment and acceptance evidence follows.
 - [Deployment 38275647965](https://github.com/Orsnoire/FightSchool/actions/runs/38275647965) passed: all 218 tests, typecheck, both builds, R2, existing migration gate and both hostname smoke checks.
 - [Canonical live acceptance 38275889570](https://github.com/Orsnoire/FightSchool/actions/runs/38275889570) passed on the same checkout, including combat/economy, R2, 30 participants, reconnects, room isolation, moderation and exactly-once rewards.
 - Status: complete, merged, deployed and accepted. Next: C04 remains unstarted; register it before implementation. C04 sequencing remains governed by the cleanup checkpoint above.
+
+## Swarm count scaling — separate feature work
+
+- Owner request, October 12: optional Swarm control per enemy group, adding a configurable x enemies at 8, 12, 16, etc. players. Base count through 7 players.
+- Branch: `feat/swarm-party-count`; [draft PR #61](https://github.com/Orsnoire/FightSchool/pull/61). C04 / PR #60 remains the active cleanup package and must be preserved.
+- Counts and HP preview follow the joined waiting roster; counts lock at Start Fight. Existing late-entry HP budgeting remains in effect.
+- Preserve fixed quantities when disabled, species behavior, waves, individual IDs and current data. Store the optional setting in existing enemy JSON; no SQL migration.
+- Retain 60 enemies per group and 120 per encounter. Reserve authored counts first, then distribute capped additions fairly in author order.
+- Verification: not yet run. Next: implement shared count calculation, editor/save/read validation, and preview/start boundary tests; inspect C04 overlap before review.
