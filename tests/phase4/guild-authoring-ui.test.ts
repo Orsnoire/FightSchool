@@ -159,6 +159,23 @@ test("teacher authoring submits limits and quest rewards, and shop creation carr
       "/teacher/items?guild=guild&tier=4&create=1",
     );
     assert.match(document.body.textContent!, /This tier is locked/);
+    assert.match(document.body.textContent!, /No items defined at tier 4/);
+    await change("Browse shop tier", "1");
+    assert.equal(document.querySelectorAll("h3").length, 37, "all built-in tier-one gear appears with no custom items");
+    assert.match(document.body.textContent!, /Fighter's Cuirass/);
+    assert.match(document.body.textContent!, /Healer's Robes/);
+    assert.match(document.body.textContent!, /150 gold/);
+    assert.equal(document.querySelectorAll('a[href*="edit="]').length, 0, "built-ins are not sent to the custom editor");
+    await act(async () => {
+      cache.setQueryData(["/api/teacher/teacher/equipment-items"], [{
+        id: "custom", name: "Class armor", slot: "armor", tier: 1,
+        quality: "common", stats: { def: 1 }, isPurchasable: true, shopPrice: 73,
+      }]);
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    assert.equal(document.querySelectorAll("h3").length, 38);
+    assert.equal(document.querySelector('a[href*="edit="]')?.getAttribute("href"), "/teacher/items?guild=guild&tier=1&edit=custom");
+    assert.match(document.body.textContent!, /73 gold/);
     assert.equal(writes.length, 2, "browsing does not mutate guild limits");
   } finally {
     await act(async () => root.unmount());

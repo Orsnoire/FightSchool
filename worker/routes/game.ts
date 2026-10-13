@@ -4,6 +4,7 @@ import { readJson, bodyErrorResponse } from "../http/json";
 import { questInput } from "../../shared/quests";
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
 import { equipmentIdSchema } from "../../shared/equipment-id.ts";
+import { builtinShopItems, builtinShopItem } from "../../shared/equipment-shop.ts";
 import { armorClassificationError, equipmentExclusion, handConflict, equipmentRequiredLevel } from "../../shared/equipment-rules.ts";
 import { mountainDay, nextMountainMidnight, xpMultiplier, STAMINA_TIME_ZONE } from "../../shared/combat/stamina.ts";
 import { z } from "zod";
@@ -653,8 +654,9 @@ export async function handleGame(
         .from(s.guilds)
         .where(eq(s.guilds.id, g.id));
       return json(
-        (
-          await db
+        [
+          ...builtinShopItems(),
+          ...await db
             .select()
             .from(s.equipmentItems)
             .where(
@@ -663,7 +665,7 @@ export async function handleGame(
                 eq(s.equipmentItems.isPurchasable, true),
               ),
             )
-        )
+        ]
           .filter((item) => item.tier <= current.unlockedTier)
           .map((item) => ({
             ...item,
@@ -903,17 +905,18 @@ if (!validVisualSlot(input.visual===undefined?item.visual:input.visual,input.slo
       }
       if (tail === "purchase-item" && method(request, "POST")) {
         const { itemId } = z
-          .object({ itemId: uuid })
+          .object({ itemId: equipmentIdSchema })
           .parse(await readJson(request));
         if (!student.guildId) throw new ApiError("Join a guild first");
         const g = await guild(student.guildId);
-        const [item] = await db
+        const builtin = builtinShopItem(itemId);
+        const [custom] = uuid.safeParse(itemId).success ? await db
           .select()
           .from(s.equipmentItems)
-          .where(eq(s.equipmentItems.id, itemId));
+          .where(eq(s.equipmentItems.id, itemId)) : [];
+        const item = builtin || (custom?.teacherId === g.teacherId ? custom : undefined);
         if (
           !item ||
-          item.teacherId !== g.teacherId ||
           !item.isPurchasable ||
           item.tier > g.unlockedTier
         )

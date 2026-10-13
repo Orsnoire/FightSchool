@@ -47,6 +47,25 @@ Archived guilds award no further quest progress or rewards; earned character pro
 
 Shop tiers are separate from combat limit tiers. Guild quests and explicit teacher settings control shop unlocks. The teacher shop's discrete tier slider only changes the preview, and Create item opens the item editor with that tier preselected. Custom items belong to the teacher and are shared across their guilds. This does not add guild-exclusive item inventories.
 
+### October 13 default shop inventory correction
+
+Every guild shop includes all defined progression equipment by default: all 37
+Tier 1 armor, weapon and off-hand items now, and future Tier 2, Tier 3 and later
+collections when registered with an explicit positive tier in the shared equipment
+catalog. No per-guild item creation or database seed is required. Permanent Tier 0
+starters remain free entitlements; untiered legacy drops are not new shop stock.
+
+Teachers can preview default stock alongside their custom items at each tier.
+Default equipment is labeled and read-only; custom items retain editing and
+loot-only controls. Student listings and purchases respect the guild's unlocked
+shop tier, independently of its combat limit tier. Built-in prices use the existing
+tier/rarity formula (common Tier 1: 150 gold); custom prices remain authoritative.
+Purchase does not auto-equip or bypass job/class equipment restrictions. Gold and
+inventory update atomically, with no duplicate charge or duplicate ownership.
+
+Implementation status: locally verified in `fix/guild-shop-default-catalog`;
+publication, CI, merge and deployment pending. See [active work](ACTIVE_WORK.md).
+
 ## Fight authoring and initial tuning
 
 New fights select a tier (1–4), with Trash, Normal, Leader and Boss radio choices per enemy. The API derives damage/difficulty values from the shared presets rather than trusting conflicting client values. Existing fights keep legacy tuning until the teacher explicitly converts them.

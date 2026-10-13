@@ -1,3 +1,16 @@
+# Guild shop default equipment catalog — October 13, 2026
+
+- Active branch: `fix/guild-shop-default-catalog`; LOCAL IMPLEMENTATION VERIFIED. No remote branch or draft PR exists yet.
+- Owner scope: include all 37 defined Tier 1 items by default and automatically include future explicitly tiered catalog items. Preserve independent shop unlocks, custom stock, existing prices and equip gates. No migration.
+- Baseline: remote main `fc284565963f791f00fd6d8a08a5a81a020f512b`; no open PRs at claim time. C06 remains unstarted. This is a separately requested bug fix.
+- Completed: shared built-in shop projection; teacher default/custom stock with read-only default labels; student listings and built-in purchase validation; server-priced atomic gold/inventory updates. Starters remain entitlements and untiered legacy drops remain outside new shop stock.
+- Local verification: **263 tests pass**, TypeScript and production client/Worker builds pass, `git diff --check` clean. New migrated HTTP checks cover all 37 defaults, synthetic future tiers 2/3 and unlocks, teacher isolation, loot-only/unknown/starter rejection, duplicate/concurrent purchase and insufficient gold. JSDOM checks cover default stock, tier browsing, prices and custom editing.
+- Browser verification: a Chromebook/phone guild-shop scenario is added to the existing Chromium CI workflow. Local launch was blocked by the environment (`socket() failed: Operation not permitted`); no browser pass or visual approval is claimed.
+- Publication blocker: automatic approval review rejected the initial checkpoint push to `Orsnoire/FightSchool` because it considered remote publication insufficiently authorized. Read-only remote verification confirmed no branch was published. Do not work around the rejection. Local implementation continued; main discovery pointer and draft PR publication remain blocked pending explicit user approval.
+- Next action: obtain explicit push approval, refresh remote main/branches, publish this branch and draft PR, register main's discovery pointer, run CI/browser acceptance, then follow the normal review/release workflow. Not merged, deployed or live-accepted.
+
+## Previous release handoff (preserved)
+
 # Mesmerize, stun and answer feedback — October 13, 2026
 
 - [PR #66](https://github.com/Orsnoire/FightSchool/pull/66) is VERIFIED AND MERGED at `f74969579aff4bf7dab87fc4808625486bd156b4` (October 13, 15:19 UTC). The owner explicitly authorized merge and deployment. Deployment and live acceptance remain pending.
