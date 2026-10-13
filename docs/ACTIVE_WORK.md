@@ -1,9 +1,9 @@
 # Mesmerize, stun and answer feedback — October 13, 2026
 
-- Active branch: `fix/mesmerize-choice-lockout-2026-10-13`; [draft PR #66](https://github.com/Orsnoire/FightSchool/pull/66). Owner explicitly authorized publishing this branch.
-- Scope: disabled-player waiting view during both choices; magic wrong-answer damage while mesmerized; direct damage from another enemy releases hypnosis; four-second answer-feedback phase before choices with student correctness/correct answer and a host correct-answer popup.
-- Preserve question participation, academic credit, nonconsecutive recovery, source channeling, saved status state, question/choice clocks and completion-driven combat playback.
-- Base inspected: `4db37a6`; no competing open PR or active package. Usability Patch 1 (#64/#65) remains deployed and accepted at `bef100b`. C06 has not started.
-- Implementation checkpoint `8db9fb5`: status choices, direct-hit recovery, magic feedback, four-second answer feedback, student/host UI and regression updates are implemented. No merge/deploy authorization requested or performed.
-- Verification: all 261 automated tests, TypeScript and production client/Worker builds pass. Student and host React DOM tests cover feedback and lockouts. Chromium browser acceptance is pending; the stale local browser binary crashes and its replacement download failed. CI will run the updated viewport/fullscreen checks.
-- Next action: complete regression and browser checks, then mark PR #66 ready for review.
+- Active branch: `fix/mesmerize-choice-lockout-2026-10-13`; [PR #66](https://github.com/Orsnoire/FightSchool/pull/66). IMPLEMENTED AND VERIFIED; ready for owner review. Publishing authorized; merge/deployment not yet authorized for this change.
+- Verified implementation: `2d4b9705a6befd4f8eeea773149c46ca764b26bb`. Any subsequent checkpoint-only commit changes documentation, not the tested runtime.
+- Scope completed: status waiting/lockout during both choices; magic wrong-answer damage while mesmerized; direct HP damage from another enemy releases hypnosis; four-second answer feedback before choices with each student's result/correct answer and a fullscreen-safe host popup.
+- Preserved: questions and academic credit, nonconsecutive recovery, immediate final-answer recovery, source channeling, saved status/deadline state, full question/choice clocks and completion-driven combat playback. No migration.
+- Verification: **261 automated tests**, TypeScript and production client/Worker builds pass locally and in [CI 38419460908](https://github.com/Orsnoire/FightSchool/actions/runs/38419460908). [Combat UI Acceptance 38419460913](https://github.com/Orsnoire/FightSchool/actions/runs/38419460913) passes the real Chromium student feedback/status checks at 1366×768 and 390×844, fullscreen host feedback through 3840×2160 and existing host/editor/playback coverage. Screenshots are retained by the workflow. Live acceptance has not been run for this undeployed branch.
+- Deployed runtime remains `bef100b` (Usability Patch 1, #64/#65). This change is **not merged, deployed or live-accepted**. C06 remains unstarted.
+- Next action: review PR #66; upon owner authorization merge, deploy the exact reviewed revision and run live acceptance, then record release evidence.
