@@ -9,7 +9,7 @@ import { started, student, fight } from "./fixtures.ts";
 
 test("host panel keeps controls with the code and updates attendance, eligibility and recent feedback", async () => {
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: `https://qa.example/teacher/host/${fight.id}` });
-  const keys = ["window", "document", "navigator", "location", "localStorage", "addEventListener", "removeEventListener", "WebSocket", "fetch", "IS_REACT_ACT_ENVIRONMENT"];
+  const keys = ["window", "document", "navigator", "location", "localStorage", "addEventListener", "removeEventListener", "getComputedStyle", "MutationObserver", "HTMLElement", "HTMLInputElement", "Node", "NodeFilter", "CustomEvent", "Event", "WebSocket", "fetch", "IS_REACT_ACT_ENVIRONMENT"];
   const saved = keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
   const sockets: any[] = [];
   class Socket {
@@ -68,6 +68,17 @@ test("host panel keeps controls with the code and updates attendance, eligibilit
     assert.ok(button("End fight"));
     assert.equal(document.querySelector('[data-testid="host-question"] b')?.textContent, "2 + 2");
     assert.ok(document.querySelector('[aria-label="Combat log entries"]')?.textContent?.includes("First round damage"));
+    state.currentPhase = "answer_feedback";
+    (question as any).correctAnswer = "<b>4</b>";
+    state.phaseDeadline = Date.now() + 4000;
+    await emit();
+    const feedback = document.querySelector('[role="dialog"]')!;
+    assert.match(feedback.textContent!, /Correct answer/);
+    assert.equal(feedback.querySelector("b")?.textContent, "4");
+    assert.ok(document.querySelector("main")?.contains(feedback), "host feedback stays inside the fullscreen host shell");
+    state.currentPhase = "actions";
+    await emit();
+    assert.equal(document.querySelector('[role="dialog"]'), null);
     delete state.players.other;
     state.round++;
     state.events = [];

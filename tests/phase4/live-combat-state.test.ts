@@ -61,7 +61,7 @@ test("revoked sessions cannot continue sending combat commands over an open sock
   assert.deepEqual(h.closes, [1008]);
   assert.equal(h.data.get("room").snapshot.players[student().id].hasAnswered, false);
 });
-test("public questions conceal answer correctness until resolution", () => {
+test("public questions conceal answer correctness until the question closes", () => {
   const s = started();
   s.players[student().id].currentAnswer = "4";
   s.players[student().id].lastAnswerCorrect = true;
@@ -113,7 +113,7 @@ test("early alarm is harmless and expired alarm resumes one phase after a new ob
     receipts: [],
   });
   await restored.object.alarm();
-  assert.equal(restored.data.get("room").snapshot.currentPhase, "actions");
+  assert.equal(restored.data.get("room").snapshot.currentPhase, "answer_feedback");
   assert.ok(restored.alarm()! > Date.now());
 });
 test("database failure retries completion without announcing unsaved rewards", async () => {
@@ -166,13 +166,18 @@ test("question expiry gives a fresh action clock, survives reconnect, then opens
   s.phaseDeadline = Date.now() - 1;
   const h = harness({ fight, snapshot: s, receipts: [] });
   await h.object.alarm();
-  const actions = h.data.get("room").snapshot;
+  const feedback = h.data.get("room").snapshot;
+  assert.equal(feedback.currentPhase, "answer_feedback");
+  assert.equal(feedback.phaseDeadline - feedback.phaseStartTime, 4000);
+  const afterFeedback = harness({ fight, snapshot: {...feedback, phaseDeadline: Date.now() - 1}, receipts: [] });
+  await afterFeedback.object.alarm();
+  const actions = afterFeedback.data.get("room").snapshot;
   assert.equal(actions.currentPhase, "actions");
   assert.equal(actions.phaseDeadline - actions.phaseStartTime, 20000);
   assert.equal(actions.players[student().id].lastAnswerCorrect, false);
-  assert.equal(publicSnapshot(actions).players[student().id].lastAnswerCorrect, undefined);
+  assert.equal(publicSnapshot(actions).players[student().id].lastAnswerCorrect, false);
   assert.throws(() => applyAnswer(actions, student().id, "4", fight.questions[0]), /unavailable/);
-  const restored = harness(h.data.get("room"));
+  const restored = harness(afterFeedback.data.get("room"));
   await restored.object.alarm();
   assert.equal(restored.data.get("room").snapshot.phaseDeadline, actions.phaseDeadline);
   const late = harness({ fight, snapshot: { ...actions, phaseDeadline: Date.now() - 1 }, receipts: [] });
@@ -188,12 +193,17 @@ test("an answer at the question deadline leaves twenty seconds to confirm an act
   const h = harness({ fight, snapshot: s, receipts: [] });
   await h.object.webSocketMessage(h.socket as any, JSON.stringify({ type: "answer", commandId: "late-answer-001", round: 1, questionId: "q1", answer: "4" }));
   const room = h.data.get("room");
-  assert.equal(room.snapshot.currentPhase, "actions");
-  assert.ok(room.snapshot.phaseDeadline > s.phaseDeadline + 18000);
-  await h.object.webSocketMessage(h.socket as any, JSON.stringify({ type: "action", commandId: "late-choice-001", round: 1, ability: "fireball", targetId: "e1", ready: true }));
-  assert.equal(h.data.get("room").snapshot.currentPhase, "abilities");
-  assert.equal(h.data.get("room").snapshot.players[student().id].questionAction.ability, "fireball");
-  assert.equal(h.data.get("room").snapshot.phaseDeadline - h.data.get("room").snapshot.phaseStartTime, 20000);
+  assert.equal(room.snapshot.currentPhase, "answer_feedback");
+  room.snapshot.phaseDeadline = Date.now() - 1;
+  const resumed = harness(room);
+  await resumed.object.alarm();
+  const choices = resumed.data.get("room").snapshot;
+  assert.equal(choices.currentPhase, "actions");
+  assert.equal(choices.phaseDeadline - choices.phaseStartTime, 20000);
+  await resumed.object.webSocketMessage(resumed.socket as any, JSON.stringify({ type: "action", commandId: "late-choice-001", round: 1, ability: "fireball", targetId: "e1", ready: true }));
+  assert.equal(resumed.data.get("room").snapshot.currentPhase, "abilities");
+  assert.equal(resumed.data.get("room").snapshot.players[student().id].questionAction.ability, "fireball");
+  assert.equal(resumed.data.get("room").snapshot.phaseDeadline - resumed.data.get("room").snapshot.phaseStartTime, 20000);
 });
 
 test("only the room host can resurrect; retries restore exactly one HP without resetting resources or deadlines", async () => {
@@ -241,7 +251,7 @@ test("student leave removes only the authenticated player and unblocks each inpu
     const room = h.data.get("room");
     assert.equal(room.snapshot.players[student().id], undefined);
     assert.ok(room.snapshot.players.other, "payload cannot remove another student");
-    assert.equal(room.snapshot.currentPhase, phase === "question" ? "actions" : phase === "actions" ? "abilities" : "question_resolution");
+    assert.equal(room.snapshot.currentPhase, phase === "question" ? "answer_feedback" : phase === "actions" ? "abilities" : "question_resolution");
     assert.equal(room.receipts.length, 1);
     assert.ok(h.messages.some(m => m.type === "fight_left"));
     const restored = harness(room);

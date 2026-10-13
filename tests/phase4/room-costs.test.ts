@@ -59,11 +59,11 @@ test('30/60-player answer bursts acknowledge durable receipts and advance immedi
   for(const n of [30,60]){
     const f=roomFixture(n);
     await Promise.all(f.players.map((ws:any,i:number)=>f.obj.webSocketMessage(ws,JSON.stringify({type:'answer',commandId:`burst-answer-${i}`,round:f.room.snapshot.round,questionId:'q1',answer:'4'}))));
-    assert.equal(f.saved().snapshot.currentPhase,'actions');
+    assert.equal(f.saved().snapshot.currentPhase,'answer_feedback');
     assert.equal(f.saved().receipts.length,n);assert.equal(f.costs.auth,n);
     for(const [i,ws] of f.players.entries()){
       assert.ok(ws.messages.some((m:any)=>m.type==='command_ack'&&m.commandId===`burst-answer-${i}`));
-      assert.equal(ws.messages.at(-1).state.currentPhase,'actions');
+      assert.equal(ws.messages.at(-1).state.currentPhase,'answer_feedback');
     }
     const before=structuredClone(f.saved());
     await f.obj.webSocketMessage(f.players[0],JSON.stringify({type:'answer',commandId:'burst-answer-0',round:f.room.snapshot.round,questionId:'q1',answer:'4'}));

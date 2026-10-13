@@ -74,6 +74,30 @@ try {
     await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
     assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).answer), 'x² + 4x + 4');
     state.players[id].hasAnswered = true;
+    state.currentPhase = 'answer_feedback';
+    state.phaseDeadline = Date.now() + 4000;
+    state.players[id].answerOutcome = 'incorrect';
+    question.correctAnswer = '<span class="math-inline" data-latex="x^2+4x+4"></span>';
+    await emit();
+    await page.getByRole('dialog').getByText('Incorrect', {exact:true}).waitFor();
+    await page.getByRole('region', {name:'Answer feedback'}).locator('.katex').waitFor();
+    await screenshot('answer-feedback');
+    assert.equal(await page.getByRole('button', {name:'Submit answer',exact:true}).count(), 0);
+    for (const reason of ['stun', 'hypnosis', 'stare']) {
+      state.players[id].statuses = [{type:reason,sourceId:'e1',appliedRound:0}];
+      state.players[id].actionBlocked = {round:state.round,reason};
+      for (const phase of ['actions','abilities']) {
+        state.currentPhase = phase;
+        await emit();
+        await page.getByTestId('battle-wait').getByText(/Cannot act/).waitFor();
+        assert.equal(await page.getByRole('dialog').count(), 0);
+        assert.match(await page.getByTestId('battle-wait').innerText(), reason === 'stun' ? /Stunned/ : /Mesmerized/);
+        if (phase === 'actions' && reason !== 'stare') await page.screenshot({path:`${output}/${viewport.width}-${reason}-waiting.png`});
+      }
+    }
+    state.round++;
+    state.players[id].statuses = [];
+    delete state.players[id].actionBlocked;
     state.currentPhase = "actions";
     state.phaseDeadline = Date.now() + 20000;
     await emit();

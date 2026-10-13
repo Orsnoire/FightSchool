@@ -1,3 +1,4 @@
+import { advanceTo } from "./fixtures.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { abilityDamage, abilityHealing, abilityPreview } from "../../shared/combat/abilityValues.ts";
@@ -25,11 +26,11 @@ test("calculated damage matches real resolution across direct, group and multi-h
     s.players[id].availableAbilities.push(ability);
     s = applyAnswer(s, id, "4", fight.questions[0]);
     if (SUPPORT.has(ability)) {
-      s = advancePhase(advancePhase(s, fight), fight);
+      s = advanceTo(s, "abilities");
       s.players[id].questionAction = null;
     }
     s = selectAction(s, id, ability, "e1");
-    if (!SUPPORT.has(ability)) s = advancePhase(advancePhase(s, fight), fight);
+    if (!SUPPORT.has(ability)) s = advanceTo(s, "abilities");
     s = advancePhase(s, fight);
     assert.equal(s.players[id].totals.damageDealt, expected, ability);
     assert.match(abilityPreview(setup().players[id], ability, true), /Base damage:/, ability);
@@ -44,11 +45,11 @@ test("healing previews use current stats, preserve floor rounding and match capp
     s.players[id].availableAbilities.push(ability);
     s = applyAnswer(s, id, "4", fight.questions[0]);
     if (SUPPORT.has(ability)) {
-      s = advancePhase(advancePhase(s, fight), fight);
+      s = advanceTo(s, "abilities");
       s.players[id].questionAction = null;
     }
     s = selectAction(s, id, ability, ALLIES.has(ability) ? id : "e1");
-    if (!SUPPORT.has(ability)) s = advancePhase(advancePhase(s, fight), fight);
+    if (!SUPPORT.has(ability)) s = advanceTo(s, "abilities");
     s = advancePhase(s, fight);
     assert.equal(s.players[id].totals.healingDone, expected, ability);
     assert.equal(Math.floor(abilityHealing(setup().players[id], ability)!), expected);
@@ -70,7 +71,7 @@ test("Headshot includes the upcoming correct answer without inspecting hidden an
   s.players[id].consecutiveCorrectAnswers = 3;
   s.players[id].availableAbilities.push("headshot");
   s = selectAction(applyAnswer(s, id, "4", fight.questions[0]), id, "headshot", "e1");
-  for (let i = 0; i < 3; i++) s = advancePhase(s, fight);
+  s = advanceTo(s, "question_resolution");
   assert.equal(s.players[id].totals.damageDealt, 12);
 });
 
