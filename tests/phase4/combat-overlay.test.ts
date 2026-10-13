@@ -69,6 +69,36 @@ test("student selection uses focused overlays while waiting and resolution revea
     await emit();
     assert.equal(dialog(), null);
     assert.match(document.querySelector('[data-testid="battle-wait"]')!.textContent!, /Waiting for other players/);
+    state.currentPhase = "answer_feedback";
+    (question as any).correctAnswer = "<b>4</b>";
+    for (const [outcome, message] of [["correct", "Correct!"], ["incorrect", "Incorrect"], ["unanswered", "No answer submitted"]]) {
+      (state.players[student().id] as any).answerOutcome = outcome;
+      await emit();
+      assert.match(dialog().textContent!, new RegExp(message));
+      assert.equal(dialog().querySelector('[aria-label="Answer feedback"] b')?.textContent, "4");
+      assert.equal(button("Submit answer"), undefined);
+      assert.equal(button("Confirm Attack & Ready"), undefined);
+    }
+    for (const reason of ["stun", "hypnosis", "stare"] as const) {
+      const p = state.players[student().id];
+      p.statuses = [{type: reason, sourceId: "e1", appliedRound: 0}];
+      p.actionBlocked = {round: state.round, reason};
+      for (const phase of ["actions", "abilities"] as const) {
+        state.currentPhase = phase;
+        await emit();
+        assert.equal(dialog(), null);
+        assert.match(document.querySelector('[data-testid="battle-wait"]')!.textContent!, reason === "stun" ? /Stunned.*Cannot act.*Waiting/ : /Mesmerized.*Cannot act.*Waiting/);
+        assert.equal(document.querySelector('[aria-label="Ally targets"]'), null);
+      }
+    }
+    state.currentPhase = "question";
+    state.players[student().id].hasAnswered = false;
+    await emit();
+    assert.ok(button("Submit answer"), "mesmerized players can still answer questions to recover");
+    state.round++; // New question restores the normal default selection after the status-view fixtures.
+    state.players[student().id].statuses = [];
+    delete state.players[student().id].actionBlocked;
+    state.players[student().id].hasAnswered = true;
     state.currentPhase = "actions";
     state.phaseDeadline = Date.now() + 20000;
     await emit();

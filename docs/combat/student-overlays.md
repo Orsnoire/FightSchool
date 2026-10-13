@@ -96,3 +96,18 @@ inventory. Metadata failures can be retried; an unidentified item cannot be
 claimed through the cards. All choices disable during a claim and re-enable on
 failure. This uses existing metadata and result-scoped claim endpoints without
 changing reward eligibility or amounts. See the [release queue](release-queue.md).
+
+## October 13 answer feedback — implementation in PR #66, not yet deployed
+
+After everyone answers or the question clock expires, a four-second
+`answer_feedback` phase precedes action selection. Each student sees Correct,
+Incorrect or No answer submitted plus the rich-text/math correct answer. The host
+sees a correct-answer popup inside the fullscreen host surface. Neither popup
+can be dismissed to submit a late answer or act early. The host's existing phase
+advance remains available through its API; feedback otherwise ends on its saved
+server deadline, including after reconnect. The question answer and correctness
+are withheld until submissions close. Each selection phase still gets twenty
+seconds; combat resolution continues to use playback completion.
+
+Disabled players retain the feedback and question views, then use a status waiting
+strip for combat choices. Parties with no available choices advance automatically.

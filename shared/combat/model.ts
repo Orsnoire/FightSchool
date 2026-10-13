@@ -22,6 +22,7 @@ export interface EnemyAIState {
 export type CombatPhase =
   | "waiting"
   | "question"
+  | "answer_feedback"
   | "actions"
   | "abilities"
   | "question_resolution"
@@ -44,6 +45,8 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  /** Server-only marker: answer recovery is prepared once before choices. */
+  statusPreparedRound?: number;
   statuses?: CombatStatus[];
   recoveryCorrectAnswers?: number;
   controlImmuneThroughRound?: number;
@@ -170,6 +173,8 @@ export interface CombatSnapshot {
   soloEnemyDamageCap?: number;
 }
 export type PublicQuestion = {
+  /** Sent only after the question is closed to submissions. */
+  correctAnswer?: string;
   id: string;
   type: "multiple_choice" | "true_false" | "short_answer";
   question: string;

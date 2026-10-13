@@ -1,3 +1,4 @@
+import { advanceTo } from "./fixtures.ts";
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { TIER_ONE_EQUIPMENT, TIER_ONE_LOOT_POOLS, equipmentEffects } from '../../shared/tier-one-equipment';
@@ -54,7 +55,7 @@ test('ankh adds one after First Aid rounding in previews and actual heals, cappe
   assert.equal(abilityHealing(p,'first_aid'),expected);
   assert.match(abilityPreview(p,'first_aid'),new RegExp(`${expected} HP`));
   state=selectAction(applyAnswer(state,id,'4',fight.questions[0]),id,'first_aid',id);
-  for(let i=0;i<3;i++)state=advancePhase(state,fight);
+  state=advanceTo(state,"question_resolution");
   assert.equal(state.players[id].totals.healingDone,Math.min(missing,expected));
  }
  const p=started('priest').players[id];p.equipmentEffects=equipmentEffects({weapon:'t1_healer_ankh'});
@@ -82,7 +83,7 @@ test('potion attack buff refreshes without stacking, survives serialization and 
   const question=longFight.questions[state.currentQuestionIndex];
   state=applyAnswer(state,id,'4',question);
   state=selectAction(state,id,potion?'healing_potion':'attack',potion?id:'e1');
-  state=advancePhase(advancePhase(advancePhase(state,longFight),longFight),longFight);
+  state=advanceTo(state,"question_resolution",longFight);
  };
  round(true);
  assert.equal(state.players[id].stats.atk,base+1);

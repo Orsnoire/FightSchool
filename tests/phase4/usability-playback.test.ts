@@ -21,6 +21,9 @@ const command = (type: string, payload = {}) =>
   JSON.stringify({ type, commandId: crypto.randomUUID(), ...payload });
 test("resolution batches preserve deterministic rules and input clocks with impact HP and rapid order", () => {
   let state = applyAnswer(started(), student().id, "4", fight.questions[0]);
+  state = advancePhase(state, fight, 100);
+  assert.equal(state.currentPhase, "answer_feedback");
+  assert.equal(state.phaseDeadline, 4100);
   state = advancePhase(state, fight, 500);
   assert.equal(state.phaseDeadline, 20500);
   state = advancePhase(state, fight, 600);
@@ -181,7 +184,7 @@ test("classroom answer burst checkpoints evidence and projects once when the que
   assert.ok(acknowledged, "Acknowledgement follows the durable checkpoint");
   const restored = f.object();
   await Promise.all(f.players.slice(1).map(socket => restored.webSocketMessage(socket, answer())));
-  assert.equal(f.saved().snapshot.currentPhase, "actions");
+  assert.equal(f.saved().snapshot.currentPhase, "answer_feedback");
   assert.equal(projected.length, 1);
   assert.equal(projected[0].pendingAttempts.length, 30, "The single projection includes the pre-restart answer");
   assert.deepEqual(f.saved().snapshot.pendingAttempts, []);

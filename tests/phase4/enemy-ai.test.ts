@@ -1,3 +1,4 @@
+import { advanceTo } from "./fixtures.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { addStudent, advancePhase, applyAnswer, initialCombatState, startQuestion, selectAction } from "../../worker/combat/engine";
@@ -23,7 +24,7 @@ function state(move: EnemyMove = "attack", job: "warrior" | "wizard" | "priest" 
 }
 function turn(s: CombatSnapshot, f = fight, answers: Record<string, string> = { [id]: "4" }) {
   for (const [pid, answer] of Object.entries(answers)) if (!s.players[pid].isDead) s = applyAnswer(s, pid, answer, f.questions[0]);
-  return advancePhase(advancePhase(advancePhase(s, f, 10), f, 20), f, 30);
+  return advanceTo(s, "question_resolution", f, 30);
 }
 function next(s: CombatSnapshot, f = fight) { return advancePhase(advancePhase(s, f, 40), f, 50); }
 function effect(type: CombatStatus["type"], extra: Partial<CombatStatus> = {}): CombatStatus {
@@ -88,9 +89,10 @@ test("two nonconsecutive correct answers clear stacked stun AND paralysis and ex
   let { s, f } = state("attack", "wizard"); f.baseEnemyDamage = 1;
   const p = s.players[id];
   p.statuses = [effect("stun", { throughRound: 8 }), effect("paralysis", { chance: 1 })];
-  s = selectAction(applyAnswer(s, id, "4", f.questions[0]), id, "fireball", "e1");
+  s = advanceTo(applyAnswer(s, id, "4", f.questions[0]), "actions", f);
+  assert.throws(() => selectAction(s, id, "fireball", "e1"), /Stunned/);
   const mp = s.players[id].mp;
-  s = advancePhase(advancePhase(advancePhase(s, f), f), f);
+  s = advanceTo(s, "question_resolution", f);
   assert.equal(s.players[id].recoveryCorrectAnswers, 1);
   assert.equal(s.players[id].mp, mp);
   assert.equal(s.players[id].totals.questionsCorrect, 1);
@@ -99,8 +101,8 @@ test("two nonconsecutive correct answers clear stacked stun AND paralysis and ex
   assert.equal(s.players[id].recoveryCorrectAnswers, 1);
   s = next(turn(s, f, { [id]: "wrong" }), f);
   assert.equal(s.players[id].recoveryCorrectAnswers, 1);
-  s = selectAction(applyAnswer(s, id, "4", f.questions[0]), id, "fireball", "e1");
-  s = advancePhase(advancePhase(advancePhase(s, f), f), f);
+  s = selectAction(advanceTo(applyAnswer(s, id, "4", f.questions[0]), "actions", f), id, "fireball", "e1");
+  s = advanceTo(s, "question_resolution", f);
   assert.equal(s.players[id].statuses!.length, 0);
   assert.equal(s.players[id].mp, mp - 1);
   assert.equal(s.players[id].totals.questionsCorrect, 2);
@@ -186,7 +188,7 @@ test("Trip fails combat only: academic accuracy, mastery, streak and resources r
   let { s, f } = state("attack", "wizard"); s.players[id].statuses = [effect("trip")];
   const mp = s.players[id].mp;
   s = selectAction(applyAnswer(s, id, "4", f.questions[0]), id, "fireball", "e1");
-  s = advancePhase(advancePhase(advancePhase(s, f), f), f);
+  s = advanceTo(s, "question_resolution", f);
   assert.equal(s.players[id].totals.questionsCorrect, 1); assert.equal(s.players[id].totals.questionsIncorrect, 0);
   assert.equal(s.players[id].consecutiveCorrectAnswers, 1); assert.equal(s.players[id].correctQuestionKeys!.length, 1);
   assert.equal(s.players[id].totals.damageDealt, 0); assert.equal(s.players[id].mp, mp);
@@ -237,7 +239,7 @@ test("poison and bleed fractions accumulate; new ailments do not tick on their a
 test("Purify removes poison and paralysis without spending an extra question action", () => {
   let { s, f } = state("attack", "priest", 2); s.players.p1.statuses = [effect("poison", { amount: 20 }), effect("paralysis", { chance: 1 })];
   s = applyAnswer(s, id, "4", f.questions[0]); s = applyAnswer(s, "p1", "4", f.questions[0]);
-  s = advancePhase(advancePhase(s, f), f); s = selectAction(s, id, "purify", "p1"); s = advancePhase(s, f);
+  s = advanceTo(s, "abilities", f); s = selectAction(s, id, "purify", "p1"); s = advancePhase(s, f);
   assert.equal(s.players.p1.statuses!.length, 0);
 });
 test("Vampiric Bite heals by actual player HP percentage and cannot overheal; cooldown is five full rounds", () => {

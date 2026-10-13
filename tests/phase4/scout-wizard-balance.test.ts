@@ -1,3 +1,4 @@
+import { advanceTo } from "./fixtures.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { addStudent, initialCombatState, startQuestion, applyAnswer, selectAction, advancePhase } from "../../worker/combat/engine.ts";
@@ -10,7 +11,7 @@ function round(state: CombatSnapshot, ability: string, answer: string | null = "
   state.seed = 1;
   let s = answer === null ? state : applyAnswer(state, id, answer, fight.questions[0]);
   if (answer !== null) s = selectAction(s, id, ability, "e1");
-  s = advancePhase(advancePhase(advancePhase(s, fight), fight), fight);
+  s = advanceTo(s, "question_resolution");
   return JSON.parse(JSON.stringify(s)) as CombatSnapshot;
 }
 const next = (s: CombatSnapshot) => advancePhase(advancePhase(s, fight), fight);

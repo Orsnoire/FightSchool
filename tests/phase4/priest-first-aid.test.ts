@@ -1,10 +1,11 @@
+import { advanceTo } from "./fixtures.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { addStudent, initialCombatState, startQuestion, applyAnswer, selectAction, advancePhase, resurrectPlayer, scaleEncounter, baseDamage, upgradePriestActions } from "../../worker/combat/engine.ts";
 import { availableAbilities, abilityProblem, actionCost, hasOffensiveAbility } from "../../shared/combat/abilities.ts";
 import { fight, student, started } from "./fixtures.ts";
 const id = student().id;
-const resolve = (s: ReturnType<typeof started>) => advancePhase(advancePhase(advancePhase(s, fight), fight), fight);
+const resolve = (s: ReturnType<typeof started>) => advanceTo(s, "question_resolution");
 
 test("Priest replaces Attack at all levels while Mend and other jobs retain their behavior", () => {
   for (const level of [1, 8, 15]) {

@@ -8,6 +8,9 @@ import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { FloatingCombatLog } from "@/components/FloatingCombatLog";
 import { CombatBoard } from "@/components/CombatBoard";
 import { RichContentRenderer } from "@/components/RichContentRenderer";
+import { AnswerFeedback } from "@/components/AnswerFeedback";
+import { CombatOverlay } from "@/components/CombatOverlay";
+import { combatActionBlock } from "@shared/combat/status-effects";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Fight } from "@shared/schema";
@@ -55,7 +58,7 @@ export default function HostFight() {
   const players = Object.values(state?.players || {}), queued = Object.values(state?.pendingPlayers || {});
   const living = players.filter(p => !p.isDead), joined = players.length + queued.length;
   const phase = state?.currentPhase;
-  const phases: Record<string, string> = { wave_break: "Between waves", waiting: "Waiting for players", question: "Question", actions: "Combat action selection", abilities: "Block, heal, and support", question_resolution: "Answer resolution", enemy_ai: "Enemy counterattack", game_over: "Fight complete" };
+  const phases: Record<string, string> = { wave_break: "Between waves", waiting: "Waiting for players", question: "Question", answer_feedback: "Answer feedback", actions: "Combat action selection", abilities: "Block, heal, and support", question_resolution: "Answer resolution", enemy_ai: "Enemy counterattack", game_over: "Fight complete" };
   const active = !!phase && !["waiting", "game_over"].includes(phase);
   const toggleFullscreen = async () => {
     try {
@@ -74,7 +77,7 @@ export default function HostFight() {
     <section aria-label="Host fight controls" className="battle-host-banner" data-testid="host-controls">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 basis-52"><h1 className="text-xl sm:text-2xl font-bold break-words">{fight?.title || "Host fight"}</h1>
-          <p className="mt-1 text-xs text-[#557063]" data-testid="host-status"><span className="capitalize">{status}</span> · <strong>{joined} {joined === 1 ? "player" : "players"} joined</strong>{state && ` · ${phases[state.currentPhase]} · Round ${state.round}`}{queued.length > 0 && ` · ${queued.length} joining next round`}{phase === "question" && ` · ${living.filter(p => p.hasAnswered).length}/${living.length} answered`}{["actions", "abilities"].includes(phase || "") && ` · ${living.filter(p => p.ready).length}/${living.length} ready`}</p>
+          <p className="mt-1 text-xs text-[#557063]" data-testid="host-status"><span className="capitalize">{status}</span> · <strong>{joined} {joined === 1 ? "player" : "players"} joined</strong>{state && ` · ${phases[state.currentPhase]} · Round ${state.round}`}{queued.length > 0 && ` · ${queued.length} joining next round`}{phase === "question" && ` · ${living.filter(p => p.hasAnswered).length}/${living.length} answered`}{["actions", "abilities"].includes(phase || "") && ` · ${living.filter(p => { const lock = combatActionBlock(state!, p); return p.ready || lock && !lock.attacksOnly; }).length}/${living.length} ready`}</p>
         </div>
         {sessionId && <div className="shrink-0 text-right"><p className="text-[10px] uppercase tracking-widest text-[#557063]">Join the fight</p><p className="text-2xl sm:text-3xl font-bold tracking-widest leading-tight" data-testid="text-session-code">{sessionId}</p></div>}
         <Button size="sm" variant="ghost" onClick={() => navigate("/teacher")}>Dashboard</Button>
@@ -110,7 +113,10 @@ export default function HostFight() {
       } : undefined}/>
       <FloatingCombatLog key={sessionId} events={state.events}/>
     </>}
-    <Dialog.Root open={!!request && phase !== "game_over"}>
+    {state && phase === "answer_feedback" && <CombatOverlay container={shell.current} title="Correct answer" view={`${state.round}:answer_feedback`} seconds={seconds} status={status} error={error}>
+      <AnswerFeedback correctAnswer={question?.correctAnswer} />
+    </CombatOverlay>}
+    <Dialog.Root open={!!request && phase !== "game_over" && phase !== "answer_feedback"}>
       <Dialog.Portal container={shell.current}><Dialog.Overlay className="fixed inset-0 z-[180] bg-black/30"/><Dialog.Content aria-describedby="rejoin-description" onEscapeKeyDown={e => e.preventDefault()} onInteractOutside={e => e.preventDefault()} className="fixed left-1/2 top-1/2 z-[190] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background p-6 text-foreground shadow-xl">
         <Dialog.Title className="text-lg font-bold">Allow {request?.nickname} to rejoin?</Dialog.Title>
         <p id="rejoin-description" className="mt-2 text-sm text-muted-foreground">You removed this player. Allowing them restores their character for the next round.</p>

@@ -3,7 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "./ui/button";
 
 /** One phase-controlled dialog. Closing it must never advance combat. */
-export function CombatOverlay({ title, view, seconds, children, resources, error, status, onLeave, isLeaving }: {
+export function CombatOverlay({ title, view, seconds, children, resources, error, status, onLeave, isLeaving, container }: {
   title: string;
   view: string;
   seconds: number | null;
@@ -13,12 +13,13 @@ export function CombatOverlay({ title, view, seconds, children, resources, error
   status: string;
   onLeave?: () => void;
   isLeaving?: boolean;
+  container?: HTMLElement | null;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, [view]);
   return (
     <Dialog.Root open>
-      <Dialog.Portal>
+      <Dialog.Portal container={container}>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/35" />
         <Dialog.Content
           aria-describedby={undefined}

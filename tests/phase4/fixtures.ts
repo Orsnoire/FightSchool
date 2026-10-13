@@ -1,6 +1,7 @@
 import type { CharacterClass } from "../../shared/schema.ts";
 import type { FightRecord, StudentRecord } from "../../worker/db/schema.ts";
 import {
+  advancePhase,
   addStudent,
   initialCombatState,
   startQuestion,
@@ -57,3 +58,10 @@ export const started = (job: CharacterClass = "warrior") =>
     100,
     30,
   );
+
+/** Gameplay tests target a phase explicitly so presentation-only phases stay in the flow. */
+export function advanceTo(s: ReturnType<typeof started>, phase: ReturnType<typeof started>["currentPhase"], authored = fight, now = Date.now()) {
+  for (let steps = 0; steps < 8 && s.currentPhase !== phase; steps++) s = advancePhase(s, authored, now);
+  if (s.currentPhase !== phase) throw new Error(`Did not reach ${phase}; reached ${s.currentPhase}`);
+  return s;
+}

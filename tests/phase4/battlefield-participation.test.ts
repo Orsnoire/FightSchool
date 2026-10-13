@@ -1,3 +1,4 @@
+import { advanceTo } from "./fixtures.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { addStudent, advancePhase, applyAnswer, removeStudent } from "../../worker/combat/engine.ts";
@@ -15,7 +16,7 @@ test("late entrants wait for the next question, never affect the current phase, 
   assert.equal(queued.phaseDeadline, current.phaseDeadline);
   assert.throws(() => applyAnswer(queued, "late", "4", fight.questions[0]), /unavailable/);
   let s = applyAnswer(queued, id, "4", fight.questions[0]);
-  s = advancePhase(s, fight); s = advancePhase(s, fight); s = advancePhase(s, fight);
+  s = advanceTo(s, "question_resolution");
   assert.equal(s.players[id].roundsParticipated, 1);
   assert.equal(s.pendingPlayers?.late.roundsParticipated, 0);
   s = advancePhase(s, fight); s = advancePhase(s, fight);

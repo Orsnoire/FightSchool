@@ -1,8 +1,9 @@
 import { abilityEffect, makePlayback } from "../../shared/combat/presentation";
+import { ANSWER_FEEDBACK_MS } from "../../shared/combat/answer-feedback";
 import { recordAttempt } from "../../shared/combat/attempts";
 import { CombatRuleError } from "../../shared/combat/errors";
 import { enemyAISchema, inferEnemyType, resolveEnemyType } from "../../shared/combat/enemy-ai";
-import { cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
+import { actionBlockLabel, combatActionBlock, isHypnosis, cleansePlayer, effectiveDefense, prepareStatusActions, releaseInvalidStatuses } from "../../shared/combat/status-effects";
 import { resolveEnemyTurn } from "./enemy-turn";
 import { activeEnemies, canAdvanceWave, bounceTarget, expandEnemies, encounterBudget, allocateHP, ROLE_SHARES, goblinTargets, roundHP, performance } from "../../shared/combat/encounters";
 import { enemyTuning } from "../../shared/encounter-tiers";
@@ -290,7 +291,10 @@ export function applyAnswer(
 }
 export function allLivingPlayersAnswered(state: CombatSnapshot): boolean {
   const p = Object.values(state.players).filter((p) => !p.isDead);
-  return p.length > 0 && p.every((p) => p.hasAnswered && (state.currentPhase === "question" || p.ready));
+  return p.length > 0 && p.every((p) => {
+    const lock = combatActionBlock(state, p);
+    return p.hasAnswered && (state.currentPhase === "question" || p.ready || !!lock && !lock.attacksOnly);
+  });
 }
 /** An intentional departure removes participation; a dropped socket never does. */
 export function removeStudent(state: CombatSnapshot, id: string): CombatSnapshot {
@@ -330,6 +334,9 @@ export function selectAction(
     throw new CombatRuleError("Actions are closed");
   if (SUPPORT.has(ability) !== support)
     throw new CombatRuleError("Ability belongs to another phase");
+  const lock = combatActionBlock(state, p);
+  if (lock && (!lock.attacksOnly || hasOffensiveAbility([ability]) || abilityDamage(p, ability) !== undefined))
+    throw new CombatRuleError(`${actionBlockLabel(lock.reason)} — cannot use this action`);
   const error = selectionProblem(p, ability);
   if (error) throw new CombatRuleError(error);
   if (ALLIES.has(ability)) {
@@ -583,7 +590,10 @@ function damagePlayer(
     id,
     actual,
     `${p.nickname} took ${actual} damage`,
-    {healthBefore:roundHP(p.health+actual),healthAfter:p.health},
+    {healthBefore:roundHP(p.health+actual),healthAfter:p.health,
+      ...(source === "wrong_answer" && p.statuses?.some(isHypnosis)
+        ? { effect: "curse", abilityId: "hypnosis" } : {}),
+    },
   );
   return actual;
 }
@@ -1066,11 +1076,19 @@ export function advancePhase(
         }
         p.questionAction ||= defaultQuestionAction(p, s);
       }
+    s.currentPhase = "answer_feedback";
+    s.phaseDeadline = now + ANSWER_FEEDBACK_MS;
+    return s;
+  }
+  if (s.currentPhase === "answer_feedback") {
     s.currentPhase = "actions";
+    for (const p of Object.values(s.players)) p.ready = false;
+    prepareStatusActions(s, () => rng(s));
     s.phaseDeadline = now + 20000;
     return s;
   }
   if (s.currentPhase === "actions") {
+    prepareStatusActions(s, () => rng(s));
     for (const p of Object.values(s.players)) p.ready = false;
     s.currentPhase = "abilities";
     s.phaseDeadline = now + 20000;

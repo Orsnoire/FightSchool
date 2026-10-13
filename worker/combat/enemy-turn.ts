@@ -2,7 +2,7 @@ import { activeEnemies, goblinTargets, ROLE_SHARES } from "../../shared/combat/e
 import type { FightRecord } from "../db/schema";
 import type { CombatEnemy, CombatPlayer, CombatSnapshot, CombatStatus, StatusType } from "../../shared/combat/model";
 import { chooseEnemyRule, enemyTargets, ENEMY_MOVES, livingPlayers, BIOME_ATTACKS } from "../../shared/combat/enemy-ai";
-import { addStatus, effectiveDefense, isHypnosis, releaseInvalidStatuses, STATUS_LABELS } from "../../shared/combat/status-effects";
+import { addStatus, breakHypnosisFromAttack, effectiveDefense, isHypnosis, releaseInvalidStatuses, STATUS_LABELS } from "../../shared/combat/status-effects";
 
 export interface EnemyTurnPorts {
   random: () => number;
@@ -18,7 +18,7 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
   let remaining = s.soloEnemyDamageCap ?? Infinity;
   const taken: Record<string, number> = {};
   const modern = s.encounterRules === 2;
-  const damage = (id: string, raw: number, source: string, ignoreDefense = false, swarmBonus = 0) => {
+  const damage = (id: string, raw: number, source: string, ignoreDefense = false, swarmBonus = 0, direct = true) => {
     const p = s.players[id];
     if (!p || p.isDead || remaining <= 0 || (raw <= 0 && !swarmBonus)) return 0;
     let amount = raw;
@@ -28,6 +28,8 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
     const dealt = ports.damage(id, amount, source, modern || ignoreDefense, limit, modern);
     taken[id] = (taken[id] || 0) + dealt;
     remaining -= dealt;
+    if (direct && dealt > 0 && breakHypnosisFromAttack(s, p, source))
+      ports.say(source, id, `${p.nickname} is no longer mesmerized: another enemy's attack broke hypnosis`);
     return dealt;
   };
   // DOT starts on the following round. Fractional ticks accumulate without being rounded up each turn.
@@ -36,7 +38,7 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
     const total = (status.amount || 0) + (status.carry || 0);
     const tick = Math.floor(total + 1e-9);
     status.carry = total - tick;
-    damage(p.studentId, tick, status.sourceId, status.type !== "suffocate");
+    damage(p.studentId, tick, status.sourceId, status.type !== "suffocate", 0, false);
   }
   const enemies = activeEnemies(s);
   const goblins = enemies.filter(e => e.enemyType === "goblin" || e.species === "goblin");
