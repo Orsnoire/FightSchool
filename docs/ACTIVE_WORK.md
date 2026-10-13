@@ -1,10 +1,9 @@
-# Usability Patch 1 — release checkpoint, October 12, 2026
+# Mesmerize, stun and answer feedback — October 13, 2026
 
-- Owner authorized merge and deployment. [PR #64](https://github.com/Orsnoire/FightSchool/pull/64) merged as `2bf216e`; classroom follow-up [PR #65](https://github.com/Orsnoire/FightSchool/pull/65) merged as **`bef100b4a86574819fe12bceed901de0fbd1caac`**, the deployed runtime. Both implementation branches are historical after release.
-- Teacher session reports and filters, question Edit/save/cancel, combat placeholders/flying numbers, completion-driven resolution, and enemy/equipment recoloring are deployed. **Question and action/ability selection clocks remain.**
-- Reviewed correction `78af971770601c2fdc55ce1858867392eb887e7b`: [CI 38311299763](https://github.com/Orsnoire/FightSchool/actions/runs/38311299763) and [browser acceptance 38311299742](https://github.com/Orsnoire/FightSchool/actions/runs/38311299742) passed. All **254 tests**, typecheck and production client/Worker builds pass. The original visual release also passed Avatar Workshop Acceptance 38307437222.
-- Initial live testing exposed repeated reporting SQL on every answer during a 30-player burst. The correction durably saves each answer before acknowledgement and projects the outbox once when the question closes; metadata changes and retries remain immediate. A failing baseline and restart/retry regression verify the change. No authentication or selection-clock relaxation.
-- [Corrected deployment 38311747151](https://github.com/Orsnoire/FightSchool/actions/runs/38311747151) passed on the exact merge: 254 tests, typecheck/builds, R2, migration gate and both hostnames. Worker `0951289e-d7c5-4243-b281-8ae0f61e4e9f`, published **21:38:56 UTC**. Additive migrations 0015/0016 had already applied before the initial deployment; no live-data reset.
-- [Canonical live acceptance 38311980245](https://github.com/Orsnoire/FightSchool/actions/runs/38311980245) passed on the exact deployed merge: combat/economy, explicit playback completion, palettes/reporting, R2, 30-player answer burst, reconnects, isolation, moderation, revocation and exactly-once rewards. The patch is COMPLETE: merged, deployed and accepted.
-- [Scope, limits and release history](USABILITY_PATCH_1.md). Old totals remain; pre-patch question detail cannot be reconstructed. Provider-level failure details were unavailable; no specific account resource limit is claimed.
-- No implementation package is active. C06 is next, not started; register its branch/PR before implementation. Previous package records remain in Git history and the cleanup plan.
+- Active branch: `fix/mesmerize-choice-lockout-2026-10-13`; draft PR registration in progress. Owner explicitly authorized publishing this branch.
+- Scope: disabled-player waiting view during both choices; magic wrong-answer damage while mesmerized; direct damage from another enemy releases hypnosis; four-second answer-feedback phase before choices with student correctness/correct answer and a host correct-answer popup.
+- Preserve question participation, academic credit, nonconsecutive recovery, source channeling, saved status state, question/choice clocks and completion-driven combat playback.
+- Base inspected: `4db37a6`; no competing open PR or active package. Usability Patch 1 (#64/#65) remains deployed and accepted at `bef100b`. C06 has not started.
+- Incomplete checkpoint: status fix drafted locally; feedback phase and regression verification outstanding. No merge/deploy authorization requested or performed.
+- Verification: not yet run.
+- Next action: implement feedback phase and complete deterministic, transport, UI and build checks; publish verified changes for review.
