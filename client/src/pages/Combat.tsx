@@ -1,4 +1,6 @@
 import { activeEnemies, hpLabel } from "@shared/combat/encounters";
+import { actionBlockLabel, combatActionBlock } from "@shared/combat/status-effects";
+import { AnswerFeedback } from "@/components/AnswerFeedback";
 import { LootRewardChoices } from "@/components/LootRewardChoices";
 import { abilityPreview } from "@shared/combat/abilityValues";
 import { AllyTargetGrid } from "@/components/AllyTargetGrid";
@@ -21,6 +23,7 @@ const names: Record<string, string> = {
   wave_break: "Wave cleared — next wave ready",
   waiting: "Waiting for your teacher",
   question: "Question",
+  answer_feedback: "Answer feedback",
   actions: "Combat action selection",
   abilities: "Block, heal, and support",
   question_resolution: "Answer resolution",
@@ -120,10 +123,12 @@ export default function Combat() {
     return [c.mp ? (id === "fireblast" ? `All MP (${c.mp})` : `${c.mp} MP`) : "", c.combo ? `${c.combo} combo` : "", c.healing ? "1 healing potion" : "", c.shield ? "1 shield potion" : ""].filter(Boolean).join(" · ") || "No cost";
   };
   const needsTarget = ALLIES.has(ability) || (!SUPPORT.has(ability) && !["craft_healing_potion", "craft_shield_potion", "pact_surge", "holy_light", "finale"].includes(ability));
-  const view = queued && phase !== "game_over" ? "joining" : intro ? "intro" : p?.isDead && ["question", "actions", "abilities"].includes(phase) ? "knocked-out" : p?.ready && ["question", "actions", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "answered" : phase === "actions" ? "action" : phase;
+  const actionBlock = p && ["actions", "abilities"].includes(phase) ? combatActionBlock(state, p) : undefined;
+  const disabledChoice = actionBlock && !actionBlock.attacksOnly;
+  const view = queued && phase !== "game_over" ? "joining" : intro ? "intro" : p?.isDead && ["question", "actions", "abilities"].includes(phase) ? "knocked-out" : disabledChoice ? "disabled" : p?.ready && ["question", "actions", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "answered" : phase === "actions" ? "action" : phase;
   const title = view === "answered" ? "Answer submitted" : view === "intro" ? (state.round === 1 ? "Question" : "Next question") : view === "knocked-out" ? "Your party is still fighting" : view === "ready" ? "Ready — waiting for your party" : view === "action" ? "Choose your combat action" : phase === "question" ? `Question ${state.currentQuestionIndex + 1}` : names[phase];
-  const minimal = ["waiting", "wave_break", "joining", "intro", "answered", "ready", "knocked-out", "question_resolution", "enemy_ai"].includes(view);
-  const waitMessage = view === "question_resolution" ? "Your party attacks" : view === "enemy_ai" ? "Enemy counterattacks" : view === "wave_break" ? "Wave cleared · Waiting for the next wave" : view === "joining" ? "Joining next round" : view === "waiting" ? "Waiting for your teacher" : view === "intro" ? "Get ready…" : view === "knocked-out" ? "Knocked out · Your party is still fighting" : "Waiting for other players";
+  const minimal = ["waiting", "wave_break", "joining", "intro", "answered", "ready", "disabled", "knocked-out", "question_resolution", "enemy_ai"].includes(view);
+  const waitMessage = view === "disabled" ? `${actionBlockLabel(actionBlock!.reason)} · Cannot act · Waiting for other players` : view === "question_resolution" ? "Your party attacks" : view === "enemy_ai" ? "Enemy counterattacks" : view === "wave_break" ? "Wave cleared · Waiting for the next wave" : view === "joining" ? "Joining next round" : view === "waiting" ? "Waiting for your teacher" : view === "intro" ? "Get ready…" : view === "knocked-out" ? "Knocked out · Your party is still fighting" : "Waiting for other players";
   const claim = async (itemId?: string) => {
     if (claimInFlight.current || claimed) return;
     claimInFlight.current = true;
@@ -156,6 +161,7 @@ export default function Combat() {
       {minimal && <div className="battle-wait" role="status" data-testid="battle-wait"><div><strong>{waitMessage}</strong>{status !== "connected" && <span>Reconnecting…</span>}{error && <p role="alert">{error}</p>}</div>{state.phaseDeadline && <time aria-label={`${seconds} seconds remaining`}>{seconds}s</time>}</div>}
       {p && minimal && <aside className="battle-self-hud" aria-label="Your character"><h2>{p.nickname} · {p.characterClass}</h2><div className="battle-self-bars"><label>HP {p.health}/{p.maxHealth}<progress value={p.health} max={p.maxHealth}/></label>{p.maxMp > 0 && <label className="self-mp">MP {p.mp}/{p.maxMp}<progress value={p.mp} max={p.maxMp}/></label>}{p.maxComboPoints > 0 && <label className="self-cp">COMBO {p.comboPoints}/{p.maxComboPoints}<progress value={p.comboPoints} max={p.maxComboPoints}/></label>}</div><CombatResources player={p}/></aside>}
       {!minimal && <CombatOverlay onLeave={requestLeave} isLeaving={isLeaving} title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
+      {phase === "answer_feedback" && <AnswerFeedback correctAnswer={question?.correctAnswer} outcome={p?.answerOutcome} />}
       {phase === "waiting" && <p>Your teacher will start the fight when everyone has joined.</p>}
       {intro && <p className="text-center py-8 text-lg">Get ready…</p>}
       {view === "answered" && <p>Your answer is saved. Combat action selection will begin when everyone has answered or the question timer ends. You will have a fresh 20 seconds to choose.</p>}

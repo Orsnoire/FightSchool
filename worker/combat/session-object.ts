@@ -5,6 +5,7 @@ import { CombatRuleError } from "../../shared/combat/errors";
 import { diagnostic } from "../diagnostics";
 import { combatCommandSchema, type CombatCommand } from "../../shared/contracts/combat";
 import { publicSnapshot } from "./public-snapshot";
+import { answersRevealed } from "../../shared/combat/answer-feedback";
 export { publicSnapshot } from "./public-snapshot";
 import { handleCombatSessions } from "../routes/combat-sessions.ts";
 import { instanceLoot } from "../../shared/combat/instance-loot";
@@ -243,7 +244,9 @@ export class CombatSessionObject {
   }
   private snapshotMessage(room: StoredRoom, role = "student", projectedState = publicSnapshot(room.snapshot, room.fight)) {
     const question = room.fight.questions[room.snapshot.currentQuestionIndex];
-    const safe = { id:question.id,type:question.type,question:question.question,options:question.options,timeLimit:question.timeLimit };
+    const safe = { id:question.id,type:question.type,question:question.question,options:question.options,timeLimit:question.timeLimit,
+      ...(answersRevealed(room.snapshot.currentPhase) ? {correctAnswer: question.correctAnswer} : {}),
+    };
     if (room.fight.shuffleOptions && safe.options)
       safe.options = deterministicShuffle(
         safe.options,
@@ -255,6 +258,7 @@ export class CombatSessionObject {
       state: projectedState,
       question: [
         "question",
+        "answer_feedback",
         "actions",
         "abilities",
         "question_resolution",
@@ -848,6 +852,10 @@ export class CombatSessionObject {
   }
   private async advance(room: StoredRoom) {
     room.snapshot = advancePhase(room.snapshot, room.fight);
+    // Disabled players have no choice to submit. Do not strand a disabled party
+    // behind either selection clock; mixed parties still wait for their choices.
+    while (["actions", "abilities"].includes(room.snapshot.currentPhase) && allLivingPlayersAnswered(room.snapshot))
+      room.snapshot = advancePhase(room.snapshot, room.fight);
     await this.save(room);
     await this.syncAlarm(room);
     if (room.snapshot.currentPhase === "game_over") await this.complete(room);

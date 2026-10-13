@@ -1,4 +1,5 @@
 import { equipmentVisualSchema, paletteSchema } from "../../shared/avatar/visuals";
+import { answersRevealed, answerOutcome } from "../../shared/combat/answer-feedback";
 import { playerFields, snapshotFields, enemyFields, type PublicCombatSnapshot, type PublicCombatPlayer } from '../../shared/contracts/combat';
 import type { CombatSnapshot, CombatPlayer, CombatAction } from '../../shared/combat/model';
 import { EQUIPMENT_SLOTS } from '../../shared/equipment-slots';
@@ -14,6 +15,7 @@ function player(p:CombatPlayer, reveal:boolean):PublicCombatPlayer {
   return {
     ...pick(p,playerFields), currentAnswer:null,
     lastAnswerCorrect:reveal?p.lastAnswerCorrect:undefined,
+    answerOutcome:reveal?answerOutcome(p):undefined,
     statuses:p.statuses?.map(s=>({...pick(s,['type','sourceId','appliedRound','throughRound','amount','carry','chance','correctAnswers']),actionFailure:s.actionFailure?pick(s.actionFailure,['round','skip']):undefined})),
     actionBlocked:p.actionBlocked?pick(p.actionBlocked,['round','reason','attacksOnly']):undefined,
     equipmentLoadout:p.equipmentLoadout?pick(p.equipmentLoadout,EQUIPMENT_SLOTS):undefined,
@@ -30,7 +32,7 @@ function player(p:CombatPlayer, reveal:boolean):PublicCombatPlayer {
 }
 export function publicSnapshot(snapshot:CombatSnapshot,fight?:FightRecord):PublicCombatSnapshot {
   const enemies=fight&&snapshot.currentPhase==='waiting'&&Object.keys(snapshot.players).length?scaleEncounter(snapshot,fight).enemies:snapshot.enemies;
-  const reveal=!['question','actions','waiting'].includes(snapshot.currentPhase);
+  const reveal=answersRevealed(snapshot.currentPhase);
   return {
     ...pick(snapshot,snapshotFields),seed:0,
     playback:snapshot.playback?{...pick(snapshot.playback,['id','round','phase']),eventIds:[...snapshot.playback.eventIds],initialHealth:{...snapshot.playback.initialHealth}}:undefined,

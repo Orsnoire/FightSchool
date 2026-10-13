@@ -149,7 +149,10 @@ Only these seven defined types are authorable; every goblin addition contains at
 least five individuals. New types require a moveset, default AI and verified art.
 Two nonconsecutive correct answers clear
 stun/paralysis; three release each player from single-target Hypnotic Stare or
-party-wide Hypnosis. Hypnotizing sources cannot act until their victims are free.
+party-wide Hypnosis. Hypnotizing sources cannot act until their victims are free. The October 13
+owner correction in the same specification adds direct-hit release from another
+enemy and disabled-choice waiting; the student overlays specification adds a
+four-second answer-feedback phase. These changes are in PR #66, not yet deployed.
 This supersedes the initial damage-threshold and fixed-turn hypnosis proposals.
 PR #52 was released in runtime `e158194` and remains included in the current
 C02 runtime `5d89fb0`; CI, deployment and canonical live acceptance passed.

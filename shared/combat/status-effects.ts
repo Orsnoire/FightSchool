@@ -6,6 +6,21 @@ export const STATUS_LABELS: Record<StatusType, string> = {
 };
 const controlTypes = new Set<StatusType>(["stun", "paralysis", "web", "hypnosis", "stare", "fear", "suffocate"]);
 export const isHypnosis = (x: CombatStatus) => x.type === "hypnosis" || x.type === "stare";
+/** Shared by selection validation, readiness and the student waiting view. */
+export function combatActionBlock(s: Pick<CombatSnapshot, "round" | "enemies">, p: CombatPlayer): CombatPlayer["actionBlocked"] {
+  if (p.actionBlocked?.round === s.round) return p.actionBlocked;
+  // Also cover rooms saved before status preparation moved ahead of choices.
+  const statuses = (p.statuses || []).filter(x =>
+    (x.throughRound === undefined || x.throughRound >= s.round) &&
+    (!isHypnosis(x) || s.enemies.some(e => e.id === x.sourceId && e.health > 0)));
+  const hard = statuses.find(x => ["web", "stun", "hypnosis", "stare", "suffocate"].includes(x.type)) ||
+    statuses.find(x => x.type === "paralysis" && x.actionFailure?.round === s.round && x.actionFailure.skip);
+  if (hard) return { round: s.round, reason: hard.type };
+  if (statuses.some(x => x.type === "fear")) return { round: s.round, reason: "fear", attacksOnly: true };
+}
+export function actionBlockLabel(reason: string): string {
+  return reason === "hypnosis" || reason === "stare" ? "Mesmerized" : STATUS_LABELS[reason as StatusType] || "Unable to act";
+}
 export function statusSummary(p: CombatPlayer): string[] {
   const statuses = p.statuses || [];
   return [...new Set(statuses.map(x => {
@@ -49,7 +64,8 @@ export function addStatus(s: CombatSnapshot, p: CombatPlayer, status: CombatStat
   statuses.push(status);
   return true;
 }
-function refreshActionBlock(s: CombatSnapshot, p: CombatPlayer, webEscape = false): void {
+function refreshActionBlock(s: CombatSnapshot, p: CombatPlayer,
+  webEscape = p.actionBlocked?.round === s.round && p.actionBlocked.reason === "web"): void {
   const statuses = p.statuses || [];
   const hard = statuses.find(x => ["web", "stun", "hypnosis", "stare", "suffocate"].includes(x.type));
   const paralysis = statuses.find(x => x.type === "paralysis");
@@ -58,6 +74,16 @@ function refreshActionBlock(s: CombatSnapshot, p: CombatPlayer, webEscape = fals
   if (reason) p.actionBlocked = { round: s.round, reason };
   else if (statuses.some(x => x.type === "fear")) p.actionBlocked = { round: s.round, reason: "fear", attacksOnly: true };
   else delete p.actionBlocked;
+}
+/** Only a damaging direct hit from another encounter enemy breaks hypnosis. */
+export function breakHypnosisFromAttack(s: CombatSnapshot, p: CombatPlayer, sourceId: string): boolean {
+  if (!s.enemies.some(e => e.id === sourceId)) return false;
+  const before = p.statuses || [];
+  p.statuses = before.filter(x => !isHypnosis(x) || x.sourceId === sourceId);
+  if (p.statuses.length === before.length) return false;
+  grantControlRecovery(s, p);
+  refreshActionBlock(s, p);
+  return true;
 }
 /** Called before actions and after source death. Healing an enemy never reinstates control. */
 export function releaseInvalidStatuses(s: CombatSnapshot): void {
@@ -71,14 +97,17 @@ export function releaseInvalidStatuses(s: CombatSnapshot): void {
       !p.statuses.some(x => x.type === p.actionBlocked!.reason)) refreshActionBlock(s, p);
   }
 }
-/** Recovery is counted once, when answer resolution starts, before support/actions execute. */
+/** Prepare before choices; repeats/reconnects must not count the same answer twice. */
 export function prepareStatusActions(s: CombatSnapshot, random: () => number): void {
   releaseInvalidStatuses(s);
   for (const p of Object.values(s.players)) {
+    const prepared = p.statusPreparedRound === s.round;
+    const webEscape = prepared && p.actionBlocked?.round === s.round && p.actionBlocked.reason === "web";
     delete p.actionBlocked;
     if (p.isDead) continue;
+    p.statusPreparedRound = s.round;
     const statuses = p.statuses ||= [];
-    const active = statuses.filter(x => x.appliedRound < s.round);
+    const active = prepared ? [] : statuses.filter(x => x.appliedRound < s.round);
     if (active.some(x => x.type === "stun" || x.type === "paralysis") && p.lastAnswerCorrect) {
       p.recoveryCorrectAnswers = (p.recoveryCorrectAnswers || 0) + 1;
       if (p.recoveryCorrectAnswers >= 2) {
@@ -104,7 +133,7 @@ export function prepareStatusActions(s: CombatSnapshot, random: () => number): v
     // A source dying mid-turn cannot erase an unrelated stun or reroll paralysis.
     if (paralysis && paralysis.actionFailure?.round !== s.round)
       paralysis.actionFailure = { round: s.round, skip: random() < (paralysis.chance ?? 0.3) };
-    refreshActionBlock(s, p, !!web);
+    refreshActionBlock(s, p, webEscape || !!web);
   }
 }
 export function cleansePlayer(s: CombatSnapshot, p: CombatPlayer): void {

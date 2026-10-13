@@ -77,7 +77,8 @@ counters and the appropriate escape rule.
 
 A hypnotizing source cannot act while any living participant remains hypnotized
 by it. Players who escape can act while others continue recovering. Death of the
-source releases its victims; damage alone no longer breaks hypnosis. A player
+source releases its victims. The October 13 owner correction below adds release
+on a direct damaging hit from another enemy. A player
 with another disabling effect remains subject to that effect. Paralysis rolls
 once per round, including when another effect also prevents action; that saved
 roll is retained if hypnosis ends or another effect is cleansed mid-turn. A player
@@ -152,3 +153,19 @@ nonconsecutive recovery, stacking, solo caps, secrecy and persistence. API and
 React DOM tests cover authoring validation, save/reload and visible recovery.
 Classroom balance still needs observation: especially large-party hypnosis,
 percentage vampire healing, poison duration and enemy compositions.
+
+## October 13 correction — implementation in PR #66, not yet deployed
+
+Stunned or mesmerized players see their status and “Waiting for other players”
+in both combat choice phases. The server rejects their actions and counts them
+as ready without requiring a click. Questions remain answerable. Correct-answer
+recovery is evaluated once before choices; the final recovery answer restores
+choices that round. Saved preparation state prevents double recovery on restart.
+Paralysis rolls remain once per round; fear still permits non-offensive support.
+
+Wrong-answer damage to a mesmerized player displays purple magic and does not
+release hypnosis. A direct hit dealing HP damage from another encounter enemy
+releases Hypnosis or Hypnotic Stare immediately, preserves unrelated statuses and
+grants the existing control-recovery protection. Blocked/zero-damage hits, DOT,
+self-damage and wrong-answer penalties do not release it. Source channeling ends
+when its last living victim is free. This supersedes the prior no-damage-break rule.
