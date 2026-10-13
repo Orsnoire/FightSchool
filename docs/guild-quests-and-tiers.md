@@ -63,8 +63,10 @@ tier/rarity formula (common Tier 1: 150 gold); custom prices remain authoritativ
 Purchase does not auto-equip or bypass job/class equipment restrictions. Gold and
 inventory update atomically, with no duplicate charge or duplicate ownership.
 
-Implementation status: locally verified in `fix/guild-shop-default-catalog`;
-publication, CI, merge and deployment pending. See [active work](ACTIVE_WORK.md).
+Implementation status: published in [PR #68](https://github.com/Orsnoire/FightSchool/pull/68)
+on `fix/guild-shop-default-catalog`; 263 local tests, TypeScript and production
+client/Worker builds pass. CI and Chromium browser acceptance are pending.
+Not merged, deployed or live-accepted. See [active work](ACTIVE_WORK.md).
 
 ## Fight authoring and initial tuning
 

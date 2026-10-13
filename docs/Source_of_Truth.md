@@ -128,9 +128,9 @@ document for restoration and concurrency rules and the October 8 checkpoint belo
 
 The [October 13 default shop correction](guild-quests-and-tiers.md#october-13-default-shop-inventory-correction)
 requires every defined progression tier's equipment in guild shops by default,
-while preserving shop unlocks and teacher custom stock. The correction is in
-local verification (automated tests and builds pass; browser acceptance pending)
-and has not been published or deployed.
+while preserving shop unlocks and teacher custom stock. The correction is published in [PR #68](https://github.com/Orsnoire/FightSchool/pull/68)
+(263 local tests and builds pass; CI/browser acceptance pending)
+and has not been merged or deployed.
 
 The [October 7 Tier 1 specification](combat/tier-one-equipment.md) records the
 owner's level-2 equipment collection, revised tank VIT damage weighting and
