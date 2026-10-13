@@ -1,3 +1,16 @@
+# Guild shop default equipment catalog — October 13, 2026
+
+- Active branch: `fix/guild-shop-default-catalog`; PUBLISHED as [PR #68](https://github.com/Orsnoire/FightSchool/pull/68). Implementation `cce4165c858055fbf03b2748db4ae0c773720a1d` exactly matches the locally verified Git tree; CI/browser acceptance pending.
+- Owner scope: include all 37 defined Tier 1 items by default and automatically include future explicitly tiered catalog items. Preserve independent shop unlocks, custom stock, existing prices and equip gates. No migration.
+- Baseline: remote main `fc284565963f791f00fd6d8a08a5a81a020f512b`; no open PRs at claim time. C06 remains unstarted. This is a separately requested bug fix.
+- Completed: shared built-in shop projection; teacher default/custom stock with read-only default labels; student listings and built-in purchase validation; server-priced atomic gold/inventory updates. Starters remain entitlements and untiered legacy drops remain outside new shop stock.
+- Local verification: **263 tests pass**, TypeScript and production client/Worker builds pass, `git diff --check` clean. New migrated HTTP checks cover all 37 defaults, synthetic future tiers 2/3 and unlocks, teacher isolation, loot-only/unknown/starter rejection, duplicate/concurrent purchase and insufficient gold. JSDOM checks cover default stock, tier browsing, prices and custom editing.
+- Browser verification: a Chromebook/phone guild-shop scenario is added to the existing Chromium CI workflow. Local launch was blocked by the environment (`socket() failed: Operation not permitted`); no browser pass or visual approval is claimed.
+- Publication recovered: the owner explicitly requested this PR on October 13. The repository destination and connected account's push access were verified. Shell Git authentication was unavailable, so the connected GitHub app published the exact local file tree. The earlier publication blocker is resolved; the live PR and branch checkpoint are the current resume targets.
+- Next action: inspect PR #68's CI and Chromium browser acceptance results, resolve any shop regression, then mark ready for review. Update this checkpoint and the PR with exact verification evidence. Opening the PR does not merge or deploy this change. Not merged, deployed or live-accepted.
+
+## Previous release handoff (preserved)
+
 # Mesmerize, stun and answer feedback — October 13, 2026
 
 - [PR #66](https://github.com/Orsnoire/FightSchool/pull/66) is VERIFIED AND MERGED at `f74969579aff4bf7dab87fc4808625486bd156b4` (October 13, 15:19 UTC). The owner explicitly authorized merge and deployment. Deployment and live acceptance remain pending.

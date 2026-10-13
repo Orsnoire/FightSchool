@@ -4,7 +4,8 @@ import { Link } from "wouter";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { SLOT_LABELS } from "@shared/equipment-slots";
-import type { EquipmentItemDb, Guild } from "@shared/schema";
+import { calculateTierPrice, type EquipmentItemDb, type Guild } from "@shared/schema";
+import { builtinShopItems } from "@shared/equipment-shop";
 export function TeacherGuildShop({ guild }: { guild: Guild }) {
   const [tier, setTier] = useState(guild.unlockedTier);
   const {
@@ -16,7 +17,9 @@ export function TeacherGuildShop({ guild }: { guild: Guild }) {
     queryKey: [`/api/teacher/${guild.teacherId}/equipment-items`],
     refetchOnWindowFocus: "always",
   });
-  const rows = items.filter((i) => i.tier === tier);
+  const defaults = builtinShopItems();
+  const defaultIds = new Set(defaults.map((item) => item.id));
+  const rows = [...defaults, ...items].filter((i) => i.tier === tier);
   return (
     <div className="space-y-4">
       <Card className="p-5 space-y-4">
@@ -24,8 +27,8 @@ export function TeacherGuildShop({ guild }: { guild: Guild }) {
           <div>
             <h2 className="text-xl font-bold">Guild shop</h2>
             <p className="text-sm text-muted-foreground">
-              Students can shop through tier {guild.unlockedTier}. Items are
-              shared across your guilds.
+              Students can shop through tier {guild.unlockedTier}. Default equipment
+              is included automatically. Custom items are shared across your guilds.
             </p>
           </div>
           <Link href={`/teacher/items?guild=${guild.id}&tier=${tier}&create=1`}>
@@ -65,7 +68,7 @@ export function TeacherGuildShop({ guild }: { guild: Guild }) {
       )}
       {!isLoading && !isError && !rows.length && (
         <p className="p-5 text-muted-foreground">
-          No custom items at tier {tier}. Create an item to stock this tier.
+          No items defined at tier {tier} yet. Create an item to stock this tier.
         </p>
       )}
       <div className="grid md:grid-cols-3 gap-3">
@@ -83,16 +86,18 @@ export function TeacherGuildShop({ guild }: { guild: Guild }) {
             </p>
             <p className="text-sm">
               {item.isPurchasable
-                ? `${item.shopPrice || "Automatic price"} gold`
+                ? `${item.shopPrice || calculateTierPrice(item.tier, item.quality)} gold`
                 : "Loot only"}
             </p>
-            <Link
+            {defaultIds.has(item.id) ? (
+              <p className="text-xs text-muted-foreground">Default equipment</p>
+            ) : <Link
               href={`/teacher/items?guild=${guild.id}&tier=${tier}&edit=${item.id}`}
             >
               <Button variant="outline" size="sm">
                 Edit item
               </Button>
-            </Link>
+            </Link>}
           </Card>
         ))}
       </div>
