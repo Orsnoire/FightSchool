@@ -403,20 +403,6 @@ async function projectQuests(
     await db.execute(
       sql`SELECT award_quest_batch(${guildId}::uuid,${JSON.stringify(awards)}::jsonb)`,
     );
-    const [updated] = await db
-      .select({ experience: s.guilds.experience })
-      .from(s.guilds)
-      .where(eq(s.guilds.id, guildId));
-    // Optimistic guard prevents a slower room from replacing a newer derived level.
-    await db
-      .update(s.guilds)
-      .set({ level: getGuildLevelFromXP(updated.experience) })
-      .where(
-        and(
-          eq(s.guilds.id, guildId),
-          eq(s.guilds.experience, updated.experience),
-        ),
-      );
   }
   return views;
 }
@@ -427,6 +413,7 @@ export async function evaluateQuests(
   guildId: string,
   manualQuestId?: string,
   event: QuestEvent = { kind: "reconcile" },
+  replayed = new Set<string>(),
 ): Promise<QuestView[]> {
   const effects = { guild: false, students: new Set<string>() };
   const views = await projectQuests(db, guildId, {
@@ -434,18 +421,68 @@ export async function evaluateQuests(
     manualQuestId,
     effects,
   });
-  // Only reward dependencies are revisited, after their atomic write, until no
-  // newly earned grant/tier/XP can unlock another objective. Receipts terminate retries.
+  // Completions are durable dependency receipts too. A reward can commit before
+  // its acknowledgement (or a dependent evaluation) fails. Reconstruct those
+  // dependencies without rereading evidence or paying the completed quest again.
+  const replayKey = JSON.stringify([guildId, event]);
+  if (!replayed.has(replayKey)) {
+    replayed.add(replayKey);
+    const completed = await db
+      .select({ studentId: s.quests.studentId, rewards: s.quests.rewards })
+      .from(s.quests)
+      .innerJoin(s.guilds, eq(s.guilds.id, s.quests.guildId))
+      .where(
+        and(
+          eq(s.quests.guildId, guildId),
+          eq(s.guilds.isArchived, false),
+          eq(s.quests.isArchived, false),
+          eq(s.quests.isCompleted, true),
+          affected(event),
+          sql`(${s.quests.rewards} ? 'guildXP' OR ${s.quests.rewards} ? 'limitBreak' OR ${s.quests.rewards} ? 'unlockJob')`,
+        ),
+      );
+    if (completed.some((q) => q.rewards?.guildXP || q.rewards?.limitBreak))
+      effects.guild = true;
+    const grants = completed.filter((q) => q.rewards?.unlockJob);
+    if (grants.length) {
+      const members = await db
+        .select({ id: s.guildMemberships.studentId })
+        .from(s.guildMemberships)
+        .where(eq(s.guildMemberships.guildId, guildId));
+      for (const q of grants)
+        for (const m of members)
+          if (!q.studentId || q.studentId === m.id) effects.students.add(m.id);
+    }
+  }
+  if (effects.guild) {
+    const [updated] = await db
+      .select({ experience: s.guilds.experience })
+      .from(s.guilds)
+      .where(eq(s.guilds.id, guildId));
+    // Do not let a slower room replace a newer derived level.
+    await db
+      .update(s.guilds)
+      .set({ level: getGuildLevelFromXP(updated.experience) })
+      .where(
+        and(
+          eq(s.guilds.id, guildId),
+          eq(s.guilds.experience, updated.experience),
+        ),
+      );
+  }
+  // Each durable dependency set is replayed once per traversal. Fresh grants can
+  // still trigger another pass; monotonic grants and atomic receipts end cycles.
   if (effects.students.size)
-    await evaluateStudentLevels(db, [...effects.students]);
+    await evaluateStudentLevels(db, [...effects.students].sort(), replayed);
   if (effects.guild)
-    await evaluateQuests(db, guildId, undefined, { kind: "guild" });
+    await evaluateQuests(db, guildId, undefined, { kind: "guild" }, replayed);
   return views;
 }
 
 export async function evaluateStudentLevels(
   db: GameDatabase,
   studentIds: string[],
+  replayed = new Set<string>(),
 ) {
   if (!studentIds.length) return;
   const memberships = await db
@@ -461,10 +498,16 @@ export async function evaluateStudentLevels(
     guilds.get(m.guildId)!.push(m.studentId);
   }
   for (const [guildId, ids] of guilds)
-    await evaluateQuests(db, guildId, undefined, {
-      kind: "levels",
-      studentIds: ids,
-    });
+    await evaluateQuests(
+      db,
+      guildId,
+      undefined,
+      {
+        kind: "levels",
+        studentIds: ids.sort(),
+      },
+      replayed,
+    );
 }
 
 export async function evaluateFightQuests(

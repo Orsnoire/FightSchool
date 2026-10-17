@@ -259,14 +259,12 @@ test("evidence semantics: legacy fallback, weighted class accuracy, weeks, edits
     const now = Date.now(),
       week = Math.floor(now / WEEK_MS);
     const session = "C06-CURRENT";
-    await f.db
-      .insert(s.liveCombatSessions)
-      .values({
-        sessionId: session,
-        fightId: f.bank.id,
-        teacherId: f.bank.teacherId,
-        guildId: f.guildId,
-      });
+    await f.db.insert(s.liveCombatSessions).values({
+      sessionId: session,
+      fightId: f.bank.id,
+      teacherId: f.bank.teacherId,
+      guildId: f.guildId,
+    });
     let state = initialCombatState(session, f.bank);
     for (const st of f.students)
       state = addStudent(state, st, {
@@ -289,25 +287,23 @@ test("evidence semantics: legacy fallback, weighted class accuracy, weeks, edits
     await recordQuestEvidence(f.db, state, f.bank, false);
     // A legacy result with different totals must never override durable evidence,
     // even when that evidence later falls outside the selected weekly window.
-    await f.db
-      .insert(s.combatResults)
-      .values({
-        sessionId: session,
-        studentId: players[0].studentId,
-        fightId: f.bank.id,
-        guildId: f.guildId,
-        characterClass: "warrior",
-        victory: true,
-        survived: true,
-        totals: {
-          ...players[0].totals,
-          questionsAnswered: 20,
-          questionsCorrect: 20,
-        },
-        xpEarned: 0,
-        goldReward: 0,
-        completedAt: now,
-      });
+    await f.db.insert(s.combatResults).values({
+      sessionId: session,
+      studentId: players[0].studentId,
+      fightId: f.bank.id,
+      guildId: f.guildId,
+      characterClass: "warrior",
+      victory: true,
+      survived: true,
+      totals: {
+        ...players[0].totals,
+        questionsAnswered: 20,
+        questionsCorrect: 20,
+      },
+      xpEarned: 0,
+      goldReward: 0,
+      completedAt: now,
+    });
     const criteria = [
       {
         type: "fight_accuracy",
@@ -328,18 +324,16 @@ test("evidence semantics: legacy fallback, weighted class accuracy, weeks, edits
         },
       },
     ];
-    await f.db
-      .insert(s.quests)
-      .values(
-        criteria.map((c, i) => ({
-          guildId: f.guildId,
-          title: `Goal ${i}`,
-          description: "Fixture",
-          questType: "weekly",
-          criteria: c,
-          rewards: {},
-        })),
-      );
+    await f.db.insert(s.quests).values(
+      criteria.map((c, i) => ({
+        guildId: f.guildId,
+        title: `Goal ${i}`,
+        description: "Fixture",
+        questType: "weekly",
+        criteria: c,
+        rewards: {},
+      })),
+    );
     const old = await baselineQuests();
     await f.pg.exec("BEGIN");
     const expected = await old(f.db, f.guildId);
@@ -422,16 +416,14 @@ test("fault/retry and two rooms keep evidence, combat awards and cross-guild mil
       })
       .returning();
     const make = async (sessionId: string, guildId = f.guildId) => {
-      await f.db
-        .insert(s.liveCombatSessions)
-        .values({
-          sessionId,
-          fightId: f.bank.id,
-          teacherId: f.bank.teacherId,
-          guildId,
-          soloStudentId: f.students[0].id,
-          guildLimitTier: 4,
-        });
+      await f.db.insert(s.liveCombatSessions).values({
+        sessionId,
+        fightId: f.bank.id,
+        teacherId: f.bank.teacherId,
+        guildId,
+        soloStudentId: f.students[0].id,
+        guildLimitTier: 4,
+      });
       const state = addStudent(
         initialCombatState(sessionId, f.bank),
         f.students[0],
@@ -634,6 +626,119 @@ for (const count of [30, 60])
       1,
     );
   });
+
+test("committed quest awards replay dependent grants and guild levels after lost acknowledgements", async () => {
+  const f = await dataCostFixture(2, 0);
+  const query = f.pg.query.bind(f.pg);
+  try {
+    const rows = await f.db
+      .insert(s.quests)
+      .values([
+        {
+          guildId: f.guildId,
+          studentId: f.students[0].id,
+          questType: "personal",
+          title: "Source grant",
+          description: "Fixture",
+          criteria: { type: "try_solo", fightId: f.bank.id },
+          rewards: { unlockJob: "ranger", guildXP: 1000 },
+        },
+        {
+          guildId: f.guildId,
+          questType: "guild",
+          title: "Shared dependent grant",
+          description: "Fixture",
+          criteria: { type: "unlock_job", targetJob: "ranger" },
+          rewards: { unlockJob: "bard" },
+        },
+        {
+          guildId: f.guildId,
+          studentId: f.students[1].id,
+          questType: "personal",
+          title: "Other member dependent",
+          description: "Fixture",
+          criteria: { type: "unlock_job", targetJob: "bard" },
+          rewards: { gold: 7 },
+        },
+        {
+          guildId: f.guildId,
+          questType: "guild",
+          title: "Guild level dependent",
+          description: "Fixture",
+          criteria: { type: "guild_level", targetAmount: 2 },
+          rewards: { gold: 11 },
+        },
+      ])
+      .returning();
+    await f.db
+      .insert(s.liveCombatSessions)
+      .values({
+        sessionId: "C06-QUEST-ACK",
+        fightId: f.bank.id,
+        teacherId: f.bank.teacherId,
+        guildId: f.guildId,
+        soloStudentId: f.students[0].id,
+      });
+    const state = addStudent(
+      initialCombatState("C06-QUEST-ACK", f.bank),
+      f.students[0],
+      { questGuildId: f.guildId, levels: { warrior: 1 }, limitTier: 4 },
+    );
+    state.players[f.students[0].id].totals.questionsAnswered = 1;
+    state.revision = 1;
+    for (const failAt of [1, 2, 3]) {
+      await f.pg.exec("BEGIN");
+      let awards = 0;
+      (f.pg as any).query = async (
+        text: string,
+        params: any[],
+        options: any,
+      ) => {
+        const result = await query(text, params, options);
+        if (text.includes("award_quest_batch") && ++awards === failAt)
+          throw Error("lost quest acknowledgement");
+        return result;
+      };
+      await assert.rejects(
+        recordQuestEvidence(f.db, state, f.bank),
+        /acknowledgement|Failed query/,
+      );
+      (f.pg as any).query = query;
+      await recordQuestEvidence(f.db, state, f.bank);
+      const completed = await f.db
+        .select()
+        .from(s.quests)
+        .where(
+          sql`${s.quests.id} IN (${sql.join(
+            rows.map((r) => sql`${r.id}::uuid`),
+            sql`, `,
+          )})`,
+        );
+      assert.ok(
+        completed.every((q) => q.isCompleted),
+        `all reward dependencies finish after boundary ${failAt}`,
+      );
+      assert.equal(
+        (
+          await f.db.select().from(s.guilds).where(eq(s.guilds.id, f.guildId))
+        )[0].level,
+        2,
+      );
+      const students = await f.db.select().from(s.students);
+      assert.ok(students.every((s) => s.grantedJobs.includes("bard")));
+      await recordQuestEvidence(f.db, state, f.bank);
+      assert.deepEqual(
+        await f.db.select().from(s.students),
+        students,
+        "replay never pays twice",
+      );
+      await f.pg.exec("ROLLBACK");
+    }
+  } finally {
+    (f.pg as any).query = query;
+    await f.pg.close();
+  }
+});
 
 test("C06 additive index migration preserves populated student, quest, evidence and reward rows", async () => {
   const f = await dataCostFixture(3, 3, 16);
