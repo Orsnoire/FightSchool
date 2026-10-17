@@ -1005,15 +1005,14 @@ async function studentItemIds(db: GameDatabase, id: string) {
     .from(s.guildMemberships)
     .innerJoin(s.guilds, eq(s.guilds.id, s.guildMemberships.guildId))
     .where(eq(s.guildMemberships.studentId, id));
-  const results = await db
-    .select({ loot: s.combatResults.lootTable })
-    .from(s.combatResults)
-    .where(eq(s.combatResults.studentId, id));
+  const loot = await db.execute(sql`SELECT DISTINCT item->>'itemId' AS id
+    FROM combat_results r CROSS JOIN LATERAL jsonb_array_elements(r.loot_table) item
+    WHERE r.student_id=${id}::uuid AND item->>'itemId' IS NOT NULL`);
   return {
     teacherIds: guilds.map((g) => g.teacherId),
     itemIds: [
       ...(student?.inventory || []),
-      ...results.flatMap((r) => r.loot.map((i) => i.itemId)),
+      ...loot.rows.map(r => String(r.id)),
     ],
   };
 }

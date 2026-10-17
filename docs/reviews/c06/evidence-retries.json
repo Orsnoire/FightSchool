@@ -1,0 +1,46 @@
+{
+  "baseline": "d18d1b5c29e2b758a6bf523ad3c15b6b8285c842",
+  "scenario": "Previous resolved question awaiting evidence projection; database unavailable during next 30/60-answer burst, then restored room alarm succeeds.",
+  "reports": [
+    {
+      "version": "before",
+      "players": 30,
+      "callsDuringBurst": 31,
+      "recoveryCalls": 1,
+      "durableReceipts": 30,
+      "evidencePending": false,
+      "checkpointCount": 64,
+      "checkpointBytes": 3334070
+    },
+    {
+      "version": "after",
+      "players": 30,
+      "callsDuringBurst": 1,
+      "recoveryCalls": 1,
+      "durableReceipts": 30,
+      "evidencePending": false,
+      "checkpointCount": 64,
+      "checkpointBytes": 3334070
+    },
+    {
+      "version": "before",
+      "players": 60,
+      "callsDuringBurst": 61,
+      "recoveryCalls": 1,
+      "durableReceipts": 60,
+      "evidencePending": false,
+      "checkpointCount": 124,
+      "checkpointBytes": 12573568
+    },
+    {
+      "version": "after",
+      "players": 60,
+      "callsDuringBurst": 1,
+      "recoveryCalls": 1,
+      "durableReceipts": 60,
+      "evidencePending": false,
+      "checkpointCount": 124,
+      "checkpointBytes": 12573568
+    }
+  ]
+}

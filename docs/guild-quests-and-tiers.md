@@ -63,10 +63,26 @@ tier/rarity formula (common Tier 1: 150 gold); custom prices remain authoritativ
 Purchase does not auto-equip or bypass job/class equipment restrictions. Gold and
 inventory update atomically, with no duplicate charge or duplicate ownership.
 
-Implementation status: published in [PR #68](https://github.com/Orsnoire/FightSchool/pull/68)
-on `fix/guild-shop-default-catalog`; 263 local tests, TypeScript and production
-client/Worker builds pass. CI and Chromium browser acceptance are pending.
-Not merged, deployed or live-accepted. See [active work](ACTIVE_WORK.md).
+Implementation status: [PR #68](https://github.com/Orsnoire/FightSchool/pull/68)
+is merged and included in deployed runtime `d18d1b5`. Its CI and October 13 deployment
+succeeded; see [current status](CURRENT_STATUS.md). Exact-runtime live acceptance has
+not been reverified in the C06 session.
+
+### C06 implementation (draft PR #69, not deployed)
+
+Quest and shop GET requests project state without seeding or awarding rewards.
+Resolved academic evidence, completed combats, character level changes, membership
+changes, teacher quest/progression changes and bank edits evaluate only affected
+objectives. Character-wide milestones are revisited across memberships, while
+academic evidence remains scoped to its hosting guild. Existing atomic reward
+functions and receipt ledgers remain authoritative.
+
+Teachers can use **Refresh quest progress** to seed any missing legacy milestones
+and explicitly reconcile historical/imported state or retry an interrupted authoring
+operation. The authenticated `POST /api/guilds/:id/quests/reconcile` is idempotent,
+owner-only, and rejects archived guilds. Ordinary student browsing never runs it.
+Completed rewards remain immutable. See the [C06 report](reviews/2026-10-17-c06-data-costs.md)
+for test evidence, migration review and operational limits.
 
 ## Fight authoring and initial tuning
 

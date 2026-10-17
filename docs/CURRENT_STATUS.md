@@ -1,13 +1,24 @@
 # Current status
 
-**CURRENT — verified October 12, 2026.** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is next, not started.
+**CURRENT — GitHub rechecked October 17, 2026.** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is active in draft PR #69, not merged or deployed.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
 ## Verified release baseline
 
-The deployed application runtime is `bef100b4a86574819fe12bceed901de0fbd1caac`, the PR #65 correction to Usability Patch 1 / PR #64.
+GitHub now confirms the deployed runtime is `d18d1b5c29e2b758a6bf523ad3c15b6b8285c842`,
+including PR #66 (mesmerize/feedback) and merged PR #68 (default shop catalog).
+[CI 38452023937](https://github.com/Orsnoire/FightSchool/actions/runs/38452023937) and
+[deployment 38452066918](https://github.com/Orsnoire/FightSchool/actions/runs/38452066918)
+succeeded on October 13. Live acceptance for this exact runtime and its immutable
+Worker version have not been reverified by the C06 session. The October 17 main
+checkpoint update is documentation only; C06 remains on its draft branch.
+No deployment or production database operation was performed for C06.
+
+### Previous accepted release evidence (historical)
+
+The previous accepted runtime was `bef100b4a86574819fe12bceed901de0fbd1caac`, the PR #65 correction to Usability Patch 1 / PR #64.
 Immutable Worker `0951289e-d7c5-4243-b281-8ae0f61e4e9f` was published October 12 at
 21:38:56 UTC. Subsequent documentation commits do not change this runtime.
 

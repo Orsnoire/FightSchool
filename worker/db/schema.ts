@@ -429,9 +429,9 @@ export const combatResults = pgTable(
       .default(sql`(extract(epoch from now()) * 1000)::bigint`),
   },
   (table) => ({
-    studentHistory: index("combat_results_student_history_idx").on(table.studentId,table.completedAt.desc(),table.id.desc()),
-    guildHistory: index("combat_results_guild_history_idx").on(table.guildId,table.completedAt.desc(),table.id.desc()),
-    fightHistory: index("combat_results_fight_history_idx").on(table.fightId,table.completedAt.desc(),table.id.desc()),
+    studentHistory: index("combat_results_student_history_idx").on(table.studentId,table.completedAt.desc().nullsFirst(),table.id.desc().nullsFirst()),
+    guildHistory: index("combat_results_guild_history_idx").on(table.guildId,table.completedAt.desc().nullsFirst(),table.id.desc().nullsFirst()),
+    fightHistory: index("combat_results_fight_history_idx").on(table.fightId,table.completedAt.desc().nullsFirst(),table.id.desc().nullsFirst()),
     once: uniqueIndex("combat_results_session_student_unique").on(
       table.sessionId,
       table.studentId,
