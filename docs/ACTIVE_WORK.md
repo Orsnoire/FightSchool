@@ -1,3 +1,11 @@
+# C08 active — discovery pointer, October 17, 2026
+
+- Registered branch: `cleanup/c08-battlefield-rendering`; [draft PR #71](https://github.com/Orsnoire/FightSchool/pull/71). Initial claim `de1f29400a7ca67e4bae3cf7464147c6a3715cc0` is published before runtime edits.
+- Scope: F11–F12 battlefield avatar sizing/cache and isolated countdown rendering. The branch checkpoint and live PR carry current work, measurements, verification and exact next action; inspect them before resuming.
+- Current main at claim: `56a1f758bde901ff9739e5ea0ee8d44d55f7ba91`; no competing branch or open PR existed. C07 remains merged, deployed and accepted. C08 is draft, not merged or deployed; C09 is unstarted. No production-data reset is authorized.
+
+## Previous completed release — C07
+
 # C07 complete — released October 17, 2026
 
 - Owner explicitly authorized **merge and deployment** after implementation review. The earlier draft-only boundary is superseded. No data reset was authorized or performed.
