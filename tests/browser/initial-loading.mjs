@@ -14,6 +14,7 @@ const baseline = JSON.parse(await readFile('docs/reviews/c07/before.json', 'utf8
 assert.ok(measured.workloads.teacherLogin.javascriptGzipBytes <= baseline.workloads.teacherLogin.javascriptGzipBytes * 0.6, 'C07 40% login reduction gate');
 const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
 const report = { build: measured, loginRequests: {}, requests: {}, checks: [] };
+const passed = label => { report.checks.push(label); console.log(`C07 check: ${label}`); };
 const summary = f => ({ id: f.id, teacherId: f.teacherId, title: f.title, guildCode: f.guildCode,
   encounterTier: f.encounterTier ?? null, questionCount: f.questions.length, enemyCount: f.enemies.length,
   createdAt: 0, updatedAt: 0 });
@@ -23,6 +24,7 @@ try {
     const scripts = new Set();
     p.on('request', r => { if (new URL(r.url()).pathname.endsWith('.js')) scripts.add(new URL(r.url()).pathname.slice(1)); });
     await p.goto(origin + path);
+    if (name === 'teacherLogin') await p.getByTestId('tab-teacher').click();
     await p.getByTestId(ready).waitFor();
     await p.waitForLoadState('networkidle');
     assert.deepEqual([...scripts].sort(), measured.workloads[name].javascript.map(f => f.file).sort(), 'network and manifest static closure must agree');
@@ -30,7 +32,7 @@ try {
     report.loginRequests[name] = [...scripts];
     await p.close();
   }
-  report.checks.push('production login request graph and gzip budget');
+  passed('production login request graph and gzip budget');
 
   const p = await browser.newPage();
   const errors = [];
@@ -63,6 +65,7 @@ try {
   await p.route('**/assets/TeacherDashboard-*.js', async route => { await delayed; await route.continue(); });
   await p.clock.install();
   await p.goto(origin);
+  await p.getByTestId('tab-teacher').click();
   await p.getByTestId('input-teacher-email').fill('fixture@example.invalid');
   await p.getByTestId('input-teacher-password').fill('fixture-only');
   await p.getByTestId('button-teacher-login').click();
@@ -90,6 +93,7 @@ try {
 
   // Authoring is a deferred route; save and return must refresh the summary.
   await p.getByTestId(`button-edit-${fight.id}`).click();
+  await p.waitForFunction(() => document.querySelector('[data-testid="input-title"]')?.value === 'Review');
   await p.getByTestId('input-title').fill('C07 edited battle');
   await p.getByTestId('tab-questions').click();
   await p.getByRole('button', { name: 'Edit question 1', exact: true }).click();
@@ -123,7 +127,7 @@ try {
   await p.getByText('No fights yet', { exact: true }).waitFor();
   assert.equal(deletes, 1);
   assert.deepEqual(errors, []);
-  report.checks.push('delayed route, summary-only list, foreground polling, navigation/mutation refresh, list/status failure and retry, persisted teacher editing');
+  passed('delayed route, summary-only list, foreground polling, navigation/mutation refresh, list/status failure and retry, persisted teacher editing');
   await p.screenshot({ path: `${output}/dashboard.png` });
   await p.close();
 
@@ -137,7 +141,7 @@ try {
   failChunk = false;
   await failed.getByRole('button', { name: 'Reload page', exact: true }).click();
   await failed.getByTestId('input-firstname').waitFor();
-  report.checks.push('failed production route chunk recovers through explicit reload');
+  passed('failed production route chunk recovers through explicit reload');
   await failed.close();
 
   for (const failMath of [false, true]) {
@@ -185,7 +189,14 @@ try {
     await p.screenshot({ path: `${output}/math-${failMath ? 'fallback' : 'loaded'}.png` });
     await p.close();
   }
-  report.checks.push('delayed MathLive retains text answer, phone virtual keyboard submits, failed math chunk preserves text-entry fallback');
+  passed('delayed MathLive retains text answer, phone virtual keyboard submits, failed math chunk preserves text-entry fallback');
   await writeFile(`${output}/measurements.json`, JSON.stringify(report, null, 2) + '\n');
   console.log(JSON.stringify(report));
+} catch (error) {
+  for (const [index, page] of browser.contexts().flatMap(c => c.pages()).entries()) {
+    await page.screenshot({ path: `${output}/failure-${index}.png` }).catch(() => {});
+    console.error('C07 failure page:', page.url(), (await page.locator('body').innerText().catch(() => '')).slice(-2000));
+  }
+  await writeFile(`${output}/partial-measurements.json`, JSON.stringify(report, null, 2) + '\n');
+  throw error;
 } finally { await browser.close(); }
