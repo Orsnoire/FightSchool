@@ -10,8 +10,9 @@ The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred]
 [C07 / draft PR #70](https://github.com/Orsnoire/FightSchool/pull/70) defers routes and
 MathLive, introduces owner-only SQL fight summaries and removes definition polling.
 [Measured login JS falls 80.11%](reviews/2026-10-17-c07-initial-loading.md); local
-277-test/typecheck/build gates pass. Final production-browser verification is in
-progress. C07 is not merged, deployed or live-accepted; C08 is unstarted.
+277-test/typecheck/build gates and both Chromium suites pass on `3f9ff7c`
+([CI](https://github.com/Orsnoire/FightSchool/actions/runs/39078402532),
+[browser](https://github.com/Orsnoire/FightSchool/actions/runs/39078402529)). C07 is not merged, deployed or live-accepted; C08 is unstarted.
 
 ## Verified release baseline
 
@@ -36,7 +37,7 @@ Those isolated measurements do not establish a live latency trend.
 The preceding runtime `d18d1b5` was deployed October 13 in
 [38452066918](https://github.com/Orsnoire/FightSchool/actions/runs/38452066918), including #66/#68.
 Its exact live acceptance was not reverified; current acceptance above covers the
-new runtime containing those changes. C07 is implemented in draft PR #70; final verification is in progress.
+new runtime containing those changes. C07 is verified for review in draft PR #70.
 
 ### Previous accepted release evidence (historical)
 

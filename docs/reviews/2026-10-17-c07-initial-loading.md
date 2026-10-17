@@ -93,23 +93,36 @@ traffic sample. Production-browser observed counts are recorded separately by
 ## Verification checkpoint
 
 - Local: **277 tests pass**, TypeScript and production client/Worker builds pass.
-  Migrated HTTP tests cover unsigned/student/other-owner rejection before SQL,
+  Migrated HTTP tests cover unsigned/student/other-owner rejection before list SQL,
   archive exclusion, empty arrays, swarm-definition counts, stable order and full
   editing content. Deferred component tests cover pending prop changes, failure,
   retry, retained parent state and unmount before completion. The C06 progression,
   fault/retry and cross-room reward regressions remain in the complete suite.
-- Initial runtime CI [39077715536](https://github.com/Orsnoire/FightSchool/actions/runs/39077715536)
-  and existing Chromium acceptance [39077715534](https://github.com/Orsnoire/FightSchool/actions/runs/39077715534)
-  passed. Full CI [39078090447](https://github.com/Orsnoire/FightSchool/actions/runs/39078090447)
-  passes on `9267047`. Production run 39078090459 stopped at an incorrect test
-  assumption about the default login tab. The fixture now selects Teacher
-  explicitly; its corrected browser pass remains pending.
+- [CI 39078402532](https://github.com/Orsnoire/FightSchool/actions/runs/39078402532)
+  passes all 277 tests, typecheck and both builds on verified head
+  `3f9ff7cd523f04a2c541014255c5404621fa344f`. Runtime code matches the measured
+  `9267047`; later implementation-branch changes are tests and documentation.
+- [Chromium 39078402529](https://github.com/Orsnoire/FightSchool/actions/runs/39078402529)
+  passes both the existing suite and new production initial-loading job on that
+  same head. The PR test merge is `fc9bb88ee909ca0754db8d7f27febdb089454ab9`.
+  Node 22.23.3 CI also measures 119,663 login gzip JS bytes. Exact retained
+  [browser observations](c07/browser-verification.json) record **one summary,
+  three live-status requests and zero full-bank requests over 10.2 controlled
+  seconds**. Hidden and off-route status polling stops; focus resumes refresh.
+- Earlier production-browser attempts exposed fixture errors: 39078090459
+  assumed Teacher was the default login tab; 39078333384 dispatched a synthetic
+  visibility event without bubbling to the window listener. Explicit tab
+  selection and native-equivalent event bubbling fix those tests. The final
+  production pass above includes both corrections; no runtime workaround or
+  skipped assertion was used.
 - The production job covers exact login requests, delayed route loading, summary
   counts and request frequency, hidden/off-route polling, navigation/mutation
   refresh, failed summary/session retries, saved/reopened teacher questions,
   failed route reload, delayed MathLive with retained answer, the real phone
   keyboard, and text fallback after a failed editor download.
-- Browser screenshots and measurements are CI artifacts. Local Chromium was
+- Browser screenshots and full measurements are CI artifacts. API/WebSocket
+  boundaries are mocked and clock/visibility events controlled; this is not live
+  traffic acceptance. Local Chromium was
   unavailable; no local browser or live performance pass is claimed.
 
 ## Reproduction
