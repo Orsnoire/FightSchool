@@ -1,0 +1,123 @@
+{
+  "sourceRef": "5208ff3d0ae5b2c9c2f22b0a329b98ab26865e71",
+  "node": "v24.19.0",
+  "lockfileSha256": "58ce7ab616f1eedfb6d65c78ae37593ad13af51989702eaf5bafe3f530f0292a",
+  "method": "Production Vite manifest static-import closure plus the requested route; gzip default level per asset. Dynamic editors are excluded until used, then measured separately. CSS is recorded separately.",
+  "workloads": {
+    "teacherLogin": {
+      "javascript": [
+        {
+          "file": "assets/index-Dcu-XAMT.js",
+          "bytes": 2067682,
+          "gzipBytes": 601648
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-BZ7sR7v-.css",
+          "bytes": 142709,
+          "gzipBytes": 28015
+        }
+      ],
+      "javascriptBytes": 2067682,
+      "javascriptGzipBytes": 601648,
+      "cssGzipBytes": 28015
+    },
+    "studentLogin": {
+      "javascript": [
+        {
+          "file": "assets/index-Dcu-XAMT.js",
+          "bytes": 2067682,
+          "gzipBytes": 601648
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-BZ7sR7v-.css",
+          "bytes": 142709,
+          "gzipBytes": 28015
+        }
+      ],
+      "javascriptBytes": 2067682,
+      "javascriptGzipBytes": 601648,
+      "cssGzipBytes": 28015
+    },
+    "dashboard": {
+      "javascript": [
+        {
+          "file": "assets/index-Dcu-XAMT.js",
+          "bytes": 2067682,
+          "gzipBytes": 601648
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-BZ7sR7v-.css",
+          "bytes": 142709,
+          "gzipBytes": 28015
+        }
+      ],
+      "javascriptBytes": 2067682,
+      "javascriptGzipBytes": 601648,
+      "cssGzipBytes": 28015
+    },
+    "authoring": {
+      "javascript": [
+        {
+          "file": "assets/index-Dcu-XAMT.js",
+          "bytes": 2067682,
+          "gzipBytes": 601648
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-BZ7sR7v-.css",
+          "bytes": 142709,
+          "gzipBytes": 28015
+        }
+      ],
+      "javascriptBytes": 2067682,
+      "javascriptGzipBytes": 601648,
+      "cssGzipBytes": 28015
+    },
+    "mathEditor": {
+      "javascript": [
+        {
+          "file": "assets/index-Dcu-XAMT.js",
+          "bytes": 2067682,
+          "gzipBytes": 601648
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-BZ7sR7v-.css",
+          "bytes": 142709,
+          "gzipBytes": 28015
+        }
+      ],
+      "javascriptBytes": 2067682,
+      "javascriptGzipBytes": 601648,
+      "cssGzipBytes": 28015
+    },
+    "richTextEditor": {
+      "javascript": [
+        {
+          "file": "assets/index-Dcu-XAMT.js",
+          "bytes": 2067682,
+          "gzipBytes": 601648
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-BZ7sR7v-.css",
+          "bytes": 142709,
+          "gzipBytes": 28015
+        }
+      ],
+      "javascriptBytes": 2067682,
+      "javascriptGzipBytes": 601648,
+      "cssGzipBytes": 28015
+    }
+  },
+  "totalJavaScriptChunks": 1
+}

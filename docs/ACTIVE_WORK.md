@@ -1,12 +1,12 @@
 # C07 initial-loading cleanup — October 17, 2026
 
-- Active package: **C07 / F10 and the list/polling portion of F12**. Branch `cleanup/c07-initial-loading`; draft PR being registered. Main is the discovery pointer; this branch and the live PR carry newer checkpoints.
+- Active package: **C07 / F10 and the list/polling portion of F12**. Branch `cleanup/c07-initial-loading`; [draft PR #70](https://github.com/Orsnoire/FightSchool/pull/70), published claim `0021b01eef8ea3510708515c2618e796faed80f9`. Main is the discovery pointer; this branch and the live PR carry newer checkpoints.
 - Scope: deferred route/editor loading with explicit loading/error recovery; summary list DTOs; mutation/navigation refresh for definitions and focused live-session polling. Preserve teacher editing, student mathematical input, authentication/ownership, live-session controls and all C06 evidence/reward safeguards. No migration or data reset is planned.
 - Verified baseline: current main `5208ff3d0ae5b2c9c2f22b0a329b98ab26865e71`; deployed runtime `470dd724a621b235624da4730255240580911fd3`, C06 / PR #69. Deployment 39075244755 and canonical acceptance 39075452591 passed. No open PR or C07 branch was found before claiming work.
-- Completed: current-main/checkpoint/branch/PR inspection, scope and implementation review. Current App eagerly imports all routes; MathEditor imports MathLive; the teacher dashboard polls full fight definitions and live sessions separately every five seconds.
-- Unfinished: reproducible current-build bundle/request baseline, implementation, regression/browser checks, before/after report and final review checkpoint.
+- Completed: current-main/checkpoint/branch/PR inspection, scope and implementation review. Baseline production build measured 2,067,682 raw / 601,648 gzip JavaScript bytes (one chunk); the 40% target is at most 360,988 gzip bytes. Current App eagerly imports all routes; MathEditor imports MathLive; the teacher dashboard polls full fight definitions and live sessions separately every five seconds.
+- Unfinished: representative list/request measurements, implementation, regression/browser checks, before/after report and final review checkpoint.
 - Gate: proposed **at least 40% less initial login gzip JavaScript**, measured against the same baseline/toolchain; teacher editing and student math entry must work after deferred loading. Record actual static dependency bytes and network behavior, not merely the entry chunk size.
-- Exact next action: publish the claim/draft PR and main discovery pointer; finish the baseline bundle measurement before changing runtime code, then implement coherent reviewable checkpoints.
+- Exact next action: implement deferred route/editor loading and summary lists with focused live polling; baseline manifest measurements are saved in docs/reviews/c07/before.json and reproduced by tests/support/measure-initial-loading.ts. Publish coherent checkpoints and verify authoring/math entry in the browser.
 - Release boundary: implementation/draft review only. C06's merge/deploy instruction was for C06; C07 is not merged, deployed or live-accepted. C08 remains unstarted.
 
 ## Previous completed release — C06
