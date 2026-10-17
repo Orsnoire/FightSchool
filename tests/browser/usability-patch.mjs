@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
-import { fight, started, student } from "../phase4/fixtures.ts";
+import { fight, fightSummary, started, student } from "../phase4/fixtures.ts";
 import { EFFECTS } from "../../shared/combat/presentation.ts";
 
 const origin = process.env.UI_ORIGIN || "http://127.0.0.1:4173";
@@ -81,7 +81,7 @@ try {
     if (path.includes("equipment-items") || path.endsWith("hosted-sessions"))
       return route.fulfill({ json: [] });
     if (path === `/api/teacher/${fight.teacherId}/fights`)
-      return route.fulfill({ json: [savedFight] });
+      return route.fulfill({ json: [fightSummary(savedFight)] });
     if (route.request().method() === "PATCH") {
       savedFight = { ...savedFight, ...route.request().postDataJSON() };
       saves++;

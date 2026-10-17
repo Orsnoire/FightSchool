@@ -1,4 +1,6 @@
 import { evaluateFightQuests } from "../progression/quests.ts";
+import { listTeacherFightSummaries } from "./fight-summaries";
+import type { FightSummary } from "../../shared/contracts/fight-summary";
 import { recordSessionReporting } from "./session-reporting";
 import { EQUIPMENT_ITEMS } from "../../shared/schema";
 import { switchStudentJob } from "./job-loadouts";
@@ -47,6 +49,7 @@ export interface IdentityRepository extends SessionRepository {
   findTeacherById(id: string): Promise<TeacherRecord | null>;
   createTeacher(teacher: NewTeacherRecord): Promise<TeacherRecord>;
   listTeacherFights(teacherId: string): Promise<FightRecord[]>;
+  listTeacherFightSummaries(teacherId: string): Promise<FightSummary[]>;
   findFightById(id: string): Promise<FightRecord | null>;
   createFight(fight: NewFightRecord): Promise<FightRecord>;
   updateFight(
@@ -139,6 +142,7 @@ export function createIdentityRepository(
       return created;
     },
 
+    async listTeacherFightSummaries(teacherId) { return listTeacherFightSummaries(database, teacherId); },
     async listTeacherFights(teacherId) {
       return database
         .select()

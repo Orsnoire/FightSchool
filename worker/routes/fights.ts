@@ -75,6 +75,9 @@ export async function handleFights(
       return json({ error: "Invalid teacher ID" }, 400);
     if (session.actorId !== teacherList[1])
       return json({ error: "Forbidden" }, 403);
+    const view = url.searchParams.get("view");
+    if (view === "summary") return json(await repository.listTeacherFightSummaries(session.actorId));
+    if (view !== null) return json({ error: "Invalid fight view" }, 400);
     return json(
       (await repository.listTeacherFights(session.actorId)).map(publicFight),
     );

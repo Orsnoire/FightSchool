@@ -1,0 +1,414 @@
+{
+  "sourceRef": "9267047c70b248dea6f14e3ff3a6fabc70354e57",
+  "node": "v24.19.0",
+  "lockfileSha256": "58ce7ab616f1eedfb6d65c78ae37593ad13af51989702eaf5bafe3f530f0292a",
+  "method": "Production Vite manifest static-import closure plus the requested route; gzip default level per asset. Dynamic editors are excluded until used, then measured separately. CSS is recorded separately.",
+  "workloads": {
+    "teacherLogin": {
+      "javascript": [
+        {
+          "file": "assets/index-D91fponI.js",
+          "bytes": 378832,
+          "gzipBytes": 119663
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-CvtwVxU_.css",
+          "bytes": 98469,
+          "gzipBytes": 16164
+        }
+      ],
+      "javascriptBytes": 378832,
+      "javascriptGzipBytes": 119663,
+      "cssGzipBytes": 16164
+    },
+    "studentLogin": {
+      "javascript": [
+        {
+          "file": "assets/index-D91fponI.js",
+          "bytes": 378832,
+          "gzipBytes": 119663
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-CvtwVxU_.css",
+          "bytes": 98469,
+          "gzipBytes": 16164
+        }
+      ],
+      "javascriptBytes": 378832,
+      "javascriptGzipBytes": 119663,
+      "cssGzipBytes": 16164
+    },
+    "dashboard": {
+      "javascript": [
+        {
+          "file": "assets/TeacherDashboard-BWwOFTpC.js",
+          "bytes": 9081,
+          "gzipBytes": 3090
+        },
+        {
+          "file": "assets/apiQueries-Cfpxiu9M.js",
+          "bytes": 667,
+          "gzipBytes": 333
+        },
+        {
+          "file": "assets/badge-CD9iv1oN.js",
+          "bytes": 733,
+          "gzipBytes": 400
+        },
+        {
+          "file": "assets/chart-column-BRXJNgt-.js",
+          "bytes": 419,
+          "gzipBytes": 294
+        },
+        {
+          "file": "assets/circle-plus-BN5YfpTy.js",
+          "bytes": 375,
+          "gzipBytes": 281
+        },
+        {
+          "file": "assets/copy-Cjrlk8cO.js",
+          "bytes": 405,
+          "gzipBytes": 310
+        },
+        {
+          "file": "assets/index-D91fponI.js",
+          "bytes": 378832,
+          "gzipBytes": 119663
+        },
+        {
+          "file": "assets/log-out-vbM1XzZV.js",
+          "bytes": 427,
+          "gzipBytes": 319
+        },
+        {
+          "file": "assets/square-pen-B0erYzSi.js",
+          "bytes": 488,
+          "gzipBytes": 339
+        },
+        {
+          "file": "assets/useMutation-CDJM9BUy.js",
+          "bytes": 2911,
+          "gzipBytes": 1229
+        },
+        {
+          "file": "assets/useQuery-Cqb4dF_V.js",
+          "bytes": 10355,
+          "gzipBytes": 3658
+        },
+        {
+          "file": "assets/useTeacherAuth-BWANE64o.js",
+          "bytes": 787,
+          "gzipBytes": 442
+        },
+        {
+          "file": "assets/users-CiuZQhuB.js",
+          "bytes": 473,
+          "gzipBytes": 325
+        },
+        {
+          "file": "assets/utils-km2FGkQ4.js",
+          "bytes": 93,
+          "gzipBytes": 99
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/index-CvtwVxU_.css",
+          "bytes": 98469,
+          "gzipBytes": 16164
+        }
+      ],
+      "javascriptBytes": 406046,
+      "javascriptGzipBytes": 130782,
+      "cssGzipBytes": 16164
+    },
+    "authoring": {
+      "javascript": [
+        {
+          "file": "assets/CreateFight-BoOOu8af.js",
+          "bytes": 83260,
+          "gzipBytes": 27421
+        },
+        {
+          "file": "assets/PaletteEditor-BC4L6dZb.js",
+          "bytes": 1546,
+          "gzipBytes": 857
+        },
+        {
+          "file": "assets/QuestionPreview-DzhppW6h.js",
+          "bytes": 1002,
+          "gzipBytes": 577
+        },
+        {
+          "file": "assets/RichContentRenderer-DRzib9AK.js",
+          "bytes": 291653,
+          "gzipBytes": 89627
+        },
+        {
+          "file": "assets/arrow-left-BDbo5Tt8.js",
+          "bytes": 333,
+          "gzipBytes": 263
+        },
+        {
+          "file": "assets/check-DDb8Muzt.js",
+          "bytes": 293,
+          "gzipBytes": 242
+        },
+        {
+          "file": "assets/chevron-up-Ccpw8As1.js",
+          "bytes": 543,
+          "gzipBytes": 277
+        },
+        {
+          "file": "assets/circle-plus-BN5YfpTy.js",
+          "bytes": 375,
+          "gzipBytes": 281
+        },
+        {
+          "file": "assets/core.esm-DKUDfna5.js",
+          "bytes": 43909,
+          "gzipBytes": 14633
+        },
+        {
+          "file": "assets/encounters-CxfILalF.js",
+          "bytes": 2394,
+          "gzipBytes": 1131
+        },
+        {
+          "file": "assets/equipment-catalog-DBVUIsrJ.js",
+          "bytes": 4549,
+          "gzipBytes": 1302
+        },
+        {
+          "file": "assets/index-BdQq_4o_.js",
+          "bytes": 64,
+          "gzipBytes": 79
+        },
+        {
+          "file": "assets/index-CXx5EGAw.js",
+          "bytes": 232,
+          "gzipBytes": 172
+        },
+        {
+          "file": "assets/index-D91fponI.js",
+          "bytes": 378832,
+          "gzipBytes": 119663
+        },
+        {
+          "file": "assets/index-Do3oW8TJ.js",
+          "bytes": 16379,
+          "gzipBytes": 6170
+        },
+        {
+          "file": "assets/schema-wsCvV3ZE.js",
+          "bytes": 23203,
+          "gzipBytes": 7934
+        },
+        {
+          "file": "assets/select-CDJAi8cG.js",
+          "bytes": 21183,
+          "gzipBytes": 7340
+        },
+        {
+          "file": "assets/square-pen-B0erYzSi.js",
+          "bytes": 488,
+          "gzipBytes": 339
+        },
+        {
+          "file": "assets/textarea-BSU9v4H-.js",
+          "bytes": 495,
+          "gzipBytes": 325
+        },
+        {
+          "file": "assets/useMutation-CDJM9BUy.js",
+          "bytes": 2911,
+          "gzipBytes": 1229
+        },
+        {
+          "file": "assets/useQuery-Cqb4dF_V.js",
+          "bytes": 10355,
+          "gzipBytes": 3658
+        },
+        {
+          "file": "assets/useTeacherAuth-BWANE64o.js",
+          "bytes": 787,
+          "gzipBytes": 442
+        },
+        {
+          "file": "assets/utils-km2FGkQ4.js",
+          "bytes": 93,
+          "gzipBytes": 99
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/RichContentRenderer-BBDOFkMo.css",
+          "bytes": 30199,
+          "gzipBytes": 8082
+        },
+        {
+          "file": "assets/index-CvtwVxU_.css",
+          "bytes": 98469,
+          "gzipBytes": 16164
+        }
+      ],
+      "javascriptBytes": 884879,
+      "javascriptGzipBytes": 284061,
+      "cssGzipBytes": 24246
+    },
+    "studentMath": {
+      "javascript": [
+        {
+          "file": "assets/Combat-DnMyYPNe.js",
+          "bytes": 22281,
+          "gzipBytes": 8024
+        },
+        {
+          "file": "assets/CombatOverlay-DCILQRTN.js",
+          "bytes": 28657,
+          "gzipBytes": 11149
+        },
+        {
+          "file": "assets/MathEditorImpl-LoeCLS-k.js",
+          "bytes": 819593,
+          "gzipBytes": 227003
+        },
+        {
+          "file": "assets/RichContentRenderer-DRzib9AK.js",
+          "bytes": 291653,
+          "gzipBytes": 89627
+        },
+        {
+          "file": "assets/StaminaBar-CFRdE_Of.js",
+          "bytes": 1611,
+          "gzipBytes": 865
+        },
+        {
+          "file": "assets/StaticAvatar-f7ofIK2v.js",
+          "bytes": 24208,
+          "gzipBytes": 9544
+        },
+        {
+          "file": "assets/abilities-BClDLOcH.js",
+          "bytes": 4260,
+          "gzipBytes": 1718
+        },
+        {
+          "file": "assets/abilityValues-gXu-9HLc.js",
+          "bytes": 5757,
+          "gzipBytes": 2349
+        },
+        {
+          "file": "assets/crown-D_J9lpfE.js",
+          "bytes": 531,
+          "gzipBytes": 360
+        },
+        {
+          "file": "assets/encounters-CxfILalF.js",
+          "bytes": 2394,
+          "gzipBytes": 1131
+        },
+        {
+          "file": "assets/equipment-CfSy8k0n.js",
+          "bytes": 10962,
+          "gzipBytes": 4037
+        },
+        {
+          "file": "assets/equipment-catalog-DBVUIsrJ.js",
+          "bytes": 4549,
+          "gzipBytes": 1302
+        },
+        {
+          "file": "assets/equipment-rules-BaPJ_r-9.js",
+          "bytes": 2589,
+          "gzipBytes": 1135
+        },
+        {
+          "file": "assets/heart-Dv5c_oqG.js",
+          "bytes": 414,
+          "gzipBytes": 312
+        },
+        {
+          "file": "assets/index-D91fponI.js",
+          "bytes": 378832,
+          "gzipBytes": 119663
+        },
+        {
+          "file": "assets/index-Do3oW8TJ.js",
+          "bytes": 16379,
+          "gzipBytes": 6170
+        },
+        {
+          "file": "assets/index-MPuhGyfI.js",
+          "bytes": 5221,
+          "gzipBytes": 1989
+        },
+        {
+          "file": "assets/jobSystem-CfDtMD44.js",
+          "bytes": 21186,
+          "gzipBytes": 5453
+        },
+        {
+          "file": "assets/schema-wsCvV3ZE.js",
+          "bytes": 23203,
+          "gzipBytes": 7934
+        },
+        {
+          "file": "assets/sparkles-evkp_ztV.js",
+          "bytes": 677,
+          "gzipBytes": 400
+        },
+        {
+          "file": "assets/sword-BDlsCqGl.js",
+          "bytes": 486,
+          "gzipBytes": 316
+        },
+        {
+          "file": "assets/useEquipmentComparison-B9IGth4W.js",
+          "bytes": 1155,
+          "gzipBytes": 699
+        },
+        {
+          "file": "assets/useQuery-Cqb4dF_V.js",
+          "bytes": 10355,
+          "gzipBytes": 3658
+        },
+        {
+          "file": "assets/useStudentLoadout-DYQ5xFUu.js",
+          "bytes": 408,
+          "gzipBytes": 255
+        },
+        {
+          "file": "assets/utils-km2FGkQ4.js",
+          "bytes": 93,
+          "gzipBytes": 99
+        }
+      ],
+      "styles": [
+        {
+          "file": "assets/CombatOverlay-BLQ8jEy6.css",
+          "bytes": 14144,
+          "gzipBytes": 3824
+        },
+        {
+          "file": "assets/RichContentRenderer-BBDOFkMo.css",
+          "bytes": 30199,
+          "gzipBytes": 8082
+        },
+        {
+          "file": "assets/index-CvtwVxU_.css",
+          "bytes": 98469,
+          "gzipBytes": 16164
+        }
+      ],
+      "javascriptBytes": 1677454,
+      "javascriptGzipBytes": 505192,
+      "cssGzipBytes": 28070
+    }
+  },
+  "totalJavaScriptChunks": 74
+}

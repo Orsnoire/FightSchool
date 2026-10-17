@@ -1,0 +1,32 @@
+{
+  "headSha": "3f9ff7cd523f04a2c541014255c5404621fa344f",
+  "testMergeSha": "fc9bb88ee909ca0754db8d7f27febdb089454ab9",
+  "run": "https://github.com/Orsnoire/FightSchool/actions/runs/39078402529",
+  "job": "https://github.com/Orsnoire/FightSchool/actions/runs/39078402529/job/117530212876",
+  "node": "v22.23.3",
+  "lockfileSha256": "58ce7ab616f1eedfb6d65c78ae37593ad13af51989702eaf5bafe3f530f0292a",
+  "loginGzipBytes": 119663,
+  "loginRequests": {
+    "teacherLogin": [
+      "assets/index-D91fponI.js"
+    ],
+    "studentLogin": [
+      "assets/index-D91fponI.js"
+    ]
+  },
+  "observedRequests": {
+    "visible10200ms": {
+      "definitions": 1,
+      "liveStatus": 3,
+      "fullDefinitions": 0
+    }
+  },
+  "checks": [
+    "production login request graph and gzip budget",
+    "delayed route, summary-only list, foreground polling, navigation/mutation refresh, list/status failure and retry, persisted teacher editing",
+    "failed production route chunk recovers through explicit reload",
+    "delayed MathLive retains text answer, phone virtual keyboard submits, failed math chunk preserves text-entry fallback"
+  ],
+  "result": "passed",
+  "limitations": "Production assets in Chromium; API/WebSocket boundaries use scoped fixtures. Clock and visibility events are controlled. This is functional/request-count acceptance, not live load or latency measurement."
+}
