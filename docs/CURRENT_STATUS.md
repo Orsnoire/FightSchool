@@ -1,22 +1,42 @@
 # Current status
 
-**CURRENT — GitHub rechecked October 17, 2026.** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is active in draft PR #70.
+**CURRENT — GitHub rechecked October 17, 2026.** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is next and unstarted.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
-## Active implementation
+## Next implementation
 
-[C07 / draft PR #70](https://github.com/Orsnoire/FightSchool/pull/70) defers routes and
-MathLive, introduces owner-only SQL fight summaries and removes definition polling.
-[Measured login JS falls 80.11%](reviews/2026-10-17-c07-initial-loading.md); local
-277-test/typecheck/build gates and both Chromium suites pass on `3f9ff7c`
-([CI](https://github.com/Orsnoire/FightSchool/actions/runs/39078402532),
-[browser](https://github.com/Orsnoire/FightSchool/actions/runs/39078402529)). C07 is not merged, deployed or live-accepted; C08 is unstarted.
+No cleanup implementation is active. **C08 (battlefield rendering)** is next and
+unstarted; register its claim, branch and draft PR before implementation.
+[C07 / PR #70](https://github.com/Orsnoire/FightSchool/pull/70) has shipped deferred
+routes/MathLive, owner-only SQL fight summaries and focused live-session polling.
+[Measured login JS falls 80.11%](reviews/2026-10-17-c07-initial-loading.md).
 
 ## Verified release baseline
 
-The current deployed runtime is `470dd724a621b235624da4730255240580911fd3`, merged [PR #69](https://github.com/Orsnoire/FightSchool/pull/69), released October 17.
+The current deployed runtime is `8f280b7b75479aa05bfb7dfd069f37e3f5d72334`, merged [PR #70](https://github.com/Orsnoire/FightSchool/pull/70), released October 17.
+Immutable Worker `e2f6dc5a-4157-47f4-bba6-080214499dce` was published at 23:47:43 UTC.
+Subsequent release-record commits change documentation only and do not require redeployment.
+All earlier released fixes, including C06, remain included.
+
+| Evidence | Result |
+| --- | --- |
+| [Final review CI 39078713939](https://github.com/Orsnoire/FightSchool/actions/runs/39078713939) | Passed on `7ded576`: 277 tests, TypeScript and client/Worker builds; merged runtime has the identical tree |
+| [Chromium 39078713913](https://github.com/Orsnoire/FightSchool/actions/runs/39078713913) | Both existing combat UI and production initial-loading suites pass on `7ded576` |
+| [Deployment 39080264978](https://github.com/Orsnoire/FightSchool/actions/runs/39080264978) | Passed on `8f280b7`: tests/builds, R2, existing migration gate and both hostname smoke checks |
+| [Canonical live acceptance 39080459577](https://github.com/Orsnoire/FightSchool/actions/runs/39080459577) | Passed on the same runtime: combat/economy, guild quests/shop/history, owner isolation, R2, 30-player concurrency/reconnect/completion, moderation, revocation and exactly-once rewards |
+| Database evidence | C07 introduces no migration or schema change. Existing additive migration gate succeeded at 23:47:29 UTC; no reset or reward-procedure change. Individual live ledger/catalog rows were not independently queried. |
+
+C07 reduces initial login gzip JavaScript from 601,648 to 119,663 bytes, including
+all static dependencies. SQL fight summaries and focused polling avoid repeated
+full question-bank transfers. [Report and limits](reviews/2026-10-17-c07-initial-loading.md).
+Teacher editing, student math/text answers, saved progression and atomic rewards
+retain regression coverage.
+
+### Previous C06 release evidence (historical)
+
+The preceding C06 runtime was `470dd724a621b235624da4730255240580911fd3`, merged [PR #69](https://github.com/Orsnoire/FightSchool/pull/69), released October 17.
 Immutable Worker `0de082fd-746e-48bb-bf4a-e33a8827ba68` was published at 22:31:11 UTC.
 Later release-record commits change documentation only and do not require redeployment.
 PRs #66 (mesmerize/feedback) and #68 (default shop catalog) remain included.
@@ -37,11 +57,11 @@ Those isolated measurements do not establish a live latency trend.
 The preceding runtime `d18d1b5` was deployed October 13 in
 [38452066918](https://github.com/Orsnoire/FightSchool/actions/runs/38452066918), including #66/#68.
 Its exact live acceptance was not reverified; current acceptance above covers the
-new runtime containing those changes. C07 is verified for review in draft PR #70.
+C06 runtime containing those changes; C07 includes them as well.
 
-### Previous accepted release evidence (historical)
+### Earlier Usability Patch release evidence (historical)
 
-The previous accepted runtime was `bef100b4a86574819fe12bceed901de0fbd1caac`, the PR #65 correction to Usability Patch 1 / PR #64.
+An earlier accepted runtime was `bef100b4a86574819fe12bceed901de0fbd1caac`, the PR #65 correction to Usability Patch 1 / PR #64.
 Immutable Worker `0951289e-d7c5-4243-b281-8ae0f61e4e9f` was published October 12 at
 21:38:56 UTC. Subsequent documentation commits do not change this runtime.
 
@@ -107,17 +127,18 @@ plan and [active-work checkpoint](ACTIVE_WORK.md).
   Production-only audit still reports 7 Tailwind peer-chain entries; not a clean audit.
 - **Contracts/diagnostics F05/F16 (C04 released):** shared boundary contracts, explicit public projections, bounded JSON parsing, typed queries and redacted logs. Intended CI checks run on every PR; branch protection enforcement remains off.
 - **Data costs F06/F08–F09 (C06 released):** event-scoped quest evaluation, SQL evidence/history aggregates, read-only views, bounded history, measured indexes and lost-acknowledgement recovery. Academic evidence and atomic receipts remain authoritative.
-- **Remaining performance/refactoring work:** initial bundle loading, avatar surfaces, broad timer updates and mixed modules (C07–C11); repeated live query/load/recovery measurements remain C12 work.
+- **Initial loading F10 / list-polling F12 (C07 released):** deferred routes/MathLive, accessible recovery and text fallback, SQL fight summaries and foreground live-session polling. The measured 80.11% login gzip JS reduction exceeds the 40% gate.
+- **Remaining performance/refactoring work:** avatar surfaces, broad timer updates and mixed modules (C08–C11); repeated live query/load/recovery measurements remain C12 work.
 - **Documentation reconciliation (F17): COMPLETE for this baseline.** Status,
   history and plans are now separated; updating them remains part of each release.
 
 ## Open acceptance and operational work
 
-The C06 October 17 canonical 30-answer burst measured p50 **708 ms**, p95 **1,312 ms**, maximum
-**1,362 ms**. Its current maximum threshold is 15 seconds. One burst is not a
+The C07 October 17 canonical 30-answer burst measured p50 **759 ms**, p95 **1,363 ms**, maximum
+**1,415 ms**. Its current maximum threshold is 15 seconds. One burst is not a
 performance trend or evidence of meeting the proposed cleanup target; it does not establish
 performance for a guild with fully seeded quests, realistic history and many
-distinct avatars. C05/C06 isolated baselines are recorded; C07/C08 and C12 retain their repeated live/visual measurement gates.
+distinct avatars. C05–C07 isolated measurements are recorded; C08 retains its visual/rendering gates, and repeated representative live measurements remain C12 work.
 
 Full infrastructure signoff is still open: forced deployed room restart/eviction,
 Neon interruption and connection-limit recovery, a timed compatible Worker

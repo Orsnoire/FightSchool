@@ -8,8 +8,8 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Latest verified runtime:** `470dd724`, released October 17 with C06 / PR #69.
-Deployment 39075244755 and canonical acceptance 39075452591 passed.
+**Latest verified runtime:** `8f280b7`, released October 17 with C07 / PR #70.
+Deployment 39080264978 and canonical acceptance 39080459577 passed.
 See the [current release record](../ACTIVE_WORK.md) and [current status](../CURRENT_STATUS.md).
 Earlier releases and R2 failures below are historical.
 Full infrastructure recovery/rollback signoff remains open.
@@ -730,3 +730,38 @@ Production plans, lock-contention/recovery drills and rollback rehearsal remain 
 The additive indexes can remain during a compatible code rollback; no reverse data
 migration is needed. No rollback was performed. Documentation-only release commits
 are not a new deployed runtime. C07 remains next and unstarted.
+
+## C07 initial-loading release — October 17, 2026
+
+The owner instructed "Merge and deploy" after implementation review. [PR #70](https://github.com/Orsnoire/FightSchool/pull/70)
+merged with an expected-head check at `8f280b7b75479aa05bfb7dfd069f37e3f5d72334`;
+its tree exactly matches reviewed head `7ded5765776fbcd5ea7b261cce3f16e3f8401a76`.
+C07 defers routes and MathLive, retains accessible loading/error/text fallback,
+introduces owner-only SQL fight summaries and limits periodic dashboard work to
+foreground live-session status. Full academic authoring, permissions, progression
+and atomic rewards are preserved.
+
+| Evidence | Result |
+| --- | --- |
+| [Final review CI 39078713939](https://github.com/Orsnoire/FightSchool/actions/runs/39078713939) | 277 tests, TypeScript and client/Worker builds pass on `7ded576` |
+| [Chromium 39078713913](https://github.com/Orsnoire/FightSchool/actions/runs/39078713913) | Existing combat UI and production initial-loading suites pass on `7ded576` |
+| [Deployment 39080264978](https://github.com/Orsnoire/FightSchool/actions/runs/39080264978) | Passed on `8f280b7`: tests/builds, R2, existing migration gate and both hostname smoke checks |
+| [Canonical live acceptance 39080459577](https://github.com/Orsnoire/FightSchool/actions/runs/39080459577) | Passed on `8f280b7` against the canonical domain: combat/economy, guild quests/shop/history, isolation, R2, 30-player concurrency/reconnect/completion, moderation and revocation |
+
+Immutable Worker `e2f6dc5a-4157-47f4-bba6-080214499dce` was published at 23:47:43 UTC.
+The existing additive migration gate succeeded at 23:47:29 UTC; C07 adds no
+migration and changes no schema or reward procedure. No classroom records,
+progression, evidence, equipment or rewards were reset. Production ledger/catalog
+rows were not independently queried. The acceptance suite uses its own test
+accounts/content/rooms and archives operational test fights; broader fixture
+cleanup and environment isolation remain C12 work.
+
+Live acceptance completed at 23:51:29 UTC. One 30-answer burst recorded p50
+759 ms, p95 1,363 ms and maximum 1,415 ms, within the existing 15-second maximum
+gate. This is functional acceptance, not a repeated load benchmark or a controlled
+before/after latency comparison. [C07 measurements](../reviews/2026-10-17-c07-initial-loading.md)
+record an 80.11% login gzip JS reduction and reduced SQL/HTTP transfers with
+explicit fixture limits. C12 recovery/rollback drills remain open; no rollback
+was performed. Prior Worker `0de082fd-746e-48bb-bf4a-e33a8827ba68` is historical
+evidence, not a rehearsed rollback target. Documentation-only release commits do
+not change this runtime. **C07 is complete; C08 is next and unstarted.**

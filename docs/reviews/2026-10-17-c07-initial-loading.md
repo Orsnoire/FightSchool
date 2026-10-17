@@ -1,8 +1,17 @@
 # C07: initial loading and dashboard data
 
-Implementation: [draft PR #70](https://github.com/Orsnoire/FightSchool/pull/70),
+Implementation: [merged PR #70](https://github.com/Orsnoire/FightSchool/pull/70),
 branch `cleanup/c07-initial-loading`. Scope: F10 and the list/polling part of F12.
-This is review evidence, not a deployment or live acceptance record.
+Released October 17 at runtime `8f280b7b75479aa05bfb7dfd069f37e3f5d72334`; the reviewed head
+`7ded5765776fbcd5ea7b261cce3f16e3f8401a76` has the identical Git tree.
+Final-head [CI 39078713939](https://github.com/Orsnoire/FightSchool/actions/runs/39078713939) and
+[both Chromium suites 39078713913](https://github.com/Orsnoire/FightSchool/actions/runs/39078713913) passed.
+[Deployment 39080264978](https://github.com/Orsnoire/FightSchool/actions/runs/39080264978) and
+[canonical acceptance 39080459577](https://github.com/Orsnoire/FightSchool/actions/runs/39080459577)
+passed on that exact runtime. Worker `e2f6dc5a-4157-47f4-bba6-080214499dce` was
+published at 23:47:43 UTC. No schema migration or data reset.
+The isolated measurements below remain fixture/transfer evidence, not live latency
+claims. [Release record and open operational work](../cloudflare/full-migration.md#c07-initial-loading-release--october-17-2026).
 
 ## Behavior
 
