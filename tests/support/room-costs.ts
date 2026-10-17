@@ -3,7 +3,7 @@ import { addStudent, initialCombatState, scaleEncounter, startQuestion } from '.
 import { PALETTES } from '../../shared/avatar/appearance.ts';
 import { fight, student } from '../phase4/fixtures.ts';
 
-export function roomFixture(count:number, capture=true) {
+export function roomFixture(count:number, capture=true, RoomType=CombatSessionObject) {
   const now=Date.now();
   const authored={...structuredClone(fight),questions:[{...fight.questions[0],question:'<p>Explain the relationship.</p>'.repeat(20)}],
     enemies:[{id:'goblins',name:'Goblin',image:'',enemyType:'goblin',difficultyMultiplier:1,quantity:5,swarm:{enemiesPerFourPlayers:2}}]};
@@ -30,7 +30,7 @@ export function roomFixture(count:number, capture=true) {
     getCombatProfile:async()=>{costs.profile++;return{levels:{}};},
     findLiveCombatSession:async()=>{costs.live++;return{teacherId:fight.teacherId,status:'active'};},updateLiveCombatSessionStatus:async()=>{},
     persistResults:async()=>Object.values(saved.snapshot.players).map((p:any)=>({studentId:p.studentId,xpEarned:1}))};
-  function object(){const obj=new CombatSessionObject({storage,getWebSockets:()=>sockets} as any,{DATABASE_URL:'unused'});obj.setRepository(repository);return obj as any;}
+  function object(){const obj=new RoomType({storage,getWebSockets:()=>sockets} as any,{DATABASE_URL:'unused'});obj.setRepository(repository);return obj as any;}
   const obj=object();
   return {obj,object,room,students,players,host,socket,costs,repository,revoked:()=>{revoked=true;},save:(r:any)=>{saved=structuredClone(r);},saved:()=>saved};
 }

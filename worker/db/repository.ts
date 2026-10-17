@@ -1,3 +1,4 @@
+import { evaluateFightQuests } from "../progression/quests.ts";
 import { recordSessionReporting } from "./session-reporting";
 import { EQUIPMENT_ITEMS } from "../../shared/schema";
 import { switchStudentJob } from "./job-loadouts";
@@ -168,6 +169,7 @@ export function createIdentityRepository(
         .set({ ...fight, updatedAt: new Date() })
         .where(and(eq(fights.id, id), eq(fights.teacherId, teacherId)))
         .returning();
+      if(updated&&fight.questions)await evaluateFightQuests(database,id,teacherId);
       return updated || null;
     },
 

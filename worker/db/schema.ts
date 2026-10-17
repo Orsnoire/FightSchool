@@ -311,6 +311,7 @@ export const guildMemberships = pgTable(
       .default(sql`(extract(epoch from now()) * 1000)::bigint`),
   },
   (table) => ({
+    studentIndex: index("guild_memberships_student_idx").on(table.studentId),
     pairUnique: uniqueIndex("guildMemberships_pair_unique").on(
       table.guildId,
       table.studentId,
@@ -382,6 +383,7 @@ export const quests = pgTable(
       .default(sql`(extract(epoch from now()) * 1000)::bigint`),
   },
   (table) => ({
+    guildStudentIndex: index("quests_guild_student_idx").on(table.guildId,table.studentId),
     seedUnique: uniqueIndex("quests_seed_unique").on(
       table.guildId,
       sql`coalesce(${table.studentId}::text, 'guild')`,
@@ -427,6 +429,9 @@ export const combatResults = pgTable(
       .default(sql`(extract(epoch from now()) * 1000)::bigint`),
   },
   (table) => ({
+    studentHistory: index("combat_results_student_history_idx").on(table.studentId,table.completedAt.desc().nullsFirst(),table.id.desc().nullsFirst()),
+    guildHistory: index("combat_results_guild_history_idx").on(table.guildId,table.completedAt.desc().nullsFirst(),table.id.desc().nullsFirst()),
+    fightHistory: index("combat_results_fight_history_idx").on(table.fightId,table.completedAt.desc().nullsFirst(),table.id.desc().nullsFirst()),
     once: uniqueIndex("combat_results_session_student_unique").on(
       table.sessionId,
       table.studentId,

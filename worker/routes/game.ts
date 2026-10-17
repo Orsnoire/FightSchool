@@ -1,3 +1,4 @@
+import { combatHistory, studentCombatSummary, type HistoryScope } from "../db/combat-history.ts";
 import { paletteSchema, equipmentVisualSchema, validVisualSlot } from "../../shared/avatar/visuals";
 import { sessionReport } from "../reporting/session-report";
 import { readJson, bodyErrorResponse } from "../http/json";
@@ -33,6 +34,7 @@ import {
 } from "../../shared/jobSystem.ts";
 import {
   evaluateQuests,
+  readQuestViews,
   seedGuildQuests,
   seedPersonalQuests,
 } from "../progression/quests.ts";
@@ -292,6 +294,7 @@ export async function handleGame(
           .set({ guildId: id, guildCode: g.code })
           .where(eq(s.students.id, actor.actorId));
         await seedPersonalQuests(db, actor.actorId, id);
+        await evaluateQuests(db,id,undefined,{kind:'membership',studentIds:[actor.actorId]});
         return json(member || { guildId: id, studentId: actor.actorId });
       }
       const g = await guild(
@@ -337,20 +340,9 @@ export async function handleGame(
             unlockedTier: z.number().int().min(1).max(10).optional(),
           })
           .parse(await readJson(request));
-        return json(
-          (
-            await db
-              .update(s.guilds)
-              .set({
-                ...input,
-                ...(input.experience !== undefined
-                  ? { level: getGuildLevelFromXP(input.experience) }
-                  : {}),
-              })
-              .where(eq(s.guilds.id, id))
-              .returning()
-          )[0],
-        );
+        await db.update(s.guilds).set({...input,...(input.experience!==undefined?{level:getGuildLevelFromXP(input.experience)}:{})}).where(eq(s.guilds.id,id));
+        await evaluateQuests(db,id,undefined,{kind:'guild'});
+        return json((await db.select().from(s.guilds).where(eq(s.guilds.id,id)))[0]);
       }
       if (tail === "members" && method(request, "GET")) {
         const members = await db
@@ -388,6 +380,7 @@ export async function handleGame(
           .update(s.students)
           .set({ guildId: null, guildCode: null })
           .where(and(eq(s.students.id, leave[1]), eq(s.students.guildId, id)));
+        await evaluateQuests(db,id,undefined,{kind:'guild'});
         return json({ success: true });
       }
       if (tail === "settings") {
@@ -524,9 +517,15 @@ export async function handleGame(
         );
       }
       if (tail === "quests" && method(request, "GET")) {
-        if(!g.isArchived){await seedGuildQuests(db,id);if(!teacher)await seedPersonalQuests(db,actor.actorId,id);}
-        const views=await evaluateQuests(db,id);
-        return json(views.filter(q=>teacher||!q.studentId||q.studentId===actor.actorId));
+        return json(await readQuestViews(db,id,teacher?undefined:actor.actorId));
+      }
+      if(tail==='quests/reconcile'&&method(request,'POST')){
+        requireTeacher();
+        if(g.isArchived)throw new ApiError('Archived guilds are read-only.',409);
+        await seedGuildQuests(db,id);
+        const members=await db.select({id:s.guildMemberships.studentId}).from(s.guildMemberships).where(eq(s.guildMemberships.guildId,id));
+        for(const member of members)await seedPersonalQuests(db,member.id,id);
+        return json(await evaluateQuests(db,id));
       }
       const validateQuest = async (body:unknown) => {
         const input=questInput.parse(body);
@@ -544,8 +543,8 @@ export async function handleGame(
         const recipients=assignToAll?await db.select({studentId:s.guildMemberships.studentId}).from(s.guildMemberships).where(eq(s.guildMemberships.guildId,id)):[];
         if(assignToAll&&!recipients.length)throw new ApiError('Add guild members before assigning personal quests.');
         const values=assignToAll?recipients.map(r=>({...fields,studentId:r.studentId,guildId:id})): [{...fields,guildId:id}];
-        const [created]=await db.insert(s.quests).values(values).returning();
-        await evaluateQuests(db,id);return json(created,201);
+        const created=await db.insert(s.quests).values(values).returning();
+        await evaluateQuests(db,id,undefined,{kind:'quests',questIds:created.map(q=>q.id)});return json(created[0],201);
       }
       const qm=tail.match(/^quests\/([^/]+)$/);
       if(qm){
@@ -559,13 +558,15 @@ export async function handleGame(
           const body=await readJson(request) as Record<string,unknown>;
           if(body.isCompleted===true){
             if(existing.isArchived)throw new ApiError('Archived quests cannot be completed.',409);
-            await evaluateQuests(db,id,qm[1]);return json((await db.select().from(s.quests).where(where))[0]);
+            await evaluateQuests(db,id,qm[1],{kind:"quests",questIds:[qm[1]]});return json((await db.select().from(s.quests).where(where))[0]);
           }
           if(existing.isCompleted)throw new ApiError('Completed quests retain their original rewards. Create another quest.',409);
           const input=await validateQuest({...existing,...body,assignToAll:false,criteria:body.criteria||existing.criteria,rewards:body.rewards||existing.rewards});
           // Recipient/schedule identity cannot be changed after publication.
           if((input.studentId||null)!==existing.studentId||input.questType!==existing.questType)throw new ApiError('Create a new quest to change its audience or schedule.',409);
-          return json((await db.update(s.quests).set(input).where(where).returning())[0]);
+          await db.update(s.quests).set(input).where(where);
+          await evaluateQuests(db,id,undefined,{kind:'quests',questIds:[qm[1]]});
+          return json((await db.select().from(s.quests).where(where))[0]);
         }
       }
       if (tail === "leaderboard") {
@@ -587,56 +588,19 @@ export async function handleGame(
           .where(eq(s.guildSettings.guildId, id));
         if (!teacher && settings?.hiddenLeaderboardMetrics?.includes(metric))
           return json([]);
-        const rows = await db
-          .select({
-            studentId: s.combatResults.studentId,
-            totals: s.combatResults.totals,
-            xpEarned: s.combatResults.xpEarned,
-          })
-          .from(s.combatResults)
-          .where(eq(s.combatResults.guildId, id));
-        const grouped = new Map<string, { value: number; questionsAnswered: number }>();
-        for (const r of rows) {
-          const total = grouped.get(r.studentId) || { value: 0, questionsAnswered: 0 };
-          total.value += metric === "xpEarned"
-            ? r.xpEarned
-            : metric === "accuracy"
-              ? r.totals.questionsCorrect
-              : (r.totals as any)[metric] || 0;
-          total.questionsAnswered += r.totals.questionsAnswered;
-          grouped.set(r.studentId, total);
-        }
-        const members = await db
-          .select({
-            id: s.students.id,
-            nickname: s.students.nickname,
-            characterClass: s.students.characterClass,
-          })
-          .from(s.guildMemberships)
-          .innerJoin(
-            s.students,
-            eq(s.students.id, s.guildMemberships.studentId),
-          )
-          .where(eq(s.guildMemberships.guildId, id));
-        return json(
-          members
-            .map((m) => {
-              const total = grouped.get(m.id);
-              // Weight every answered question equally, including unequal fights.
-              const value = metric === "accuracy"
-                ? total?.questionsAnswered ? 100 * total.value / total.questionsAnswered : 0
-                : total?.value || 0;
-              return {
-                ...m,
-                studentId: m.id,
-                value,
-                totalDamageDealt: value,
-                fightsCompleted: rows.filter((r) => r.studentId === m.id).length,
-                [metric]: value,
-              };
-            })
-            .sort((a, b) => b.value - a.value),
-        );
+        const column=metric==='accuracy'?'questionsCorrect':metric;
+        const value=metric==='xpEarned'?sql`r.xp_earned::double precision`:sql`COALESCE((r.totals->>${column})::double precision,0)`;
+        const aggregate=await db.execute(sql`SELECT student_id,sum(${value}) AS value,
+          sum(COALESCE((r.totals->>'questionsAnswered')::double precision,0)) AS answered,count(*)::integer AS fights
+          FROM combat_results r WHERE guild_id=${id}::uuid GROUP BY student_id`);
+        const grouped=new Map(aggregate.rows.map(r=>[String(r.student_id),r]));
+        const members=await db.select({id:s.students.id,nickname:s.students.nickname,characterClass:s.students.characterClass})
+          .from(s.guildMemberships).innerJoin(s.students,eq(s.students.id,s.guildMemberships.studentId)).where(eq(s.guildMemberships.guildId,id));
+        return json(members.map(m=>{
+          const total=grouped.get(m.id);
+          const value=metric==='accuracy'?(Number(total?.answered)?100*Number(total?.value)/Number(total?.answered):0):Number(total?.value||0);
+          return {...m,studentId:m.id,value,totalDamageDealt:value,fightsCompleted:Number(total?.fights||0),[metric]:value};
+        }).sort((a,b)=>b.value-a.value));
       }
     }
     if (path === "/api/equipment-items/shop") {
@@ -648,11 +612,7 @@ export async function handleGame(
         .where(eq(s.students.id, id));
       if (!student?.guildId) return json([]);
       const g = await guild(student.guildId);
-      await evaluateQuests(db, g.id);
-      const [current] = await db
-        .select()
-        .from(s.guilds)
-        .where(eq(s.guilds.id, g.id));
+      const current = g;
       return json(
         [
           ...builtinShopItems(),
@@ -793,7 +753,6 @@ if (!validVisualSlot(input.visual===undefined?item.visual:input.visual,input.slo
       }
       if (tail === "currency") return json({ gold: student.gold });
       if (tail === "quests") {
-        if (student.guildId) await evaluateQuests(db, student.guildId);
         return json(
           await db.select().from(s.quests).where(eq(s.quests.studentId, id)),
         );
@@ -971,80 +930,28 @@ if (!validVisualSlot(input.visual===undefined?item.visual:input.visual,input.slo
       requireTeacher();
       return json(await sessionReport(db, actor.actorId, url.searchParams));
     }
-    const stats = path.match(
-      /^\/api\/combat-stats\/(fight|student|class)\/([^/]+)$/,
-    );
-    if (stats) {
-      let rows: any[] = [];
-      if (stats[1] === "student") {
-        ownStudent(stats[2]);
-        rows = await db
-          .select()
-          .from(s.combatResults)
-          .where(eq(s.combatResults.studentId, stats[2]));
-      } else if (stats[1] === "fight") {
-        requireTeacher();
-        const fight = await repository.findFightById(uuid.parse(stats[2]));
-        if (fight?.teacherId !== actor.actorId)
-          throw new ApiError("Forbidden", 403);
-        rows = await db
-          .select()
-          .from(s.combatResults)
-          .where(eq(s.combatResults.fightId, fight.id));
-      } else {
-        requireTeacher();
-        const owner = await repository.findTeacherById(actor.actorId);
-        if (owner?.guildCode === stats[2]) {
-          rows = (
-            await db
-              .select({ result: s.combatResults })
-              .from(s.combatResults)
-              .innerJoin(s.fights, eq(s.fights.id, s.combatResults.fightId))
-              .where(eq(s.fights.teacherId, actor.actorId))
-          ).map((r) => r.result);
-        } else {
-          const gs = await db
-            .select()
-            .from(s.guilds)
-            .where(
-              and(
-                eq(s.guilds.teacherId, actor.actorId),
-                eq(s.guilds.code, stats[2]),
-              ),
-            );
-          rows = gs.length
-            ? await db
-                .select()
-                .from(s.combatResults)
-                .where(
-                  inArray(
-                    s.combatResults.guildId,
-                    gs.map((g) => g.id),
-                  ),
-                )
-            : [];
+    const summary=path.match(/^\/api\/combat-stats\/student\/([^/]+)\/summary$/);
+    if(summary){ownStudent(summary[1]);return json(await studentCombatSummary(db,summary[1]));}
+    const stats=path.match(/^\/api\/combat-stats\/(fight|student|class)\/([^/]+)$/);
+    if(stats){
+      let scope:HistoryScope;
+      if(stats[1]==='student'){ownStudent(stats[2]);scope={studentId:stats[2]};}
+      else if(stats[1]==='fight'){
+        requireTeacher();const fight=await repository.findFightById(uuid.parse(stats[2]));
+        if(fight?.teacherId!==actor.actorId)throw new ApiError('Forbidden',403);
+        scope={fightId:fight.id};
+      }else{
+        requireTeacher();const owner=await repository.findTeacherById(actor.actorId);
+        if(owner?.guildCode===stats[2])scope={teacherId:actor.actorId};
+        else{
+          const guilds=await db.select({id:s.guilds.id}).from(s.guilds).where(and(eq(s.guilds.teacherId,actor.actorId),eq(s.guilds.code,stats[2])));
+          scope={guildIds:guilds.map(g=>g.id)};
         }
       }
-      const names = rows.length
-        ? await db
-            .select({ id: s.students.id, nickname: s.students.nickname })
-            .from(s.students)
-            .where(
-              inArray(
-                s.students.id,
-                rows.map((r) => r.studentId),
-              ),
-            )
-        : [];
-      return json(
-        rows.map((r) => ({
-          ...r,
-          ...r.totals,
-          nickname:
-            names.find((n) => n.id === r.studentId)?.nickname || "Student",
-          lootItemClaimed: r.rewardClaim,
-        })),
-      );
+      const page=await combatHistory(db,scope,url.searchParams);
+      const response=json(page.rows);
+      if(page.nextCursor)response.headers.set('X-Next-Cursor',page.nextCursor);
+      return response;
     }
     if (path === "/api/combat-stats" && method(request, "POST"))
       throw new ApiError("Statistics are recorded by the combat server", 403);
@@ -1098,15 +1005,14 @@ async function studentItemIds(db: GameDatabase, id: string) {
     .from(s.guildMemberships)
     .innerJoin(s.guilds, eq(s.guilds.id, s.guildMemberships.guildId))
     .where(eq(s.guildMemberships.studentId, id));
-  const results = await db
-    .select({ loot: s.combatResults.lootTable })
-    .from(s.combatResults)
-    .where(eq(s.combatResults.studentId, id));
+  const loot = await db.execute(sql`SELECT DISTINCT item->>'itemId' AS id
+    FROM combat_results r CROSS JOIN LATERAL jsonb_array_elements(r.loot_table) item
+    WHERE r.student_id=${id}::uuid AND item->>'itemId' IS NOT NULL`);
   return {
     teacherIds: guilds.map((g) => g.teacherId),
     itemIds: [
       ...(student?.inventory || []),
-      ...results.flatMap((r) => r.loot.map((i) => i.itemId)),
+      ...loot.rows.map(r => String(r.id)),
     ],
   };
 }

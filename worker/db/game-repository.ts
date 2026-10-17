@@ -6,7 +6,7 @@ import { equipmentEffects } from "../../shared/tier-one-equipment";
 import { getStudentAvatar } from "./avatar-repository.ts";
 import { validAppearance } from "../../shared/avatar/appearance.ts";
 import { EQUIPMENT_SLOTS } from "../../shared/equipment-catalog.ts";
-import { evaluateQuests } from "../progression/quests.ts";
+import { evaluateQuests, evaluateStudentLevels } from "../progression/quests.ts";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { and, eq, inArray, sql, desc } from "drizzle-orm";
@@ -162,7 +162,7 @@ export async function persistCombatResults(
     .update(s.liveCombatSessions)
     .set({ status: "completed", completedAt: new Date() })
     .where(eq(s.liveCombatSessions.sessionId, state.sessionId));
-  await recordQuestEvidence(db,state,fight);
+  await recordQuestEvidence(db,state,fight, false);
   const results = await db.select().from(s.combatResults).where(eq(s.combatResults.sessionId, state.sessionId));
   const guildIds = [
     ...new Set(results
@@ -170,7 +170,11 @@ export async function persistCombatResults(
         .filter(Boolean),
     ),
   ];
-  for (const id of guildIds) await evaluateQuests(db, id!);
+  for (const id of guildIds) await evaluateQuests(db, id!, undefined, {
+    kind:'results', studentIds: results.filter(r=>r.guildId===id).map(r=>r.studentId), fightId:fight.id,
+  });
+  // Earned job levels are character-wide; academic evidence remains hosting-guild scoped.
+  await evaluateStudentLevels(db, studentIds);
   return results;
 }
 export class RewardError extends Error {
@@ -215,7 +219,7 @@ export async function claimReward(
 }
 
 /** Persist progress after resolved questions, including departed players; no answer text leaves the server. */
-export async function recordQuestEvidence(db:GameDatabase,state:CombatSnapshot,fight:s.FightRecord){
+export async function recordQuestEvidence(db:GameDatabase,state:CombatSnapshot,fight:s.FightRecord, evaluate = true){
  const [live]=await db.select().from(s.liveCombatSessions).where(eq(s.liveCombatSessions.sessionId,state.sessionId));
  if(!live)return;
  const bank=fight.questions.map(questionKey);
@@ -226,4 +230,8 @@ export async function recordQuestEvidence(db:GameDatabase,state:CombatSnapshot,f
  FROM jsonb_to_recordset(${JSON.stringify(entries)}::jsonb) AS x(session text,student text,guild text,fight text,solo boolean,victory boolean,answered integer,correct integer,keys jsonb,bank jsonb,revision integer)
  ON CONFLICT(session_id,student_id) DO UPDATE SET victory=EXCLUDED.victory,answered=EXCLUDED.answered,correct=EXCLUDED.correct,correct_keys=EXCLUDED.correct_keys,bank_keys=EXCLUDED.bank_keys,revision=EXCLUDED.revision,updated_at=CASE WHEN EXCLUDED.answered>quest_fight_evidence.answered OR EXCLUDED.victory<>quest_fight_evidence.victory THEN EXCLUDED.updated_at ELSE quest_fight_evidence.updated_at END
  WHERE EXCLUDED.revision>=quest_fight_evidence.revision`);
+ // Re-run even if an identical UPSERT already committed: evaluation may have failed
+ // afterward. The room retains its pending projection until this entire call succeeds.
+ if(evaluate)for(const guildId of new Set(entries.map(e=>e.guild!)))
+   await evaluateQuests(db,guildId,undefined,{kind:'evidence',fightId:fight.id,studentIds:entries.filter(e=>e.guild===guildId).map(e=>e.student)});
 }

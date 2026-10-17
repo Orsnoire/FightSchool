@@ -63,7 +63,7 @@ and gold, while new fields receive the intended defaults. Full CI retains this
 existing-data preservation gate.
 
 For the next relational change, edit declarations, generate and review an
-**appended** migration (0015 next), and include its snapshot/journal entry. Put
+**appended** migration (0017 is the C06 index-only change; 0015/0016 already shipped), and include its snapshot/journal entry. Put
 required procedural/data SQL in the reviewed new migration, then run all gates.
 If the catalog comparison differs, fix the new declarations/migration rather
 than changing shipped SQL or weakening the comparison. PGlite provides offline

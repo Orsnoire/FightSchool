@@ -565,6 +565,7 @@ export function GuildAdministration({ guild }: { guild: Guild }) {
       </Card>
       <div className="flex justify-between">
         <h2 className="text-xl font-semibold">Guild quests</h2>
+        <Button variant="outline" disabled={busy || guild.isArchived} onClick={()=>mutate("POST",`/api/guilds/${guild.id}/quests/reconcile`,{})}>Refresh quest progress</Button>
         <label className="flex gap-2">
           <input
             type="checkbox"

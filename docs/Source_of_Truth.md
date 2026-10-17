@@ -1,10 +1,10 @@
 # QuestAcademy — Source of Truth
 
-> **CURRENT AUTHORITY — October 12, 2026.** Start with the [documentation index](README.md),
+> **CURRENT AUTHORITY — October 17, 2026.** Start with the [documentation index](README.md),
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
 > Phases 1–2 are complete with the [resume safeguard](ACTIVE_WORK.md). C01–C05
-> are merged, deployed and accepted. C06 is next and not started. The separately
+> are merged, deployed and accepted. C06 is active in draft PR #69; see its branch checkpoint. The separately
 > authorized PR #61 and Usability Patch 1 / PR #64 releases are recorded in current status.
 > Historical migration phases are not the active queue.
 
@@ -128,9 +128,7 @@ document for restoration and concurrency rules and the October 8 checkpoint belo
 
 The [October 13 default shop correction](guild-quests-and-tiers.md#october-13-default-shop-inventory-correction)
 requires every defined progression tier's equipment in guild shops by default,
-while preserving shop unlocks and teacher custom stock. The correction is published in [PR #68](https://github.com/Orsnoire/FightSchool/pull/68)
-(263 local tests and builds pass; CI/browser acceptance pending)
-and has not been merged or deployed.
+while preserving shop unlocks and teacher custom stock. The correction in [PR #68](https://github.com/Orsnoire/FightSchool/pull/68) is merged and deployed in runtime `d18d1b5`; see current status for verified CI/deployment evidence.
 
 The [October 7 Tier 1 specification](combat/tier-one-equipment.md) records the
 owner's level-2 equipment collection, revised tank VIT damage weighting and
@@ -158,7 +156,7 @@ stun/paralysis; three release each player from single-target Hypnotic Stare or
 party-wide Hypnosis. Hypnotizing sources cannot act until their victims are free. The October 13
 owner correction in the same specification adds direct-hit release from another
 enemy and disabled-choice waiting; the student overlays specification adds a
-four-second answer-feedback phase. These changes are in PR #66, not yet deployed.
+four-second answer-feedback phase. These changes are in PR #66 and included in deployed runtime `d18d1b5`.
 This supersedes the initial damage-threshold and fixed-turn hypnosis proposals.
 PR #52 was released in runtime `e158194` and remains included in the current
 C02 runtime `5d89fb0`; CI, deployment and canonical live acceptance passed.

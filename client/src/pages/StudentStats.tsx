@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import type { StudentCombatSummary } from "@shared/contracts/history";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Swords, Heart, Shield, Target } from "lucide-react";
 import type { CombatStat } from "@shared/schema";
@@ -10,33 +11,44 @@ interface StudentStatsProps {
 
 export default function StudentStats({ params }: StudentStatsProps) {
   const studentId = params.id;
-  const [, setLocation] = useLocation();
-
-  const { data: stats, isLoading } = useQuery<CombatStat[]>({
-    queryKey: [`/api/combat-stats/student/${studentId}`],
+  const summary = useQuery<StudentCombatSummary>({
+    queryKey: [`/api/combat-stats/student/${studentId}/summary`],
   });
-
-  const totalFights = stats?.length || 0;
-  const victories = stats?.filter(s => s.survived).length || 0;
-  const totalDamage = stats?.reduce((sum, s) => sum + s.damageDealt, 0) || 0;
-  const totalHealing = stats?.reduce((sum, s) => sum + s.healingDone, 0) || 0;
-  const totalDamageTaken = stats?.reduce((sum, s) => sum + s.damageTaken, 0) || 0;
-  const survivalRate = totalFights > 0 ? Math.round((victories / totalFights) * 100) : 0;
-
-  const classCounts = stats?.reduce((acc, stat) => {
-    acc[stat.characterClass] = (acc[stat.characterClass] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const favoriteClass = classCounts
-    ? Object.entries(classCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "None"
-    : "None";
+  const history = useInfiniteQuery({
+    queryKey: [`/api/combat-stats/student/${studentId}`],
+    initialPageParam: "",
+    queryFn: async ({ pageParam }) => {
+      const response = await fetch(
+        `/api/combat-stats/student/${studentId}?limit=10${pageParam ? `&before=${encodeURIComponent(pageParam)}` : ""}`,
+        { credentials: "include" },
+      );
+      if (!response.ok) throw new Error("Unable to load combat history");
+      return {
+        rows: (await response.json()) as CombatStat[],
+        next: response.headers.get("X-Next-Cursor"),
+      };
+    },
+    getNextPageParam: (last) => last.next || undefined,
+  });
+  const stats = history.data?.pages.flatMap((page) => page.rows);
+  const isLoading = history.isLoading || summary.isLoading;
+  const totalFights = summary.data?.totalFights || 0;
+  const victories = summary.data?.survived || 0;
+  const totalDamage = summary.data?.totalDamage || 0;
+  const totalHealing = summary.data?.totalHealing || 0;
+  const totalDamageTaken = summary.data?.totalDamageTaken || 0;
+  const survivalRate = totalFights
+    ? Math.round((100 * victories) / totalFights)
+    : 0;
 
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-serif font-bold text-primary" data-testid="text-title">
+          <h1
+            className="text-2xl font-serif font-bold text-primary"
+            data-testid="text-title"
+          >
             My Statistics
           </h1>
         </div>
@@ -44,7 +56,10 @@ export default function StudentStats({ params }: StudentStatsProps) {
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
-          <h2 className="text-4xl font-serif font-bold mb-2" data-testid="text-page-title">
+          <h2
+            className="text-4xl font-serif font-bold mb-2"
+            data-testid="text-page-title"
+          >
             Combat Record
           </h2>
           <p className="text-muted-foreground">
@@ -52,7 +67,19 @@ export default function StudentStats({ params }: StudentStatsProps) {
           </p>
         </div>
 
-        {isLoading ? (
+        {history.isError || summary.isError ? (
+          <div role="alert">
+            Unable to load your combat record.{" "}
+            <Button
+              onClick={() => {
+                void history.refetch();
+                void summary.refetch();
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : isLoading ? (
           <div className="grid gap-6">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="animate-pulse">
@@ -65,11 +92,16 @@ export default function StudentStats({ params }: StudentStatsProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               <Card data-testid="card-total-fights">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Fights</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Total Fights
+                  </CardTitle>
                   <Swords className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-total-fights">
+                  <div
+                    className="text-2xl font-bold"
+                    data-testid="text-total-fights"
+                  >
                     {totalFights}
                   </div>
                 </CardContent>
@@ -77,11 +109,16 @@ export default function StudentStats({ params }: StudentStatsProps) {
 
               <Card data-testid="card-victories">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Victories</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Victories
+                  </CardTitle>
                   <Trophy className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-primary" data-testid="text-victories">
+                  <div
+                    className="text-2xl font-bold text-primary"
+                    data-testid="text-victories"
+                  >
                     {victories}
                   </div>
                 </CardContent>
@@ -89,11 +126,16 @@ export default function StudentStats({ params }: StudentStatsProps) {
 
               <Card data-testid="card-survival-rate">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Survival Rate</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Survival Rate
+                  </CardTitle>
                   <Shield className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-survival-rate">
+                  <div
+                    className="text-2xl font-bold"
+                    data-testid="text-survival-rate"
+                  >
                     {survivalRate}%
                   </div>
                 </CardContent>
@@ -101,11 +143,16 @@ export default function StudentStats({ params }: StudentStatsProps) {
 
               <Card data-testid="card-damage-dealt">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Damage Dealt</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Damage Dealt
+                  </CardTitle>
                   <Target className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-damage-dealt">
+                  <div
+                    className="text-2xl font-bold"
+                    data-testid="text-damage-dealt"
+                  >
                     {totalDamage}
                   </div>
                 </CardContent>
@@ -113,11 +160,16 @@ export default function StudentStats({ params }: StudentStatsProps) {
 
               <Card data-testid="card-healing-done">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Healing Done</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Healing Done
+                  </CardTitle>
                   <Heart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-healing-done">
+                  <div
+                    className="text-2xl font-bold"
+                    data-testid="text-healing-done"
+                  >
                     {totalHealing}
                   </div>
                 </CardContent>
@@ -125,11 +177,16 @@ export default function StudentStats({ params }: StudentStatsProps) {
 
               <Card data-testid="card-damage-taken">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Damage Taken</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Damage Taken
+                  </CardTitle>
                   <Swords className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold" data-testid="text-damage-taken">
+                  <div
+                    className="text-2xl font-bold"
+                    data-testid="text-damage-taken"
+                  >
                     {totalDamageTaken}
                   </div>
                 </CardContent>
@@ -142,14 +199,16 @@ export default function StudentStats({ params }: StudentStatsProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {stats.slice(0, 10).map((stat, index) => (
+                  {stats.map((stat, index) => (
                     <div
                       key={stat.id}
                       className="flex items-center justify-between p-3 rounded-md bg-muted/50"
                       data-testid={`fight-${index}`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${stat.survived ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <div
+                          className={`w-2 h-2 rounded-full ${stat.survived ? "bg-green-500" : "bg-red-500"}`}
+                        />
                         <div>
                           <div className="font-medium capitalize">
                             {stat.characterClass}
@@ -161,7 +220,7 @@ export default function StudentStats({ params }: StudentStatsProps) {
                       </div>
                       <div className="text-right text-sm">
                         <div className="font-medium">
-                          {stat.survived ? 'Victory' : 'Defeated'}
+                          {stat.survived ? "Victory" : "Defeated"}
                         </div>
                         <div className="text-muted-foreground">
                           {stat.damageDealt} dmg • {stat.healingDone} heal
@@ -170,6 +229,17 @@ export default function StudentStats({ params }: StudentStatsProps) {
                     </div>
                   ))}
                 </div>
+                {history.hasNextPage && (
+                  <Button
+                    className="mt-4"
+                    disabled={history.isFetchingNextPage}
+                    onClick={() => void history.fetchNextPage()}
+                  >
+                    {history.isFetchingNextPage
+                      ? "Loading…"
+                      : "Load older fights"}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </>

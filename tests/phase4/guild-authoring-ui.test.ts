@@ -126,6 +126,9 @@ test("teacher authoring submits limits and quest rewards, and shop creation carr
       assert.equal(b.disabled, false);
       await act(async () => b.click());
     };
+    await click("Refresh quest progress");
+    assert.equal(writes.at(-1).url, `/api/guilds/${guild.id}/quests/reconcile`);
+    assert.equal(writes.at(-1).method, "POST");
     await change("Current limit tier", "2");
     await click("Save guild progression");
     assert.equal(writes.at(-1).body.limitTier, 2);
@@ -153,6 +156,7 @@ test("teacher authoring submits limits and quest rewards, and shop creation carr
         ),
       ),
     );
+    const writesBeforeBrowsing = writes.length;
     await change("Browse shop tier", "4");
     assert.equal(
       document.querySelector("a")?.getAttribute("href"),
@@ -176,7 +180,7 @@ test("teacher authoring submits limits and quest rewards, and shop creation carr
     assert.equal(document.querySelectorAll("h3").length, 38);
     assert.equal(document.querySelector('a[href*="edit="]')?.getAttribute("href"), "/teacher/items?guild=guild&tier=1&edit=custom");
     assert.match(document.body.textContent!, /73 gold/);
-    assert.equal(writes.length, 2, "browsing does not mutate guild limits");
+    assert.equal(writes.length, writesBeforeBrowsing, "browsing does not mutate guild limits");
   } finally {
     await act(async () => root.unmount());
     cache.clear();
