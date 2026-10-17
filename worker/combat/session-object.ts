@@ -219,9 +219,17 @@ export class CombatSessionObject {
       await this.checkpoint(room);
       if (room.reportingPending) await this.syncAlarm(room);
     }
-    const entries=Object.values({...room.snapshot.players,...room.snapshot.departedPlayers}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0);
+    const entries=Object.values({...room.snapshot.departedPlayers,...room.snapshot.pendingPlayers,...room.snapshot.players}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0);
     const signature=JSON.stringify([room.snapshot.victory,entries.map(p=>[p.studentId,p.totals.questionsAnswered,p.totals.questionsCorrect,!!room.snapshot.players[p.studentId]])]);
-    if(this.repository?.recordQuestEvidence && entries.length && signature!==room.evidenceSignature){
+    if(this.repository?.recordQuestEvidence && entries.length && (signature!==room.evidenceSignature||room.evidencePending)){
+      if(!canFlushAttempts){
+        // The durable snapshot is the evidence outbox. Batch a classroom question,
+        // but arm recovery even if the room hibernates before its final answer.
+        room.evidencePending=true;
+        await this.checkpoint(room);
+        await this.syncAlarm(room);
+        return;
+      }
       const evidenceStartedAt=performance.now();
       try {await this.repository.recordQuestEvidence(room.snapshot,room.fight);room.evidenceSignature=signature;room.evidencePending=false;diagnostic({event:'combat_evidence',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-evidenceStartedAt,outcome:'ok'});}
       catch {room.evidencePending=true;diagnostic({event:'combat_evidence',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-evidenceStartedAt,outcome:'retry'});}

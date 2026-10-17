@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import type { StudentCombatSummary } from "@shared/contracts/history";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Swords, Heart, Shield, Target } from "lucide-react";
 import type { CombatStat } from "@shared/schema";
@@ -10,27 +11,24 @@ interface StudentStatsProps {
 
 export default function StudentStats({ params }: StudentStatsProps) {
   const studentId = params.id;
-  const [, setLocation] = useLocation();
-
-  const { data: stats, isLoading } = useQuery<CombatStat[]>({
-    queryKey: [`/api/combat-stats/student/${studentId}`],
+  const summary=useQuery<StudentCombatSummary>({queryKey:[`/api/combat-stats/student/${studentId}/summary`]});
+  const history=useInfiniteQuery({
+    queryKey:[`/api/combat-stats/student/${studentId}`],initialPageParam:'',
+    queryFn:async({pageParam})=>{
+      const response=await fetch(`/api/combat-stats/student/${studentId}?limit=10${pageParam?`&before=${encodeURIComponent(pageParam)}`:''}`,{credentials:'include'});
+      if(!response.ok)throw new Error('Unable to load combat history');
+      return {rows:await response.json() as CombatStat[],next:response.headers.get('X-Next-Cursor')};
+    },
+    getNextPageParam:last=>last.next||undefined,
   });
-
-  const totalFights = stats?.length || 0;
-  const victories = stats?.filter(s => s.survived).length || 0;
-  const totalDamage = stats?.reduce((sum, s) => sum + s.damageDealt, 0) || 0;
-  const totalHealing = stats?.reduce((sum, s) => sum + s.healingDone, 0) || 0;
-  const totalDamageTaken = stats?.reduce((sum, s) => sum + s.damageTaken, 0) || 0;
-  const survivalRate = totalFights > 0 ? Math.round((victories / totalFights) * 100) : 0;
-
-  const classCounts = stats?.reduce((acc, stat) => {
-    acc[stat.characterClass] = (acc[stat.characterClass] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const favoriteClass = classCounts
-    ? Object.entries(classCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "None"
-    : "None";
+  const stats=history.data?.pages.flatMap(page=>page.rows);
+  const isLoading=history.isLoading||summary.isLoading;
+  const totalFights=summary.data?.totalFights||0;
+  const victories=summary.data?.survived||0;
+  const totalDamage=summary.data?.totalDamage||0;
+  const totalHealing=summary.data?.totalHealing||0;
+  const totalDamageTaken=summary.data?.totalDamageTaken||0;
+  const survivalRate=totalFights?Math.round(100*victories/totalFights):0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,7 +50,7 @@ export default function StudentStats({ params }: StudentStatsProps) {
           </p>
         </div>
 
-        {isLoading ? (
+        {history.isError||summary.isError ? <div role="alert">Unable to load your combat record. <Button onClick={()=>{void history.refetch();void summary.refetch();}}>Retry</Button></div> : isLoading ? (
           <div className="grid gap-6">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="animate-pulse">
@@ -142,7 +140,7 @@ export default function StudentStats({ params }: StudentStatsProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {stats.slice(0, 10).map((stat, index) => (
+                  {stats.map((stat, index) => (
                     <div
                       key={stat.id}
                       className="flex items-center justify-between p-3 rounded-md bg-muted/50"
@@ -170,6 +168,7 @@ export default function StudentStats({ params }: StudentStatsProps) {
                     </div>
                   ))}
                 </div>
+                {history.hasNextPage&&<Button className="mt-4" disabled={history.isFetchingNextPage} onClick={()=>void history.fetchNextPage()}>{history.isFetchingNextPage?'Loading…':'Load older fights'}</Button>}
               </CardContent>
             </Card>
           </>

@@ -120,6 +120,13 @@
       "when": 1791836465888,
       "tag": "0016_equipment_color_variants",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792274362502,
+      "tag": "0017_c06_data_cost_indexes",
+      "breakpoints": true
     }
   ]
 }

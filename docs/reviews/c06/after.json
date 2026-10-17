@@ -1,0 +1,794 @@
+{
+  "environment": {
+    "node": "v24.19.0",
+    "database": "disposable PGlite PostgreSQL; no production traffic"
+  },
+  "reports": [
+    {
+      "members": 30,
+      "historyPerMember": 100,
+      "seededQuests": 2051,
+      "samples": [
+        {
+          "quests": 2051,
+          "queries": 11,
+          "rows": 2146,
+          "bytes": 629540,
+          "dbMs": 127.37,
+          "elapsedMs": 145.39
+        },
+        {
+          "quests": 2051,
+          "queries": 11,
+          "rows": 2146,
+          "bytes": 629540,
+          "dbMs": 93.05,
+          "elapsedMs": 105.7
+        },
+        {
+          "quests": 2051,
+          "queries": 11,
+          "rows": 2146,
+          "bytes": 629540,
+          "dbMs": 110.25,
+          "elapsedMs": 121.83
+        }
+      ],
+      "workloads": [
+        {
+          "name": "studentRead",
+          "quests": 79,
+          "queries": 6,
+          "rows": 171,
+          "bytes": 30363,
+          "dbMs": 14.68,
+          "elapsedMs": 16.4
+        },
+        {
+          "name": "oneStudentResultEvent",
+          "quests": 11,
+          "queries": 11,
+          "rows": 106,
+          "bytes": 9890,
+          "dbMs": 69.47,
+          "elapsedMs": 72.22
+        },
+        {
+          "name": "oneQuestionEvidenceEvent",
+          "quests": 2,
+          "queries": 5,
+          "rows": 64,
+          "bytes": 3732,
+          "dbMs": 7.76,
+          "elapsedMs": 9.24
+        }
+      ],
+      "plans": {
+        "membership": [
+          {
+            "QUERY PLAN": [
+              {
+                "Plan": {
+                  "Node Type": "Seq Scan",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "guild_memberships",
+                  "Alias": "guild_memberships",
+                  "Startup Cost": 0,
+                  "Total Cost": 1.75,
+                  "Plan Rows": 2,
+                  "Plan Width": 56,
+                  "Actual Startup Time": 0.184,
+                  "Actual Total Time": 0.205,
+                  "Actual Rows": 2,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Filter": "(student_id = '10000000-0000-4000-8000-000000000100'::uuid)",
+                  "Rows Removed by Filter": 58,
+                  "Shared Hit Blocks": 1,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning": {
+                  "Shared Hit Blocks": 6,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning Time": 0.103,
+                "Triggers": [],
+                "Execution Time": 0.263
+              }
+            ]
+          }
+        ],
+        "studentHistory": [
+          {
+            "QUERY PLAN": [
+              {
+                "Plan": {
+                  "Node Type": "Limit",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 290.49,
+                  "Total Cost": 290.61,
+                  "Plan Rows": 50,
+                  "Plan Width": 381,
+                  "Actual Startup Time": 0.661,
+                  "Actual Total Time": 0.728,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Shared Hit Blocks": 188,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Sort",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Startup Cost": 290.49,
+                      "Total Cost": 290.99,
+                      "Plan Rows": 200,
+                      "Plan Width": 381,
+                      "Actual Startup Time": 0.657,
+                      "Actual Total Time": 0.677,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Sort Key": [
+                        "completed_at DESC",
+                        "id DESC"
+                      ],
+                      "Sort Method": "top-N heapsort",
+                      "Sort Space Used": 42,
+                      "Sort Space Type": "Memory",
+                      "Shared Hit Blocks": 188,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0,
+                      "Plans": [
+                        {
+                          "Node Type": "Index Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Scan Direction": "Forward",
+                          "Index Name": "combat_results_student_history_idx",
+                          "Relation Name": "combat_results",
+                          "Alias": "combat_results",
+                          "Startup Cost": 0.28,
+                          "Total Cost": 283.85,
+                          "Plan Rows": 200,
+                          "Plan Width": 381,
+                          "Actual Startup Time": 0.01,
+                          "Actual Total Time": 0.368,
+                          "Actual Rows": 200,
+                          "Actual Loops": 1,
+                          "Disabled": false,
+                          "Index Cond": "(student_id = '10000000-0000-4000-8000-000000000100'::uuid)",
+                          "Rows Removed by Index Recheck": 0,
+                          "Index Searches": 1,
+                          "Shared Hit Blocks": 188,
+                          "Shared Read Blocks": 0,
+                          "Shared Dirtied Blocks": 0,
+                          "Shared Written Blocks": 0,
+                          "Local Hit Blocks": 0,
+                          "Local Read Blocks": 0,
+                          "Local Dirtied Blocks": 0,
+                          "Local Written Blocks": 0,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "Planning": {
+                  "Shared Hit Blocks": 42,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning Time": 0.178,
+                "Triggers": [],
+                "Execution Time": 0.785
+              }
+            ]
+          }
+        ],
+        "guildTotals": [
+          {
+            "QUERY PLAN": [
+              {
+                "Plan": {
+                  "Node Type": "Aggregate",
+                  "Strategy": "Plain",
+                  "Partial Mode": "Simple",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 391,
+                  "Total Cost": 391.01,
+                  "Plan Rows": 1,
+                  "Plan Width": 32,
+                  "Actual Startup Time": 4.805,
+                  "Actual Total Time": 4.807,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Shared Hit Blocks": 286,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "combat_results",
+                      "Alias": "combat_results",
+                      "Startup Cost": 0,
+                      "Total Cost": 361,
+                      "Plan Rows": 3000,
+                      "Plan Width": 180,
+                      "Actual Startup Time": 0.006,
+                      "Actual Total Time": 2.385,
+                      "Actual Rows": 3000,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Filter": "(guild_id = '10000000-0000-4000-8000-000000000001'::uuid)",
+                      "Rows Removed by Filter": 3000,
+                      "Shared Hit Blocks": 286,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    }
+                  ]
+                },
+                "Planning": {
+                  "Shared Hit Blocks": 12,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning Time": 0.1,
+                "Triggers": [],
+                "Execution Time": 4.829
+              }
+            ]
+          }
+        ],
+        "fightEvidence": [
+          {
+            "QUERY PLAN": [
+              {
+                "Plan": {
+                  "Node Type": "Bitmap Heap Scan",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "quest_fight_evidence",
+                  "Alias": "quest_fight_evidence",
+                  "Startup Cost": 4.79,
+                  "Total Cost": 143.75,
+                  "Plan Rows": 50,
+                  "Plan Width": 357,
+                  "Actual Startup Time": 0.022,
+                  "Actual Total Time": 0.055,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Recheck Cond": "((guild_id = '10000000-0000-4000-8000-000000000001'::uuid) AND (student_id = '10000000-0000-4000-8000-000000000100'::uuid))",
+                  "Rows Removed by Index Recheck": 0,
+                  "Filter": "(fight_id = '00000000-0000-4000-8000-000000000001'::uuid)",
+                  "Rows Removed by Filter": 0,
+                  "Exact Heap Blocks": 7,
+                  "Lossy Heap Blocks": 0,
+                  "Shared Hit Blocks": 9,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Bitmap Index Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Index Name": "quest_evidence_guild_student",
+                      "Startup Cost": 0,
+                      "Total Cost": 4.78,
+                      "Plan Rows": 50,
+                      "Plan Width": 0,
+                      "Actual Startup Time": 0.01,
+                      "Actual Total Time": 0.01,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Index Cond": "((guild_id = '10000000-0000-4000-8000-000000000001'::uuid) AND (student_id = '10000000-0000-4000-8000-000000000100'::uuid))",
+                      "Index Searches": 1,
+                      "Shared Hit Blocks": 2,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    }
+                  ]
+                },
+                "Planning": {
+                  "Shared Hit Blocks": 6,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning Time": 0.106,
+                "Triggers": [],
+                "Execution Time": 0.078
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "members": 60,
+      "historyPerMember": 100,
+      "seededQuests": 4091,
+      "samples": [
+        {
+          "quests": 4091,
+          "queries": 11,
+          "rows": 4276,
+          "bytes": 1255610,
+          "dbMs": 193.75,
+          "elapsedMs": 218.61
+        },
+        {
+          "quests": 4091,
+          "queries": 11,
+          "rows": 4276,
+          "bytes": 1255610,
+          "dbMs": 199.16,
+          "elapsedMs": 215.54
+        },
+        {
+          "quests": 4091,
+          "queries": 11,
+          "rows": 4276,
+          "bytes": 1255610,
+          "dbMs": 196.71,
+          "elapsedMs": 213.13
+        }
+      ],
+      "workloads": [
+        {
+          "name": "studentRead",
+          "quests": 79,
+          "queries": 6,
+          "rows": 261,
+          "bytes": 36783,
+          "dbMs": 19.31,
+          "elapsedMs": 21.02
+        },
+        {
+          "name": "oneStudentResultEvent",
+          "quests": 11,
+          "queries": 11,
+          "rows": 196,
+          "bytes": 16310,
+          "dbMs": 117.12,
+          "elapsedMs": 119.93
+        },
+        {
+          "name": "oneQuestionEvidenceEvent",
+          "quests": 2,
+          "queries": 5,
+          "rows": 124,
+          "bytes": 6642,
+          "dbMs": 9.07,
+          "elapsedMs": 11.22
+        }
+      ],
+      "plans": {
+        "membership": [
+          {
+            "QUERY PLAN": [
+              {
+                "Plan": {
+                  "Node Type": "Seq Scan",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "guild_memberships",
+                  "Alias": "guild_memberships",
+                  "Startup Cost": 0,
+                  "Total Cost": 3.5,
+                  "Plan Rows": 2,
+                  "Plan Width": 56,
+                  "Actual Startup Time": 0.008,
+                  "Actual Total Time": 0.019,
+                  "Actual Rows": 2,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Filter": "(student_id = '10000000-0000-4000-8000-000000000100'::uuid)",
+                  "Rows Removed by Filter": 118,
+                  "Shared Hit Blocks": 2,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning": {
+                  "Shared Hit Blocks": 6,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning Time": 0.08,
+                "Triggers": [],
+                "Execution Time": 0.03
+              }
+            ]
+          }
+        ],
+        "studentHistory": [
+          {
+            "QUERY PLAN": [
+              {
+                "Plan": {
+                  "Node Type": "Limit",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 328.99,
+                  "Total Cost": 329.12,
+                  "Plan Rows": 50,
+                  "Plan Width": 381,
+                  "Actual Startup Time": 0.315,
+                  "Actual Total Time": 0.36,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Shared Hit Blocks": 181,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Sort",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Startup Cost": 328.99,
+                      "Total Cost": 329.49,
+                      "Plan Rows": 200,
+                      "Plan Width": 381,
+                      "Actual Startup Time": 0.311,
+                      "Actual Total Time": 0.328,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Sort Key": [
+                        "completed_at DESC",
+                        "id DESC"
+                      ],
+                      "Sort Method": "top-N heapsort",
+                      "Sort Space Used": 42,
+                      "Sort Space Type": "Memory",
+                      "Shared Hit Blocks": 181,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0,
+                      "Plans": [
+                        {
+                          "Node Type": "Index Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Scan Direction": "Forward",
+                          "Index Name": "combat_results_student_history_idx",
+                          "Relation Name": "combat_results",
+                          "Alias": "combat_results",
+                          "Startup Cost": 0.29,
+                          "Total Cost": 322.35,
+                          "Plan Rows": 200,
+                          "Plan Width": 381,
+                          "Actual Startup Time": 0.011,
+                          "Actual Total Time": 0.161,
+                          "Actual Rows": 200,
+                          "Actual Loops": 1,
+                          "Disabled": false,
+                          "Index Cond": "(student_id = '10000000-0000-4000-8000-000000000100'::uuid)",
+                          "Rows Removed by Index Recheck": 0,
+                          "Index Searches": 1,
+                          "Shared Hit Blocks": 181,
+                          "Shared Read Blocks": 0,
+                          "Shared Dirtied Blocks": 0,
+                          "Shared Written Blocks": 0,
+                          "Local Hit Blocks": 0,
+                          "Local Read Blocks": 0,
+                          "Local Dirtied Blocks": 0,
+                          "Local Written Blocks": 0,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "Planning": {
+                  "Shared Hit Blocks": 42,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning Time": 0.166,
+                "Triggers": [],
+                "Execution Time": 0.393
+              }
+            ]
+          }
+        ],
+        "guildTotals": [
+          {
+            "QUERY PLAN": [
+              {
+                "Plan": {
+                  "Node Type": "Aggregate",
+                  "Strategy": "Plain",
+                  "Partial Mode": "Simple",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Startup Cost": 782,
+                  "Total Cost": 782.01,
+                  "Plan Rows": 1,
+                  "Plan Width": 32,
+                  "Actual Startup Time": 11.217,
+                  "Actual Total Time": 11.22,
+                  "Actual Rows": 1,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Shared Hit Blocks": 572,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "combat_results",
+                      "Alias": "combat_results",
+                      "Startup Cost": 0,
+                      "Total Cost": 722,
+                      "Plan Rows": 6000,
+                      "Plan Width": 180,
+                      "Actual Startup Time": 0.006,
+                      "Actual Total Time": 4.453,
+                      "Actual Rows": 6000,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Filter": "(guild_id = '10000000-0000-4000-8000-000000000001'::uuid)",
+                      "Rows Removed by Filter": 6000,
+                      "Shared Hit Blocks": 572,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    }
+                  ]
+                },
+                "Planning": {
+                  "Shared Hit Blocks": 12,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning Time": 0.292,
+                "Triggers": [],
+                "Execution Time": 11.27
+              }
+            ]
+          }
+        ],
+        "fightEvidence": [
+          {
+            "QUERY PLAN": [
+              {
+                "Plan": {
+                  "Node Type": "Bitmap Heap Scan",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "quest_fight_evidence",
+                  "Alias": "quest_fight_evidence",
+                  "Startup Cost": 4.79,
+                  "Total Cost": 164.1,
+                  "Plan Rows": 50,
+                  "Plan Width": 357,
+                  "Actual Startup Time": 0.026,
+                  "Actual Total Time": 0.061,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Recheck Cond": "((guild_id = '10000000-0000-4000-8000-000000000001'::uuid) AND (student_id = '10000000-0000-4000-8000-000000000100'::uuid))",
+                  "Rows Removed by Index Recheck": 0,
+                  "Filter": "(fight_id = '00000000-0000-4000-8000-000000000001'::uuid)",
+                  "Rows Removed by Filter": 0,
+                  "Exact Heap Blocks": 7,
+                  "Lossy Heap Blocks": 0,
+                  "Shared Hit Blocks": 9,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Bitmap Index Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Index Name": "quest_evidence_guild_student",
+                      "Startup Cost": 0,
+                      "Total Cost": 4.78,
+                      "Plan Rows": 50,
+                      "Plan Width": 0,
+                      "Actual Startup Time": 0.011,
+                      "Actual Total Time": 0.011,
+                      "Actual Rows": 50,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Index Cond": "((guild_id = '10000000-0000-4000-8000-000000000001'::uuid) AND (student_id = '10000000-0000-4000-8000-000000000100'::uuid))",
+                      "Index Searches": 1,
+                      "Shared Hit Blocks": 2,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    }
+                  ]
+                },
+                "Planning": {
+                  "Shared Hit Blocks": 6,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                },
+                "Planning Time": 0.258,
+                "Triggers": [],
+                "Execution Time": 0.088
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
