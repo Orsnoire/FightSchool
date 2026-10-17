@@ -45,3 +45,35 @@ jobs:
           path: artifacts/combat-ui
           if-no-files-found: ignore
           retention-days: 7
+  initial-loading:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:client
+      - name: Install isolated browser test tooling
+        run: npm install --no-save --package-lock=false playwright@1.62.1 && npx playwright install chromium
+      - name: Verify production loading, polling and editor recovery
+        shell: bash
+        run: |
+          npx vite preview --host 127.0.0.1 --port 4174 > /tmp/c07-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4174/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node --import tsx tests/browser/initial-loading.mjs
+      - name: Preserve production loading evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: initial-loading-evidence
+          path: artifacts/initial-loading
+          if-no-files-found: ignore
+          retention-days: 7

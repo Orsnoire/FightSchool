@@ -65,3 +65,9 @@ export function advanceTo(s: ReturnType<typeof started>, phase: ReturnType<typeo
   if (s.currentPhase !== phase) throw new Error(`Did not reach ${phase}; reached ${s.currentPhase}`);
   return s;
 }
+
+export const fightSummary = (value = fight) => ({
+  id: value.id, teacherId: value.teacherId, title: value.title, guildCode: value.guildCode,
+  encounterTier: value.encounterTier ?? null, questionCount: value.questions.length, enemyCount: value.enemies.length,
+  createdAt: new Date(value.createdAt).getTime(), updatedAt: new Date(value.updatedAt).getTime(),
+});

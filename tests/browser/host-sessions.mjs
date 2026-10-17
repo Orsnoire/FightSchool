@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
-import { fight } from '../phase4/fixtures.ts';
+import { fight, fightSummary } from '../phase4/fixtures.ts';
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 await mkdir('artifacts/combat-ui', {recursive:true});
 const browser = await chromium.launch({executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE});
@@ -17,7 +17,7 @@ try {
       const request=route.request(),url=new URL(request.url()),path=url.pathname;
       let json;
       if(path.endsWith('/check-session'))json={id:fight.teacherId,email:'fixture@example.test'};
-      else if(path===`/api/teacher/${fight.teacherId}/fights`)json=[fight];
+      else if(path===`/api/teacher/${fight.teacherId}/fights`)json=[fightSummary(fight)];
       else if(path==='/api/fights/hosted-sessions')json=current?[current]:[];
       else if(path.endsWith('/host-guilds'))json=[];
       else if(path===`/api/fights/${fight.id}/sessions`){

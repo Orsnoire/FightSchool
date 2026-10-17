@@ -11,7 +11,7 @@ export async function measureInitialLoading(directory = 'dist/public') {
   const manifest: Record<string, Chunk> = JSON.parse(await readFile(resolve(directory, '.vite/manifest.json'), 'utf8'));
   const entries = Object.keys(manifest).filter(key => manifest[key].isEntry);
   if (!entries.length) throw new Error('Build manifest has no HTML entry');
-  async function workload(route?: string) {
+  async function workload(...routes: string[]) {
     const visited = new Set<string>();
     const visit = (key: string) => {
       if (visited.has(key)) return;
@@ -21,7 +21,7 @@ export async function measureInitialLoading(directory = 'dist/public') {
       for (const dependency of chunk.imports || []) visit(dependency);
     };
     entries.forEach(visit);
-    if (route && manifest[route]) visit(route);
+    for (const route of routes) if (manifest[route]) visit(route);
     const js = [...new Set([...visited].map(key => manifest[key].file).filter(file => file.endsWith('.js')))];
     const css = [...new Set([...visited].flatMap(key => manifest[key].css || []))];
     async function sizes(files: string[]) {
@@ -48,7 +48,7 @@ export async function measureInitialLoading(directory = 'dist/public') {
       studentLogin: await workload('src/pages/StudentLogin.tsx'),
       dashboard: await workload('src/pages/TeacherDashboard.tsx'),
       authoring: await workload('src/pages/CreateFight.tsx'),
-      mathEditor: await workload('src/components/MathEditorImpl.tsx'),
+      studentMath: await workload('src/pages/Combat.tsx', 'src/components/MathEditorImpl.tsx'),
     },
     totalJavaScriptChunks: Object.values(manifest).filter(chunk => chunk.file.endsWith('.js')).length,
   };

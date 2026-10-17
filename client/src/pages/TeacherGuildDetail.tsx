@@ -49,12 +49,14 @@ export default function TeacherGuildDetail() {
     enabled: !!guildId,
   });
 
-  const { data: allFights } = useQuery({
+  const availableFights = useQuery({
     ...apiQueries.teacherFightSummaries(teacherId || ""),
     enabled: !!teacherId,
     staleTime: 0,
     refetchOnMount: "always",
   });
+
+  const { data: allFights } = availableFights;
 
   const { data: leaderboard } = useQuery<any[]>({
     queryKey: [`/api/guilds/${guildId}/leaderboard?metric=damageDealt`],
@@ -428,7 +430,8 @@ export default function TeacherGuildDetail() {
                   <CardDescription>Assign fights to award guild XP</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {unassignedFights.length > 0 ? (
+                  {availableFights.isError && <p role="alert">Could not load available fights. <Button variant="outline" onClick={() => availableFights.refetch()}>Retry available fights</Button></p>}
+                  {availableFights.isPending ? <p role="status">Loading available fights…</p> : unassignedFights.length > 0 ? (
                     <div className="space-y-2">
                       {unassignedFights.map((fight) => (
                         <div
@@ -453,7 +456,7 @@ export default function TeacherGuildDetail() {
                         </div>
                       ))}
                     </div>
-                  ) : (
+                  ) : availableFights.isError ? null : (
                     <div className="text-center py-8 text-muted-foreground">
                       All fights are assigned
                     </div>

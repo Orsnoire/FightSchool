@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { fight } from '../phase4/fixtures.ts';
+import { fight, fightSummary } from '../phase4/fixtures.ts';
 import { ENEMY_CATALOG } from '../../shared/combat/enemy-catalog.ts';
 import { enemySchema } from '../../shared/schema.ts';
 
@@ -15,7 +15,7 @@ export async function verifyEnemyAuthoring(browser, origin) {
         if(request.method()==='PATCH') saved={...saved,...request.postDataJSON()};
         return route.fulfill({json:saved});
       }
-      if(path===`/api/teacher/${fight.teacherId}/fights`) return route.fulfill({json:[saved]});
+      if(path===`/api/teacher/${fight.teacherId}/fights`) return route.fulfill({json:[fightSummary(saved)]});
       return route.fulfill({json:[]});
     });
     await page.goto(`${origin}/teacher/edit/${fight.id}`);
