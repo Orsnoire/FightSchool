@@ -83,11 +83,11 @@ try {
   assert.ok(sessionReads >= 3, 'visible live status still polls');
   report.requests.visible10200ms = { definitions: listReads, liveStatus: sessionReads, fullDefinitions: detailReads };
   const beforeHidden = sessionReads;
-  await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' }); document.dispatchEvent(new Event('visibilitychange')); });
+  await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' }); document.dispatchEvent(new Event('visibilitychange', { bubbles: true })); });
   await p.clock.runFor(11000);
   assert.equal(sessionReads, beforeHidden, 'background tabs do not poll');
   const focusRefresh = p.waitForResponse(r => new URL(r.url()).pathname === `/api/teacher/${fight.teacherId}/fights`);
-  await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }); document.dispatchEvent(new Event('visibilitychange')); });
+  await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }); document.dispatchEvent(new Event('visibilitychange', { bubbles: true })); });
   await focusRefresh;
   assert.equal(listReads, 2, 'returning to the tab refreshes definitions');
 
