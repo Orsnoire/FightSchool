@@ -2,7 +2,12 @@
 
 C03 reconciles the Drizzle baseline with committed migrations through
 `0014_guild_quests`. It changes declarations and metadata only. No new migration,
-production DDL, data rewrite, or applied-history edit is required.
+production DDL, data rewrite, or applied-history edit is required for C03.
+
+C06 subsequently shipped index-only migration 0017 on October 17 via
+[deployment 39075244755](https://github.com/Orsnoire/FightSchool/actions/runs/39075244755). Declarations, snapshot and journal
+match its five measured indexes; all existing data and SQL reward functions are
+preserved. Migrations through 0017 are now shipped and immutable.
 
 ## Ownership
 
@@ -63,7 +68,7 @@ and gold, while new fields receive the intended defaults. Full CI retains this
 existing-data preservation gate.
 
 For the next relational change, edit declarations, generate and review an
-**appended** migration (0017 is the C06 index-only change; 0015/0016 already shipped), and include its snapshot/journal entry. Put
+**appended** migration (0015–0017 have already shipped), and include its snapshot/journal entry. Put
 required procedural/data SQL in the reviewed new migration, then run all gates.
 If the catalog comparison differs, fix the new declarations/migration rather
 than changing shipped SQL or weakening the comparison. PGlite provides offline

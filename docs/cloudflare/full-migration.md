@@ -1,6 +1,6 @@
 # Worker migration and combat recovery
 
-> **RELEASE HISTORY + OPEN OPERATIONS — updated October 12, 2026.**
+> **RELEASE HISTORY + OPEN OPERATIONS — updated October 17, 2026.**
 > The application migration is deployed; full operational signoff remains open.
 > [Current status](../CURRENT_STATUS.md) names the latest runtime. Dated entries
 > below retain earlier evidence and historical blockers; they are not competing
@@ -8,8 +8,8 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Latest verified runtime:** `fed94dc9`, released October 12 with C05 / PR #63.
-Deployment 38299904045 and canonical acceptance 38300146217 passed.
+**Latest verified runtime:** `470dd724`, released October 17 with C06 / PR #69.
+Deployment 39075244755 and canonical acceptance 39075452591 passed.
 See the [current release record](../ACTIVE_WORK.md) and [current status](../CURRENT_STATUS.md).
 Earlier releases and R2 failures below are historical.
 Full infrastructure recovery/rollback signoff remains open.
@@ -701,3 +701,32 @@ gate; this single burst is not a sustained performance benchmark. The release
 is complete, merged, deployed and accepted. Prior Worker
 `94a6a8f1-462d-4b1c-98c1-365de92066f1` remains the preceding release checkpoint;
 no rollback rehearsal was performed.
+
+## C06 data-cost release — October 17, 2026
+
+The owner instructed "Merge and deploy" after reviewing the implementation. PR #69
+merged with an expected-head check at `470dd724a621b235624da4730255240580911fd3`;
+the merged tree exactly matches reviewed head `24b0116e4f7b671dae6c8cb4816cc6f72610034c`.
+
+| Evidence | Result |
+| --- | --- |
+| [Review CI 39074557950](https://github.com/Orsnoire/FightSchool/actions/runs/39074557950) | 275 tests, TypeScript and client/Worker builds pass |
+| [Chromium 39074557979, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/39074557979/attempts/2) | Complete suite passed with unchanged code after an intermittent phone comparison Escape timeout in attempt 1 |
+| [Deployment 39075244755](https://github.com/Orsnoire/FightSchool/actions/runs/39075244755) | Passed on `470dd724`: tests/builds, R2, additive migrations and both hostnames |
+| [Canonical live acceptance 39075452591](https://github.com/Orsnoire/FightSchool/actions/runs/39075452591) | Passed on `470dd724`: combat/economy, guild quests/shop/history, isolation, R2, 30-player concurrency/reconnect/completion, moderation and revocation |
+
+Immutable Worker `0de082fd-746e-48bb-bf4a-e33a8827ba68` was published at 22:31:11 UTC.
+The migration runner through 0017 succeeded at 22:30:55 UTC. No student records,
+evidence or progression were reset; SQL reward functions were unchanged. The runner's
+success is the release evidence; individual production ledger/catalog rows were not
+independently queried. The standard acceptance suite creates its own test accounts,
+content and rooms; operational test fights are archived, while broader fixture cleanup
+and environment isolation remain C12 work. Existing classroom records are not reset.
+
+Live acceptance completed at 22:34:02 UTC. Its single 30-answer burst recorded p50
+708 ms, p95 1,312 ms and maximum 1,362 ms, within the existing 15-second maximum gate.
+This is not a sustained benchmark or a controlled before/after latency comparison.
+Production plans, lock-contention/recovery drills and rollback rehearsal remain open.
+The additive indexes can remain during a compatible code rollback; no reverse data
+migration is needed. No rollback was performed. Documentation-only release commits
+are not a new deployed runtime. C07 remains next and unstarted.

@@ -65,10 +65,10 @@ inventory update atomically, with no duplicate charge or duplicate ownership.
 
 Implementation status: [PR #68](https://github.com/Orsnoire/FightSchool/pull/68)
 is merged and included in deployed runtime `d18d1b5`. Its CI and October 13 deployment
-succeeded; see [current status](CURRENT_STATUS.md). Exact-runtime live acceptance has
-not been reverified in the C06 session.
+succeeded; see [current status](CURRENT_STATUS.md). The current C06 runtime `470dd724`
+retains this correction and passed canonical live acceptance on October 17.
 
-### C06 implementation (draft PR #69, not deployed)
+### C06 implementation (PR #69, released October 17)
 
 Quest and shop GET requests project state without seeding or awarding rewards.
 Resolved academic evidence, completed combats, character level changes, membership
