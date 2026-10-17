@@ -98,25 +98,6 @@
       "javascriptBytes": 2067682,
       "javascriptGzipBytes": 601648,
       "cssGzipBytes": 28015
-    },
-    "richTextEditor": {
-      "javascript": [
-        {
-          "file": "assets/index-Dcu-XAMT.js",
-          "bytes": 2067682,
-          "gzipBytes": 601648
-        }
-      ],
-      "styles": [
-        {
-          "file": "assets/index-BZ7sR7v-.css",
-          "bytes": 142709,
-          "gzipBytes": 28015
-        }
-      ],
-      "javascriptBytes": 2067682,
-      "javascriptGzipBytes": 601648,
-      "cssGzipBytes": 28015
     }
   },
   "totalJavaScriptChunks": 1

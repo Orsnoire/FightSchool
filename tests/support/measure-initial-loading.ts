@@ -49,7 +49,6 @@ export async function measureInitialLoading(directory = 'dist/public') {
       dashboard: await workload('src/pages/TeacherDashboard.tsx'),
       authoring: await workload('src/pages/CreateFight.tsx'),
       mathEditor: await workload('src/components/MathEditorImpl.tsx'),
-      richTextEditor: await workload('src/components/RichTextEditorImpl.tsx'),
     },
     totalJavaScriptChunks: Object.values(manifest).filter(chunk => chunk.file.endsWith('.js')).length,
   };

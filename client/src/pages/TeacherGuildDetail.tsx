@@ -1,3 +1,4 @@
+import { apiQueries } from "@/lib/apiQueries";
 import { TeacherGuildShop } from "@/components/TeacherGuildShop";
 import { GuildAdministration } from "@/components/GuildAdministration";
 import { useState } from "react";
@@ -48,9 +49,11 @@ export default function TeacherGuildDetail() {
     enabled: !!guildId,
   });
 
-  const { data: allFights } = useQuery<Fight[]>({
-    queryKey: [`/api/teacher/${teacherId}/fights`],
+  const { data: allFights } = useQuery({
+    ...apiQueries.teacherFightSummaries(teacherId || ""),
     enabled: !!teacherId,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: leaderboard } = useQuery<any[]>({
@@ -436,7 +439,7 @@ export default function TeacherGuildDetail() {
                           <div className="flex-1">
                             <p className="font-medium">{fight.title}</p>
                             <p className="text-sm text-muted-foreground">
-                              {fight.questionCount ?? fight.questions?.length ?? 0} questions
+                              {fight.questionCount} questions
                             </p>
                           </div>
                           <Button

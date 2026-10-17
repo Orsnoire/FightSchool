@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import type { Fight, Guild } from '@shared/schema';
+import type { FightSummary } from '@shared/contracts/fight-summary';
 import { apiRequest } from './queryClient';
 export interface HostedSession {sessionId:string;fightId:string;status:string;guildId?:string|null}
 export interface LeaderboardEntry {studentId:string;nickname:string;characterClass:string;totalDamageDealt:number;fightsCompleted:number}
@@ -9,6 +10,7 @@ function query<T>(queryKey:readonly unknown[],url:string) {
 }
 export const apiQueries={
   teacherFights:(id:string)=>query<Fight[]>([`/api/teacher/${id}/fights`],`/api/teacher/${encodeURIComponent(id)}/fights`),
+  teacherFightSummaries:(id:string)=>query<FightSummary[]>([`/api/teacher/${id}/fights`,'summary'],`/api/teacher/${encodeURIComponent(id)}/fights?view=summary`),
   hostedSessions:(teacherId:string)=>query<HostedSession[]>(['/api/fights/hosted-sessions',teacherId],'/api/fights/hosted-sessions'),
   guild:(id:string)=>query<Guild>([`/api/guilds/${id}`],`/api/guilds/${encodeURIComponent(id)}`),
   leaderboard:(id:string,metric:string)=>query<LeaderboardEntry[]>([`/api/guilds/${id}/leaderboard`,metric],`/api/guilds/${encodeURIComponent(id)}/leaderboard?${new URLSearchParams({metric})}`),

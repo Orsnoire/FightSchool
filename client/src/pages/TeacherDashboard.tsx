@@ -9,7 +9,6 @@ import { PlusCircle, Swords, Users, BarChart3, Copy, Edit, LogOut, Shield } from
 import { useToast } from "@/hooks/use-toast";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Fight } from "@shared/schema";
 
 export default function TeacherDashboard() {
   const { toast } = useToast();
@@ -18,18 +17,22 @@ export default function TeacherDashboard() {
   const teacherId = localStorage.getItem("teacherId");
   const teacherGuildCode = localStorage.getItem("teacherGuildCode") || "";
 
-  const { data: fights, isLoading } = useQuery<Fight[]>({
-    ...apiQueries.teacherFights(teacherId||""),
+  const fightList = useQuery({
+    ...apiQueries.teacherFightSummaries(teacherId||""),
     enabled: !!teacherId && isAuthenticated && !isChecking,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchInterval: 5000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchInterval: false,
   });
+
+  const { data: fights, isLoading } = fightList;
 
   const hostedKey = ["/api/fights/hosted-sessions"];
   const hosted = useQuery<Array<{sessionId: string; fightId: string; status: string}>>({
-    ...apiQueries.hostedSessions(teacherId||""), enabled: isAuthenticated && !isChecking,
-    refetchInterval: 5000, refetchOnWindowFocus: true, refetchOnMount: "always",
+    ...apiQueries.hostedSessions(teacherId||""), enabled: !!teacherId && isAuthenticated && !isChecking,
+    refetchInterval: 5000, refetchIntervalInBackground: false,
+    staleTime: 0, refetchOnWindowFocus: true, refetchOnMount: "always",
   });
   const hostActionPending = useRef(false);
   const hostAction = useMutation({
@@ -182,6 +185,7 @@ export default function TeacherDashboard() {
           </p>
         </div>
 
+        {fightList.isError && <p role="alert" className="mb-4 text-white">Could not load battles. <Button variant="outline" onClick={() => fightList.refetch()}>Retry battles</Button></p>}
         {hosted.isError && <p role="alert" className="mb-4 text-white">Could not check ongoing sessions. <Button variant="outline" onClick={() => hosted.refetch()}>Retry session check</Button></p>}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -231,8 +235,8 @@ export default function TeacherDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-4 text-sm text-muted-foreground">
-                    <span>{fight.questions.length} Questions</span>
-                    <span>{fight.enemies.length} Enemies</span>
+                    <span>{fight.questionCount} Questions</span>
+                    <span>{fight.enemyCount} Enemies</span>
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-wrap gap-2">
@@ -269,7 +273,7 @@ export default function TeacherDashboard() {
               </Card>
             );})}
           </div>
-        ) : (
+        ) : fightList.isError ? null : (
           <Card className="border-dashed bg-card/90">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Swords className="h-16 w-16 text-muted-foreground mb-4" />
