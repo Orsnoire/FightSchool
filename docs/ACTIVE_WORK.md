@@ -1,3 +1,16 @@
+# C06 data-cost cleanup — October 17, 2026
+
+- Active branch: `cleanup/c06-data-costs`; [draft PR #69](https://github.com/Orsnoire/FightSchool/pull/69). Published claim: `e9964933f1a12ad2a9f3140227740cf6378fe1d3`.
+- Scope: F06/F08–F09; reproducible populated-guild query baselines, affected-quest evaluation, durable evidence, measured indexes, bounded history and SQL aggregation. Preserve academic evidence, current student data, permissions, deterministic progression and atomic exactly-once rewards.
+- Verified baseline: current main `d18d1b5c29e2b758a6bf523ad3c15b6b8285c842`. PR #68 is merged. [CI 38452023937](https://github.com/Orsnoire/FightSchool/actions/runs/38452023937) and [deployment 38452066918](https://github.com/Orsnoire/FightSchool/actions/runs/38452066918) succeeded on that SHA. No C06 branch or open PR existed at claim time. Older October 13 checkpoints below are historical, not current release state. Live acceptance for that deployment has not been verified in this session.
+- Completed: current-main, PR, deployment and branch inspection; read repository workflow, authority, cleanup scope and quest specification.
+- Unfinished: baseline harness, implementation, regression/fault/retry/cross-room tests, measurements and CI.
+- Validation: not yet run for C06. No runtime changes yet.
+- Exact next action: resume the branch and establish reproducible local PostgreSQL query measurements before editing runtime/schema code.
+- Release boundary: draft review only. Do not merge application changes, deploy, run production migrations or reset data.
+
+## Historical checkpoint (superseded by verified GitHub state above)
+
 # Guild shop default equipment catalog — October 13, 2026
 
 - Active branch: `fix/guild-shop-default-catalog`; PUBLISHED as [PR #68](https://github.com/Orsnoire/FightSchool/pull/68). Implementation `cce4165c858055fbf03b2748db4ae0c773720a1d` exactly matches the locally verified Git tree; CI/browser acceptance pending.
