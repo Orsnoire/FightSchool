@@ -1,3 +1,16 @@
+# C08 active — battlefield rendering, October 17, 2026
+
+- Active package: **C08 / F11 and battlefield/countdown F12**. Branch `cleanup/c08-battlefield-rendering`; draft PR publication is the next coordination step, before runtime edits.
+- Baseline: main `56a1f758bde901ff9739e5ea0ee8d44d55f7ba91`; GitHub rechecked, no open PR or competing C08 branch. C07 is merged/deployed/accepted; runtime `8f280b7`, Worker `e2f6dc5a-4157-47f4-bba6-080214499dce`.
+- Scope: display/DPR-sized avatar surfaces, byte-bounded composition caching, stable appearance inputs, isolated countdown subscriptions and stable battlefield props. Preserve approved static art, palette/equipment rendering, selection clocks, reconnect/deadline behavior, completion-driven playback, permissions and all student records/rewards. No migration or production reset.
+- Completed: repository and authority/review inspection; package claimed. Runtime implementation has not begun.
+- Measurements/gates: reproducible 30/60 distinct-avatar fixtures, before/after backing allocation (proposed reduction at least 80%), cache residency and composition work, timer/page/battlefield render counts; visual comparison at Chromebook/phone/high-DPR sizes and responsive classroom interactions. Distinguish allocated canvas bytes from process/GPU memory and emulated responsiveness from physical Chromebook evidence.
+- Verification: pending; no C08 correctness, browser or performance pass is claimed.
+- Exact next action: publish the draft PR and main discovery pointer; capture baseline, implement coherent optimizations, add resize/DPR/cache/race/countdown regressions, run local/CI/browser gates, and publish measurements and review evidence.
+- Release boundary: **IN PROGRESS / DRAFT / NOT MERGED / NOT DEPLOYED**. C09 remains unstarted. This request begins C08 implementation; no new application deployment is being performed.
+
+## Previous completed release — C07
+
 # C07 complete — released October 17, 2026
 
 - Owner explicitly authorized **merge and deployment** after implementation review. The earlier draft-only boundary is superseded. No data reset was authorized or performed.
