@@ -1,12 +1,12 @@
 # C06 data-cost cleanup — October 17, 2026
 
-- Active branch: `cleanup/c06-data-costs`; draft PR being registered before implementation.
+- Active branch: `cleanup/c06-data-costs`; [draft PR #69](https://github.com/Orsnoire/FightSchool/pull/69). Published claim: `e9964933f1a12ad2a9f3140227740cf6378fe1d3`.
 - Scope: F06/F08–F09; reproducible populated-guild query baselines, affected-quest evaluation, durable evidence, measured indexes, bounded history and SQL aggregation. Preserve academic evidence, current student data, permissions, deterministic progression and atomic exactly-once rewards.
 - Verified baseline: current main `d18d1b5c29e2b758a6bf523ad3c15b6b8285c842`. PR #68 is merged. [CI 38452023937](https://github.com/Orsnoire/FightSchool/actions/runs/38452023937) and [deployment 38452066918](https://github.com/Orsnoire/FightSchool/actions/runs/38452066918) succeeded on that SHA. No C06 branch or open PR existed at claim time. Older October 13 checkpoints below are historical, not current release state. Live acceptance for that deployment has not been verified in this session.
 - Completed: current-main, PR, deployment and branch inspection; read repository workflow, authority, cleanup scope and quest specification.
-- Unfinished: baseline harness, implementation, regression/fault/retry/cross-room tests, measurements and CI.
-- Validation: not yet run for C06. No runtime changes yet.
-- Exact next action: publish this claim and draft PR, register main's discovery pointer, then establish reproducible local PostgreSQL query measurements before editing runtime/schema code.
+- Unfinished: implementation, regression/fault/retry/cross-room tests, after measurements and CI.
+- Baseline: measured current evaluator on disposable PostgreSQL, 30/60 members, 2,051/4,091 seeded quests and 100 results per member in each of two guilds. Raw query counts, rows, payload and EXPLAIN ANALYZE plans are in `docs/reviews/c06/before.json`; reproduction: `node --import tsx tests/support/measure-data-costs.ts --baseline docs/reviews/c06/before.json` on this baseline checkpoint. No runtime changes yet.
+- Exact next action: implement event-scoped quest evaluation and SQL evidence aggregates, preserving existing atomic rewards and durable room retries. Then measure candidate indexes and bounded history.
 - Release boundary: draft review only. Do not merge application changes, deploy, run production migrations or reset data.
 
 ## Historical checkpoint (superseded by verified GitHub state above)
