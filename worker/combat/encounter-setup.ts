@@ -6,7 +6,7 @@ import { encounterDamageEstimate } from "./damage-values";
 import { enemyTuning } from "../../shared/encounter-tiers";
 import { CombatRuleError } from "../../shared/combat/errors";
 
-export function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
+function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
   return expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive', players).map((e) => ({
       ...e,
       enemyType: e.enemyType || (e.species === "goblin" ? "goblin" : inferEnemyType(e.image)),

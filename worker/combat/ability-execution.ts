@@ -32,7 +32,7 @@ export function applyAbility(s: CombatSnapshot, p: CombatPlayer, id: string, tar
   }
 }
 
-export function executeAbility(
+function executeAbility(
   s: CombatSnapshot,
   p: CombatPlayer,
   id: string,

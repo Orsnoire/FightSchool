@@ -1,34 +1,24 @@
-import { createPlaybackGate, acknowledgePlayback, rendererKey, type PlaybackGate } from "./playback-gate";
+import type { StoredRoom } from "./room-state";
+import { recoverRoom } from "./room-recovery";
+import { saveRoom, completeRoom, roomAlarmAt } from "./room-persistence";
+import { publicResults, snapshotMessage } from "./room-messages";
+import { acknowledgePlayback, rendererKey } from "./playback-gate";
 import { isResolution } from "../../shared/combat/presentation";
-import { reportingSignature } from "../db/session-reporting";
 import { CombatRuleError } from "../../shared/combat/errors";
 import { diagnostic } from "../diagnostics";
-import { combatCommandSchema, type CombatCommand } from "../../shared/contracts/combat";
+import type { CombatCommand } from "../../shared/contracts/combat";
+import { assertCommandText, decodeCommandText, parseCombatCommand, applyStudentCommand } from "./commands";
 import { publicSnapshot } from "./public-snapshot";
-import { answersRevealed } from "../../shared/combat/answer-feedback";
 export { publicSnapshot } from "./public-snapshot";
 import { handleCombatSessions } from "../routes/combat-sessions.ts";
 import { instanceLoot } from "../../shared/combat/instance-loot";
 import type { IdentityRepository } from "../db/repository.ts";
-import type { FightRecord } from "../db/schema.ts";
-import {
-  addStudent,
-  allLivingPlayersAnswered,
-  applyAnswer,
-  initialCombatState,
-  startQuestion,
-  scaleEncounter,
-  advancePhase,
-  selectAction,
-  setReady,
-  resurrectPlayer,
-  eliminateEnemy,
-  nextWave,
-  removeStudent,
-  upgradePriestActions,
-  deterministicShuffle,
-  type CombatSnapshot,
-} from "./engine.ts";
+import { addStudent, removeStudent } from "./participants";
+import { allLivingPlayersAnswered } from "./choices";
+import { initialCombatState, startQuestion, scaleEncounter } from "./encounter-setup";
+import { advancePhase } from "./phases";
+import { resurrectPlayer, eliminateEnemy, nextWave } from "./host-controls";
+import { deterministicShuffle } from "./random";
 interface CombatEnv {
   DATABASE_URL: string;
   SESSION_COOKIE_NAME?: string;
@@ -44,19 +34,6 @@ interface SocketAttachment {
   tokenHash?: string;
   windowStart?: number;
   count?: number;
-}
-interface StoredRoom {
-  fight: FightRecord;
-  snapshot: CombatSnapshot;
-  receipts: string[];
-  results?: unknown[];
-  resultsPersisted?: boolean;
-  playbackGate?: PlaybackGate;
-  reportingSignature?: string;
-  reportingPending?: boolean;
-  evidenceSignature?: string;
-  evidencePending?: boolean;
-  removals?: Record<string, { nickname: string; blocked: boolean; requestedAt?: number; deniedAt?: number }>;
 }
 const ROOM_KEY = "room";
 export class CombatSessionObject {
@@ -117,70 +94,15 @@ export class CombatSessionObject {
     }
   }
   private async room() {
+
     const readStarted=performance.now(), costs=this.commandCosts;
     let room:StoredRoom|undefined;
     try { room=await this.state.storage.get<StoredRoom>(ROOM_KEY); }
     finally { if(costs){costs.storageReads++;costs.storageReadMs+=performance.now()-readStarted;} }
     if (!room) return room;
-    if (room.snapshot.schemaVersion === 2) {
-      const upgraded = upgradePriestActions(room.snapshot);
-      if (upgraded !== room.snapshot) {
-        room.snapshot = upgraded;
-        await this.save(room);
-      }
-      return room;
-    }
-    // Upgrade the unfinished phase-4 room in place. Existing answers and HP survive.
-    const old: any = room.snapshot;
-    let upgraded = initialCombatState(
-      old.sessionId,
-      room.fight,
-      old.phaseStartTime,
-    );
-    for (const previous of Object.values(old.players) as any[]) {
-      const student = await this.repository?.findStudentById(
-        previous.studentId,
-      );
-      if (!student) continue;
-      upgraded = addStudent(
-        upgraded,
-        student,
-        await this.repository?.getCombatProfile?.(student, old.sessionId),
-      );
-      const player = upgraded.players[student.id];
-      Object.assign(player, {
-        health: Math.min(previous.health, player.maxHealth),
-        mp: Math.min(previous.mp, player.maxMp),
-        hasAnswered: previous.hasAnswered,
-        currentAnswer: previous.currentAnswer,
-        lastAnswerCorrect: previous.lastAnswerCorrect,
-        isDead: previous.isDead,
-        threat: previous.threat,
-      });
-    }
-    upgraded.currentPhase = old.currentPhase;
-    upgraded.currentQuestionIndex = Math.min(
-      old.currentQuestionIndex,
-      room.fight.questions.length - 1,
-    );
-    upgraded.questionStartTime = old.questionStartTime;
-    upgraded.phaseStartTime = old.phaseStartTime;
-    upgraded.enemies = old.enemies.map((e: any) => ({ ...e, effects: [] }));
-    if (old.currentPhase === "question")
-      upgraded.phaseDeadline =
-        (old.questionStartTime || Date.now()) +
-        room.fight.questions[upgraded.currentQuestionIndex].timeLimit * 1000;
-    if (old.currentPhase === "game_over") {
-      upgraded.victory = false;
-      upgraded.endReason =
-        "Previous fight completed before the combat migration";
-      room.resultsPersisted = true;
-    }
-    room.snapshot = upgraded;
-    room.receipts = [];
-    await this.save(room);
-    await this.syncAlarm(room);
-    return room;
+    return recoverRoom(room, {
+      repository: this.repository, save: room => this.save(room), syncAlarm: room => this.syncAlarm(room),
+    });
   }
   private async checkpoint(room: StoredRoom) {
     const startedAt=performance.now();
@@ -198,85 +120,15 @@ export class CombatSessionObject {
     }))];
   }
   private async save(room: StoredRoom, flushReporting = false) {
-    if(!isResolution(room.snapshot.currentPhase))delete room.snapshot.playback;
-    if(!isResolution(room.snapshot.currentPhase)||!room.snapshot.playback)delete room.playbackGate;
-    else if(room.playbackGate?.batchId!==room.snapshot.playback.id)room.playbackGate=createPlaybackGate(room.snapshot,this.activeRenderers(room));
-    await this.checkpoint(room);
-    const reportKey = reportingSignature(room.snapshot);
-    // Answers are durably checkpointed above. Drain their outbox when the question
-    // closes, instead of repeating whole-roster SQL writes for every answer in a
-    // classroom burst. Membership/status changes still project immediately;
-    // alarms explicitly flush retries, including after object restoration.
-    const reportingChanged = reportKey !== room.reportingSignature;
-    const canFlushAttempts = flushReporting || room.snapshot.currentPhase !== "question";
-    if (this.repository?.recordSessionReporting && (reportingChanged || (canFlushAttempts && (room.reportingPending || room.snapshot.pendingAttempts?.length)))) {
-      try {
-        await this.repository.recordSessionReporting(room.snapshot, room.fight);
-        room.reportingSignature = reportKey;
-        room.reportingPending = false;
-        room.snapshot.pendingAttempts = [];
-      } catch { room.reportingPending = true; }
-      await this.checkpoint(room);
-      if (room.reportingPending) await this.syncAlarm(room);
-    }
-    const entries=Object.values({...room.snapshot.departedPlayers,...room.snapshot.pendingPlayers,...room.snapshot.players}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0);
-    const signature=JSON.stringify([room.snapshot.victory,entries.map(p=>[p.studentId,p.totals.questionsAnswered,p.totals.questionsCorrect,!!room.snapshot.players[p.studentId]])]);
-    if(this.repository?.recordQuestEvidence && entries.length && (signature!==room.evidenceSignature||room.evidencePending)){
-      if(!canFlushAttempts){
-        // The durable snapshot is the evidence outbox. Batch a classroom question,
-        // but arm recovery even if the room hibernates before its final answer.
-        room.evidencePending=true;
-        await this.checkpoint(room);
-        await this.syncAlarm(room);
-        return;
-      }
-      const evidenceStartedAt=performance.now();
-      try {await this.repository.recordQuestEvidence(room.snapshot,room.fight);room.evidenceSignature=signature;room.evidencePending=false;diagnostic({event:'combat_evidence',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-evidenceStartedAt,outcome:'ok'});}
-      catch {room.evidencePending=true;diagnostic({event:'combat_evidence',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,durationMs:performance.now()-evidenceStartedAt,outcome:'retry'});}
-      await this.checkpoint(room);
-      if(room.evidencePending)await this.syncAlarm(room);
-    }
+    return saveRoom(room, {
+      repository: this.repository, checkpoint: room => this.checkpoint(room),
+      syncAlarm: room => this.syncAlarm(room), activeRenderers: room => this.activeRenderers(room),
+    }, flushReporting);
   }
   private async syncAlarm(room: StoredRoom) {
-    const retry=room.reportingPending||room.evidencePending||(room.snapshot.currentPhase==='game_over'&&!room.resultsPersisted)?Date.now()+5000:Infinity;
-    const deadline=Math.min(room.snapshot.phaseDeadline||Infinity,room.playbackGate?.recoveryAt||Infinity,retry);
-    if(Number.isFinite(deadline))await this.state.storage.setAlarm(deadline);
+    const deadline = roomAlarmAt(room);
+    if (deadline !== null) await this.state.storage.setAlarm(deadline);
     else await this.state.storage.deleteAlarm();
-  }
-  private publicResults(room:StoredRoom) {
-    return room.results?.map((r:any)=>({
-      studentId:r.studentId,id:r.id,xpEarned:r.xpEarned,baseXp:r.baseXp,xpMultiplier:r.xpMultiplier,
-      staminaFightNumber:r.staminaFightNumber,goldReward:r.goldReward,
-      lootTable:r.lootTable?.map((item:{itemId:string})=>({itemId:item.itemId}))||[],
-    }));
-  }
-  private snapshotMessage(room: StoredRoom, role = "student", projectedState = publicSnapshot(room.snapshot, room.fight)) {
-    const question = room.fight.questions[room.snapshot.currentQuestionIndex];
-    const safe = { id:question.id,type:question.type,question:question.question,options:question.options,timeLimit:question.timeLimit,
-      ...(answersRevealed(room.snapshot.currentPhase) ? {correctAnswer: question.correctAnswer} : {}),
-    };
-    if (room.fight.shuffleOptions && safe.options)
-      safe.options = deterministicShuffle(
-        safe.options,
-        `${room.snapshot.sessionId}:${room.snapshot.round}`,
-      );
-    return {
-      type: "combat_state",
-      rejoinRequests: role === "teacher" ? Object.entries(room.removals || {}).filter(([, r]) => r.requestedAt && !r.blocked).map(([studentId, r]) => ({ studentId, nickname: r.nickname })) : undefined,
-      state: projectedState,
-      question: [
-        "question",
-        "answer_feedback",
-        "actions",
-        "abilities",
-        "question_resolution",
-        "enemy_ai",
-      ].includes(room.snapshot.currentPhase)
-        ? safe
-        : null,
-      serverTime: Date.now(),
-      results: this.publicResults(room),
-    };
   }
   private async publish(room: StoredRoom) {
     if (room.snapshot.currentPhase === "game_over") for (const [id, request] of Object.entries(room.removals || {})) {
@@ -286,7 +138,7 @@ export class CombatSessionObject {
     const projectedState = publicSnapshot(room.snapshot, room.fight);
     const encodedByRole=new Map<string,{signature:string;encoded:string;bytes:number}>();
     const end=room.snapshot.currentPhase==='game_over'
-      ? JSON.stringify({type:'game_over',victory:room.snapshot.victory,message:room.snapshot.endReason,results:this.publicResults(room)}) : undefined;
+      ? JSON.stringify({type:'game_over',victory:room.snapshot.victory,message:room.snapshot.endReason,results:publicResults(room)}) : undefined;
     const endBytes=end ? new TextEncoder().encode(end).byteLength : 0;
     let messages=0,bytes=0,skipped=0,failures=0;
     for (const ws of this.state.getWebSockets()) {
@@ -298,7 +150,7 @@ export class CombatSessionObject {
       if(!payload){
         // Timestamp alone is not a state change. Encode the full public content
         // once per role, including same-revision moderation/result updates.
-        const message=this.snapshotMessage(room,actor.role,projectedState);
+        const message=snapshotMessage(room,actor.role,projectedState);
         const signature=JSON.stringify({...message,serverTime:undefined});
         const encoded=signature.slice(0,-1)+',"serverTime":'+Date.now()+'}';
         payload={signature,encoded,bytes:new TextEncoder().encode(encoded).byteLength};
@@ -448,8 +300,7 @@ export class CombatSessionObject {
       const costs={repositoryCalls:0,repositoryMs:0,storageReads:0,storageReadMs:0,checkpointCount:0,checkpointMs:0};
       this.commandCosts=costs;
       try {
-        if (typeof message !== "string" || new TextEncoder().encode(message).byteLength > 16000)
-          throw new CombatRuleError("Text command up to 16KB required");
+        assertCommandText(message);
         const actor = ws.deserializeAttachment() as SocketAttachment;
         if (actor.expiresAt && actor.expiresAt < Date.now()) {
           outcome="rejected";
@@ -464,8 +315,7 @@ export class CombatSessionObject {
         ws.serializeAttachment(actor);
         if (actor.count > 120)
           throw new CombatRuleError("Too many commands; wait a minute");
-        let rawCommand:unknown;
-        try {rawCommand=JSON.parse(message);}catch{throw new CombatRuleError("Invalid combat command");}
+        const rawCommand = decodeCommandText(message);
         if (actor.role === "staging-smoke") {
           if (rawCommand && typeof rawCommand === "object" && "type" in rawCommand && rawCommand.type === "ping")
             this.send(ws, {
@@ -488,9 +338,7 @@ export class CombatSessionObject {
           ws.close(1008, "Session expired or revoked");
           return;
         }
-        const parsed = combatCommandSchema.safeParse(rawCommand);
-        if (!parsed.success) throw new CombatRuleError("Invalid combat command");
-        command = parsed.data;
+        command = parseCombatCommand(rawCommand);
         if (!this.repository) throw new CombatRuleError("Repository unavailable");
         const key = actor.actorId + ":" + command.commandId;
         room = await this.room();
@@ -529,7 +377,7 @@ export class CombatSessionObject {
             sessionId: actor.sessionId,
             state: projectedState,
           });
-          this.send(ws, this.snapshotMessage(room, actor.role, projectedState));
+          this.send(ws, snapshotMessage(room, actor.role, projectedState));
           await this.syncAlarm(room);
           return;
         }
@@ -582,7 +430,7 @@ export class CombatSessionObject {
           }
           const established=room.snapshot.players[actor.actorId] || room.snapshot.pendingPlayers?.[actor.actorId];
           if(established && room.snapshot.currentPhase!=="waiting") {
-            this.send(ws,this.snapshotMessage(room,actor.role));
+            this.send(ws,snapshotMessage(room,actor.role));
             return;
           }
           // Waiting solo rooms may still need their automatic start below.
@@ -596,7 +444,7 @@ export class CombatSessionObject {
             actor.sessionId,
           );
           if(established && live?.soloStudentId!==actor.actorId) {
-            this.send(ws,this.snapshotMessage(room,actor.role));return;
+            this.send(ws,snapshotMessage(room,actor.role));return;
           }
           if (
             live?.soloStudentId === actor.actorId &&
@@ -627,7 +475,7 @@ export class CombatSessionObject {
             commandId: command.commandId,
             revision: room.snapshot.revision,
           });
-          this.send(ws, this.snapshotMessage(room, actor.role));
+          this.send(ws, snapshotMessage(room, actor.role));
           return;
         }
         if (command.type === "leave_fight") {
@@ -741,42 +589,7 @@ export class CombatSessionObject {
             await this.advance(room);
             throw new CombatRuleError("Phase has ended");
           }
-          if (command.type === "answer") {
-            if (
-              room.snapshot.questionStartTime &&
-              Date.now() < room.snapshot.questionStartTime
-            )
-              throw new CombatRuleError("Question is opening");
-            if (
-              typeof command.answer !== "string" ||
-              command.answer.length > 5000 ||
-              command.questionId !==
-                room.fight.questions[room.snapshot.currentQuestionIndex].id
-            )
-              throw new CombatRuleError("Invalid or stale answer");
-            room.snapshot = applyAnswer(
-              room.snapshot,
-              actor.actorId,
-              command.answer,
-              room.fight.questions[room.snapshot.currentQuestionIndex],
-            );
-          } else if (command.type === "action") {
-            if (
-              typeof command.ability !== "string" ||
-              typeof command.targetId !== "string"
-            )
-              throw new CombatRuleError("Invalid action");
-            room.snapshot = selectAction(
-              room.snapshot,
-              actor.actorId,
-              command.ability,
-              command.targetId,
-            );
-            if (command.ready === true)
-              room.snapshot = setReady(room.snapshot, actor.actorId);
-          } else if (command.type === "ready")
-            room.snapshot = setReady(room.snapshot, actor.actorId);
-          else throw new CombatRuleError("Unsupported command");
+          room.snapshot = applyStudentCommand(room.snapshot, room.fight, actor.actorId, command, Date.now());
         }
         room.snapshot.revision++;
         room.receipts.push(key);
@@ -814,28 +627,11 @@ export class CombatSessionObject {
     });
   }
   private async complete(room: StoredRoom) {
-    try {
-      if (!room.resultsPersisted) {
-        if (!this.repository?.persistResults)
-          throw new CombatRuleError("Result persistence unavailable");
-        room.results = await this.repository.persistResults(
-          room.snapshot,
-          room.fight,
-        );
-        room.resultsPersisted = true;
-        await this.save(room);
-      }
-      await this.syncAlarm(room);
-      await this.publish(room);
-    } catch (error) {
-      diagnostic({event:'combat_results',roomId:room.snapshot.sessionId,revision:room.snapshot.revision,outcome:'retry'});
-      await this.state.storage.setAlarm(Date.now() + 5000);
-      this.broadcast({
-        type: "result_pending",
-        message:
-          "Fight complete. Saving results; reconnect to see your rewards.",
-      });
-    }
+    return completeRoom(room, {
+      repository: this.repository, save: room => this.save(room), syncAlarm: room => this.syncAlarm(room),
+      publish: room => this.publish(room), scheduleRetry: () => this.state.storage.setAlarm(Date.now() + 5000),
+      broadcast: message => this.broadcast(message),
+    });
   }
   private async finishPlayback(room:StoredRoom):Promise<boolean> {
     if(!isResolution(room.snapshot.currentPhase))return false;

@@ -92,7 +92,7 @@ export function addStudent(
 }
 
 /** New/returning participants enter only at a question boundary. */
-export function admitStudent(state: CombatSnapshot, player: CombatPlayer): CombatSnapshot {
+function admitStudent(state: CombatSnapshot, player: CombatPlayer): CombatSnapshot {
   const next = structuredClone(state);
   delete next.departedPlayers?.[player.studentId];
   player.hasAnswered = false;

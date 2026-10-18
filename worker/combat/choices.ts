@@ -4,7 +4,7 @@ import { CombatRuleError } from "../../shared/combat/errors";
 import { answersMatch } from "../../shared/combat/phaseRules.ts";
 import { recordAttempt } from "../../shared/combat/attempts";
 import { combatActionBlock, actionBlockLabel } from "../../shared/combat/status-effects";
-import { SUPPORT, hasOffensiveAbility, selectionProblem, ALLIES, defaultQuestionAbility, availableAbilities } from "../../shared/combat/abilities.ts";
+import { SUPPORT, hasOffensiveAbility, selectionProblem, ALLIES, defaultQuestionAbility } from "../../shared/combat/abilities.ts";
 import { abilityDamage } from "../../shared/combat/abilityValues.ts";
 import { activeEnemies } from "../../shared/combat/encounters";
 
