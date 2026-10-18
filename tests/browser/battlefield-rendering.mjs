@@ -44,6 +44,9 @@ try {
   await page.route(`**/api/fights/${fight.id}/host-guilds`,route=>route.fulfill({json:[]}));
   await page.route(`**/api/fights/${fight.id}/sessions`,route=>route.fulfill({json:{sessionId:'ABC234'}}));
   await page.route('**/api/student/**/stamina',route=>route.fulfill({json:{completedCombats:0,xpMultiplier:1,resetsAt:Date.now()+3600000,timeZone:'America/Denver'}}));
+  // Install before the application creates intervals; late installation cannot
+  // control timers that already belong to the native browser clock.
+  await page.clock.install();
   await page.goto(origin+(config.role==='teacher'?`/teacher/host/${fight.id}`:'/student/combat'));
   try {await page.waitForFunction(()=>window.c08.sockets.some(s=>s.url.includes('sessionId=ABC234')&&typeof s.onmessage==='function'));}
   catch(error){console.error('C08_INIT_FAILURE',JSON.stringify({config,errors,body:await page.locator('body').innerText()}));throw error;}
@@ -81,7 +84,6 @@ try {
   const baselineBytes=config.count*1200*1950*4,reduction=1-backing.bytes/baselineBytes;
   if(optimized)assert.ok(reduction>=.8,`backing reduction ${reduction}`);
   await page.screenshot({path:`${output}/${config.role}-${config.count}-${config.width}-dpr${config.dpr}.png`});
-  await page.clock.install();
   // Refresh deadlines against the controlled browser clock, including its offset.
   const time=await page.evaluate(()=>Date.now());state.phaseDeadline=time+35000;await emit();
   const secondsBefore=await page.locator('[aria-label$="seconds remaining"]').first().textContent();
@@ -90,7 +92,7 @@ try {
   const after=await page.evaluate(()=>({...window.c08.renders}));
   const deltas=Object.fromEntries(Object.keys(before).map(key=>[key,after[key]-before[key]]));
   const secondsAfter=await page.locator('[aria-label$="seconds remaining"]').first().textContent();
-  assert.ok(parseInt(secondsAfter)<parseInt(secondsBefore)-8,'countdown advances');
+  assert.ok(parseInt(secondsAfter)<parseInt(secondsBefore)-8,`countdown advances: ${secondsBefore} -> ${secondsAfter}; ${JSON.stringify(deltas)}`);
   if(optimized){assert.equal(deltas[config.role==='teacher'?'HostFight':'Combat'],0);assert.equal(deltas.CombatBoard,0);assert.equal(deltas.StaticAvatar,0);}
   else assert.ok(deltas[config.role==='teacher'?'HostFight':'Combat']>=35,'baseline reproduces broad quarter-second updates');
   if(optimized){
