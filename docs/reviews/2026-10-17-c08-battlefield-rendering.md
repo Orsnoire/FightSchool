@@ -2,8 +2,9 @@
 
 C08 implements F11–F12 in [draft PR #71](https://github.com/Orsnoire/FightSchool/pull/71).
 Baseline: `56a1f758bde901ff9739e5ea0ee8d44d55f7ba91`, after C07 was merged,
-deployed and accepted. Implementation runtime: `35eb3a8643ae0097e8e05cf29f6d6cbe3f001bf1`;
-subsequent fixture/report commits do not change that runtime. This report was
+deployed and accepted. Core compositor/countdown runtime: `35eb3a8643ae0097e8e05cf29f6d6cbe3f001bf1`.
+The follow-up `99ea24cd0ad0049719072be3e6af5e8dd96fe69f` guards a redundant
+avatar error-clear dispatch during resize; the measured compositor is unchanged. This report was
 started October 17 Denver time (October 18 UTC). C08 is not merged or deployed.
 
 ## Changes and preserved behavior
@@ -89,10 +90,13 @@ suites remain required.
 
 ## Browser verification
 
-Pending the new comparative Chromium job. The existing combat, production
-initial-loading and avatar-workshop suites pass on `35eb3a8`; CI also passes
-282 tests, TypeScript and client/Worker builds. The additional visual regression
-raises the expected suite count to 283.
+The comparison on `515cfe2` passed all ten before/after cases, and the existing
+combat, production initial-loading and Avatar Workshop suites pass. Full CI
+passes **283 tests**, TypeScript and client/Worker builds. That comparison also
+logged a React warning during 60-avatar resize, so it was not treated as the
+final warning-free gate. The follow-up guards redundant healthy-avatar error-clear
+dispatches and makes update-depth/render-loop warnings fail the browser test.
+Final warning-free rerun: **PASSED**, [39083039834](https://github.com/Orsnoire/FightSchool/actions/runs/39083039834), on `99ea24c`. All three jobs pass. [CI 39083039895](https://github.com/Orsnoire/FightSchool/actions/runs/39083039895) and [Avatar Workshop 39083039912](https://github.com/Orsnoire/FightSchool/actions/runs/39083039912) also pass on that exact runtime.
 
 The new fixture checks 30/60-member teacher and student views, 1366×768 at DPR1,
 390×844 at DPR2, and a 60-member 3840×2160 DPR2 projector. It records mounted canvas
@@ -102,14 +106,47 @@ ResizeObserver. One teacher case uses 4× Chromium CPU throttling. This is contr
 emulation, **not physical Chromebook certification**. API/WebSocket fixtures do
 not establish live transport latency or classroom hardware performance.
 
-The first new comparison job failed before opening its baseline socket. Vite
-roots initially shared an optimizer cache; the fixture now isolates that cache
-and records page/network/server diagnostics. The failed run is retained at
-[39081790823](https://github.com/Orsnoire/FightSchool/actions/runs/39081790823).
+Fixture debugging is retained in the PR history. The initial Vite roots shared
+an optimizer cache; they now have separate caches. The old renderer needed more
+than the default 30-second locator allowance in the 4× CPU case. Instrumentation
+now matches Vite's numeric suffixes on memo function names and selects combat
+sockets explicitly, excluding development HMR. The controlled clock is installed
+before application timers, and resize checks await the native observer. Playwright
+is installed separately so the application retains its locked dependencies.
+Earlier failures were not used as before/after measurements.
+
+
+[Permanent raw browser measurements](c08/browser.json); screenshots are in the
+workflow's `battlefield-rendering-evidence` artifact (seven-day retention; the
+fixture regenerates them). All five cases exceed the proposed 80% allocation gate.
+
+| View / players / DPR | Mounted bytes before → after | Reduction | Page / board / avatar executions before → after |
+| --- | ---: | ---: | --- |
+| teacher 1366×768 / 30 / 1 | 280,800,000 → 312,000 | 99.889% | 44 / 43 / 1290 → 0 / 0 / 0 |
+| teacher 1366×768 / 60 / 1 | 561,600,000 → 624,000 | 99.889% | 45 / 44 / 2640 → 0 / 0 / 0 |
+| student 390×844 / 30 / 2 | 280,800,000 → 485,056 | 99.827% | 41 / 41 / 1230 → 0 / 0 / 0 |
+| student 390×844 / 60 / 2 | 561,600,000 → 797,056 | 99.858% | 45 / 44 / 2640 → 0 / 0 / 0 |
+| teacher 3840×2160 / 60 / 2 | 561,600,000 → 3,594,240 | 99.36% | 42 / 42 / 2520 → 0 / 0 / 0 |
+
+Countdowns advanced from 35/36 to 25 seconds. Host question visibility and student
+typing did not rerender the board; viewport changes updated backing sizes. The
+new warning-sensitive gate passes during both 60-avatar resizes.
+
+Cold results remain a limitation: the 4× CPU teacher case took **37,710 → 34,113 ms**
+to finish artwork. Its single automated roster click was **1,008 → 3,153 ms**, so
+this run does **not** establish a uniform input-latency improvement. Other cold
+click samples range from 25 to 14,812 ms before and 44 to 840 ms after; raw data
+retains every sample. Scheduling and automation overhead make these single samples
+noisy. Physical Chromebook observation and repeated input/long-task profiling
+remain open; off-thread recoloring is a possible measured follow-up, not part of
+this package. The verified benefits are backing allocation, cache reuse and
+removal of repeated countdown-driven page/board/avatar work.
 
 ## Review and release boundary
 
-Finish the comparative browser results before marking C08 verified. Keep PR #71
-in draft with the exact checkpoint. C09 remains unstarted. Merge/deployment and
-canonical live acceptance are separate actions; the deployed release remains
-C07 runtime `8f280b7b75479aa05bfb7dfd069f37e3f5d72334`.
+C08 is **VERIFIED IN CI / DRAFT / NOT MERGED / NOT DEPLOYED**. PR #71 contains
+implementation, regression fixtures, pinned before/after measurements and the
+resume checkpoint. Physical Chromebook observation remains explicitly unverified.
+C09 is next and unstarted. Merge/deployment and canonical live acceptance remain
+separate actions; the deployed release is C07 runtime
+`8f280b7b75479aa05bfb7dfd069f37e3f5d72334`.
