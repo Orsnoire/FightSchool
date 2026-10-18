@@ -2,9 +2,9 @@
 
 - Registered branch: `cleanup/c11-authoring-lobby`; [draft PR #74](https://github.com/Orsnoire/FightSchool/pull/74) is published; main points here before substantive implementation. Baseline main: `e02f46d7367f8f006a97565fec0d4d5b85ff648b`. Current main and all open PRs/branches were rechecked; no competing C11 implementation was found.
 - Scope: Phase 5 / C11 / F13–F14. Extract question/CSV/enemy/loot authoring and loadout/avatar panels; remove only helpers/types proven unused by import/reference search. Preserve teacher workflow, edit drafts, gear permissions, remembered job loadouts, saved appearance and error recovery. Retain both saved-room adapters.
-- Baseline inspected: `CreateFight.tsx` 1,197 lines, `Lobby.tsx` 1,115 lines, `shared/schema.ts` 752 lines. C10's 298-test and three-job Chromium release is the inherited baseline; C11 tests have not yet run.
-- Completed: live repository/checkpoint reconciliation, scope registration, draft PR #74 and main discovery pointer. No runtime changes yet.
-- Next: establish characterization coverage, then extract coherent authoring and lobby owners with small published checkpoints. Run TypeScript, regression tests, both builds and Chromium workflow checks on the final revision.
+- Baseline inspected: `CreateFight.tsx` 1,197 lines, `Lobby.tsx` 1,115 lines, `shared/schema.ts` 752 lines. Unchanged runtime passes all 298 tests, TypeScript and both builds locally. New real-browser characterization covers both viewport sizes; its baseline CI run is pending.
+- Completed: live repository/checkpoint reconciliation, scope registration, draft PR #74, main discovery pointer and browser characterization fixtures committed before extraction. No runtime changes yet.
+- Next: verify the new characterization workflow on this unchanged runtime, then extract coherent authoring and lobby owners with small published checkpoints. Run TypeScript, regression tests, both builds and Chromium workflow checks on the final revision.
 - Boundary: IN PROGRESS / INCOMPLETE. Not merged, deployed or live-accepted. C10 `bb753955c1b042ee52f0f5bb5b9a260e015ce5cd` remains deployed and accepted. No migration, production-data reset or gameplay change. C12 remains unstarted; C08 performance/device limits and C12 infrastructure/fixture-isolation/recovery work remain open.
 
 ## Previous completed release — C10
