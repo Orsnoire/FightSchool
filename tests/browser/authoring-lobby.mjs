@@ -70,9 +70,18 @@ try {
     await page.getByLabel('Enemy wave', { exact: true }).fill('2');
     await page.getByTestId('button-add-enemy').click();
     const dragEnemy = page.getByTestId('button-drag-enemy-0');
+    await page.getByTestId('enemy-item-1').scrollIntoViewIfNeeded();
     await dragEnemy.focus();
     await dragEnemy.press('Space');
+    await page.locator('[data-testid="button-drag-enemy-0"][aria-pressed="true"]').waitFor();
+    // The keyboard sensor installs its listener asynchronously and measures on
+    // the next frame. Observe activation and collision before ending the drag.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     await dragEnemy.press('ArrowDown');
+    await page.waitForFunction(() => [...document.querySelectorAll('[role="status"]')].some(node => {
+      const text = node.textContent || '';
+      return text.includes('Draggable item e1 was moved over droppable area ') && !text.endsWith('area e1.');
+    }));
     await dragEnemy.press('Space');
     await page.getByTestId('enemy-item-0').filter({ hasText: 'Second wave' }).waitFor();
     await page.getByTestId('tab-loot').click();
@@ -171,12 +180,16 @@ try {
     const abilityIcon = lobby.getByTestId('draggable-ability-fireball_crossclass');
     await abilityIcon.scrollIntoViewIfNeeded();
     const source = await abilityIcon.boundingBox();
-    const target = await lobby.getByTestId('ability-slot-1').boundingBox();
-    assert.ok(source && target);
+    assert.ok(source);
     await lobby.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
     await lobby.mouse.down();
     await lobby.mouse.move(source.x + source.width / 2 + 10, source.y + source.height / 2, { steps: 3 });
+    await lobby.locator('[data-testid="draggable-ability-fireball_crossclass"][aria-pressed="true"]').waitFor();
+    await lobby.getByTestId('ability-slot-1').scrollIntoViewIfNeeded();
+    const target = await lobby.getByTestId('ability-slot-1').boundingBox();
+    assert.ok(target);
     await lobby.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
+    await lobby.getByRole('status').filter({ hasText: 'was moved over droppable area slot-1.' }).waitFor({ state: 'attached' });
     await lobby.mouse.up();
     await lobby.getByTestId('button-remove-ability-1').waitFor();
     assert.equal(current.crossClassAbility1, 'fireball_crossclass');
