@@ -1,3 +1,16 @@
+# C12 active — Phase 6 release review (October 18, 2026 UTC)
+
+- Registered branch: `cleanup/c12-release-review`. Draft PR: being registered; inspect the open PR for this exact branch before resuming.
+- Baseline: main `a66f229a43b5fdff04ad0c1b4dd789ab8b1ea67b`; deployed C11 runtime `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`, Worker `86111493-688d-41c2-9462-b050044b3d10`. C11 deployment 39161062489 and canonical acceptance 39161276964 passed. Main/open PRs were rechecked; no other cleanup package is active.
+- Scope: C12 / F16 and consolidation. Pin releases and verification to immutable commits; make tool versions reproducible; guard live fixtures and provide scoped retention/cleanup; consolidate before/after measurements and recovery/rollback/classroom signoff evidence.
+- Completed: repository, current release, workflow and exit-gate inspection. This is a claim checkpoint only; no implementation or new verification yet.
+- Pending: release safeguards and tests; fixture ownership/isolation safeguards; reproducible measurements; operational runbook and evidence matrix; exact-head CI/browser checks.
+- Boundaries: preserve all student records, progression, academic evidence, permissions and atomic rewards. No production reset, provider disruption or application deployment is part of this implementation checkpoint. A staging-named resource is still production unless independently isolated.
+- Open exit gates include repeated 30/60-player provider measurements, physical Chromebook observation, isolated room/database interruption and timed rollback drills, and an agreed monitoring window. The single C11 30-answer p95 of 1,260 ms does not meet the proposed sub-second target. Do not mark these passed from local simulations.
+- Exact next action: register the draft PR and main discovery pointer, then implement and test release/fixture safeguards in small published checkpoints. Keep this file and the PR body accurate after each push.
+
+## Previous completed release — C11
+
 # C11 complete — released October 18, 2026 (UTC)
 
 - Owner authorized merge and deployment after the verified draft. No production-data reset was authorized or performed.
