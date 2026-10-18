@@ -25,4 +25,10 @@ equipment administration/loadouts/purchases, reward claims and reporting.
 
 ## Evidence
 
-Pending baseline and implementation. Do not interpret this claim as verification.
+The unchanged C08 runtime passes all **283 tests** locally (`npm test`).
+The new `api-domain-boundaries.test.ts` passes five tests against that baseline:
+namespace/authentication and historical methods; cross-tenant/member/role checks;
+public DTOs and bounded/sanitized errors; reward failure before commit and lost
+acknowledgement after commit followed by an exactly-once retry.
+
+Implementation and final full-suite/typecheck/build/CI verification remain pending.
