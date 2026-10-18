@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { equipmentVisualSchema } from "../avatar/visuals";
-import { EQUIPMENT_SLOTS } from "../equipment-catalog";
+import { EQUIPMENT_SLOTS } from "../equipment-slots";
+import { equipmentIdSchema } from "../equipment-id";
 const text = z.string().trim().min(1).max(200);
 const bounded = z.number().int().min(0).max(1000);
 export const itemSchema = z.object({
@@ -63,3 +64,11 @@ export const itemSchema = z.object({
   isPurchasable: z.boolean().default(true),
 });
 export type EquipmentInput = z.infer<typeof itemSchema>;
+export const loadoutInput = z
+  .object({
+    ...Object.fromEntries(EQUIPMENT_SLOTS.map(slot => [slot, z.string().max(100).nullable().optional()])) as Record<typeof EQUIPMENT_SLOTS[number], z.ZodOptional<z.ZodNullable<z.ZodString>>>,
+    crossClassAbility1: z.string().max(100).nullable().optional(),
+    crossClassAbility2: z.string().max(100).nullable().optional(),
+  });
+export type LoadoutInput = z.infer<typeof loadoutInput>;
+export const purchaseInput = z.object({ itemId: equipmentIdSchema });

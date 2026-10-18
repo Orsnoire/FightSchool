@@ -1,5 +1,5 @@
 import { diagnostic } from "./diagnostics";
-import { gameDatabase } from "./db/game-repository.ts";
+import { gameDatabase } from "./db/database.ts";
 import { handleAvatar } from "./routes/avatars.ts";
 import { handleGame } from "./routes/game.ts";
 import { handleObjects } from "./routes/objects.ts";

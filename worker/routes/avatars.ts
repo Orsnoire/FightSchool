@@ -1,7 +1,7 @@
 import { readJson, bodyErrorResponse } from "../http/json";
 import { authenticateSession, type SessionConfig } from '../auth/session.ts';
 import type { IdentityRepository } from '../db/repository.ts';
-import type { GameDatabase } from '../db/game-repository.ts';
+import type { GameDatabase } from '../db/database.ts';
 import { getStudentAvatar, createStudentAvatar, saveStudentAvatarColors } from '../db/avatar-repository.ts';
 import { validAppearance } from '../../shared/avatar/appearance.ts';
 

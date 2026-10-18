@@ -27,7 +27,20 @@ no migration and performs no production data operations.
   including the separate game-over message. Saved rooms are not rewritten.
 - `client/src/lib/apiQueries.ts` provides typed dashboard, guild and leaderboard
   query factories with separate cache keys and encoded URLs. Existing unrelated
-  queries retain their behavior; broader route/service extraction is C09–C11.
+  queries retain their behavior; C09 separates the Worker domain routes/services.
+- C09 input contracts live in `shared/contracts/guilds.ts`, `equipment.ts` and
+  `rewards.ts`; quest criteria/rewards remain in `shared/quests.ts`. Equipment ID
+  validation imports `shared/equipment-items.ts` directly, avoiding the legacy
+  schema/fight-contract cycle. Compatibility schema exports remain available.
+- `worker/routes/game.ts` authenticates once and dispatches to domain handlers.
+  `worker/services/access.ts` binds owner/member capabilities to that identity;
+  handlers authorize before calling domain services. Internal services require
+  an authorized actor/student/guild and are not public authorization boundaries.
+  `worker/projections/student.ts` and `fight.ts` own safe HTTP DTOs.
+- Multi-step guild/quest/equipment operations and atomic reward claims live in
+  `worker/services/`; SQL reporting stays in `worker/reporting/` and the existing
+  reporting repositories. `worker/db/database.ts` owns the database factory
+  independently of combat persistence. See [C09 evidence](../reviews/2026-10-18-c09-api-services.md).
 
 ## Parsing and errors
 

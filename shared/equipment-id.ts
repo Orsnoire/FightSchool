@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EQUIPMENT_ITEMS } from "./schema";
+import { EQUIPMENT_ITEMS } from "./equipment-items";
 
 // Built-in catalog keys and custom UUIDs share equipment APIs. Validating an ID
 // does not authorize acquisition: claims require earned loot; purchases require

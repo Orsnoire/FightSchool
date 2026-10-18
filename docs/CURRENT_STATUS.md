@@ -1,14 +1,13 @@
 # Current status
 
-**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is next and unstarted.
+**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is implemented in draft PR #72, with final verification in progress.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
 ## Next implementation
 
-**C09 (API and services)** is next and unstarted. No new cleanup implementation
-is active. Register its claim, branch and draft PR before implementation.
+**C09 (API and services)** is implemented in [draft PR #72](https://github.com/Orsnoire/FightSchool/pull/72) on `cleanup/c09-api-services`. Domain routes/services, explicit authorization and projections, and independent contracts preserve API and reward behavior. Local tests pass (289); final CI/browser verification is in progress. [Report and resume details](reviews/2026-10-18-c09-api-services.md). C09 is not merged or deployed; C10 is unstarted.
 C08 battlefield rendering is complete, merged, deployed and accepted. [Report and measurements](reviews/2026-10-17-c08-battlefield-rendering.md).
 [C07 / PR #70](https://github.com/Orsnoire/FightSchool/pull/70) has shipped deferred
 routes/MathLive, owner-only SQL fight summaries and focused live-session polling.

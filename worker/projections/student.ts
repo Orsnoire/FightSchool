@@ -1,6 +1,5 @@
 import type { Student } from "../../shared/contracts/dto";
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog";
-
 export function safeStudent(student: Student): Student {
   return {
     id: student.id,

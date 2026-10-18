@@ -5,7 +5,7 @@ import {
 } from "../../shared/quests";
 import { questionKey } from "./question-key";
 import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import type { GameDatabase } from "../db/game-repository.ts";
+import type { GameDatabase } from "../db/database.ts";
 import * as s from "../db/schema.ts";
 import { JOB_TREE } from "../../shared/jobSystem.ts";
 import {

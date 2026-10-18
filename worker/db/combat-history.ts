@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import type { StudentCombatSummary } from "../../shared/contracts/history.ts";
-import type { GameDatabase } from "./game-repository.ts";
+import type { GameDatabase } from "./database.ts";
 import * as s from "./schema.ts";
 
 export type HistoryScope =
