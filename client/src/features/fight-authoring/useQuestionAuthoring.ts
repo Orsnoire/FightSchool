@@ -1,6 +1,6 @@
 import { useToast } from "@/hooks/use-toast";
 import { type Question } from "@shared/schema";
-import { useRef,useState } from "react";
+import { useRef, useState } from "react";
 
 
 import { useQuestionCsv } from "./useQuestionCsv";
@@ -18,7 +18,7 @@ export function useQuestionAuthoring(questions: Question[], onChange: (questions
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const addQuestion = () => {
     let correctAnswer = currentQuestion.correctAnswer;
-    
+
     if (currentQuestion.type === "multiple_choice") {
       if (selectedOptionIndex === null || !currentQuestion.options?.[selectedOptionIndex]) {
         toast({ title: "Please select a correct answer option", variant: "destructive" });
@@ -26,12 +26,12 @@ export function useQuestionAuthoring(questions: Question[], onChange: (questions
       }
       correctAnswer = currentQuestion.options[selectedOptionIndex];
     }
-    
+
     if (!currentQuestion.question || !correctAnswer) {
       toast({ title: "Please fill in question and correct answer", variant: "destructive" });
       return;
     }
-    
+
     const newQuestion: Question = {
       id: editingQuestionId || crypto.randomUUID(),
       type: currentQuestion.type as any,

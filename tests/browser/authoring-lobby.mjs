@@ -69,6 +69,12 @@ try {
     await page.getByTestId('input-enemy-name').fill('Second wave');
     await page.getByLabel('Enemy wave', { exact: true }).fill('2');
     await page.getByTestId('button-add-enemy').click();
+    const dragEnemy = page.getByTestId('button-drag-enemy-0');
+    await dragEnemy.focus();
+    await dragEnemy.press('Space');
+    await dragEnemy.press('ArrowDown');
+    await dragEnemy.press('Space');
+    await page.getByTestId('enemy-item-0').filter({ hasText: 'Second wave' }).waitFor();
     await page.getByTestId('tab-loot').click();
     await page.getByTestId('select-loot-item').click();
     await page.getByRole('option', { name: /Authored reward/ }).click();
@@ -99,10 +105,10 @@ try {
     assert.deepEqual(saved.questions.map(q => [q.type, q.timeLimit]), [['short_answer', 30], ['multiple_choice', 5], ['true_false', 120], ['short_answer', 30]]);
     assert.deepEqual(saved.questions[1].options, ['yes', 'no']);
     assert.equal(new Set(saved.questions.map(q => q.id)).size, 4);
-    assert.equal(saved.enemies[0].id, 'e1');
-    assert.equal(saved.enemies[0].quantity, 5);
-    assert.deepEqual(saved.enemies[0].swarm, { enemiesPerFourPlayers: 3 });
-    assert.equal(saved.enemies[1].wave, 2);
+    assert.equal(saved.enemies[1].id, 'e1');
+    assert.equal(saved.enemies[1].quantity, 5);
+    assert.deepEqual(saved.enemies[1].swarm, { enemiesPerFourPlayers: 3 });
+    assert.equal(saved.enemies[0].wave, 2);
     assert.deepEqual(saved.lootTable, [{ itemId: loot.id }]);
     await page.goto(`${origin}/teacher/edit/${fight.id}`);
     await page.getByTestId('question-item-3').waitFor();
@@ -162,7 +168,20 @@ try {
     assert.equal(current.crossClassAbility1, null);
     assert.match(await lobby.getByTestId('ability-slot-2').textContent(), /Locked/);
     await lobby.getByTestId('filter-spell').click();
-    await lobby.getByTestId('draggable-ability-fireball_crossclass').waitFor();
+    const abilityIcon = lobby.getByTestId('draggable-ability-fireball_crossclass');
+    await abilityIcon.scrollIntoViewIfNeeded();
+    const source = await abilityIcon.boundingBox();
+    const target = await lobby.getByTestId('ability-slot-1').boundingBox();
+    assert.ok(source && target);
+    await lobby.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+    await lobby.mouse.down();
+    await lobby.mouse.move(source.x + source.width / 2 + 10, source.y + source.height / 2, { steps: 3 });
+    await lobby.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
+    await lobby.mouse.up();
+    await lobby.getByTestId('button-remove-ability-1').waitFor();
+    assert.equal(current.crossClassAbility1, 'fireball_crossclass');
+    await lobby.getByTestId('button-remove-ability-1').click();
+    await lobby.getByTestId('button-remove-ability-1').waitFor({ state: 'hidden' });
     await lobby.getByTestId('button-open-class-modal').click();
     assert.equal(await lobby.getByLabel('Body model', { exact: true }).isDisabled(), true);
     await lobby.getByLabel('hair', { exact: true }).selectOption(PALETTES.hair[1].id);
@@ -193,5 +212,5 @@ try {
     await lobby.close();
   }
   assert.deepEqual(errors, []);
-  console.log('C11 authoring/lobby: draft tab retention, CSV, enemy limits, loot, save retry, gear restrictions, ability removal and appearance/class save ordering pass at both sizes.');
+  console.log('C11 authoring/lobby: draft tab retention, CSV, enemy limits, loot, save retry, gear restrictions, keyboard enemy ordering, ability drag/removal and appearance/class save ordering pass at both sizes.');
 } finally { await browser.close(); }

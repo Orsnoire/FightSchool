@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { Tabs,TabsList,TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EnemiesPanel } from "@/features/fight-authoring/EnemiesPanel";
 import { FightSettings } from "@/features/fight-authoring/FightSettings";
 import { LootPanel } from "@/features/fight-authoring/LootPanel";
@@ -9,17 +9,17 @@ import { useEnemyAuthoring } from "@/features/fight-authoring/useEnemyAuthoring"
 import { useQuestionAuthoring } from "@/features/fight-authoring/useQuestionAuthoring";
 import { useToast } from "@/hooks/use-toast";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
-import { apiRequest,queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { enemyImage,GOBLIN_IMAGE } from "@shared/combat/encounters";
+import { enemyImage, GOBLIN_IMAGE } from "@shared/combat/encounters";
 import { inferEnemyType } from "@shared/combat/enemy-ai";
-import { enemyTuning,inferEnemyRole } from "@shared/encounter-tiers";
-import { insertFightSchema,type Enemy,type EquipmentItemDb,type Fight,type InsertFight,type LootItem,type Question } from "@shared/schema";
-import { useMutation,useQuery } from "@tanstack/react-query";
+import { enemyTuning, inferEnemyRole } from "@shared/encounter-tiers";
+import { insertFightSchema, type Enemy, type EquipmentItemDb, type Fight, type InsertFight, type LootItem, type Question } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useLocation,useRoute } from "wouter";
+import { useLocation, useRoute } from "wouter";
 
 
 export default function CreateFight() {
@@ -29,7 +29,7 @@ export default function CreateFight() {
   const { isAuthenticated, isChecking } = useTeacherAuth();
   const fightId = params?.id;
   const isEditMode = !!fightId;
-  
+
   const [questions, setQuestions] = useState<Question[]>([]);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [lootTable, setLootTable] = useState<LootItem[]>([]);
@@ -55,7 +55,7 @@ export default function CreateFight() {
       guildCode: "",
       questions: [],
       enemies: [],
-      encounterTier:1,
+      encounterTier: 1,
       baseXP: 10,
       baseEnemyDamage: 1,
       enemyDisplayMode: "consecutive",
@@ -65,24 +65,24 @@ export default function CreateFight() {
     },
   });
 
-  const encounterTier=form.watch('encounterTier');
+  const encounterTier = form.watch('encounterTier');
   const changeQuestions = (next: Question[]) => { setQuestions(next); form.setValue('questions', next); };
   const changeEnemies = (next: Enemy[]) => { setEnemies(next); form.setValue('enemies', next); };
   const changeLoot = (next: LootItem[]) => { setLootTable(next); form.setValue('lootTable', next); };
   const questionEditor = useQuestionAuthoring(questions, changeQuestions);
   const enemyEditor = useEnemyAuthoring(enemies, changeEnemies, encounterTier);
-  const changeTier=(tier:number)=>{
-    form.setValue('encounterTier',tier);form.setValue('baseEnemyDamage',enemyTuning(tier,'normal').baseEnemyDamage);
-    const next=enemies.map((e,i)=>({...e,quantity:e.quantity||1,wave:e.wave||i+1,species:e.species||(enemyImage(e)===GOBLIN_IMAGE?'goblin':'other'),role:e.role||inferEnemyRole(e.difficultyMultiplier),difficultyMultiplier:enemyTuning(tier,e.role||inferEnemyRole(e.difficultyMultiplier)).difficultyMultiplier}));
-    setEnemies(next);form.setValue('enemies',next);
-    enemyEditor.setCurrentEnemy(e=>({...e,role:e.role||inferEnemyRole(e.difficultyMultiplier||10),difficultyMultiplier:enemyTuning(tier,e.role||inferEnemyRole(e.difficultyMultiplier||10)).difficultyMultiplier}));
+  const changeTier = (tier: number) => {
+    form.setValue('encounterTier', tier); form.setValue('baseEnemyDamage', enemyTuning(tier, 'normal').baseEnemyDamage);
+    const next = enemies.map((e, i) => ({ ...e, quantity: e.quantity || 1, wave: e.wave || i + 1, species: e.species || (enemyImage(e) === GOBLIN_IMAGE ? 'goblin' : 'other'), role: e.role || inferEnemyRole(e.difficultyMultiplier), difficultyMultiplier: enemyTuning(tier, e.role || inferEnemyRole(e.difficultyMultiplier)).difficultyMultiplier }));
+    setEnemies(next); form.setValue('enemies', next);
+    enemyEditor.setCurrentEnemy(e => ({ ...e, role: e.role || inferEnemyRole(e.difficultyMultiplier || 10), difficultyMultiplier: enemyTuning(tier, e.role || inferEnemyRole(e.difficultyMultiplier || 10)).difficultyMultiplier }));
   };
   // Populate form with existing fight data in edit mode
   useEffect(() => {
     if (existingFight && isEditMode) {
       form.reset({
         teacherId: existingFight.teacherId,
-        encounterTier:existingFight.encounterTier||null,
+        encounterTier: existingFight.encounterTier || null,
         title: existingFight.title,
         guildCode: existingFight.guildCode,
         questions: existingFight.questions,
@@ -116,16 +116,16 @@ export default function CreateFight() {
       navigate("/teacher");
     },
     onError: (error) => {
-      toast({ 
-        title: isEditMode ? "Failed to update fight" : "Failed to create fight", 
+      toast({
+        title: isEditMode ? "Failed to update fight" : "Failed to create fight",
         description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive" 
+        variant: "destructive"
       });
     },
   });
 
   const onSubmit = (data: InsertFight) => {
-    if(questionEditor.editingQuestionId){toast({title:"Save or cancel your question changes before saving the fight",variant:"destructive"});return;}
+    if (questionEditor.editingQuestionId) { toast({ title: "Save or cancel your question changes before saving the fight", variant: "destructive" }); return; }
     if (enemies.some(e => (e.enemyType || inferEnemyType(e.image)) === "basic")) {
       toast({ title: "Choose a supported type for each retired enemy before saving", variant: "destructive" }); return;
     }
@@ -192,8 +192,8 @@ export default function CreateFight() {
               disabled={saveMutation.isPending}
               data-testid="button-create-fight-submit"
             >
-              {saveMutation.isPending 
-                ? (isEditMode ? "Updating..." : "Creating...") 
+              {saveMutation.isPending
+                ? (isEditMode ? "Updating..." : "Creating...")
                 : (isEditMode ? "Update Fight" : "Create Fight")}
             </Button>
           </form>

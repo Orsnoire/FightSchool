@@ -1,21 +1,21 @@
 import { useToast } from "@/hooks/use-toast";
 import {
-KeyboardSensor,
-PointerSensor,
-useSensor,
-useSensors,
-type DragEndEvent
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent
 } from '@dnd-kit/core';
 import {
-arrayMove,
-sortableKeyboardCoordinates
+  arrayMove,
+  sortableKeyboardCoordinates
 } from '@dnd-kit/sortable';
-import { enemyImage,GOBLIN_IMAGE } from "@shared/combat/encounters";
-import { enemyAISchema,inferEnemyType } from "@shared/combat/enemy-ai";
+import { enemyImage, GOBLIN_IMAGE } from "@shared/combat/encounters";
+import { enemyAISchema, inferEnemyType } from "@shared/combat/enemy-ai";
 import { ENEMY_CATALOG } from "@shared/combat/enemy-catalog";
 import { enemyTuning } from "@shared/encounter-tiers";
 import { type Enemy } from "@shared/schema";
-import { useRef,useState } from "react";
+import { useRef, useState } from "react";
 
 
 import { resizeImage } from "./enemy-image";
@@ -26,7 +26,7 @@ export function useEnemyAuthoring(enemies: Enemy[], onChange: (enemies: Enemy[])
   const [currentEnemy, setCurrentEnemy] = useState<Partial<Enemy>>({
     image: ENEMY_CATALOG.zombie.image,
     difficultyMultiplier: 10,
-    role:"normal",
+    role: "normal",
   });
   const [editingEnemyIndex, setEditingEnemyIndex] = useState<number | null>(null);
   const [uploadedEnemyImage, setUploadedEnemyImage] = useState<string | null>(null);
@@ -44,13 +44,13 @@ export function useEnemyAuthoring(enemies: Enemy[], onChange: (enemies: Enemy[])
       toast({ title: "Uploading image..." });
       const imageUrl = await resizeImage(file);
       setUploadedEnemyImage(imageUrl);
-      setCurrentEnemy({ ...currentEnemy, image: imageUrl, species:"other" });
+      setCurrentEnemy({ ...currentEnemy, image: imageUrl, species: "other" });
       toast({ title: "Image uploaded successfully (resized to 120x120px)" });
     } catch (error) {
-      toast({ 
-        title: "Failed to upload image", 
+      toast({
+        title: "Failed to upload image",
         description: error instanceof Error ? error.message : "Unknown error",
-        variant: "destructive" 
+        variant: "destructive"
       });
     }
   };
@@ -73,13 +73,13 @@ export function useEnemyAuthoring(enemies: Enemy[], onChange: (enemies: Enemy[])
         id: enemies[editingEnemyIndex].id,
         palette: currentEnemy.palette,
         swarm: currentEnemy.swarm,
-        quantity:Math.max(ENEMY_CATALOG[type].minimumQuantity,currentEnemy.quantity||1), wave:currentEnemy.wave||1, species:type==="goblin"?"goblin":"other",
+        quantity: Math.max(ENEMY_CATALOG[type].minimumQuantity, currentEnemy.quantity || 1), wave: currentEnemy.wave || 1, species: type === "goblin" ? "goblin" : "other",
         name: currentEnemy.name,
         image: currentEnemy.image || ENEMY_CATALOG.zombie.image,
         enemyType: type,
         ai: enemyAISchema.parse(currentEnemy.ai || {}),
-        difficultyMultiplier: encounterTier ? enemyTuning(encounterTier,currentEnemy.role||"normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
-        ...(encounterTier?{role:currentEnemy.role||"normal"}:{}),
+        difficultyMultiplier: encounterTier ? enemyTuning(encounterTier, currentEnemy.role || "normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
+        ...(encounterTier ? { role: currentEnemy.role || "normal" } : {}),
       };
       onChange(updatedEnemies);
       setEditingEnemyIndex(null);
@@ -89,19 +89,19 @@ export function useEnemyAuthoring(enemies: Enemy[], onChange: (enemies: Enemy[])
         id: Date.now().toString(),
         palette: currentEnemy.palette,
         swarm: currentEnemy.swarm,
-        quantity:Math.max(ENEMY_CATALOG[type].minimumQuantity,currentEnemy.quantity||1), wave:currentEnemy.wave||1, species:type==="goblin"?"goblin":"other",
+        quantity: Math.max(ENEMY_CATALOG[type].minimumQuantity, currentEnemy.quantity || 1), wave: currentEnemy.wave || 1, species: type === "goblin" ? "goblin" : "other",
         name: currentEnemy.name,
         image: currentEnemy.image || ENEMY_CATALOG.zombie.image,
         enemyType: type,
         ai: enemyAISchema.parse(currentEnemy.ai || {}),
-        difficultyMultiplier: encounterTier ? enemyTuning(encounterTier,currentEnemy.role||"normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
-        ...(encounterTier?{role:currentEnemy.role||"normal"}:{}),
+        difficultyMultiplier: encounterTier ? enemyTuning(encounterTier, currentEnemy.role || "normal").difficultyMultiplier : currentEnemy.difficultyMultiplier,
+        ...(encounterTier ? { role: currentEnemy.role || "normal" } : {}),
       };
       const updatedEnemies = [...enemies, newEnemy];
       onChange(updatedEnemies);
     }
-    
-    setCurrentEnemy({ image: ENEMY_CATALOG.zombie.image, difficultyMultiplier: 10, role:"normal", quantity:1, wave:currentEnemy.wave||1 });
+
+    setCurrentEnemy({ image: ENEMY_CATALOG.zombie.image, difficultyMultiplier: 10, role: "normal", quantity: 1, wave: currentEnemy.wave || 1 });
     setUploadedEnemyImage(null);
   };
 
@@ -111,11 +111,11 @@ export function useEnemyAuthoring(enemies: Enemy[], onChange: (enemies: Enemy[])
     setCurrentEnemy({
       palette: enemy.palette,
       swarm: enemy.swarm,
-      quantity:enemy.quantity||1,wave:enemy.wave||index+1,species:enemy.species||(enemyImage(enemy)===GOBLIN_IMAGE?"goblin":"other"),
+      quantity: enemy.quantity || 1, wave: enemy.wave || index + 1, species: enemy.species || (enemyImage(enemy) === GOBLIN_IMAGE ? "goblin" : "other"),
       name: enemy.name,
       image: enemy.image,
       difficultyMultiplier: enemy.difficultyMultiplier,
-      role:enemy.role,
+      role: enemy.role,
       enemyType: type === "basic" ? undefined : type,
       ai: enemy.ai,
     });

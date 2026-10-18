@@ -1,0 +1,45 @@
+{
+  "baseline": "e02f46d7367f8f006a97565fec0d4d5b85ff648b",
+  "preservedLobbyHandlers": [
+    "handleClassChange",
+    "updateEquipment",
+    "updateCrossClassAbility",
+    "handleDragStart",
+    "handleDragEnd",
+    "joinFight",
+    "handleLogout"
+  ],
+  "retired": [
+    "getPlayerCombatStats",
+    "calculateCriticalHit",
+    "calculatePhysicalDamage",
+    "calculateMagicalDamage",
+    "calculateRangedDamage",
+    "calculateHybridDamage",
+    "calculateDamageReduction",
+    "calculateSoloModeEnemyScaling",
+    "ResolutionFeedbackType",
+    "ResolutionFeedback",
+    "EnemyAIAttackData",
+    "PartyDamageData"
+  ],
+  "baselineReferenceLines": 15,
+  "retainedLegacyCaller": "StudentGuildLobby active-sessions",
+  "savedRoomOwnersUnchanged": true,
+  "runtimeFeatureModules": 22,
+  "runtimeFeatureCycles": 0,
+  "lengths": {
+    "client/src/pages/CreateFight.tsx": {
+      "before": 1197,
+      "after": 204
+    },
+    "client/src/pages/Lobby.tsx": {
+      "before": 1115,
+      "after": 205
+    },
+    "shared/schema.ts": {
+      "before": 752,
+      "after": 617
+    }
+  }
+}

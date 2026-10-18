@@ -1,13 +1,13 @@
 import { RecoloredSprite } from "@/components/RecoloredSprite";
 import { Button } from "@/components/ui/button";
 import {
-useSortable
+  useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { enemyImage } from "@shared/combat/encounters";
 import { ENEMY_ROLE_LABELS } from "@shared/encounter-tiers";
 import { type Enemy } from "@shared/schema";
-import { Edit,GripVertical,Trash2 } from "lucide-react";
+import { Edit, GripVertical, Trash2 } from "lucide-react";
 
 
 
@@ -53,7 +53,7 @@ export function SortableEnemyItem({ enemy, index, onEdit, onDelete }: SortableEn
         </button>
         <RecoloredSprite src={enemyImage(enemy)} palette={enemy.palette} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
         <div>
-          <p className="font-medium">{enemy.name} × {enemy.quantity||1} · Wave {enemy.wave||index+1}</p>
+          <p className="font-medium">{enemy.name} × {enemy.quantity || 1} · Wave {enemy.wave || index + 1}</p>
           {enemy.swarm && <p className="text-xs text-muted-foreground">Swarm: +{enemy.swarm.enemiesPerFourPlayers} at 8 players and every 4 after</p>}
           <p className="text-sm text-muted-foreground">
             {enemy.role ? ENEMY_ROLE_LABELS[enemy.role] : `Legacy difficulty ${enemy.difficultyMultiplier}`}
