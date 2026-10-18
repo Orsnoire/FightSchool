@@ -36,3 +36,8 @@ Implementation and final full-suite/typecheck/build/CI verification remain pendi
 First extraction: request-scoped authorization, response/error handling, explicit
 student/fight projections and reporting routes. TypeScript and all 13 focused
 HTTP/leaderboard/reporting tests pass. Remaining domain extraction is in progress.
+
+Route extraction: separate guild/quest/equipment/reward/student-progression modules,
+a 37-line dispatcher and a SQL leaderboard service. TypeScript and all 39 focused
+domain, ownership, reward, reporting and populated-data tests pass. Multi-step
+service extraction is the next checkpoint.
