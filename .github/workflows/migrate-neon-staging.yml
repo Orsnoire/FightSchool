@@ -2,25 +2,46 @@ name: Migrate Neon Staging
 
 on:
   workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Full merge commit SHA of the reviewed release PR
+        required: true
+      release_pr:
+        description: Merged release PR number
+        required: true
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
-  group: neon-staging-migration
+  group: questacademy-production
   cancel-in-progress: false
 
 jobs:
   migrate:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: cloudflare-staging
     steps:
+      - name: Validate immutable release input
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: '[[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]]'
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_sha }}
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: '.node-version'
           cache: npm
+      - name: Verify the reviewed release
+        run: node scripts/release/verify.mjs review
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          RELEASE_PR: ${{ inputs.release_pr }}
+          GITHUB_TOKEN: ${{ github.token }}
       - run: npm ci
       - name: Apply committed migrations
         run: npm run db:migrate:cloudflare

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
+import { startFixtureRun } from "./fixture-run.mjs";
 
-const origin = (process.env.STAGING_ORIGIN || "https://questacademy.bookwyrminteractive.studio").replace(/\/$/, "");
-const suffix = Date.now().toString(36) + randomUUID().slice(0, 6);
+const fixtures = await startFixtureRun("operations");
+const origin = fixtures.manifest.origin;
+const suffix = fixtures.suffix;
 const password = `Acceptance-${randomUUID()}!`;
 const sockets = [], fights = [], checks = [];
 let teacher;
@@ -15,7 +17,8 @@ async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await response.json();
-  assert.ok([status].flat().includes(response.status), `${method} ${path}: ${response.status} ${JSON.stringify(payload)}`);
+  fixtures.record(path, method, body, payload, response.status);
+  assert.ok([status].flat().includes(response.status), `${method} ${path}: ${response.status} unexpected response`);
   return { payload, cookie: response.headers.get("set-cookie")?.split(";")[0] };
 }
 async function check(name, fn) {
@@ -236,4 +239,5 @@ finally {
     catch { console.error(`Unable to archive acceptance fight ${id}`); process.exitCode = 1; }
   }
   console.log(JSON.stringify({ origin, checks }));
+  fixtures.finish(process.exitCode ? "failed" : "passed");
 }

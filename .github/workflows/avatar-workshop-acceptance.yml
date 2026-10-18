@@ -20,16 +20,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: '.node-version'
           cache: npm
       - run: npm ci
       - run: npm run build:avatar-workshop
       - name: Verify the checked-in workshop matches its sources
         run: git diff --exit-code -- attached_assets/characters/human/rig-prototype-v1/preview/workshop.html
       - name: Install isolated browser test tooling
-        run: npm install --no-save --package-lock=false playwright@1.62.1 && npx playwright install --with-deps chromium
+        run: npx --no-install playwright install chromium
       - run: node tests/browser/avatar-workshop.mjs
       - name: Preserve workshop screenshots
         if: always()

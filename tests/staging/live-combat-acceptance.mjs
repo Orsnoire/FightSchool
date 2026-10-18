@@ -1,16 +1,15 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
-const origin = (
-  process.env.STAGING_ORIGIN ||
-  "https://questacademy.bookwyrminteractive.studio"
-).replace(/\/$/, "");
-const suffix = Date.now().toString(36) + randomUUID().slice(0, 6),
-  password = `Acceptance-${randomUUID()}!`;
+import { startFixtureRun } from "./fixture-run.mjs";
+const fixtures = await startFixtureRun("combat");
+const origin = fixtures.manifest.origin;
+const suffix = fixtures.suffix;
+const password = `Acceptance-${randomUUID()}!`;
 const sockets = [];
 async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
   const response = await fetch(origin + path, {
-    method,
+    method, signal: AbortSignal.timeout(30000),
     headers: {
       Accept: "application/json",
       Origin: origin,
@@ -20,9 +19,10 @@ async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await response.json();
+  fixtures.record(path, method, body, payload, response.status);
   assert.ok(
     [status].flat().includes(response.status),
-    `${method} ${path}: ${response.status} ${JSON.stringify(payload)}`,
+    `${method} ${path}: ${response.status} unexpected response`,
   );
   return { payload, cookie: response.headers.get("set-cookie")?.split(";")[0] };
 }
@@ -462,4 +462,5 @@ try {
   process.exitCode = 1;
 } finally {
   for (const socket of sockets) socket.terminate();
+  fixtures.finish(process.exitCode ? "failed" : "passed");
 }
