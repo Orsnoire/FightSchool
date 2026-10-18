@@ -22,7 +22,7 @@ try {
   // The pinned renderer can block the browser for >30s on a distinct 4x-CPU roster.
   page.setDefaultTimeout(180000);
   page.on('pageerror',error=>{errors.push(error.message);console.error('C08_PAGE_ERROR',error.message);});
-  page.on('console',message=>{if(message.type()==='error')console.error('C08_CONSOLE_ERROR',message.text());});
+  page.on('console',message=>{if(message.type()==='error'){console.error('C08_CONSOLE_ERROR',message.text());if(/Maximum update depth|Too many re-renders/.test(message.text()))errors.push(message.text());}});
   page.on('response',response=>{if(response.status()>=400)console.log('C08_HTTP',response.status(),response.url());});
   page.on('requestfailed',request=>console.log('C08_REQUEST_FAILED',request.url(),request.failure()));
   await page.addInitScript(({studentId})=>{

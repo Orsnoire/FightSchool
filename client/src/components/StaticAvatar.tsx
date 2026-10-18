@@ -74,7 +74,9 @@ export const StaticAvatar = memo(function StaticAvatar({ appearance, job, loadou
     return()=>{observer?.disconnect();window.removeEventListener('resize',measure);media?.removeEventListener('change',watchDpr);};
   },[]);
   useEffect(()=>{
-    let active=true;const controller=new AbortController();setError('');
+    let active=true;const controller=new AbortController();
+    // Avoid a passive state update for every healthy avatar on a roster resize.
+    if(error)setError('');
     const target=canvas.current;
     if(target)delete target.dataset.avatarReady;
     if(!size)return;
