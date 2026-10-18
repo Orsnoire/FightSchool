@@ -17,18 +17,14 @@ export function useCombatSession(
     [results, setResults] = useState<EarnedResult[]>([]),
     [status, setStatus] = useState("connecting"),
     [error, setError] = useState<string | null>(null),
-    [now, setNow] = useState(Date.now());
+    [clockOffset, setClockOffset] = useState(0);
   const socket = useRef<WebSocket | null>(null),
     leaveCommand = useRef<Record<string, unknown> | null>(null),
     pending = useRef(new Map<string, Record<string, unknown>>()),
-    offset = useRef(0),
     revision = useRef(-1);
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now() + offset.current), 250);
-    return () => clearInterval(timer);
-  }, []);
-  useEffect(() => {
     setState(null);
+    setClockOffset(0);
     setAdmission("joining");
     setRejoinRequests([]);
     setQuestion(null);
@@ -108,8 +104,8 @@ export function useCombatSession(
           if (message.type === "combat_state") {
             setQuestion(message.question);
             if (message.results) setResults(message.results);
-            if (message.serverTime)
-              offset.current = message.serverTime - Date.now();
+            if (typeof message.serverTime === "number" && Number.isFinite(message.serverTime))
+              setClockOffset(message.serverTime - Date.now());
             if (!replayed) {
               replayed = true;
               for (const command of pending.current.values())
@@ -194,9 +190,6 @@ export function useCombatSession(
     leave,
     isLeaving,
     hasLeft,
-    serverNow: now,
-    seconds: state?.phaseDeadline
-      ? Math.max(0, Math.ceil((state.phaseDeadline - now) / 1000))
-      : 0,
+    clockOffset,
   };
 }

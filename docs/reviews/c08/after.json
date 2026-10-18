@@ -1,0 +1,47 @@
+{
+  "label": "after",
+  "source": "35eb3a8643ae0097e8e05cf29f6d6cbe3f001bf1",
+  "node": "v24.19.0",
+  "rendererSha256": "ce017ef11934aa7bdf28309ae8ff6c055d5c4f0ea568aedbddb14753723855b0",
+  "limits": "Native canvas fixture, sequential compositions; sums per-avatar output sizes without retaining a whole mounted DOM. RGBA backing bytes and requested allocations are not heap/GPU residency. Cold timing includes image decoding; no browser/hardware latency claim.",
+  "measurements": [
+    {
+      "count": 30,
+      "distinctAppearances": 30,
+      "requestedSize": {
+        "width": 48,
+        "height": 78
+      },
+      "actualSize": {
+        "width": 48,
+        "height": 78
+      },
+      "mountedBackingBytes": 449280,
+      "coldCreatedCanvases": 179,
+      "requestedAllocationBytes": 938450280,
+      "coldMs": 7466,
+      "firstAvatarReused": true,
+      "warmCreatedCanvases": 0,
+      "warmMs": 0
+    },
+    {
+      "count": 60,
+      "distinctAppearances": 60,
+      "requestedSize": {
+        "width": 48,
+        "height": 78
+      },
+      "actualSize": {
+        "width": 48,
+        "height": 78
+      },
+      "mountedBackingBytes": 898560,
+      "coldCreatedCanvases": 342,
+      "requestedAllocationBytes": 1776179280,
+      "coldMs": 12402,
+      "firstAvatarReused": true,
+      "warmCreatedCanvases": 0,
+      "warmMs": 0
+    }
+  ]
+}

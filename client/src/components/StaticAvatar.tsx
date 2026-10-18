@@ -1,6 +1,7 @@
 import type { EquipmentVisuals } from "@shared/avatar/visuals";
-import { useEffect, useRef, useState } from 'react';
-import { composeStaticAvatar, STATIC_CANVAS, type StaticAssetUrls } from '@shared/avatar/static-renderer';
+import { memo, useEffect, useRef, useState } from 'react';
+import { avatarSurface, stableVisualKey, type AvatarSurface } from '@shared/avatar/render-budget';
+import { composeStaticAvatar, type StaticAssetUrls } from '@shared/avatar/static-renderer';
 import type { AvatarAppearance, AvatarJob } from '@shared/avatar/appearance';
 
 import { avatarEquipment, unknownEquipment, type AvatarLoadout } from '@shared/avatar/equipment-visuals';
@@ -39,20 +40,58 @@ export const staticAvatarUrls:StaticAssetUrls = {
   herbalist,
 };
 
-export function StaticAvatar({ appearance, job, loadout, visuals, className='', label }: { appearance:AvatarAppearance; job:AvatarJob; loadout?:AvatarLoadout; visuals?:EquipmentVisuals; className?:string; label?:string }) {
-  const canvas=useRef<HTMLCanvasElement>(null),[error,setError]=useState('');
-  const equipment=avatarEquipment(job,loadout),equipmentKey=JSON.stringify([equipment,visuals]);
+interface StaticAvatarProps {
+  appearance:AvatarAppearance; job:AvatarJob; loadout?:AvatarLoadout;
+  visuals?:EquipmentVisuals; className?:string; label?:string;
+}
+function visualKey({appearance,job,loadout,visuals}:StaticAvatarProps) {
+  return stableVisualKey([appearance,job,avatarEquipment(job,loadout),visuals || {}]);
+}
+export const StaticAvatar = memo(function StaticAvatar({ appearance, job, loadout, visuals, className='', label }:StaticAvatarProps) {
+  const container=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null);
+  const [size,setSize]=useState<AvatarSurface|null>(null),[error,setError]=useState('');
+  const equipment=avatarEquipment(job,loadout),equipmentKey=stableVisualKey([equipment,visuals]);
   const missing=unknownEquipment(equipment);
   useEffect(()=>{
-    let active=true;setError('');
-    composeStaticAvatar(staticAvatarUrls,appearance,job,equipment,visuals).then(source=>{
-      if(!active||!canvas.current)return;const c=canvas.current,ctx=c.getContext('2d')!;
-      ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(source,0,0);
+    const element=container.current;
+    if(!element)return;
+    let media:MediaQueryList|undefined;
+    const measure=()=>{
+      const box=element.getBoundingClientRect();
+      const next=avatarSurface(box.width,box.height,window.devicePixelRatio || 1);
+      setSize(previous=>previous?.width===next?.width&&previous?.height===next?.height?previous:next);
+    };
+    const watchDpr=()=>{
+      media?.removeEventListener('change',watchDpr);
+      media=window.matchMedia?.(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+      media?.addEventListener('change',watchDpr);
+      measure();
+    };
+    const observer=typeof ResizeObserver==='undefined'?undefined:new ResizeObserver(measure);
+    observer?.observe(element);
+    window.addEventListener('resize',measure);
+    watchDpr();
+    return()=>{observer?.disconnect();window.removeEventListener('resize',measure);media?.removeEventListener('change',watchDpr);};
+  },[]);
+  useEffect(()=>{
+    let active=true;const controller=new AbortController();
+    // Avoid a passive state update for every healthy avatar on a roster resize.
+    if(error)setError('');
+    const target=canvas.current;
+    if(target)delete target.dataset.avatarReady;
+    if(!size)return;
+    target?.getContext('2d')?.clearRect(0,0,target.width,target.height);
+    composeStaticAvatar(staticAvatarUrls,appearance,job,equipment,visuals,{...size,signal:controller.signal}).then(source=>{
+      if(!active||!canvas.current)return;
+      const c=canvas.current,ctx=c.getContext('2d');
+      if(!ctx)throw new Error('Canvas unavailable');
+      ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(source,0,0,c.width,c.height);
+      c.dataset.avatarReady='true';
     }).catch(()=>{if(active)setError('Avatar artwork could not load.');});
-    return()=>{active=false};
-  },[appearance.modelId,appearance.hairColorId,appearance.eyeColorId,appearance.skinColorId,job,equipmentKey]);
-  return <div className={className} data-testid="static-avatar" data-job={job} data-equipment={equipmentKey} title={missing.length?"Some custom equipment uses a neutral appearance.":undefined}>
-    <canvas ref={canvas} width={STATIC_CANVAS.width} height={STATIC_CANVAS.height} aria-label={label||`${job} avatar`} role="img" className="w-full h-full object-contain" />
+    return()=>{active=false;controller.abort();};
+  },[appearance.modelId,appearance.hairColorId,appearance.eyeColorId,appearance.skinColorId,job,equipmentKey,size?.width,size?.height]);
+  return <div ref={container} className={className} data-testid="static-avatar" data-job={job} data-equipment={equipmentKey} title={missing.length?"Some custom equipment uses a neutral appearance.":undefined}>
+    <canvas ref={canvas} width={size?.width || 1} height={size?.height || 2} aria-label={label||`${job} avatar`} role="img" className="w-full h-full object-contain" />
     {error&&<p role="alert">{error}</p>}
   </div>;
-}
+},(previous,next)=>previous.className===next.className&&previous.label===next.label&&visualKey(previous)===visualKey(next));
