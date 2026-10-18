@@ -1,3 +1,15 @@
+# C09 active — API and services, October 18, 2026 (UTC)
+
+- Active package: **C09 / F13–F14**. Branch `cleanup/c09-api-services`; [draft PR #72](https://github.com/Orsnoire/FightSchool/pull/72) is published before substantive runtime changes.
+- Baseline: main `3ab41fa3de83d0d134a49d30de81c40f391f3241`. GitHub rechecked: no open PR or competing C09 branch. C08 is merged/deployed/accepted at runtime `d055b29761eec16fb96f7241c77bf4a4c0ea8d61`, Worker `9908d9ec-19fd-4372-985c-36dda01b7300`.
+- Scope: separate guild, quest, equipment, reward and reporting HTTP handlers and service responsibilities; independent domain input/transport contracts. Preserve routes, methods, payloads/statuses, explicit owner/member checks, bounded parsing, C06 event-driven evaluation and atomic SQL reward operations. No gameplay, combat-engine, UI, schema or migration changes; no production data reset.
+- Completed: authoritative checkpoint/scope and current main inspected; initial route inventory (`worker/routes/game.ts`: 1,018 lines), package claim and verification plan prepared. No C09 runtime changes yet.
+- Verification plan: record the existing full-suite baseline; exercise HTTP ownership, role/member boundaries, parsing/errors and route dispatch; test reward/purchase retries and failures using disposable migrated fixtures. Run TypeScript, all tests and client/Worker builds; inspect exact-head CI and Chromium acceptance.
+- Exact next action: read the latest branch checkpoint and PR, establish the baseline, then extract one coherent domain at a time with small published checkpoints. [Plan and evidence](https://github.com/Orsnoire/FightSchool/blob/cleanup/c09-api-services/docs/reviews/2026-10-18-c09-api-services.md).
+- Release boundary: **CLAIMED / IMPLEMENTATION NOT STARTED / NOT MERGED / NOT DEPLOYED**. C10 remains unstarted. This C09 request does not authorize another application deployment; the live release remains accepted C08. Preserve all existing student records, progression, permissions, academic evidence and rewards.
+
+## Previous completed release — C08
+
 # C08 complete — released October 18, 2026 (UTC)
 
 - Owner explicitly authorized **merge and deployment**. This supersedes the earlier draft-only boundary. No data reset was authorized or performed.
