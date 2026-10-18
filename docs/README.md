@@ -2,7 +2,7 @@
 
 **CURRENT — updated October 17, 2026.** Cleanup is the next development priority.
 Cleanup Phases 1–2 are complete. **C01 and C02 are COMPLETE: merged, deployed and accepted.**
-**C03 schema baseline and C04 contracts/diagnostics are COMPLETE and released. C05 room costs is COMPLETE, deployed and accepted in PR #63. C06 is COMPLETE, deployed and accepted in PR #69; C07 is COMPLETE, deployed and accepted in PR #70; C08 is next and unstarted.** New features wait for the
+**C03 schema baseline and C04 contracts/diagnostics are COMPLETE and released. C05 room costs is COMPLETE, deployed and accepted in PR #63. C06 is COMPLETE, deployed and accepted in PR #69; C07 is COMPLETE, deployed and accepted in PR #70; C08 is implemented in draft PR #71; verification is in progress.** New features wait for the
 cleanup exit gates. The separately authorized [swarm, previous-tier gear and host controls](combat/swarm-scaling.md) are deployed and accepted in PR #61.
 The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. It adds teacher reports, question editing, combat placeholders/completion and recoloring while retaining selection clocks.
 Read [active work](ACTIVE_WORK.md) before editing.

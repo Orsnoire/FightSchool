@@ -19,7 +19,8 @@ try {
  for(const config of cases) {
   const context=await browser.newContext({viewport:{width:config.width,height:config.height},deviceScaleFactor:config.dpr});
   const page=await context.newPage(),errors=[];
-  page.on('pageerror',error=>errors.push(error.message));
+  page.on('pageerror',error=>{errors.push(error.message);console.error('C08_PAGE_ERROR',error.message);});
+  page.on('console',message=>{if(message.type()==='error')console.error('C08_CONSOLE_ERROR',message.text());});
   page.on('response',response=>{if(response.status()>=400)console.log('C08_HTTP',response.status(),response.url());});
   page.on('requestfailed',request=>console.log('C08_REQUEST_FAILED',request.url(),request.failure()));
   await page.addInitScript(({studentId})=>{
@@ -60,7 +61,9 @@ try {
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:cpuRate});
   const coldStart=performance.now();await emit();
   const roster=page.locator('.battle-roster summary');
-  await roster.waitFor();const clickStart=performance.now();await roster.click({timeout:120000});
+  try {await roster.waitFor();}
+  catch(error){console.error('C08_ROSTER_FAILURE',JSON.stringify({config,errors,body:await page.locator('body').innerText(),debug:await page.evaluate(()=>window.c08)}));throw error;}
+  const clickStart=performance.now();await roster.click({timeout:120000});
   const coldRosterClickMs=Math.round(performance.now()-clickStart);
   const waitForAvatars=()=>page.waitForFunction(count=>{
     const canvases=[...document.querySelectorAll('[data-testid="static-avatar"] canvas')];
