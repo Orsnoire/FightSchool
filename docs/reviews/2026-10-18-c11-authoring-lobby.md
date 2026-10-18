@@ -2,7 +2,7 @@
 
 ## Scope and publication
 
-Phase 5 / C11 / F13–F14 is implemented in [draft PR #74](https://github.com/Orsnoire/FightSchool/pull/74), branch `cleanup/c11-authoring-lobby`. **Implemented and verified; not merged or deployed.** Verified code and browser fixture: `469c1c864f3d2a693f5e5018a7ceb43e4860a12f`; later checkpoint changes are documentation only. C10 remains the accepted live runtime. Baseline main is `e02f46d7367f8f006a97565fec0d4d5b85ff648b`. Remote main, checkpoint, branches and open PRs were inspected before publishing the claim and main pointer. Characterization was committed before extraction at `2b1f9449bbd122ded1db77e442804eda593dce5c`; authoring extraction was published at `cf4d8a311f4f8a4033582762543257b5a8986182`.
+Phase 5 / C11 / F13–F14 is implemented in [PR #74](https://github.com/Orsnoire/FightSchool/pull/74), branch `cleanup/c11-authoring-lobby`. **Complete, merged, deployed and accepted.** Runtime `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad` has the identical reviewed tree to final head `34c3dd4d97a9000c23c3b14869f468a032313421`. Verified code and browser fixture: `469c1c864f3d2a693f5e5018a7ceb43e4860a12f`; later checkpoint changes are documentation only. C11 is the accepted live runtime. Baseline main is `e02f46d7367f8f006a97565fec0d4d5b85ff648b`. Remote main, checkpoint, branches and open PRs were inspected before publishing the claim and main pointer. Characterization was committed before extraction at `2b1f9449bbd122ded1db77e442804eda593dce5c`; authoring extraction was published at `cf4d8a311f4f8a4033582762543257b5a8986182`.
 
 Question/CSV/enemy/loot editing and lobby loadout/avatar UI now have explicit owners.
 [Ownership map](../client/authoring-and-lobby.md). Route-level draft hooks retain
@@ -104,6 +104,19 @@ bug and applies its existing UI workaround; it does not skip the remaining flows
 
 Browser HTTP fixtures establish UI behavior, not database enforcement; the
 existing migrated HTTP/SQL tests cover permissions, concurrency and rewards.
-No live deployment or production acceptance is performed for this draft. C08
+Deployment and canonical acceptance are recorded below. C08
 physical Chromebook/repeated-performance observations and C12 environment/fixture
 isolation, provider recovery, rollback drills and monitoring remain open.
+
+## Release — October 18, 2026 UTC
+
+The owner authorized merge and deployment after reviewing the verified draft.
+Final reviewed head `34c3dd4` passes [CI 39150169998](https://github.com/Orsnoire/FightSchool/actions/runs/39150169998) and all four jobs in [Chromium 39150169935](https://github.com/Orsnoire/FightSchool/actions/runs/39150169935).
+Merge `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad` has the identical tree `bb9a1f04ae80fc662abcab16ad301b97187d9248`.
+[Deployment 39161062489](https://github.com/Orsnoire/FightSchool/actions/runs/39161062489) passed validation, R2, the existing additive migration gate and both hostname smoke checks; Worker `86111493-688d-41c2-9462-b050044b3d10` was published at 19:59:21 UTC.
+[Canonical acceptance 39161276964](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964) passes on the same runtime, targeting `https://questacademy.bookwyrminteractive.studio`: teacher/student combat, guild quests/shop/history, durable rewards, owner isolation, R2, 30-player answers/reconnect/completion, concurrent rooms, moderation and socket revocation.
+[Live acceptance record](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964).
+
+One 30-answer burst recorded p50 654 ms, p95 1260 ms, maximum 1310 ms. This is functional acceptance, not a repeated performance benchmark. No production-data reset, reward-procedure change or rollback was performed. The standard live suite uses its existing acceptance fixtures; broader fixture isolation/cleanup and provider recovery/rollback drills remain C12 work. Later documentation-only commits do not change the runtime.
+
+C11 is **COMPLETE / MERGED / DEPLOYED / ACCEPTED**. C12 / Phase 6 release review is next and unstarted; register its claim and draft before implementation.

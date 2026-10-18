@@ -8,8 +8,8 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Latest verified runtime:** `bb753955c1b042ee52f0f5bb5b9a260e015ce5cd`, released October 18 with C10 / PR #73.
-[Deployment 39137219072](https://github.com/Orsnoire/FightSchool/actions/runs/39137219072) and [canonical acceptance 39137585694](https://github.com/Orsnoire/FightSchool/actions/runs/39137585694) passed on that same revision. Immutable Worker: `d925c8ca-ff82-48bc-9843-36a49b2582d6`. No new migration or production-data reset.
+**Latest verified runtime:** `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`, released October 18 with C11 / PR #74.
+[Deployment 39161062489](https://github.com/Orsnoire/FightSchool/actions/runs/39161062489) and [canonical acceptance 39161276964](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964) passed on that same revision. Immutable Worker: `86111493-688d-41c2-9462-b050044b3d10`. No new migration or production-data reset.
 See the [current release record](../ACTIVE_WORK.md) and [current status](../CURRENT_STATUS.md).
 Earlier releases and R2 failures below are historical.
 Full infrastructure recovery/rollback signoff remains open.
@@ -765,3 +765,13 @@ explicit fixture limits. C12 recovery/rollback drills remain open; no rollback
 was performed. Prior Worker `0de082fd-746e-48bb-bf4a-e33a8827ba68` is historical
 evidence, not a rehearsed rollback target. Documentation-only release commits do
 not change this runtime. **C07 is complete; C08 is next and unstarted.**
+
+### C11 authoring and lobby release — October 18, 2026 UTC
+
+Owner-authorized [PR #74](https://github.com/Orsnoire/FightSchool/pull/74) merged as `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`, identical to reviewed tree `bb9a1f04ae80fc662abcab16ad301b97187d9248`. All 300 tests, TypeScript, client/Worker builds and four Chromium jobs pass on final reviewed head `34c3dd4`. Authoring/lobby extraction preserves draft state, permissions, serialized loadout saves and recovery; a pinned-baseline loot re-add defect is fixed. No SQL, migration or saved-room change.
+
+[Deployment 39161062489](https://github.com/Orsnoire/FightSchool/actions/runs/39161062489) passed all gates and both hostname smoke checks. Worker `86111493-688d-41c2-9462-b050044b3d10` was published at 19:59:21 UTC. [Canonical acceptance 39161276964](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964) passed teacher/student combat, guilds/quests/shop/history, durable rewards, owner isolation, R2, 30-player answers/reconnect/completion, concurrent rooms, moderation and revocation on the same runtime.
+
+One 30-answer burst measured p50 654 ms, p95 1260 ms, maximum 1310 ms; this is functional acceptance, not a repeated performance benchmark. Existing student records were not reset. The standard suite uses acceptance fixtures; complete fixture isolation/cleanup, provider interruption/eviction/rollback drills, physical-device measurements and monitoring remain C12 work. No rollback was performed. Prior accepted Worker `d925c8ca-ff82-48bc-9843-36a49b2582d6` is historical evidence, not a newly rehearsed rollback target. Later documentation-only commits do not change the deployed runtime.
+
+[Detailed report](../reviews/2026-10-18-c11-authoring-lobby.md); [Live acceptance record](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964). C12 / Phase 6 release review is next and unstarted.
