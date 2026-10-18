@@ -1,7 +1,11 @@
-import { combatHistory, studentCombatSummary, type HistoryScope } from "../db/combat-history.ts";
+import { GameError as ApiError } from "../services/errors";
+import { json, method, gameErrorResponse } from "../http/game-response";
+import { gameAccess } from "../services/access";
+import { safeStudent } from "../projections/student";
+import { safeFight } from "../projections/fight";
+import { handleReporting } from "./reporting";
 import { paletteSchema, equipmentVisualSchema, validVisualSlot } from "../../shared/avatar/visuals";
-import { sessionReport } from "../reporting/session-report";
-import { readJson, bodyErrorResponse } from "../http/json";
+import { readJson } from "../http/json";
 import { questInput } from "../../shared/quests";
 import { EQUIPMENT_SLOTS, ownedEquipment } from "../../shared/equipment-catalog.ts";
 import { equipmentIdSchema } from "../../shared/equipment-id.ts";
@@ -100,58 +104,6 @@ const itemSchema = z.object({
   shopPrice: z.number().int().min(1).max(1000000).nullable().optional(),
   isPurchasable: z.boolean().default(true),
 });
-class ApiError extends Error {
-  constructor(
-    message: string,
-    public status = 400,
-  ) {
-    super(message);
-  }
-}
-function json(body: unknown, status = 200) {
-  return new Response(
-    JSON.stringify(body, (_k, v) => (v instanceof Date ? v.getTime() : v)),
-    {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store",
-      },
-    },
-  );
-}
-export function safeStudent(student: s.StudentRecord) {
-  return {
-    id: student.id,
-    guildCode: student.guildCode,
-    grantedJobs: student.grantedJobs,
-    aaExperience: student.aaExperience,
-    staminaDay: student.staminaDay,
-    dailyCombats: student.dailyCombats,
-    xpRemainder: student.xpRemainder,
-    nickname: student.nickname,
-    guildId: student.guildId,
-    weapon: student.weapon,
-    headgear: student.headgear,
-    armor: student.armor,
-    offhand: student.offhand,
-    hands: student.hands,
-    legs: student.legs,
-    feet: student.feet,
-    arms: student.arms,
-    crossClassAbility1: student.crossClassAbility1,
-    crossClassAbility2: student.crossClassAbility2,
-    gold: student.gold,
-    characterClass: student.characterClass,
-    gender: student.gender,
-    inventory: ownedEquipment([...student.inventory, ...EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id)]),
-  };
-}
-const method = (r: Request, m: string) => r.method === m;
-function safeFight(fight: any) {
-  const { questions, ...safe } = fight;
-  return { ...safe, questionCount: questions.length };
-}
 export async function handleGame(
   request: Request,
   url: URL,
@@ -169,35 +121,8 @@ export async function handleGame(
   const actor = await authenticateSession(request, repository, config);
   if (!actor) return json({ error: "Authentication required" }, 401);
   const db = database;
-  const teacher = actor.actorType === "teacher";
-  const ownStudent = (id: string) => {
-    uuid.parse(id);
-    if (teacher || actor.actorId !== id) throw new ApiError("Forbidden", 403);
-  };
-  const requireTeacher = () => {
-    if (!teacher) throw new ApiError("Teacher role required", 403);
-  };
-  const guild = async (id: string, write = false) => {
-    uuid.parse(id);
-    const [g] = await db.select().from(s.guilds).where(eq(s.guilds.id, id));
-    if (!g) throw new ApiError("Guild not found", 404);
-    if (teacher) {
-      if (g.teacherId !== actor.actorId) throw new ApiError("Forbidden", 403);
-    } else {
-      if (write) throw new ApiError("Teacher role required", 403);
-      const [member] = await db
-        .select()
-        .from(s.guildMemberships)
-        .where(
-          and(
-            eq(s.guildMemberships.guildId, id),
-            eq(s.guildMemberships.studentId, actor.actorId),
-          ),
-        );
-      if (!member) throw new ApiError("Forbidden", 403);
-    }
-    return g;
-  };
+  const context = { request, url, repository, db, ...gameAccess(db, actor) };
+  const { teacher, ownStudent, requireTeacher, guild } = context;
   try {
     const teacherList = path.match(
       /^\/api\/teacher\/([^/]+)\/(guilds|equipment-items)$/,
@@ -926,73 +851,11 @@ if (!validVisualSlot(input.visual===undefined?item.visual:input.visual,input.slo
       if (tail === "award-xp")
         throw new ApiError("XP is awarded from server combat results", 403);
     }
-    if (path === "/api/combat-stats/report" && method(request,"GET")) {
-      requireTeacher();
-      return json(await sessionReport(db, actor.actorId, url.searchParams));
-    }
-    const summary=path.match(/^\/api\/combat-stats\/student\/([^/]+)\/summary$/);
-    if(summary){ownStudent(summary[1]);return json(await studentCombatSummary(db,summary[1]));}
-    const stats=path.match(/^\/api\/combat-stats\/(fight|student|class)\/([^/]+)$/);
-    if(stats){
-      let scope:HistoryScope;
-      if(stats[1]==='student'){ownStudent(stats[2]);scope={studentId:stats[2]};}
-      else if(stats[1]==='fight'){
-        requireTeacher();const fight=await repository.findFightById(uuid.parse(stats[2]));
-        if(fight?.teacherId!==actor.actorId)throw new ApiError('Forbidden',403);
-        scope={fightId:fight.id};
-      }else{
-        requireTeacher();const owner=await repository.findTeacherById(actor.actorId);
-        if(owner?.guildCode===stats[2])scope={teacherId:actor.actorId};
-        else{
-          const guilds=await db.select({id:s.guilds.id}).from(s.guilds).where(and(eq(s.guilds.teacherId,actor.actorId),eq(s.guilds.code,stats[2])));
-          scope={guildIds:guilds.map(g=>g.id)};
-        }
-      }
-      const page=await combatHistory(db,scope,url.searchParams);
-      const response=json(page.rows);
-      if(page.nextCursor)response.headers.set('X-Next-Cursor',page.nextCursor);
-      return response;
-    }
-    if (path === "/api/combat-stats" && method(request, "POST"))
-      throw new ApiError("Statistics are recorded by the combat server", 403);
-    const used = path.match(/^\/api\/students\/used-fight-codes\/([^/]+)$/);
-    if (used) {
-      requireTeacher();
-      const gs = await db
-        .select()
-        .from(s.guilds)
-        .where(
-          and(
-            eq(s.guilds.teacherId, actor.actorId),
-            eq(s.guilds.code, used[1]),
-          ),
-        );
-      const rows = gs.length
-        ? await db
-            .select({
-              studentId: s.combatResults.studentId,
-              fightId: s.combatResults.fightId,
-              sessionId: s.combatResults.sessionId,
-            })
-            .from(s.combatResults)
-            .where(
-              inArray(
-                s.combatResults.guildId,
-                gs.map((g) => g.id),
-              ),
-            )
-        : [];
-      return json(rows);
-    }
+    const reporting = await handleReporting(context);
+    if (reporting) return reporting;
     return json({ error: "Route not found" }, 404);
   } catch (error) {
-      const bodyFailure=bodyErrorResponse(error);if(bodyFailure)return bodyFailure;
-    if (error instanceof ApiError || error instanceof RewardError)
-      return json({ error: error.message }, error.status);
-    if (error instanceof z.ZodError || error instanceof SyntaxError)
-      return json({ error: "Invalid request" }, 400);
-
-    return json({ error: "Unable to complete request" }, 503);
+    return gameErrorResponse(error);
   }
 }
 async function studentItemIds(db: GameDatabase, id: string) {

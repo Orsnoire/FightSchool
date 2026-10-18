@@ -32,3 +32,7 @@ public DTOs and bounded/sanitized errors; reward failure before commit and lost
 acknowledgement after commit followed by an exactly-once retry.
 
 Implementation and final full-suite/typecheck/build/CI verification remain pending.
+
+First extraction: request-scoped authorization, response/error handling, explicit
+student/fight projections and reporting routes. TypeScript and all 13 focused
+HTTP/leaderboard/reporting tests pass. Remaining domain extraction is in progress.
