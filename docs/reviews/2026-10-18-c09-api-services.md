@@ -1,9 +1,9 @@
 # C09 — API and services
 
 Baseline: `3ab41fa3de83d0d134a49d30de81c40f391f3241`, after accepted C08.
-Implementation: [draft PR #72](https://github.com/Orsnoire/FightSchool/pull/72),
+Implementation: [PR #72](https://github.com/Orsnoire/FightSchool/pull/72),
 `cleanup/c09-api-services`. Implementation `d9fef8585fb1b14ace844898fa63682d8cbb7350` passes local and remote verification.
-**Not merged or deployed.** The live C08 runtime remains `d055b29`.
+**Complete, merged, deployed and accepted.** The owner authorized release October 18; the deployed C09 runtime is `9efcfea`.
 
 ## Changes and boundaries
 
@@ -58,7 +58,7 @@ unknown ID, and checks compatibility-export identity. No item definitions change
   evaluation; cross-room rewards and academic evidence are retained.
 - All database migrations, student records, gameplay, saved-room formats,
   progression/reward procedures and UI behavior are unchanged. No production
-  data operation or deployment was performed.
+  reset or schema rewrite was performed; release acceptance uses the established fixtures.
 
 ## Verification
 
@@ -102,12 +102,29 @@ npm test
 npm run build:cloudflare
 ```
 
+## Release verification — October 18, 2026
+
+The owner authorized merge and deployment. Final reviewed head `1628902137beaa34f5ac60b71e745b1affcecdcf`
+passes [CI 39099605515](https://github.com/Orsnoire/FightSchool/actions/runs/39099605515) and all three jobs in [Chromium 39099605522](https://github.com/Orsnoire/FightSchool/actions/runs/39099605522). The expected-head merge
+`9efcfeada5a64e0ff115dd64430df4c255f4e479` has exactly the same tree, `60a7d4556b2e9d891d860795893c7cc7d4a03a42`.
+
+[deployment 39124495260](https://github.com/Orsnoire/FightSchool/actions/runs/39124495260) passed on that merge commit: 289 tests, TypeScript, both builds,
+R2, the existing additive migration gate and both hostname smoke checks.
+Immutable Worker `bf61bb30-1d67-45f6-a18d-4022189e3cda` was published at 11:47:24 UTC.
+No new migration, reward-procedure change or student-data reset was performed.
+
+[canonical live acceptance 39124680158](https://github.com/Orsnoire/FightSchool/actions/runs/39124680158) passed on the same runtime against the canonical domain.
+It covers teacher/student combat, guild quests/shop/history, durable XP/rewards,
+owner isolation, R2, 30-player simultaneous answers/reconnect/completion,
+concurrent rooms, moderation and socket revocation.
+One answer burst measured p50 759 ms, p95 1,467 ms and maximum 1,517 ms. These
+are functional acceptance observations, not a repeated performance comparison.
+[Acceptance screenshot](../releases/2026-10-18-c09-live-accepted.jpg).
+
 ## Resume and remaining scope
 
-Implementation verification is complete. The final checkpoint only updates
-documentation and removes trailing whitespace from the extracted catalog. Its
-automatic checks are tracked on the live PR. Before any authorized merge, inspect
-the current PR head and require all intended checks on that exact head; do not
-substitute an earlier passing run. Keep the PR draft until the owner requests merge. C10 combat extraction and C11 client extraction are unstarted;
-existing C08 physical-device/performance limitations and C12 release/recovery
-drills remain open. Merge and deployment require the owner's next instruction.
+C09 is **complete, merged, deployed and accepted**. Later documentation commits
+do not change the deployed runtime. Resume from current main and `ACTIVE_WORK.md`.
+C10 combat extraction is next and unstarted; register its claim and draft PR
+before implementation. C11 client extraction, C08 physical-device/performance
+limitations and C12 fixture isolation/recovery/rollback drills remain open.
