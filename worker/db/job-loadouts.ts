@@ -2,7 +2,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { EQUIPMENT_SLOTS } from '../../shared/equipment-slots';
 import { captureLoadout, restoreLoadout } from '../../shared/job-loadouts';
 import { EQUIPMENT_ITEMS, type CharacterClass } from '../../shared/schema';
-import type { GameDatabase } from './game-repository';
+import type { GameDatabase } from './database';
 import * as s from './schema';
 
 export class LoadoutConflict extends Error {}

@@ -1,3 +1,4 @@
+import { gameDatabase } from "./database";
 import { evaluateFightQuests } from "../progression/quests.ts";
 import { listTeacherFightSummaries } from "./fight-summaries";
 import type { FightSummary } from "../../shared/contracts/fight-summary";
@@ -9,7 +10,6 @@ import {
 } from "../../shared/schema.ts";
 import {
   combatProfile,
-  gameDatabase,
   persistCombatResults,
   recordQuestEvidence,
 } from "./game-repository.ts";

@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { questionKey } from "../progression/question-key";
 import type { CombatSnapshot } from "../../shared/combat/model";
 import type { FightRecord } from "./schema";
-import type { GameDatabase } from "./game-repository";
+import type { GameDatabase } from "./database";
 
 export function reportingSignature(state: CombatSnapshot) {
   return JSON.stringify([

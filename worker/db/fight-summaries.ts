@@ -1,6 +1,6 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import type { FightSummary } from '../../shared/contracts/fight-summary';
-import type { GameDatabase } from './game-repository';
+import type { GameDatabase } from './database';
 import { fights } from './schema';
 
 export async function listTeacherFightSummaries(database: GameDatabase, teacherId: string): Promise<FightSummary[]> {

@@ -7,9 +7,7 @@ import { getStudentAvatar } from "./avatar-repository.ts";
 import { validAppearance } from "../../shared/avatar/appearance.ts";
 import { EQUIPMENT_SLOTS } from "../../shared/equipment-catalog.ts";
 import { evaluateQuests, evaluateStudentLevels } from "../progression/quests.ts";
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import { and, eq, inArray, sql, desc } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import * as s from "./schema.ts";
 import { calculateXP, calculateNewLevel } from "../../shared/jobSystem.ts";
 import {
@@ -22,8 +20,10 @@ import {
 } from "../../shared/schema.ts";
 import type { CombatSnapshot } from "../../shared/combat/model.ts";
 import { completedRounds, participatedRounds, type CombatProfile } from "../combat/engine.ts";
-export const gameDatabase = (url: string) => drizzle(neon(url), { schema: s });
-export type GameDatabase = ReturnType<typeof gameDatabase>;
+import type { GameDatabase } from "./database";
+// Compatibility exports for existing integrations; new domain code imports its owner.
+export { gameDatabase, type GameDatabase } from "./database";
+export { claimReward, RewardError } from "../services/rewards";
 export async function combatProfile(
   db: GameDatabase,
   student: s.StudentRecord,
@@ -177,47 +177,6 @@ export async function persistCombatResults(
   await evaluateStudentLevels(db, studentIds);
   return results;
 }
-export class RewardError extends Error {
-  constructor(
-    message: string,
-    public status = 409,
-  ) {
-    super(message);
-  }
-}
-export async function claimReward(
-  db: GameDatabase,
-  studentId: string,
-  fightId: string,
-  itemId: string | null,
-  resultId?: string,
-) {
-  const [result] = await db
-    .select()
-    .from(s.combatResults)
-    .where(
-      and(
-        eq(s.combatResults.studentId, studentId),
-        eq(s.combatResults.fightId, fightId),
-        ...(resultId ? [eq(s.combatResults.id, resultId)] : []),
-      ),
-    )
-    .orderBy(desc(s.combatResults.completedAt))
-    .limit(1);
-  if (!result?.victory || !result.lootTable.length)
-    throw new RewardError("No reward choice is available");
-  if (itemId && !result.lootTable.some((x) => x.itemId === itemId))
-    throw new RewardError("Item is not in the earned loot table", 400);
-  const claim = itemId || "gold";
-  const response =
-    await db.execute(sql`WITH claim AS (UPDATE combat_results SET reward_claim=${claim} WHERE id=${result.id} AND reward_claim IS NULL RETURNING student_id,gold_reward)
- UPDATE students SET gold=gold+${itemId ? 0 : result.goldReward}, inventory=CASE WHEN ${itemId !== null} THEN CASE WHEN inventory @> ${JSON.stringify(itemId ? [itemId] : [])}::jsonb THEN inventory ELSE inventory || ${JSON.stringify(itemId ? [itemId] : [])}::jsonb END ELSE inventory END
- WHERE id IN(SELECT student_id FROM claim) RETURNING id,gold,inventory`);
-  if (!response.rows.length && result.rewardClaim !== claim)
-    throw new RewardError("Reward has already been claimed");
-  return { success: true, goldReward: itemId ? 0 : result.goldReward };
-}
-
 /** Persist progress after resolved questions, including departed players; no answer text leaves the server. */
 export async function recordQuestEvidence(db:GameDatabase,state:CombatSnapshot,fight:s.FightRecord, evaluate = true){
  const [live]=await db.select().from(s.liveCombatSessions).where(eq(s.liveCombatSessions.sessionId,state.sessionId));

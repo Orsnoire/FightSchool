@@ -4,7 +4,7 @@
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
 > Phases 1–2 are complete with the [resume safeguard](ACTIVE_WORK.md). C01–C08
-> are merged, deployed and accepted. C08 shipped in PR #71 / runtime `d055b29`; C09 is next and unstarted. See the release checkpoint. The separately
+> are merged, deployed and accepted. C08 shipped in PR #71 / runtime `d055b29`; C09 is implemented in draft PR #72, with implementation verification complete. See the release checkpoint. The separately
 > authorized PR #61 and Usability Patch 1 / PR #64 releases are recorded in current status.
 > Historical migration phases are not the active queue.
 

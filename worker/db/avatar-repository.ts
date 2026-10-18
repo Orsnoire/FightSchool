@@ -1,5 +1,5 @@
 import { and, eq, inArray } from "drizzle-orm";
-import type { GameDatabase } from "./game-repository.ts";
+import type { GameDatabase } from "./database.ts";
 import { avatarColors, avatarModels, studentAvatars } from "./schema.ts";
 
 export interface AvatarColorSelection {

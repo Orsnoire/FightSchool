@@ -1,5 +1,5 @@
 import { sql, type SQL } from "drizzle-orm";
-import type { GameDatabase } from "../db/game-repository.ts";
+import type { GameDatabase } from "../db/database.ts";
 import {
   questProgress,
   type QuestContext,

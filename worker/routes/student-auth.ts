@@ -1,6 +1,6 @@
 import { readJson, bodyErrorResponse } from "../http/json";
 import { LoadoutConflict } from "../db/job-loadouts";
-import { safeStudent } from "./game.ts";
+import { safeStudent } from "../projections/student";
 import { getUnlockedJobs } from "../../shared/jobSystem.ts";
 import {
   ALL_CHARACTER_CLASSES,

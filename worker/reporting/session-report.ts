@@ -3,7 +3,7 @@ import {
   reportQuerySchema,
   type SessionReport,
 } from "../../shared/contracts/reporting";
-import type { GameDatabase } from "../db/game-repository";
+import type { GameDatabase } from "../db/database";
 
 export async function sessionReport(
   db: GameDatabase,

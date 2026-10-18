@@ -1,5 +1,5 @@
 import { readJson, bodyErrorResponse } from "../http/json";
-import { gameDatabase } from "../db/game-repository.ts";
+import { gameDatabase } from "../db/database.ts";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import {
   guilds,
