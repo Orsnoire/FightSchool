@@ -1,3 +1,11 @@
+# C12 active — Phase 6 release review
+
+- Resume [draft PR #75](https://github.com/Orsnoire/FightSchool/pull/75), branch `cleanup/c12-release-review`, and that branch's current `docs/ACTIVE_WORK.md` before editing. Initial claim: `7335a21ee74654f1ad5e4883aa46480c149d062c`.
+- C11 remains the deployed and accepted runtime below. C12 is implementation/verification in progress; cleanup exit gates are not yet signed off. No production reset or disruptive drill is authorized.
+- This is the main discovery pointer; the branch checkpoint and live PR carry newer work. Do not start another C12 implementation.
+
+## Previous completed release — C11
+
 # C11 complete — released October 18, 2026 (UTC)
 
 - Owner authorized merge and deployment after the verified draft. No production-data reset was authorized or performed.
