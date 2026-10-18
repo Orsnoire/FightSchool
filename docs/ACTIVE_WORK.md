@@ -1,3 +1,12 @@
+# C11 active — implementation registered (October 18, 2026 UTC)
+
+- Resume `cleanup/c11-authoring-lobby` / [draft PR #74](https://github.com/Orsnoire/FightSchool/pull/74). Read its checkpoint and live PR for the newest pushed SHA and verification. Main is the discovery pointer, not the implementation branch.
+- Scope: Phase 5 / C11 / F13–F14, question/CSV/enemy/loot authoring and loadout/avatar panels; only verified-unused helpers/types may be removed. Preserve editing, drafts, permissions, remembered loadouts, saved appearance and error recovery; retain saved-room adapters.
+- Claimed from main `e02f46d7367f8f006a97565fec0d4d5b85ff648b` after confirming no competing branch or PR. Claim commit `19f983b0b62186ad66e5862964ee5e52b025bb76` is published; characterization and implementation follow on that draft.
+- State: IN PROGRESS / INCOMPLETE; no C11 verification, merge or deployment claimed. C10 below remains the accepted live runtime. No production-data reset or gameplay change. Recheck the remote branch/PR before editing; do not start a duplicate C11.
+
+## Previous completed release — C10
+
 # C10 complete — released October 18, 2026 (UTC)
 
 - Owner explicitly authorized **merge and deployment**. This supersedes the previous draft-only boundary. No production-data reset was authorized or performed.
