@@ -1,13 +1,13 @@
 # Current status
 
-**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73; C11 is next and unstarted.
+**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73; C11 is implemented and verified in draft PR #74, not merged or deployed; C12 is next and unstarted.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
-## Next implementation
+## Active implementation and next package
 
-**C11 (authoring and lobby UI)** is next and unstarted. No cleanup implementation is active; register its claim, branch and draft PR before implementation.
+**C11 (authoring and lobby UI), Phase 5**, is implemented and verified in [draft PR #74](https://github.com/Orsnoire/FightSchool/pull/74), branch `cleanup/c11-authoring-lobby`. All 300 tests, TypeScript, both builds and all four Chromium jobs pass on `469c1c8`. [Report and evidence](https://github.com/Orsnoire/FightSchool/blob/cleanup/c11-authoring-lobby/docs/reviews/2026-10-18-c11-authoring-lobby.md). It is not merged or deployed; C10 remains live. **C12 (Phase 6 release review)** is next and unstarted; register its claim, branch and draft PR before implementation.
 C10 is complete, merged, deployed and accepted in [PR #73](https://github.com/Orsnoire/FightSchool/pull/73): explicit combat module ownership with deterministic rules, one serialized room authority and compatible persistence. All 298 tests and all three Chromium jobs pass. [Implementation and release evidence](reviews/2026-10-18-c10-combat-modules.md).
 C09 API/services work is complete and released in [PR #72](https://github.com/Orsnoire/FightSchool/pull/72). [Report](reviews/2026-10-18-c09-api-services.md).
 C08 battlefield rendering is complete, merged, deployed and accepted. [Report and measurements](reviews/2026-10-17-c08-battlefield-rendering.md).
@@ -194,7 +194,7 @@ plan and [active-work checkpoint](ACTIVE_WORK.md).
 - **Data costs F06/F08–F09 (C06 released):** event-scoped quest evaluation, SQL evidence/history aggregates, read-only views, bounded history, measured indexes and lost-acknowledgement recovery. Academic evidence and atomic receipts remain authoritative.
 - **Initial loading F10 / list-polling F12 (C07 released):** deferred routes/MathLive, accessible recovery and text fallback, SQL fight summaries and foreground live-session polling. The measured 80.11% login gzip JS reduction exceeds the 40% gate.
 - **Battlefield rendering F11 / countdown F12 (C08 released):** display/DPR-sized backing, byte-bounded caching and isolated countdown updates exceed the 80% backing-allocation gate in 30/60-player browser fixtures; physical hardware and cold-input limits remain explicit.
-- **Remaining performance/refactoring work:** C08 physical Chromebook observation and mixed UI modules (C11); repeated live query/load/recovery measurements remain C12 work. C10 is released and accepted.
+- **Remaining performance/refactoring work:** C08 physical Chromebook observation and repeated live query/load/recovery measurements remain C12 work. C11 UI module extraction is verified in draft PR #74; C10 remains the released and accepted runtime.
 - **Documentation reconciliation (F17): COMPLETE for this baseline.** Status,
   history and plans are now separated; updating them remains part of each release.
 
