@@ -2,7 +2,7 @@
 
 Baseline: `3ab41fa3de83d0d134a49d30de81c40f391f3241`, after accepted C08.
 Implementation: [draft PR #72](https://github.com/Orsnoire/FightSchool/pull/72),
-`cleanup/c09-api-services`. Local verification passes; exact-head CI is pending.
+`cleanup/c09-api-services`. Implementation `d9fef8585fb1b14ace844898fa63682d8cbb7350` passes local and remote verification.
 **Not merged or deployed.** The live C08 runtime remains `d055b29`.
 
 ## Changes and boundaries
@@ -36,7 +36,7 @@ class/level/slot checks and optimistic loadout revisions stay in the equipment
 service. Guild/quest services retain the original event-scoped evaluation calls.
 The SQL leaderboard retains weighted accuracy, existing metric rules and limits.
 
-The built-in equipment catalog moved verbatim from `shared/schema.ts` to
+The built-in equipment catalog moved without changing its definitions from `shared/schema.ts` to
 `shared/equipment-items.ts`, with the same object re-exported for compatibility.
 This removes the `equipment-id -> schema -> fights -> equipment-id` runtime
 cycle exposed by independent domain imports. A fresh-process regression imports
@@ -72,7 +72,9 @@ unknown ID, and checks compatibility-export identity. No item definitions change
 | `npm run build:cloudflare` | Client and Worker pass; existing large lazy-editor chunk warning remains |
 | `git diff --check` | Pass |
 | SQL preservation inspection | All 17 `sql` tagged templates from the original game route/repository match the extracted modules, ignoring whitespace |
-| GitHub CI and Chromium | Pending on the published service checkpoint |
+| [CI 39099261904](https://github.com/Orsnoire/FightSchool/actions/runs/39099261904) on `d9fef85` | Pass: clean Node 22 install, 289 tests, TypeScript and both builds |
+| [Chromium 39099261881](https://github.com/Orsnoire/FightSchool/actions/runs/39099261881) on `d9fef85` | All three jobs pass: combat UI, initial loading and battlefield rendering |
+| Avatar Workshop | Not triggered: C09 does not change any of its filtered paths; no new workshop pass claimed |
 
 The HTTP fixture exercises signed sessions for two teachers, a member and an
 outsider; namespace/auth dispatch; every nested guild read; owner/member/role
@@ -102,9 +104,10 @@ npm run build:cloudflare
 
 ## Resume and remaining scope
 
-Inspect the live PR head and `docs/ACTIVE_WORK.md` before continuing. The next
-action is to inspect exact-head CI, Combat UI Acceptance (all three jobs) and
-Avatar Workshop, then record their run links and final verification state.
-Keep the PR draft. C10 combat extraction and C11 client extraction are unstarted;
+Implementation verification is complete. The final checkpoint only updates
+documentation and removes trailing whitespace from the extracted catalog. Its
+automatic checks are tracked on the live PR. Before any authorized merge, inspect
+the current PR head and require all intended checks on that exact head; do not
+substitute an earlier passing run. Keep the PR draft until the owner requests merge. C10 combat extraction and C11 client extraction are unstarted;
 existing C08 physical-device/performance limitations and C12 release/recovery
 drills remain open. Merge and deployment require the owner's next instruction.

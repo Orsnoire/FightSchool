@@ -93,7 +93,7 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
     classRestriction: ["bard"],
     weaponType: "harp",
   },
-  
+
   // Common drops
   iron_sword: {
     id: "iron_sword",
