@@ -19,6 +19,8 @@ try {
  for(const config of cases) {
   const context=await browser.newContext({viewport:{width:config.width,height:config.height},deviceScaleFactor:config.dpr});
   const page=await context.newPage(),errors=[];
+  // The pinned renderer can block the browser for >30s on a distinct 4x-CPU roster.
+  page.setDefaultTimeout(180000);
   page.on('pageerror',error=>{errors.push(error.message);console.error('C08_PAGE_ERROR',error.message);});
   page.on('console',message=>{if(message.type()==='error')console.error('C08_CONSOLE_ERROR',message.text());});
   page.on('response',response=>{if(response.status()>=400)console.log('C08_HTTP',response.status(),response.url());});
@@ -43,7 +45,7 @@ try {
   await page.route(`**/api/fights/${fight.id}/sessions`,route=>route.fulfill({json:{sessionId:'ABC234'}}));
   await page.route('**/api/student/**/stamina',route=>route.fulfill({json:{completedCombats:0,xpMultiplier:1,resetsAt:Date.now()+3600000,timeZone:'America/Denver'}}));
   await page.goto(origin+(config.role==='teacher'?`/teacher/host/${fight.id}`:'/student/combat'));
-  try {await page.waitForFunction(()=>window.c08.sockets.some(s=>typeof s.onmessage==='function'));}
+  try {await page.waitForFunction(()=>window.c08.sockets.some(s=>s.url.includes('sessionId=ABC234')&&typeof s.onmessage==='function'));}
   catch(error){console.error('C08_INIT_FAILURE',JSON.stringify({config,errors,body:await page.locator('body').innerText()}));throw error;}
   const state=started(),template=structuredClone(state.players[student().id]);state.players={};
   for(let i=0;i<config.count;i++){
@@ -53,7 +55,7 @@ try {
   state.currentPhase='actions';state.questionStartTime=null;state.phaseDeadline=Date.now()+120000;
   const emit=async(question=null)=>{
     state.revision++;
-    await page.evaluate(({state,question})=>window.c08.sockets.at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,question,serverTime:Date.now()})}),{state,question});
+    await page.evaluate(({state,question})=>window.c08.sockets.filter(s=>s.url.includes('sessionId=ABC234')).at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,question,serverTime:Date.now()})}),{state,question});
   };
   const cdp=await context.newCDPSession(page);
   // A controlled CPU slowdown is an emulation, not a physical Chromebook result.
