@@ -35,7 +35,7 @@ try {
   await page.route(/\/src\/(pages\/(HostFight|Combat)|components\/(CombatBoard|StaticAvatar))\.tsx(?:\?.*)?$/,async route=>{
     const response=await route.fetch(),source=await response.text();
     const name=new URL(route.request().url()).pathname.split('/').at(-1).replace('.tsx','');
-    const pattern=new RegExp(`(function ${name}\\([\\s\\S]*?\\)\\s*\\{)`);
+    const pattern=new RegExp(`(function ${name}\\d*\\([\\s\\S]*?\\)\\s*\\{)`);
     assert.ok(pattern.test(source),`instrumentation anchor for ${name}`);
     await route.fulfill({response,body:source.replace(pattern,`$1 window.c08.renders.${name}++;`)});
   });
@@ -110,6 +110,10 @@ try {
     await page.clock.resume();
     await page.setViewportSize({width:config.width===390?768:900,height:900});
     await waitForAvatars();
+    await page.waitForFunction(()=>[...document.querySelectorAll('[data-testid="static-avatar"] canvas')].every(c=>{
+      const box=c.parentElement.getBoundingClientRect(),target=Math.min(box.width/1200,box.height/1950)*devicePixelRatio;
+      return c.dataset.avatarReady==='true'&&c.width>=Math.min(1200,1200*target)-1&&c.width<=Math.min(1200,1200*target+9);
+    }));
     const resized=await page.locator('[data-testid="static-avatar"] canvas').evaluateAll(cs=>cs.map(c=>({w:c.width,h:c.height,box:c.parentElement.getBoundingClientRect().toJSON(),dpr:devicePixelRatio})));
     for(const c of resized){const target=Math.min(c.box.width/1200,c.box.height/1950)*c.dpr;assert.ok(c.w>=Math.min(1200,1200*target)-1);assert.ok(c.w<=Math.min(1200,1200*target+9));}
   }

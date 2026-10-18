@@ -108,8 +108,10 @@ jobs:
             if curl --fail --silent http://127.0.0.1:4175/ > /dev/null && curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
             sleep 1
           done
-          C08_LABEL=before UI_ORIGIN=http://127.0.0.1:4175 node --import tsx tests/browser/battlefield-rendering.mjs
-          C08_LABEL=after UI_ORIGIN=http://127.0.0.1:4173 node --import tsx tests/browser/battlefield-rendering.mjs
+          comparison_status=0
+          C08_LABEL=after UI_ORIGIN=http://127.0.0.1:4173 node --import tsx tests/browser/battlefield-rendering.mjs || comparison_status=1
+          C08_LABEL=before UI_ORIGIN=http://127.0.0.1:4175 node --import tsx tests/browser/battlefield-rendering.mjs || comparison_status=1
+          exit "$comparison_status"
       - name: Print C08 server diagnostics
         if: failure()
         run: cat /tmp/c08-before.log /tmp/c08-after.log
