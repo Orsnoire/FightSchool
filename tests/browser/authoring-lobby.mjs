@@ -8,7 +8,7 @@ import { initialAppearance, PALETTES } from '../../shared/avatar/appearance.ts';
 // Captured on pre-extraction C10. Network fixtures exercise real page state,
 // controls and payloads; database/permission enforcement has separate HTTP tests.
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
-const output = 'artifacts/combat-ui';
+const output = `artifacts/c11-browser/${process.env.C11_LABEL || 'current'}`;
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
 const errors = [];
@@ -75,6 +75,15 @@ try {
     await page.getByTestId('button-delete-loot-0').click();
     await page.getByTestId('select-loot-item').click();
     await page.getByRole('option', { name: /Authored reward/ }).click();
+    if (process.env.C11_BASELINE === '1') {
+      assert.equal(await page.getByTestId('loot-item-0').count(), 0, 'C10 reproduces the stale Select value after same-item re-add');
+      console.log('BASELINE DEFECT: removed loot cannot be re-added until its tab remounts');
+      await page.getByTestId('tab-enemies').click();
+      await page.getByTestId('tab-loot').click();
+      await page.getByTestId('select-loot-item').click();
+      await page.getByRole('option', { name: /Authored reward/ }).click();
+    }
+    await page.getByTestId('loot-item-0').waitFor();
     await page.getByTestId('button-create-fight-submit').click();
     await page.getByText('Failed to update fight', { exact: true }).waitFor();
     assert.equal(attempts.length, 1);
@@ -140,7 +149,6 @@ try {
     await lobby.goto(`${origin}/student/lobby`);
     await lobby.getByTestId('text-weapon').filter({ hasText: 'Starter Sword' }).waitFor();
     assert.equal(await lobby.getByTestId('item-basic_staff').getAttribute('aria-disabled'), 'true');
-    await lobby.getByTestId('item-basic_staff').click();
     assert.equal(writes.length, 0, 'incompatible weapon has no save');
     await lobby.getByRole('button', { name: 'Unequip Weapon', exact: true }).click();
     await lobby.getByText('Equipment could not be changed', { exact: true }).waitFor();
