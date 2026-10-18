@@ -14,7 +14,7 @@ test('scoped cleanup preserves outsiders, rolls back faults, rejects cross-room 
     const students = f.students.map((s,i)=>({ id:s.id, alias:`qa-${suffix}-${i}` }));
     for (const s of students) await f.pg.query('UPDATE students SET nickname=$1,nickname_normalized=$1 WHERE id=$2', [s.alias,s.id]);
     const sessions = (await f.pg.query<{session_id:string}>('SELECT session_id FROM live_combat_sessions')).rows.map(r=>r.session_id);
-    const manifest: any = { schemaVersion:1,runId,suffix,mode:'isolated',origin:'https://fixture.invalid',status:'failed',
+    const manifest: any = { schemaVersion:1,pending:[],runId,suffix,mode:'isolated',origin:'https://fixture.invalid',status:'failed',
       teachers:[{id:fight.teacherId,alias:teacherAlias}],students,fights:[f.bank.id],guilds:[f.guildId,f.otherGuildId],equipment:[],sessions,objects:[] };
     const outsider = fixtureId(999);
     await f.pg.query("INSERT INTO students(id,nickname,nickname_normalized,password_hash,gold) VALUES($1,'Existing learner','existing learner','unchanged',123)", [outsider]);
@@ -50,7 +50,7 @@ test('scoped cleanup preserves outsiders, rolls back faults, rejects cross-room 
 test('cleanup rejects production aliases, pooled production endpoints, foreign R2 keys and missing isolation proof', () => {
   const id='12345678-1234-1234-1234-123456789abc';
   const target={id,workerName:'questacademy-rehearsal-12345678',bucketName:'questacademy-rehearsal-12345678',origin:'https://questacademy-rehearsal-12345678.example.workers.dev',databaseHost:'ep-rehearsal.neon.tech',neonBranchId:'br-rehearsal'};
-  const m:any={schemaVersion:1,runId:id,suffix:`c12-${id}`,mode:'isolated',isolationId:id,origin:target.origin,status:'running',teachers:[],students:[],fights:[],guilds:[],equipment:[],sessions:[],objects:[]};
+  const m:any={schemaVersion:1,pending:[],runId:id,suffix:`c12-${id}`,mode:'isolated',isolationId:id,origin:target.origin,status:'running',teachers:[],students:[],fights:[],guilds:[],equipment:[],sessions:[],objects:[]};
   const url='postgres://example:unused@ep-rehearsal.neon.tech/test';
   assert.equal(validateIsolation(target,m,url,'ep-live.neon.tech'),target);
   assert.throws(()=>validateIsolation(target,{...m,mode:'live'},url,'ep-live.neon.tech'));

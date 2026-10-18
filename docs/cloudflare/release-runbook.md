@@ -105,14 +105,12 @@ separate evidence, as specified in the [C12 review](../reviews/2026-10-18-c12-re
 
 ## Fixture retention and cleanup
 
-Every new acceptance suite persists a random run ID and exact created teacher,
+Every new acceptance suite persists creation intent before sending a write, then a random run ID and exact created teacher,
 student, guild, fight, item, session and R2 key identities after each successful
 creation response. Synthetic aliases identify account ownership; credentials and
 cookies never enter the journal. Preserve partial manifests after failures and
 review them within **24 hours**. Workflow evidence expires after 30 days; that is
-not a database/object deletion policy. Interrupted requests that commit before a
-response may leave unrecorded children: cleanup deliberately stops rather than
-inventing a prefix deletion. Resolve such a case against the isolated inventory.
+not a database/object deletion policy. Interrupted requests or HTTP 5xx responses retain unresolved intent: cleanup stops until the exact request/identity is reconciled, even if no root account ID was returned. Unrecorded children also block deletion; no prefix deletion is inferred. Resolve such a case against the isolated inventory.
 
 Existing historical live fixtures lack this ownership journal. Do **not** delete
 accounts by `qa-` prefix, age, or a guessed ownership relationship. Live classroom

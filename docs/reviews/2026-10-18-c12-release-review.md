@@ -50,7 +50,7 @@ A documentation or implementation branch head is not a deployed runtime.
 - Acceptance has no default target. Both production hostnames are recognized as
   live, regardless of their staging names. Every suite records exact synthetic
   account aliases/IDs, entities, sessions and object keys; partial manifests
-  survive interruption and contain no credentials. Historical unjournaled live
+  survive interruption and contain no credentials. Creation intent is written before requests; unresolved writes (including HTTP 5xx) block cleanup until their exact identity is reconciled. Historical unjournaled live
   fixtures remain a separate retention task.
 - Isolated configuration generation rejects the production endpoint, including
   pooled/non-pooled aliases, and uses a distinct Worker/DO namespace and R2 bucket
@@ -122,7 +122,7 @@ representative populated-guild provider classroom session.
 
 ## Verification and exit gates
 
-Local **317 tests**, TypeScript and both builds pass under Node 22.23.3/npm
+Local **318 tests**, TypeScript and both builds pass under Node 22.23.3/npm
 10.9.9. New tests cover release mismatch/failure/skipped jobs, missing runtime
 identity, target/size guards, credential-free interrupted manifests, populated
 SQL cleanup, external references, transactional fault rollback, idempotent retry
@@ -135,7 +135,7 @@ First published implementation `96d4fe3911d028cee24daa45cbc6aa736c463e22` passes
 [CI 39165110557](https://github.com/Orsnoire/FightSchool/actions/runs/39165110557),
 [all four browser jobs 39165110655](https://github.com/Orsnoire/FightSchool/actions/runs/39165110655)
 and [Avatar Workshop 39165110695](https://github.com/Orsnoire/FightSchool/actions/runs/39165110695).
-The fuller implementation `0b28b194da774acea8f47f8b95e7fbbc4d28007f` also passes [CI 39165744219](https://github.com/Orsnoire/FightSchool/actions/runs/39165744219) and [Avatar Workshop 39165744263](https://github.com/Orsnoire/FightSchool/actions/runs/39165744263); its browser comparison is completing. Final exact-head results are maintained in the PR and ACTIVE_WORK checkpoint.
+The fuller implementation `0b28b194da774acea8f47f8b95e7fbbc4d28007f` also passes [CI 39165744219](https://github.com/Orsnoire/FightSchool/actions/runs/39165744219) and [Avatar Workshop 39165744263](https://github.com/Orsnoire/FightSchool/actions/runs/39165744263); [all four browser jobs 39165744264](https://github.com/Orsnoire/FightSchool/actions/runs/39165744264) also pass. Final exact-head results are maintained in the PR and ACTIVE_WORK checkpoint.
 
 | Cleanup exit gate | State / remaining evidence |
 | --- | --- |

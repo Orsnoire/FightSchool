@@ -9,7 +9,7 @@ const sha = commitSha(process.env.RELEASE_SHA);
 assert.equal(execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),sha,'Rehearsal checkout must match RELEASE_SHA');
 execFileSync('git',['diff','--exit-code','HEAD','--','worker','client','shared','migrations','wrangler.jsonc','package.json','package-lock.json'],{stdio:'pipe'});
 const target = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-const manifest = { schemaVersion:1,runId:target.id,suffix:`c12-${target.id}`,mode:'isolated',isolationId:target.id,origin:target.origin,status:'running',teachers:[],students:[],fights:[],guilds:[],equipment:[],sessions:[],objects:[] };
+const manifest = { schemaVersion:1,pending:[],runId:target.id,suffix:`c12-${target.id}`,mode:'isolated',isolationId:target.id,origin:target.origin,status:'running',teachers:[],students:[],fights:[],guilds:[],equipment:[],sessions:[],objects:[] };
 validateIsolation(target,manifest,process.env.ISOLATED_DATABASE_URL,process.env.PRODUCTION_DATABASE_HOST);
 const base = JSON.parse(readFileSync('wrangler.jsonc','utf8'));
 const config = { ...base, name:target.workerName, routes:[], preview_urls:false, main:resolve('worker/index.ts'),

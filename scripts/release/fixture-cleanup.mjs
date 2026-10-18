@@ -3,6 +3,7 @@ import { liveOrigins } from '../../tests/staging/fixture-run.mjs';
 const uuid = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/;
 export function validateManifest(m) {
   assert.equal(m.schemaVersion, 1);
+  assert.ok(Array.isArray(m.pending) && m.pending.length === 0, 'Unresolved creation intent: reconcile exact request/identity before cleanup');
   assert.match(m.runId, uuid);
   assert.equal(m.suffix, `c12-${m.runId}`);
   assert.equal(m.mode, 'isolated', 'Cleanup never accepts a live fixture manifest');

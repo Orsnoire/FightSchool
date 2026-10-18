@@ -12,13 +12,14 @@ const sockets = [], fights = [], checks = [];
 let teacher;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
+  const requestId = fixtures.begin(path, method, body);
   const response = await fetch(origin + path, {
     method, signal: AbortSignal.timeout(30000),
     headers: { Origin: origin, Accept: "application/json", ...(cookie ? { Cookie: cookie } : {}), ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await response.json();
-  fixtures.record(path, method, body, payload, response.status);
+  fixtures.record(path, method, body, payload, response.status, requestId);
   assert.ok([status].flat().includes(response.status), `${method} ${path}: ${response.status} unexpected response`);
   return { payload, cookie: response.headers.get("set-cookie")?.split(";")[0] };
 }
