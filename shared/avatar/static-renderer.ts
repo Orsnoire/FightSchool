@@ -1,3 +1,4 @@
+import { AVATAR_CACHE_BYTES, ByteLru, stableVisualKey, type AvatarSurface } from "./render-budget";
 import { recolorPixels, type SpritePalette, type EquipmentVisuals } from "./visuals";
 import { appearanceColors, type AvatarAppearance, type AvatarJob } from './appearance';
 import { avatarEquipment, armorStyle, headStyle, propStyle, ARMOR_RENDER_ORDER, type AvatarLoadout } from './equipment-visuals';
@@ -8,9 +9,18 @@ import { STATIC_FITS, EMPTY_BODY_FITS, HELMET_NECK_GUARD, type SpriteFit } from 
 export type StaticAssetUrls = Record<string, string>;
 export const STATIC_CANVAS = { width: 1200, height: 1950, offsetX: 88, offsetY: 400 };
 const imageCache = new Map<string, Promise<HTMLImageElement>>();
-const composedCache = new Map<string, Promise<HTMLCanvasElement>>();
+const composedCache = new ByteLru<HTMLCanvasElement>(AVATAR_CACHE_BYTES);
+const inFlight = new Map<string, {result:Promise<HTMLCanvasElement>;signals:Set<AbortSignal|undefined>}>();
+let compositionQueue: Promise<unknown> = Promise.resolve();
+type MakeCanvas = typeof canvas;
 const assetSetIds = new WeakMap<StaticAssetUrls, number>();
 let nextAssetSetId=1;
+// Await siblings even on failure before releasing their shared job resources.
+async function settleAll<T extends readonly unknown[] | []>(values:T):Promise<{ -readonly [P in keyof T]:Awaited<T[P]> }> {
+  const results=await Promise.allSettled(values);
+  for(const result of results)if(result.status==='rejected')throw result.reason;
+  return results.map(r=>(r as PromiseFulfilledResult<unknown>).value) as { -readonly [P in keyof T]:Awaited<T[P]> };
+}
 function image(url: string) {
   let result = imageCache.get(url);
   if (!result) {
@@ -23,13 +33,13 @@ function image(url: string) {
 }
 function canvas(width: number, height: number) { const c = document.createElement('canvas'); c.width=width; c.height=height; return c; }
 function rgb(hex: string) { return [1,3,5].map(x => parseInt(hex.slice(x,x+2),16)); }
-async function tintedHead(urls: StaticAssetUrls, appearance: AvatarAppearance) {
+async function tintedHead(makeCanvas:MakeCanvas, urls: StaticAssetUrls, appearance: AvatarAppearance) {
   const prefix = appearance.modelId === 'human-male-v1' ? 'male' : 'female';
   const colors = appearanceColors(appearance);
-  const [base,...masks] = await Promise.all(['neutral','hair','eyes','skin'].map(key => image(urls[`${prefix}-${key}`])));
-  const c = canvas(base.width,base.height), ctx = c.getContext('2d', {willReadFrequently:true})!;
+  const [base,...masks] = await settleAll(['neutral','hair','eyes','skin'].map(key => image(urls[`${prefix}-${key}`])));
+  const c = makeCanvas(base.width,base.height), ctx = c.getContext('2d', {willReadFrequently:true})!;
   ctx.drawImage(base,0,0); const pixels = ctx.getImageData(0,0,c.width,c.height);
-  const scratch = canvas(c.width,c.height), s = scratch.getContext('2d',{willReadFrequently:true})!;
+  const scratch = makeCanvas(c.width,c.height), s = scratch.getContext('2d',{willReadFrequently:true})!;
   for (let channel=0;channel<3;channel++) {
     s.clearRect(0,0,c.width,c.height);s.drawImage(masks[channel],0,0);
     const mask=s.getImageData(0,0,c.width,c.height).data, swatch=rgb(colors[(['hair','eyes','skin'] as const)[channel]]);
@@ -37,8 +47,8 @@ async function tintedHead(urls: StaticAssetUrls, appearance: AvatarAppearance) {
   }
   ctx.putImageData(pixels,0,0);return c;
 }
-async function tintedAtlas(url: string, skin: string, palette?:SpritePalette) {
-  const img=await image(url), c=canvas(img.width,img.height),ctx=c.getContext('2d',{willReadFrequently:true})!;
+async function tintedAtlas(makeCanvas:MakeCanvas, url: string, skin: string, palette?:SpritePalette) {
+  const img=await image(url), c=makeCanvas(img.width,img.height),ctx=c.getContext('2d',{willReadFrequently:true})!;
   ctx.drawImage(img,0,0);const pixels=ctx.getImageData(0,0,c.width,c.height), color=rgb(skin);
   if(palette)recolorPixels(pixels.data,palette,true);
   // Source art reserves magenta for exposed hands; garments and ink never use it.
@@ -75,9 +85,9 @@ function sprite(ctx:CanvasRenderingContext2D, source:CanvasImageSource, fit:Spri
 }
 
 /** Palette changes happen at render time and retain the source ink/alpha. */
-async function paletteImage(url:string, kind:string, palette?:SpritePalette) {
+async function paletteImage(makeCanvas:MakeCanvas, url:string, kind:string, palette?:SpritePalette) {
   const source=await image(url);if(!kind&&!palette)return source;
-  const c=canvas(source.width,source.height),ctx=c.getContext('2d')!;
+  const c=makeCanvas(source.width,source.height),ctx=c.getContext('2d')!;
   ctx.drawImage(source,0,0);const pixels=ctx.getImageData(0,0,c.width,c.height),d=pixels.data;
   for(let i=0;i<d.length;i+=4) {
     const [r,g,b]=[d[i],d[i+1],d[i+2]];let color:number[]|undefined;
@@ -95,20 +105,20 @@ async function paletteImage(url:string, kind:string, palette?:SpritePalette) {
   if(palette)recolorPixels(d,palette,true);
   ctx.putImageData(pixels,0,0);return c;
 }
-async function equipmentBody(urls:StaticAssetUrls,appearance:AvatarAppearance,loadout:EquipmentLoadout,visuals:EquipmentVisuals={}) {
+async function equipmentBody(makeCanvas:MakeCanvas, urls:StaticAssetUrls,appearance:AvatarAppearance,loadout:EquipmentLoadout,visuals:EquipmentVisuals={}) {
   const female=appearance.modelId==='human-female-v1',skin=appearanceColors(appearance).skin;
   const atlases=new Map<string,Promise<CanvasImageSource>>();
   const cached=(key:string,load:()=>Promise<CanvasImageSource>)=>{if(!atlases.has(key))atlases.set(key,load());return atlases.get(key)!;};
-  const parts=await Promise.all(ARMOR_RENDER_ORDER.map(async slot=>{
+  const parts=await settleAll(ARMOR_RENDER_ORDER.map(async slot=>{
     const style=armorStyle(loadout[slot]);let source=armorSource(style);
     const cloth=['linen','healer','caster'].includes(style);
     // Robe atlases conceal most pants: use the full starter trouser geometry underneath.
     if(slot==='legs'&&cloth)source=armorSource('leather');
     const fit=EMPTY_BODY_FITS[source.material][female?'female':'male'];
     const handColor=slot==='hands'&&loadout.hands&&style==='linen'?'#ded8cf':skin;
-    let atlas:CanvasImageSource=await cached(`${source.atlas}:${handColor}:${JSON.stringify(visuals[slot]?.palette)}`,()=>tintedAtlas(urls[source.atlas],handColor,visuals[slot]?.palette));
+    let atlas:CanvasImageSource=await cached(`${source.atlas}:${handColor}:${JSON.stringify(visuals[slot]?.palette)}`,()=>tintedAtlas(makeCanvas,urls[source.atlas],handColor,visuals[slot]?.palette));
     if(cloth&&(slot==='legs'||(slot==='feet'&&style==='linen'))) {
-      atlas=await paletteImage(urls[source.atlas],`cloth:${style==='caster'?'#644182':style==='healer'?'#f2eee6':'#cbc5ba'}`,visuals[slot]?.palette);
+      atlas=await paletteImage(makeCanvas,urls[source.atlas],`cloth:${style==='caster'?'#644182':style==='healer'?'#f2eee6':'#cbc5ba'}`,visuals[slot]?.palette);
     }
     const regions=partRegions(slot,source.material).map(poly=>poly.map(([x,y])=>[x+source.column*418,y+(female?590:0)]));
     return {slot,atlas,fit,regions};
@@ -118,14 +128,14 @@ async function equipmentBody(urls:StaticAssetUrls,appearance:AvatarAppearance,lo
       sprite(ctx,part.atlas,{...part.fit,polygon},[],front&&part.slot==='armor');
   };
 }
-async function equipmentProps(urls:StaticAssetUrls,loadout:EquipmentLoadout,visuals:EquipmentVisuals={}) {
-  const result=await Promise.all((['weapon','offhand'] as const).map(async slot=>{
+async function equipmentProps(makeCanvas:MakeCanvas, urls:StaticAssetUrls,loadout:EquipmentLoadout,visuals:EquipmentVisuals={}) {
+  const result=await settleAll((['weapon','offhand'] as const).map(async slot=>{
     const id=loadout[slot];let kind:string|null=propStyle(id);if(!kind)return null;
     if(id==='t1_healer_ankh')kind='ankh';
     if(id==='basic_shield')kind='blue-shield';
     const geometry=PROP_SPRITES[kind!];if(!geometry)return null;
-    const atlas=id==='basic_harp'?await paletteImage(urls['starter-harp'],'',visuals[slot]?.palette):
-      id?.startsWith('basic_')&&['staff','bow','quiver'].includes(kind!)?await paletteImage(urls.props,'brown',visuals[slot]?.palette):await paletteImage(urls.props,'',visuals[slot]?.palette);
+    const atlas=id==='basic_harp'?await paletteImage(makeCanvas,urls['starter-harp'],'',visuals[slot]?.palette):
+      id?.startsWith('basic_')&&['staff','bow','quiver'].includes(kind!)?await paletteImage(makeCanvas,urls.props,'brown',visuals[slot]?.palette):await paletteImage(makeCanvas,urls.props,'',visuals[slot]?.palette);
     return {id,kind,geometry,atlas};
   }));
   return (ctx:CanvasRenderingContext2D,back=false)=>{
@@ -148,18 +158,35 @@ async function equipmentProps(urls:StaticAssetUrls,loadout:EquipmentLoadout,visu
 }
 
 /** Static rendering has no combat state, timers, persistence, or equipment grants. */
-export function composeStaticAvatar(urls:StaticAssetUrls, appearance:AvatarAppearance, job:AvatarJob, loadout?:AvatarLoadout,visuals:EquipmentVisuals={}):Promise<HTMLCanvasElement> {
+export function composeStaticAvatar(urls:StaticAssetUrls, appearance:AvatarAppearance, job:AvatarJob, loadout?:AvatarLoadout,visuals:EquipmentVisuals={}, size:AvatarSurface & {signal?:AbortSignal}=STATIC_CANVAS):Promise<HTMLCanvasElement> {
+  appearance={...appearance};visuals=structuredClone(visuals);
   if(!assetSetIds.has(urls))assetSetIds.set(urls,nextAssetSetId++);
   const equipment=avatarEquipment(job,loadout);
   for(const [slot,visual] of Object.entries(visuals))if(visual)equipment[slot as keyof EquipmentLoadout]=visual.baseItemId;
-  const key=JSON.stringify([appearance,equipment,visuals,assetSetIds.get(urls)]);
-  let result=composedCache.get(key);
-  if(!result) {
-    result=(async()=>{
+  const width=Math.max(1,Math.min(STATIC_CANVAS.width,Math.ceil(Number.isFinite(size.width)?size.width:STATIC_CANVAS.width)));
+  const height=Math.max(1,Math.min(STATIC_CANVAS.height,Math.ceil(Number.isFinite(size.height)?size.height:STATIC_CANVAS.height)));
+  const key=stableVisualKey([appearance,equipment,visuals,assetSetIds.get(urls),width,height]);
+  const cached=composedCache.get(key);
+  if(cached)return Promise.resolve(cached);
+  const pending=inFlight.get(key);
+  if(pending){pending.signals.add(size.signal);return pending.result;}
+  const signals=new Set([size.signal]);
+  const abandoned=()=>[...signals].every(signal=>signal?.aborted);
+  // One composition owns temporary recoloring buffers at a time. Yield between
+  // jobs so a populated room does not synchronously compose an entire roster.
+  const result=compositionQueue.then(async()=>{
+    await new Promise<void>(resolve=>setTimeout(resolve,0));
+    if(abandoned())throw new DOMException('Avatar request cancelled','AbortError');
+    const temporary:HTMLCanvasElement[]=[];
+    const makeCanvas:MakeCanvas=(w,h)=>{const c=canvas(w,h);temporary.push(c);return c;};
+    let output:HTMLCanvasElement|undefined;
+    try {
       const visual={headwear:headStyle(equipment.headgear)},hatFit=visual.headwear?STATIC_FITS[visual.headwear].headwear:null;
       const tierOneHat=equipment.headgear?.startsWith('t1_');
-      const [head,body,props,hat]=await Promise.all([tintedHead(urls,appearance),equipmentBody(urls,appearance,equipment,visuals),equipmentProps(urls,equipment,visuals),visual.headwear?paletteImage(urls[visual.headwear],tierOneHat?({warrior:'red',scout:'green',wizard:'violet',herbalist:''}[visual.headwear]):'',visuals.headgear?.palette):null]);
-      const c=canvas(STATIC_CANVAS.width,STATIC_CANVAS.height),ctx=c.getContext('2d')!;
+      const [head,body,props,hat]=await settleAll([tintedHead(makeCanvas,urls,appearance),equipmentBody(makeCanvas,urls,appearance,equipment,visuals),equipmentProps(makeCanvas,urls,equipment,visuals),visual.headwear?paletteImage(makeCanvas,urls[visual.headwear],tierOneHat?({warrior:'red',scout:'green',wizard:'violet',herbalist:''}[visual.headwear]):'',visuals.headgear?.palette):null]);
+      if(abandoned())throw new DOMException('Avatar request cancelled','AbortError');
+      const c=makeCanvas(width,height),ctx=c.getContext('2d')!;
+      ctx.scale(width/STATIC_CANVAS.width,height/STATIC_CANVAS.height);
       ctx.translate(STATIC_CANVAS.offsetX,STATIC_CANVAS.offsetY);
       const isFemale=appearance.modelId==='human-female-v1';
 
@@ -193,10 +220,16 @@ export function composeStaticAvatar(urls:StaticAssetUrls, appearance:AvatarAppea
         ctx.lineTo(1124,450);ctx.lineTo(1124,800);ctx.lineTo(-100,800);ctx.closePath();ctx.clip();
       }
       ctx.drawImage(head,0,0);ctx.restore();
-      if(hat&&hatFit)sprite(ctx,hat,visual.headwear==='wizard'?{...hatFit,polygon:[[1095,235],[1536,235],[1536,510],[1095,510]]}:hatFit,visual.headwear==='warrior'?HELMET_NECK_GUARD:[]);return c;
-    })();
-    composedCache.set(key,result);if(composedCache.size>8)composedCache.delete(composedCache.keys().next().value!);
-    result.catch(()=>composedCache.delete(key));
-  }
+      if(hat&&hatFit)sprite(ctx,hat,visual.headwear==='wizard'?{...hatFit,polygon:[[1095,235],[1536,235],[1536,510],[1095,510]]}:hatFit,visual.headwear==='warrior'?HELMET_NECK_GUARD:[]);
+      output=c;composedCache.set(key,c,width*height*4);return c;
+    } finally {
+      // Keep returned canvases valid even after LRU eviction: callers may still
+      // be drawing them. Only this job's private scratch surfaces are released.
+      for(const c of temporary)if(c!==output){c.width=0;c.height=0;}
+    }
+  });
+  inFlight.set(key,{result,signals});
+  const settled=()=>{if(inFlight.get(key)?.result===result)inFlight.delete(key);};
+  compositionQueue=result.then(settled,settled);
   return result;
 }

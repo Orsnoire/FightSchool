@@ -1,12 +1,14 @@
+import { CombatCountdown } from "./CombatCountdown";
 import { useEffect, useRef, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "./ui/button";
 
 /** One phase-controlled dialog. Closing it must never advance combat. */
-export function CombatOverlay({ title, view, seconds, children, resources, error, status, onLeave, isLeaving, container }: {
+export function CombatOverlay({ title, view, deadline, clockOffset, children, resources, error, status, onLeave, isLeaving, container }: {
   title: string;
   view: string;
-  seconds: number | null;
+  deadline: number | null;
+  clockOffset?: number;
   children: ReactNode;
   resources?: ReactNode;
   error: string | null;
@@ -35,7 +37,7 @@ export function CombatOverlay({ title, view, seconds, children, resources, error
               <Dialog.Title ref={heading} tabIndex={-1} className="text-xl sm:text-2xl font-bold outline-none">
                 {title}
               </Dialog.Title>
-              {seconds !== null && <span aria-label={`${seconds} seconds remaining`} className="shrink-0 rounded-full bg-muted px-3 py-1 font-bold tabular-nums">{seconds}s</span>}
+              <CombatCountdown deadline={deadline} clockOffset={clockOffset}/>
             </div>
             {resources}
             {status !== "connected" && <p role="status" className="text-sm">Reconnecting… Choices will resume when connected.</p>}

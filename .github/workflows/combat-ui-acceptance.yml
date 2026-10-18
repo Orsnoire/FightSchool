@@ -77,3 +77,41 @@ jobs:
           path: artifacts/initial-loading
           if-no-files-found: ignore
           retention-days: 7
+
+  battlefield-rendering:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install isolated browser test tooling
+        run: npm install --no-save --package-lock=false playwright@1.62.1 && npx playwright install chromium
+      - name: Compare C08 with the pinned C07 baseline
+        shell: bash
+        run: |
+          git fetch origin 56a1f758bde901ff9739e5ea0ee8d44d55f7ba91
+          git worktree add --detach /tmp/c08-baseline 56a1f758bde901ff9739e5ea0ee8d44d55f7ba91
+          ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/c08-baseline/node_modules
+          (cd /tmp/c08-baseline && "$GITHUB_WORKSPACE/node_modules/.bin/vite" --host 127.0.0.1 --port 4175) > /tmp/c08-before.log 2>&1 &
+          baseline_pid=$!
+          npx vite --host 127.0.0.1 --port 4173 > /tmp/c08-after.log 2>&1 &
+          current_pid=$!
+          trap 'kill "$baseline_pid" "$current_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4175/ > /dev/null && curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          C08_LABEL=before UI_ORIGIN=http://127.0.0.1:4175 node --import tsx tests/browser/battlefield-rendering.mjs
+          C08_LABEL=after UI_ORIGIN=http://127.0.0.1:4173 node --import tsx tests/browser/battlefield-rendering.mjs
+      - name: Preserve C08 measurements and visual comparisons
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: battlefield-rendering-evidence
+          path: artifacts/c08-browser
+          if-no-files-found: ignore
+          retention-days: 7

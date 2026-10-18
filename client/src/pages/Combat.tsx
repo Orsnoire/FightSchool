@@ -1,3 +1,5 @@
+import { CombatCountdown } from "@/components/CombatCountdown";
+import { useBeforeCombatDeadline } from "@/hooks/useCombatCountdown";
 import { activeEnemies, hpLabel } from "@shared/combat/encounters";
 import { actionBlockLabel, combatActionBlock } from "@shared/combat/status-effects";
 import { AnswerFeedback } from "@/components/AnswerFeedback";
@@ -34,8 +36,9 @@ export default function Combat() {
   const [, navigate] = useLocation();
   const sessionId = localStorage.getItem("sessionId"),
     studentId = localStorage.getItem("studentId");
-  const { state, question, results, status, error, send, seconds, serverNow, leave, hasLeft, isLeaving, admission, requestRejoin } =
+  const { state, question, results, status, error, send, clockOffset, leave, hasLeft, isLeaving, admission, requestRejoin } =
     useCombatSession(sessionId, "student");
+  const beforeQuestion=useBeforeCombatDeadline(state?.currentPhase==="question"?state.questionStartTime:null,clockOffset);
   const playbackComplete=useCallback((batchId:string)=>{if(status==="connected")send("playback_complete",{batchId});},[send,status]);
   const [answer, setAnswer] = useState(""),
     [ability, setAbility] = useState("attack"),
@@ -89,8 +92,7 @@ export default function Combat() {
   const phase = state.currentPhase;
   const intro =
     phase === "question" &&
-    !!state.questionStartTime &&
-    serverNow < state.questionStartTime;
+    beforeQuestion;
   const canAct = status === "connected" && !isLeaving && !queued && !!p && !p.isDead;
   const available =
     p?.availableAbilities.filter(
@@ -158,9 +160,9 @@ export default function Combat() {
       <header className="battle-student-top"><span>Round {state.round} · Room {state.sessionId}</span>{minimal && <Button size="sm" variant="ghost" onClick={requestLeave} disabled={isLeaving}>{isLeaving ? "Leaving…" : "Leave fight"}</Button>}</header>
       <CombatBoard state={state} selfId={studentId} onPlaybackComplete={playbackComplete}/>
       <FloatingCombatLog key={state.sessionId} events={state.events}/>
-      {minimal && <div className="battle-wait" role="status" data-testid="battle-wait"><div><strong>{waitMessage}</strong>{status !== "connected" && <span>Reconnecting…</span>}{error && <p role="alert">{error}</p>}</div>{state.phaseDeadline && <time aria-label={`${seconds} seconds remaining`}>{seconds}s</time>}</div>}
+      {minimal && <div className="battle-wait" role="status" data-testid="battle-wait"><div><strong>{waitMessage}</strong>{status !== "connected" && <span>Reconnecting…</span>}{error && <p role="alert">{error}</p>}</div><CombatCountdown deadline={state.phaseDeadline} clockOffset={clockOffset} variant="waiting"/></div>}
       {p && minimal && <aside className="battle-self-hud" aria-label="Your character"><h2>{p.nickname} · {p.characterClass}</h2><div className="battle-self-bars"><label>HP {p.health}/{p.maxHealth}<progress value={p.health} max={p.maxHealth}/></label>{p.maxMp > 0 && <label className="self-mp">MP {p.mp}/{p.maxMp}<progress value={p.mp} max={p.maxMp}/></label>}{p.maxComboPoints > 0 && <label className="self-cp">COMBO {p.comboPoints}/{p.maxComboPoints}<progress value={p.comboPoints} max={p.maxComboPoints}/></label>}</div><CombatResources player={p}/></aside>}
-      {!minimal && <CombatOverlay onLeave={requestLeave} isLeaving={isLeaving} title={title} view={`${state.round}:${view}`} seconds={state.phaseDeadline ? seconds : null} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
+      {!minimal && <CombatOverlay onLeave={requestLeave} isLeaving={isLeaving} title={title} view={`${state.round}:${view}`} deadline={state.phaseDeadline} clockOffset={clockOffset} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
       {phase === "answer_feedback" && <AnswerFeedback correctAnswer={question?.correctAnswer} outcome={p?.answerOutcome} />}
       {phase === "waiting" && <p>Your teacher will start the fight when everyone has joined.</p>}
       {intro && <p className="text-center py-8 text-lg">Get ready…</p>}

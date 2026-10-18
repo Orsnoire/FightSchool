@@ -12,3 +12,6 @@ artifacts/avatar-workshop/
 artifacts/static-avatar-review/
 .workshop-upload-session.json
 workshop/site/previews/
+
+artifacts/c08/
+artifacts/c08-browser/

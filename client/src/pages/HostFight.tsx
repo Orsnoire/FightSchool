@@ -1,3 +1,4 @@
+import { CombatCountdown } from "@/components/CombatCountdown";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -27,7 +28,7 @@ export default function HostFight() {
   const [sessionId, setSessionId] = useState<string | null>(null), [hostingError, setHostingError] = useState("");
   const [questionOpen, setQuestionOpen] = useState(true), [fullscreen, setFullscreen] = useState(false), [blockRejoin, setBlockRejoin] = useState(false);
   const shell = useRef<HTMLElement>(null);
-  const { state, question, status, error, send, seconds, rejoinRequests } = useCombatSession(sessionId, "teacher");
+  const { state, question, status, error, send, clockOffset, rejoinRequests } = useCombatSession(sessionId, "teacher");
   const playbackComplete=useCallback((batchId:string)=>{if(status==="connected")send("playback_complete",{batchId});},[send,status]);
   const request = rejoinRequests[0];
   useEffect(() => setBlockRejoin(false), [request?.studentId]);
@@ -53,6 +54,15 @@ export default function HostFight() {
     onError: (error: Error) => setHostingError(error.message),
     onSettled: () => { launchPending.current = false; },
   });
+  const eliminate=useCallback((targetId:string)=>{
+    const enemy=state?.enemies.find(e=>e.id===targetId);
+    if(window.confirm(`Eliminate ${enemy?.name || "this enemy"} from the fight? This counts as defeating it.`))send("eliminate_enemy",{targetId});
+  },[state,send]);
+  const resurrect=useCallback((targetId:string)=>send("resurrect",{targetId}),[send]);
+  const remove=useCallback((targetId:string)=>{
+    const player=state?.players[targetId] || state?.pendingPlayers?.[targetId];
+    if(window.confirm(`Remove ${player?.nickname || "this player"} from the fight? They will need your approval to rejoin.`))send("remove_player",{targetId});
+  },[state,send]);
   if (isChecking) return <p className="p-6">Checking your session…</p>;
   if (!isAuthenticated) return <p className="p-6">Sign in to host a fight.</p>;
   const players = Object.values(state?.players || {}), queued = Object.values(state?.pendingPlayers || {});
@@ -84,7 +94,7 @@ export default function HostFight() {
         <Button size="sm" variant="outline" aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen combat"} onClick={toggleFullscreen}>{fullscreen ? <Minimize size={17}/> : <Maximize size={17}/>}</Button>
       </header>
       {state && <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#cdd4c0] pt-3">
-        <div className="flex items-center gap-3"><span className="text-xs font-semibold">{phases[state.currentPhase]}</span>{state.phaseDeadline && <span aria-label={`${seconds} seconds remaining`} className={`rounded-lg px-3 py-1 text-xl font-bold tabular-nums ${seconds <= 5 ? "bg-red-100 text-red-800" : "bg-[#e5e9d8]"}`}>{seconds}s</span>}
+        <div className="flex items-center gap-3"><span className="text-xs font-semibold">{phases[state.currentPhase]}</span><CombatCountdown deadline={state.phaseDeadline} clockOffset={clockOffset} variant="host"/>
           {question && active && <button className="flex items-center gap-1 text-xs underline underline-offset-4" aria-expanded={questionOpen} onClick={() => setQuestionOpen(!questionOpen)}>{questionOpen ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {questionOpen ? "Hide question" : "Show question"}</button>}
         </div>
         <div className="flex flex-wrap items-center gap-2">{phase === "waiting" && <Button disabled={status !== "connected" || !players.length} onClick={() => send("start_fight")}>Start fight</Button>}{active && <>
@@ -104,16 +114,10 @@ export default function HostFight() {
     {question && active && questionOpen && <section className="battle-question" data-testid="host-question"><p className="mb-2 text-[10px] uppercase tracking-widest font-bold text-[#61705a]">Current question · {state!.currentQuestionIndex + 1}</p><RichContentRenderer html={question.question}/></section>}
     {state && <>
       {phase === "game_over" && <div className="bg-[#edf0df] px-6 py-3"><h2 className="font-bold">{state.victory ? "Victory!" : "Fight ended"}</h2><p className="text-sm">{state.endReason}</p></div>}
-      <CombatBoard state={state} onPlaybackComplete={playbackComplete} onEliminate={status === "connected" && active ? targetId => {
-        const enemy = state.enemies.find(e => e.id === targetId);
-        if (window.confirm(`Eliminate ${enemy?.name || "this enemy"} from the fight? This counts as defeating it.`)) send("eliminate_enemy", { targetId });
-      } : undefined} onResurrect={status === "connected" && active ? targetId => send("resurrect", { targetId }) : undefined} onRemove={status === "connected" && phase !== "game_over" ? targetId => {
-        const player = state.players[targetId] || state.pendingPlayers?.[targetId];
-        if (window.confirm(`Remove ${player?.nickname || "this player"} from the fight? They will need your approval to rejoin.`)) send("remove_player", { targetId });
-      } : undefined}/>
+      <CombatBoard state={state} onPlaybackComplete={playbackComplete} onEliminate={status === "connected" && active ? eliminate : undefined} onResurrect={status === "connected" && active ? resurrect : undefined} onRemove={status === "connected" && phase !== "game_over" ? remove : undefined}/>
       <FloatingCombatLog key={sessionId} events={state.events}/>
     </>}
-    {state && phase === "answer_feedback" && <CombatOverlay container={shell.current} title="Correct answer" view={`${state.round}:answer_feedback`} seconds={seconds} status={status} error={error}>
+    {state && phase === "answer_feedback" && <CombatOverlay container={shell.current} title="Correct answer" view={`${state.round}:answer_feedback`} deadline={state.phaseDeadline} clockOffset={clockOffset} status={status} error={error}>
       <AnswerFeedback correctAnswer={question?.correctAnswer} />
     </CombatOverlay>}
     <Dialog.Root open={!!request && phase !== "game_over" && phase !== "answer_feedback"}>

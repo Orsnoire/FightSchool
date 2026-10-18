@@ -3,7 +3,7 @@ import { BattleEffect } from "./BattleEffect";
 import { RecoloredSprite } from "./RecoloredSprite";
 import { isHypnosis, statusSummary } from "@shared/combat/status-effects";
 import { activeEnemies, enemyImage, hpLabel } from "@shared/combat/encounters";
-import { useState, useRef, type CSSProperties } from "react";
+import { memo, useState, useRef, type CSSProperties } from "react";
 import type { CombatPlayer, CombatSnapshot } from "@shared/combat/model";
 import { initialAppearance } from "@shared/avatar/appearance";
 import { StaticAvatar } from "./StaticAvatar";
@@ -27,7 +27,7 @@ function Bar({ current, max, label }: { current: number; max: number; label: str
     <span style={{ width: `${Math.max(0, Math.min(100, current / Math.max(.001, max) * 100))}%` }} />
   </div>;
 }
-export function CombatBoard({ state: sourceState, selfId, onResurrect, onRemove, onEliminate, onPlaybackComplete }: {
+export const CombatBoard = memo(function CombatBoard({ state: sourceState, selfId, onResurrect, onRemove, onEliminate, onPlaybackComplete }: {
   state: CombatSnapshot; onPlaybackComplete?:(batchId:string)=>void; selfId?: string | null; onResurrect?: (id: string) => void; onRemove?: (id: string) => void; onEliminate?: (id: string) => void;
 }) {
   const board=useRef<HTMLElement>(null);
@@ -90,4 +90,4 @@ export function CombatBoard({ state: sourceState, selfId, onResurrect, onRemove,
     <details className="battle-roster"><summary>Party · {all.length}</summary><div className="battle-roster-list">{all.map(p => <button key={p.studentId} onClick={() => setSelected(p.studentId)}>{p.nickname}<span>{p.isDead ? "KO" : `${p.health}/${p.maxHealth} HP`}{state.pendingPlayers?.[p.studentId] ? " · Next round" : ""}</span></button>)}</div></details>
     <div className="battle-legend"><Crown size={13}/> Threat <Star size={13}/> Damage</div>
   </section>;
-}
+});
