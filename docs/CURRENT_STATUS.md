@@ -1,20 +1,43 @@
 # Current status
 
-**CURRENT — GitHub rechecked October 17, 2026.** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is verified in CI in draft PR #71, not merged or deployed.
+**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is next and unstarted.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
 ## Next implementation
 
-**C08 (battlefield rendering)** is active in [draft PR #71](https://github.com/Orsnoire/FightSchool/pull/71). Display/DPR-sized avatars, a byte-bounded cache and isolated countdowns are implemented; 283 tests and all Chromium suites pass; C08 is verified in CI and awaits review. [Report and measurements](reviews/2026-10-17-c08-battlefield-rendering.md). C09 remains unstarted.
+**C09 (API and services)** is next and unstarted. No new cleanup implementation
+is active. Register its claim, branch and draft PR before implementation.
+C08 battlefield rendering is complete, merged, deployed and accepted. [Report and measurements](reviews/2026-10-17-c08-battlefield-rendering.md).
 [C07 / PR #70](https://github.com/Orsnoire/FightSchool/pull/70) has shipped deferred
 routes/MathLive, owner-only SQL fight summaries and focused live-session polling.
 [Measured login JS falls 80.11%](reviews/2026-10-17-c07-initial-loading.md).
 
 ## Verified release baseline
 
-The current deployed runtime is `8f280b7b75479aa05bfb7dfd069f37e3f5d72334`, merged [PR #70](https://github.com/Orsnoire/FightSchool/pull/70), released October 17.
+The current deployed runtime is `d055b29761eec16fb96f7241c77bf4a4c0ea8d61`, merged [PR #71](https://github.com/Orsnoire/FightSchool/pull/71), released October 18 (UTC).
+Immutable Worker `9908d9ec-19fd-4372-985c-36dda01b7300` was published at 01:31:04 UTC.
+Subsequent release-record commits change documentation only and do not require redeployment.
+All earlier released fixes, including C06 and C07, remain included.
+
+| Evidence | Result |
+| --- | --- |
+| [Final review CI 39083463935](https://github.com/Orsnoire/FightSchool/actions/runs/39083463935) | Passed on `eb0968a`: 283 tests, TypeScript and client/Worker builds; expected-head merge has the identical tree |
+| [Chromium 39083463944](https://github.com/Orsnoire/FightSchool/actions/runs/39083463944) / [Avatar Workshop 39083463964](https://github.com/Orsnoire/FightSchool/actions/runs/39083463964) | All three Chromium jobs and Avatar Workshop pass on `eb0968a`, including warning-free 60-avatar resize |
+| [Deployment 39086670764](https://github.com/Orsnoire/FightSchool/actions/runs/39086670764) | Passed on `d055b29`: tests/builds, R2, existing migration gate and both hostname smoke checks |
+| [Canonical live acceptance 39086818601](https://github.com/Orsnoire/FightSchool/actions/runs/39086818601) | Passed on the same runtime and canonical domain: teacher/student combat, guild quests/shop/history, durable rewards, owner isolation, R2, 30-player concurrency/reconnect/completion, concurrent rooms, moderation and socket revocation |
+| Database evidence | C08 introduces no migration or schema change. Existing additive migration gate succeeded at 01:30:48 UTC; no reset or reward-procedure change. Individual live ledger/catalog rows were not independently queried. |
+
+C08 reduces mounted avatar canvas backing by **99.36–99.89%** and eliminates
+countdown-driven page/battlefield/avatar render executions in the populated
+30/60-player fixtures. [Report, raw measurements and limits](reviews/2026-10-17-c08-battlefield-rendering.md).
+Backing bytes are not total process/GPU memory. Cold recoloring remains expensive;
+physical Chromebook observation and repeated input/long-task profiling remain open.
+
+### Previous C07 release evidence (historical)
+
+The preceding C07 runtime is `8f280b7b75479aa05bfb7dfd069f37e3f5d72334`, merged [PR #70](https://github.com/Orsnoire/FightSchool/pull/70), released October 17.
 Immutable Worker `e2f6dc5a-4157-47f4-bba6-080214499dce` was published at 23:47:43 UTC.
 Subsequent release-record commits change documentation only and do not require redeployment.
 All earlier released fixes, including C06, remain included.
@@ -127,17 +150,18 @@ plan and [active-work checkpoint](ACTIVE_WORK.md).
 - **Contracts/diagnostics F05/F16 (C04 released):** shared boundary contracts, explicit public projections, bounded JSON parsing, typed queries and redacted logs. Intended CI checks run on every PR; branch protection enforcement remains off.
 - **Data costs F06/F08–F09 (C06 released):** event-scoped quest evaluation, SQL evidence/history aggregates, read-only views, bounded history, measured indexes and lost-acknowledgement recovery. Academic evidence and atomic receipts remain authoritative.
 - **Initial loading F10 / list-polling F12 (C07 released):** deferred routes/MathLive, accessible recovery and text fallback, SQL fight summaries and foreground live-session polling. The measured 80.11% login gzip JS reduction exceeds the 40% gate.
+- **Battlefield rendering F11 / countdown F12 (C08 released):** display/DPR-sized backing, byte-bounded caching and isolated countdown updates exceed the 80% backing-allocation gate in 30/60-player browser fixtures; physical hardware and cold-input limits remain explicit.
 - **Remaining performance/refactoring work:** C08 physical Chromebook observation and mixed modules (C09–C11); repeated live query/load/recovery measurements remain C12 work.
 - **Documentation reconciliation (F17): COMPLETE for this baseline.** Status,
   history and plans are now separated; updating them remains part of each release.
 
 ## Open acceptance and operational work
 
-The C07 October 17 canonical 30-answer burst measured p50 **759 ms**, p95 **1,363 ms**, maximum
-**1,415 ms**. Its current maximum threshold is 15 seconds. One burst is not a
+The C08 October 18 canonical 30-answer burst measured p50 **906 ms**, p95 **1,760 ms**, maximum
+**1,810 ms**. Its current maximum threshold is 15 seconds. One burst is not a
 performance trend or evidence of meeting the proposed cleanup target; it does not establish
 performance for a guild with fully seeded quests, realistic history and many
-distinct avatars. C05–C07 isolated measurements are recorded; C08 retains its visual/rendering gates, and repeated representative live measurements remain C12 work.
+distinct avatars. C05–C08 isolated measurements are recorded; physical Chromebook observation and repeated representative live measurements remain open in the release review.
 
 Full infrastructure signoff is still open: forced deployed room restart/eviction,
 Neon interruption and connection-limit recovery, a timed compatible Worker

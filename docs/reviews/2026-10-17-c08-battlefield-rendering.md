@@ -1,11 +1,11 @@
 # C08 — battlefield rendering
 
-C08 implements F11–F12 in [draft PR #71](https://github.com/Orsnoire/FightSchool/pull/71).
+C08 implements F11–F12 in [PR #71](https://github.com/Orsnoire/FightSchool/pull/71).
 Baseline: `56a1f758bde901ff9739e5ea0ee8d44d55f7ba91`, after C07 was merged,
 deployed and accepted. Core compositor/countdown runtime: `35eb3a8643ae0097e8e05cf29f6d6cbe3f001bf1`.
 The follow-up `99ea24cd0ad0049719072be3e6af5e8dd96fe69f` guards a redundant
 avatar error-clear dispatch during resize; the measured compositor is unchanged. This report was
-started October 17 Denver time (October 18 UTC). C08 is not merged or deployed.
+started October 17 Denver time (October 18 UTC). C08 was merged, deployed and accepted October 18 UTC.
 
 ## Changes and preserved behavior
 
@@ -26,7 +26,7 @@ started October 17 Denver time (October 18 UTC). C08 is not merged or deployed.
 Approved static artwork, body proportions, equipment layering and custom palettes
 remain. Selection controls, reconnects and completion-driven playback retain their
 existing tests. No Worker, SQL, migration, persistence, permission or reward code
-changes; no production data operation or reset was performed.
+changes. The standard deployment ran the existing additive migration gate; no data reset was performed.
 
 ## Reproducible native allocation comparison
 
@@ -144,9 +144,26 @@ removal of repeated countdown-driven page/board/avatar work.
 
 ## Review and release boundary
 
-C08 is **VERIFIED IN CI / DRAFT / NOT MERGED / NOT DEPLOYED**. PR #71 contains
-implementation, regression fixtures, pinned before/after measurements and the
-resume checkpoint. Physical Chromebook observation remains explicitly unverified.
-C09 is next and unstarted. Merge/deployment and canonical live acceptance remain
-separate actions; the deployed release is C07 runtime
-`8f280b7b75479aa05bfb7dfd069f37e3f5d72334`.
+The owner explicitly authorized merge and deployment. [PR #71](https://github.com/Orsnoire/FightSchool/pull/71)
+is merged at `d055b29761eec16fb96f7241c77bf4a4c0ea8d61`. The expected-head merge
+has the identical tree to reviewed head `eb0968a57d50d4d1443fa4da8ff40ad62c964fd3`.
+Final-head [CI 39083463935](https://github.com/Orsnoire/FightSchool/actions/runs/39083463935),
+[Chromium 39083463944](https://github.com/Orsnoire/FightSchool/actions/runs/39083463944)
+and [Avatar Workshop 39083463964](https://github.com/Orsnoire/FightSchool/actions/runs/39083463964) all pass.
+
+[Deployment 39086670764](https://github.com/Orsnoire/FightSchool/actions/runs/39086670764)
+passed on that exact runtime: tests/builds, R2, the existing additive migration gate
+and both hostname smoke checks. Immutable Worker
+`9908d9ec-19fd-4372-985c-36dda01b7300` was published October 18 at 01:31:04 UTC.
+[Canonical live acceptance 39086818601](https://github.com/Orsnoire/FightSchool/actions/runs/39086818601)
+passed on the same runtime at `https://questacademy.bookwyrminteractive.studio`: teacher/student combat, guild quests/shop/history, durable rewards, owner isolation, R2, 30-player answers/reconnect/completion, concurrent rooms, moderation and socket revocation.
+
+C08 is **COMPLETE / MERGED / DEPLOYED / ACCEPTED**. One canonical 30-answer
+burst recorded p50 **906 ms**, p95 **1,760 ms**, maximum **1,810 ms**. This is
+functional acceptance, not a repeated performance comparison or evidence of the
+proposed sub-second p95 target.
+
+Physical Chromebook observation and repeated input/long-task profiling remain
+explicitly unverified; live functional acceptance cannot establish these gates.
+C09 is next and unstarted. Subsequent release-record changes affect documentation
+only and do not change the deployed runtime. No data reset was performed.
