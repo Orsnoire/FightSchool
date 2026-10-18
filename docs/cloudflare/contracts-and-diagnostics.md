@@ -79,11 +79,12 @@ Before merging a cleanup PR, require these successful checks on its exact head:
 | --- | --- |
 | CI / verify | Clean Node 22 install, typecheck, complete tests (including schema and contract gates), client and Worker builds |
 | Combat UI Acceptance / browser | Chromebook/phone combat overlays, host UI and session workflows |
+| Combat UI Acceptance / initial-loading, battlefield-rendering, authoring-lobby | Production loading and pinned-baseline rendering/authoring/lobby comparisons |
 
 Both workflows now run on every pull request. The browser workflow's former
 path filter could otherwise leave an intended required check missing/pending.
 Live deployment/acceptance remain separate, explicitly authorized workflows;
-C12 owns release pinning, isolated fixtures and recovery drills.
+C12 implements release pinning and guarded fixture ownership/cleanup in [draft PR #75](https://github.com/Orsnoire/FightSchool/pull/75); provider isolation and recovery drills remain open. See the [release runbook](release-runbook.md).
 
 **Enforcement limit:** the October 12 branch API reports `main.protected=false`
 and no required contexts. The connector has no administration write capability;

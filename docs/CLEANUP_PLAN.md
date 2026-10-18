@@ -1,6 +1,6 @@
 # Current cleanup plan
 
-**CURRENT PLAN — October 18, 2026 (UTC). Phases 1–2 complete; C01–C11 COMPLETE, merged, deployed and accepted; C11 is COMPLETE, merged, deployed and accepted in PR #74; C12 remains unstarted.**
+**CURRENT PLAN — October 18, 2026 (UTC). Phases 1–2 complete; C01–C11 COMPLETE, merged, deployed and accepted; C11 is COMPLETE, merged, deployed and accepted in PR #74; C12 is active in draft PR #75; operational signoff remains open.**
 
 Complete the engineering cleanup before new feature development. This plan
 translates the [October 9 review](reviews/2026-10-09-code-review.md) into six phases
@@ -29,7 +29,7 @@ PR for the latest pushed SHA, validation and exact next action. On interruption,
 reconcile any newer commits instead of starting a competing fix or returning to
 a historical feature branch. Register handoffs when a package finishes.
 
-The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. C06 is complete in [PR #69](https://github.com/Orsnoire/FightSchool/pull/69), merged, deployed and accepted October 17. C07 is complete in [PR #70](https://github.com/Orsnoire/FightSchool/pull/70), merged, deployed and accepted October 17. C08 is COMPLETE, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73. C11 is COMPLETE, merged, deployed and accepted in PR #74; C12 remains unstarted.
+The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. C06 is complete in [PR #69](https://github.com/Orsnoire/FightSchool/pull/69), merged, deployed and accepted October 17. C07 is complete in [PR #70](https://github.com/Orsnoire/FightSchool/pull/70), merged, deployed and accepted October 17. C08 is COMPLETE, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73. C11 is COMPLETE, merged, deployed and accepted in PR #74; C12 is active in draft PR #75; operational signoff remains open.
 
 ## Work packages
 
@@ -49,7 +49,7 @@ The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65
 | **5 — C09: API and services** (larger) | F13–F14: split guild/quest/equipment/reward/reporting routes and services; independent domain contracts | Same API behavior, explicit tenant/owner checks, atomic awards and failure paths; one coherent responsibility per extraction | COMPLETE — [PR #72](https://github.com/Orsnoire/FightSchool/pull/72), merged, deployed and accepted; 289 tests, CI/browser and canonical live acceptance pass |
 | **5 — C10: combat modules** (larger) | F13–F14: separate phase transitions, abilities, damage/healing, command parsing, public projection and persistence effects | Same seeded input produces the same outcomes; one serial authority; durable receipts/retries and persisted-room compatibility preserved | COMPLETE — [PR #73](https://github.com/Orsnoire/FightSchool/pull/73), runtime `bb75395`; 298 tests, 80 seeded replay scenarios, fault/recovery gates, all three Chromium jobs, [deployment](https://github.com/Orsnoire/FightSchool/actions/runs/39137219072) and [canonical acceptance](https://github.com/Orsnoire/FightSchool/actions/runs/39137585694) pass; no migration or data reset. [Report](reviews/2026-10-18-c10-combat-modules.md). |
 | **5 — C11: authoring and lobby UI** (larger) | F13–F14: extract question/CSV/enemy/loot authoring and loadout/avatar panels; remove verified unused helpers/types | Teacher workflow, saved drafts, gear and error recovery preserved; import/reference search before deletion; saved-room adapters retained until explicitly retired | COMPLETE / MERGED / DEPLOYED / ACCEPTED — [PR #74](https://github.com/Orsnoire/FightSchool/pull/74), runtime `a580b30`; 300 tests, all four Chromium jobs, [deployment](https://github.com/Orsnoire/FightSchool/actions/runs/39161062489) and [canonical acceptance](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964) pass. No migration or data reset. [Report](reviews/2026-10-18-c11-authoring-lobby.md) |
-| **6 — C12: release review** (medium) | F16 and consolidation: full classroom acceptance, before/after report, commit-pinned releases, environment/fixture isolation and cleanup, recovery/rollback runbook | Exit gates below pass; exact CI/runtime/deploy/acceptance evidence recorded; current status and relevant specs updated | NOT STARTED / — |
+| **6 — C12: release review** (medium) | F16 and consolidation: full classroom acceptance, before/after report, commit-pinned releases, environment/fixture isolation and cleanup, recovery/rollback runbook | Exit gates below pass; exact CI/runtime/deploy/acceptance evidence recorded; current status and relevant specs updated | ACTIVE — [draft #75](https://github.com/Orsnoire/FightSchool/pull/75); safeguards and local verification implemented; [operational exit gates remain open](reviews/2026-10-18-c12-release-review.md) |
 
 ## Dependencies and execution rules
 

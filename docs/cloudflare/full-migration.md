@@ -8,6 +8,8 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
+> **C12 active in draft PR #75:** release/fixture safeguards and local verification are implemented. [C12 evidence](../reviews/2026-10-18-c12-release-review.md) and [current runbook](release-runbook.md) govern the remaining isolation, performance, recovery, rollback and classroom signoff. C12 has not been deployed; no operational gate is waived.
+
 **Latest verified runtime:** `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`, released October 18 with C11 / PR #74.
 [Deployment 39161062489](https://github.com/Orsnoire/FightSchool/actions/runs/39161062489) and [canonical acceptance 39161276964](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964) passed on that same revision. Immutable Worker: `86111493-688d-41c2-9462-b050044b3d10`. No new migration or production-data reset.
 See the [current release record](../ACTIVE_WORK.md) and [current status](../CURRENT_STATUS.md).
