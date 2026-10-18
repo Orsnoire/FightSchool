@@ -5,7 +5,7 @@ import type { CombatSnapshot, CombatPlayer, CombatAction } from '../../shared/co
 import { EQUIPMENT_SLOTS } from '../../shared/equipment-slots';
 import { ALL_CHARACTER_CLASSES } from '../../shared/schema';
 import type { FightRecord } from '../db/schema';
-import { scaleEncounter } from './engine';
+import { scaleEncounter } from './encounter-setup';
 
 function pick<T, K extends keyof T>(value:T, keys:readonly K[]): Pick<T,K> {
   return Object.fromEntries(keys.filter(key=>value[key]!==undefined).map(key=>[key,value[key]])) as Pick<T,K>;

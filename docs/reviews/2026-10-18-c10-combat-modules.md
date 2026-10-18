@@ -17,3 +17,7 @@ Capture deterministic multi-round traces from the unchanged engine before extrac
 ## Reproducing the frozen replay
 
 Run `node --import tsx --test tests/phase4/combat-replay.test.ts`. The fixture stores SHA-256 hashes of ordered per-step state/projection hashes, phase, round and seed (80 cases, not a hand-edited expected implementation). Inputs/clocks are fixed in `combat-replay-fixture.ts`; source main is recorded in the JSON. To independently recapture, use a separate checkout of `33e692ff055be47b0f8411d4a0d40d3e7ab3d0e7`, copy only the replay helper/test there and call `combatReplayTraces()` with the same dependencies. Do not regenerate expected values from the refactored engine. The targeted ability/status/wave tests remain necessary to explain individual rules; these hashes detect whole-trace changes.
+
+## Engine checkpoint
+
+The 1,363-line engine becomes a compatible export facade. Phase orchestration, ability execution, damage/healing, encounter setup, participants, choices, host controls, state events and deterministic randomness now have explicit owners. Function bodies and random call order are preserved. Internal modules import owners directly; public projection imports encounter setup directly. Health/ability primitives mutate only a phase-owned working copy. No storage, sockets or scheduling enter these rule modules. Baseline TypeScript and both builds pass; extracted TypeScript and the frozen replay pass. Room effect extraction and final verification remain pending.
