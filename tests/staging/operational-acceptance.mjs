@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
-import { startFixtureRun } from "./fixture-run.mjs";
+import { startFixtureRun, acceptancePlayers } from "./fixture-run.mjs";
 
 const fixtures = await startFixtureRun("operations");
 const origin = fixtures.manifest.origin;
+const participantCount = acceptancePlayers(process.env, fixtures.manifest);
 const suffix = fixtures.suffix;
 const password = `Acceptance-${randomUUID()}!`;
 const sockets = [], fights = [], checks = [];
@@ -96,34 +97,35 @@ try {
     assert.equal(head.status, 200); assert.equal(Number(head.headers.get("content-length")), png.length);
   });
   const students = [];
-  for (let i = 0; i < 31; i++) {
+  for (let i = 0; i < participantCount + 1; i++) {
     const student = await api("/api/student/login", { method: "POST", body: { nickname: `qa-ops-${suffix}-${i}`, password } });
     await api(`/api/student/${student.payload.id}/character`, { method: "PATCH", cookie: student.cookie, body: { characterClass: "warrior", gender: "A" } });
     students.push(student);
   }
-  const main = await fight("Acceptance 30-player room"), isolated = await fight("Acceptance isolated room");
+  const main = await fight(`Acceptance ${participantCount}-player room`), isolated = await fight("Acceptance isolated room");
   const players = [];
-  for (const student of students.slice(0, 30)) {
+  for (const student of students.slice(0, participantCount)) {
     const player = new Actor(student.cookie, main.room); await player.open(); player.send("join");
     await player.wait(m => m.type === "combat_state" && !!m.state.players[student.payload.id]); players.push(player);
   }
-  const separate = new Actor(students[30].cookie, isolated.room);
+  const separate = new Actor(students[participantCount].cookie, isolated.room);
   await separate.open(); separate.send("join"); await separate.state("waiting");
-  await check("30 participants, host refresh reuses room, and concurrent room isolation", async () => {
-    const state = await main.host.wait(m => m.type === "combat_state" && Object.keys(m.state.players).length === 30);
-    assert.equal(state.state.players[students[30].payload.id], undefined);
+  await check(`${participantCount} participants, host refresh reuses room, and concurrent room isolation`, async () => {
+    const state = await main.host.wait(m => m.type === "combat_state" && Object.keys(m.state.players).length === participantCount);
+    assert.equal(state.state.players[students[participantCount].payload.id], undefined);
     const other = await separate.state("waiting");
-    assert.deepEqual(Object.keys(other.state.players), [students[30].payload.id]);
+    assert.deepEqual(Object.keys(other.state.players), [students[participantCount].payload.id]);
     const reused = await api(`/api/fights/${main.fight.id}/sessions`, { method: "POST", cookie: teacher.cookie });
     assert.equal(reused.payload.sessionId, main.room);
   });
-  await check("30 simultaneous answers and reconnect preserve shared state", async () => {
+  await check(`${participantCount} simultaneous answers and reconnect preserve shared state`, async () => {
     await main.host.ack("start_fight"); const opened = await players[0].state("question");
     await sleep(Math.max(0, opened.state.questionStartTime - Date.now()) + 100);
     const times = await Promise.all(players.map(player => player.ack("answer", { round: 1, questionId: "q1", answer: "4" })));
     times.sort((a, b) => a - b);
-    console.log(`Answer acknowledgement ms: p50=${times[14]}, p95=${times[28]}, max=${times[29]}`);
-    assert.ok(times[29] < 15000, "Classroom answer burst should finish within 15 seconds");
+    fixtures.recordAnswerTimes(times);
+    console.log(`Answer acknowledgement ms: ${JSON.stringify(fixtures.manifest.answerAckMs)}`);
+    assert.ok(times.at(-1) < 15000, "Classroom answer burst should finish within 15 seconds");
     const actions = await players[0].state("actions");
     assert.notEqual(actions.state.phaseDeadline, opened.state.phaseDeadline, "Action selection must have its own deadline");
     assert.ok(actions.state.phaseDeadline > Date.now(), "Action selection must still be open after the answer burst");
@@ -131,24 +133,24 @@ try {
     const restored = new Actor(students[0].cookie, main.room); await restored.open(); restored.send("join");
     const state = await restored.state("actions");
     assert.equal(state.state.phaseDeadline, actions.state.phaseDeadline);
-    assert.equal(Object.keys(state.state.players).length, 30);
+    assert.equal(Object.keys(state.state.players).length, participantCount);
     players[0] = restored;
     assert.equal(separate.messages.filter(m => m.type === "combat_state").at(-1).state.currentPhase, "waiting");
   });
-  await check("30-player completion persists results exactly once", async () => {
+  await check(`${participantCount}-player completion persists results exactly once`, async () => {
     // Answers enter the totals when the round resolves, not on receipt. Finish
     // both choice phases before the teacher ends this controlled load fixture.
     await Promise.all(players.map(player => player.ack("ready", { round: 1 })));
     await players[0].state("abilities");
     await Promise.all(players.map(player => player.ack("ready", { round: 1 })));
     const resolved = await players[0].state("question_resolution");
-    for (const student of students.slice(0, 30))
+    for (const student of students.slice(0, participantCount))
       assert.equal(resolved.state.players[student.payload.id].totals.questionsAnswered, 1, "The classroom round must resolve before completion");
     main.host.send("end_fight");
     const completed = await players[0].wait(m => m.type === "game_over", 60000);
-    assert.equal(completed.results.length, 30, "Completion must include all classroom results");
+    assert.equal(completed.results.length, participantCount, "Completion must include all classroom results");
     main.host.send("end_fight");
-    for (const student of students.slice(0, 30)) {
+    for (const student of students.slice(0, participantCount)) {
       const stats = await api(`/api/combat-stats/student/${student.payload.id}`, { cookie: student.cookie });
       assert.equal(stats.payload.length, 1, "Each student must have exactly one result");
       assert.equal(stats.payload[0].questionsAnswered, 1, "The saved result must contain the resolved answer");
@@ -226,7 +228,7 @@ try {
   });
   await check("logout revokes an already-open student socket", async () => {
     const closed = new Promise(resolve => separate.socket.once("close", code => resolve(code)));
-    await api("/api/student/logout", { method: "POST", cookie: students[30].cookie });
+    await api("/api/student/logout", { method: "POST", cookie: students[participantCount].cookie });
     separate.send("join");
     assert.equal(await Promise.race([closed, sleep(10000).then(() => "timeout")]), 1008);
   });

@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { acceptanceTarget, fixtureJournal, liveOrigins } from '../staging/fixture-run.mjs';
+import { cleanupObjects } from '../../scripts/release/fixture-cleanup.mjs';
+import { acceptanceTarget, acceptancePlayers, fixtureJournal, liveOrigins } from '../staging/fixture-run.mjs';
 const version = '12345678-1234-1234-1234-123456789abc';
 test('acceptance never silently defaults to production or calls it isolated', () => {
   assert.throws(() => acceptanceTarget({}));
@@ -30,4 +31,21 @@ test('interrupted fixture runs retain only exact owned identities, never credent
     assert.deepEqual(saved.objects, [`${id}/${id}`]);
     f.finish('failed'); assert.equal(JSON.parse(readFileSync(f.file, 'utf8')).status, 'failed');
   } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('stress fixture size is bounded and cannot expand live classroom traffic', () => {
+  assert.equal(acceptancePlayers({}, { mode:'live' }),30);
+  assert.equal(acceptancePlayers({ACCEPTANCE_PLAYERS:'60'}, { mode:'isolated' }),60);
+  assert.throws(()=>acceptancePlayers({ACCEPTANCE_PLAYERS:'60'}, {mode:'live'}));
+  assert.throws(()=>acceptancePlayers({ACCEPTANCE_PLAYERS:'600'}, {mode:'isolated'}));
+});
+
+test('R2 cleanup retries exact keys and treats denial or partial failure as unfinished', async () => {
+  const id='12345678-1234-1234-1234-123456789abc', other='22345678-1234-1234-1234-123456789abc';
+  const m={schemaVersion:1,runId:id,suffix:`c12-${id}`,mode:'isolated',origin:'https://fixture.invalid',status:'failed',teachers:[{id,alias:`qa-c12-${id}@example.invalid`}],students:[],fights:[],guilds:[],equipment:[],sessions:[],objects:[`${id}/${id}`,`${id}/${other}`]};
+  const calls=[];
+  await assert.rejects(cleanupObjects(m,async key=>{calls.push(key);return calls.length===1?204:503;}),/R2 cleanup failed/);
+  assert.deepEqual(calls,m.objects);
+  assert.equal(await cleanupObjects(m,async()=>404),2);
+  await assert.rejects(cleanupObjects(m,async()=>403),/R2 cleanup failed/);
 });

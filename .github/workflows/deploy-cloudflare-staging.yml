@@ -79,9 +79,7 @@ jobs:
       - name: Verify the deployed identity on both hostnames
         env:
           RELEASE_SHA: ${{ inputs.release_sha }}
-        run: |
-          STAGING_ORIGIN=https://questacademy-staging.coxsonator.workers.dev node scripts/release/verify.mjs observe
-          STAGING_ORIGIN=https://questacademy.bookwyrminteractive.studio node scripts/release/verify.mjs observe
+        run: node scripts/release/verify.mjs observe-production
       - name: Verify staging
         run: node tests/phase2/staging-smoke.mjs
         env:

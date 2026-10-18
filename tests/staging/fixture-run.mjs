@@ -14,9 +14,16 @@ export function acceptanceTarget(env) {
   else {
     assert.ok(!liveOrigins.has(origin), 'The staging-named Worker is production, not isolated');
     assert.equal(env.ISOLATED_ORIGIN, origin, 'Isolated target must match its independently configured origin');
+    assert.match(env.ISOLATION_ID ?? '', /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/, 'Isolation identity required');
   }
   assert.ok(env.WORKER_VERSION, 'Expected deployed Worker version is required');
-  return { origin, mode: env.ACCEPTANCE_MODE };
+  return { origin, mode: env.ACCEPTANCE_MODE, ...(env.ACCEPTANCE_MODE === 'isolated' ? { isolationId: env.ISOLATION_ID } : {}) };
+}
+export function acceptancePlayers(env, target) {
+  const count = Number(env.ACCEPTANCE_PLAYERS || 30);
+  assert.ok([30, 60].includes(count), 'Only 30- and 60-player fixtures are supported');
+  assert.ok(target.mode === 'isolated' || count === 30, '60-player stress requires isolated resources');
+  return count;
 }
 export function fixtureJournal({ suite, target, release, directory = 'artifacts/acceptance', runId = randomUUID(), now = Date.now() }) {
   assert.match(suite, /^[a-z-]+$/);
@@ -44,6 +51,11 @@ export function fixtureJournal({ suite, target, release, directory = 'artifacts/
     else if (path === '/api/equipment-items') add('equipment', payload.id);
     else if (/^\/api\/fights\/[^/]+\/(?:solo-)?sessions$/.test(path)) add('sessions', payload.sessionId);
     else if (path === '/api/objects/upload') add('objects', payload.objectPath?.replace(/^\/objects\//, ''));
+    persist();
+  }, recordAnswerTimes(times) {
+    assert.ok(times.length > 0 && times.every(n => Number.isFinite(n) && n >= 0));
+    const sorted = [...times].sort((a,b)=>a-b);
+    manifest.answerAckMs = { count:sorted.length, p50:sorted[Math.ceil(sorted.length*.5)-1], p95:sorted[Math.ceil(sorted.length*.95)-1], max:sorted.at(-1) };
     persist();
   }, finish(status) { manifest.status = status; manifest.finishedAt = new Date().toISOString(); persist(); } };
 }

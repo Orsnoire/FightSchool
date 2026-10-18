@@ -22,9 +22,24 @@ if (process.argv[2] === 'review') {
   const review = await reviewedRelease({ sha, prNumber: process.env.RELEASE_PR, repository, get });
   writeFileSync(`${directory}/review.json`, JSON.stringify({ ...review, node: process.version, runId: process.env.GITHUB_RUN_ID }, null, 2) + '\n');
   console.log(`Reviewed release ${sha}; PR #${review.pr}; required checks passed`);
-} else if (process.argv[2] === 'observe') {
-  const observed = await observeRelease({ origin: process.env.STAGING_ORIGIN, sha, workerVersion: process.env.WORKER_VERSION });
-  const name = new URL(observed.origin).hostname;
-  writeFileSync(`${directory}/${name}.json`, JSON.stringify(observed, null, 2) + '\n');
-  console.log(JSON.stringify(observed));
-} else throw new Error('Expected review or observe');
+} else if (['observe', 'observe-production'].includes(process.argv[2])) {
+  const production = process.argv[2] === 'observe-production';
+  const origins = production ? ['https://questacademy-staging.coxsonator.workers.dev', 'https://questacademy.bookwyrminteractive.studio'] : [process.env.STAGING_ORIGIN];
+  let workerVersion = process.env.WORKER_VERSION;
+  for (const origin of origins) {
+    let observed;
+    for (let attempt=0;attempt<(production ? 20 : 1);attempt++) {
+      try { observed = await observeRelease({ origin, sha, workerVersion }); break; }
+      catch (error) {
+        if (!production || attempt === 19) throw error;
+        await new Promise(resolve=>setTimeout(resolve, 1000));
+      }
+    }
+    workerVersion = observed.workerVersion; // Both hostnames must serve the same version.
+    const name = new URL(observed.origin).hostname;
+    const label = process.env.OBSERVATION_LABEL || 'deployment';
+    assert.match(label, /^[a-z-]+$/);
+    writeFileSync(`${directory}/${label}-${name}.json`, JSON.stringify(observed, null, 2) + '\n');
+    console.log(JSON.stringify(observed));
+  }
+} else throw new Error('Expected review, observe or observe-production');

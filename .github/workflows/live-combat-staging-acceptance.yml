@@ -46,6 +46,8 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify running commit and Worker version before creating fixtures
+        env:
+          OBSERVATION_LABEL: before
         run: node scripts/release/verify.mjs observe
       - name: Exercise live teacher and student combat
         run: node tests/staging/live-combat-acceptance.mjs
@@ -53,6 +55,8 @@ jobs:
         run: node tests/staging/operational-acceptance.mjs
       - name: Confirm the runtime did not change during acceptance
         if: always()
+        env:
+          OBSERVATION_LABEL: after
         run: node scripts/release/verify.mjs observe
       - name: Preserve exact fixture ownership and release evidence
         if: always()

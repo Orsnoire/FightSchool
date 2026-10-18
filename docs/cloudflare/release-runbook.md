@@ -51,10 +51,131 @@ Older releases without metadata fail the new acceptance guard rather than being
 misreported as the requested release. Use their retained historical acceptance
 records; do not invent a release identity.
 
-## Remaining C12 work
+## Isolated rehearsal inventory
 
-Scoped cleanup/isolation tooling, repeated local measurements, the consolidated
-evidence matrix and the provider drill checklist are the next checkpoint. No
-provider interruption, Worker rollback, database reset or production load test
-has been performed for C12. Physical Chromebook observation, provider recovery,
-compatible timed rollback and an agreed monitoring window remain unsigned.
+Provider provisioning and drills have **not** been run. Before a disruptive test,
+record an independent inventory outside git with these fields:
+
+| Field | Required value / proof |
+| --- | --- |
+| `id` | Fresh UUID identifying this disposable environment |
+| `workerName` | `questacademy-rehearsal-` plus the UUID's first eight characters; independently confirm this is a new Worker |
+| `bucketName` | Same unique name, a fresh R2 bucket containing only this rehearsal's objects |
+| `origin` | This Worker's exact HTTPS `workers.dev` origin, no custom classroom domain |
+| `databaseHost`, `neonBranchId` | Fresh empty Neon database/branch, not a production data clone; confirm endpoint-to-branch mapping in Neon |
+| Separate retained record | Cloudflare account, namespace IDs, empty-resource evidence, creation time, operator, expiry/cleanup owner and actual production DB hostname |
+
+Use a separate GitHub environment/credential scope for this inventory. The
+existing `cloudflare-staging` environment has production secrets. Never copy its
+DATABASE_URL, R2 bucket, session secret, password pepper or room binding into a
+rehearsal. Create the empty database using the committed migrations; do not copy
+real learners into it. Do not use the production `ensure-r2.mjs` helper here.
+
+With `ISOLATED_DATABASE_URL`, `PRODUCTION_DATABASE_HOST` and `RELEASE_SHA` set
+through the trusted environment, run:
+
+```sh
+node scripts/release/prepare-rehearsal.mjs /absolute/path/isolated-target.json
+```
+
+This only writes `artifacts/rehearsal/wrangler.json`. It removes classroom routes,
+uses a unique Worker/DO namespace and R2 name, and rejects the production database
+endpoint (including pooled/non-pooled aliases). It does not create resources or
+prove the inventory is true. Inspect the generated bindings and provision
+independent secrets before deploying the selected immutable commit using that
+explicit config. Keep its generated config/secret material out of git/artifacts
+published as release evidence; the target inventory itself contains no passwords.
+
+For acceptance, set `ACCEPTANCE_MODE=isolated`, `ISOLATED_ORIGIN` and
+`STAGING_ORIGIN` to the inventory origin, `ISOLATION_ID` to its UUID, and
+`RELEASE_SHA`/`WORKER_VERSION` to the independently observed deployment. Run the
+two staging test scripts. The bounded repeated driver is:
+
+```sh
+ACCEPTANCE_REPETITIONS=5 node scripts/release/repeat-acceptance.mjs
+```
+
+It runs five fresh 30-player and five 60-player functional fixtures, serially,
+records every answer percentile/fixture manifest, and refuses live targets.
+It is **not the complete performance exit fixture**: it does not seed 100-result
+history/guild quests or exercise four-job abilities and browser rendering in the
+same provider session. Add that representative workload before calibrating the
+release threshold. The local populated-guild/room/browser comparisons remain
+separate evidence, as specified in the [C12 review](../reviews/2026-10-18-c12-release-review.md).
+
+## Fixture retention and cleanup
+
+Every new acceptance suite persists a random run ID and exact created teacher,
+student, guild, fight, item, session and R2 key identities after each successful
+creation response. Synthetic aliases identify account ownership; credentials and
+cookies never enter the journal. Preserve partial manifests after failures and
+review them within **24 hours**. Workflow evidence expires after 30 days; that is
+not a database/object deletion policy. Interrupted requests that commit before a
+response may leave unrecorded children: cleanup deliberately stops rather than
+inventing a prefix deletion. Resolve such a case against the isolated inventory.
+
+Existing historical live fixtures lack this ownership journal. Do **not** delete
+accounts by `qa-` prefix, age, or a guessed ownership relationship. Live classroom
+fixtures are explicitly rejected by the cleanup script. They require a separate,
+reviewed exact-ownership plan; historical retention remains an open C12 gate.
+
+For a completed isolated rehearsal, close clients and remove its isolated Worker
+using the independently verified inventory. The cleanup tool requires a confirmed
+404 from that exact Worker, so rooms cannot recreate deleted SQL evidence. A 403
+or missing credentials is not evidence of absence. Then run:
+
+```sh
+node scripts/release/cleanup-fixtures.mjs /absolute/path/isolated-target.json /absolute/path/fixture-manifest.json
+# Inspect the rollback-only counts, then apply only that manifest:
+node scripts/release/cleanup-fixtures.mjs /absolute/path/isolated-target.json /absolute/path/fixture-manifest.json --apply
+```
+
+Use the isolated DB and Cloudflare credentials plus the independently recorded
+production DB hostname. The first command runs deletion inside a rolled-back
+transaction to verify FK ordering. It verifies aliases, exact IDs and reference
+closure: unrecorded children, outside guild members, cross-room results, external
+quest completions and custom-equipment references all block deletion. Locks are
+held only on the stopped isolated database. The apply command deletes only exact
+R2 keys, then commits the scoped SQL transaction. A failed R2 operation leaves SQL
+untouched; partial object deletion is retry-safe (404 is already absent). SQL
+failure rolls back; the manifest remains usable. Preserve the `.cleanup.json`
+receipt. No broad bucket listing/deletion or database reset is implemented.
+
+Finally verify the isolated DO namespaces, Worker, R2 bucket and empty Neon
+branch are disposed of in their providers and retain their receipts. Worker
+absence alone is not proof that all historical namespace storage was destroyed.
+The script does not claim that provider-level disposal. No cleanup has been
+executed against production or any provider during this implementation.
+
+## Recovery and rollback rehearsal
+
+Record UTC start/end times, commit and Worker IDs, fixture run/room IDs, injection,
+observed failures, recovery time, before/after reward/evidence counts and provider
+logs for each drill. Do not record tokens, cookies, connection strings or answers.
+
+| Drill | Required action and pass evidence |
+| --- | --- |
+| Room restart/eviction | On the isolated Worker, establish a live room with durable receipts, phase and deadline. Force a documented provider restart/eviction, reconnect and replay a command. Same room/phase/deadline and exactly one receipt/reward must survive. A browser refresh or local object reconstruction alone does not pass this gate. |
+| Database interruption | Interrupt only the isolated DB connection while results/evidence are pending. Observe failure/pending state, restore connectivity, retry/reconnect and confirm one durable result/reward with complete academic evidence. Compare committed ledger counts before/after recovery. Local injected errors are regression coverage, not a provider outage drill. |
+| Compatible timed rollback | Deploy two reviewed compatible revisions to the same isolated environment, retaining its data. Start a room, record the current version, then roll back to the older **isolated** version ID. Time detection-to-recovery and prove refreshed clients, assets, room deadlines, results/reward retry and DB/R2 access still work. Never use a classroom Worker ID with the rehearsal config. |
+| Desktop/mobile classroom flow | Observe teacher authoring/launch/moderation and student answer/ability/loot/reconnect at desktop and phone sizes, then on the actual classroom Chromebook. Record device, browser, network, participant count and unresolved symptoms. CI emulation does not replace the physical-device observation. |
+| Monitoring window | Agree start/end and owner before signoff (proposal: one full class plus 30 minutes; **not yet agreed**). Retain error/retry counts, ack p50/p95, queue/DB time, query volume, bytes and classroom reports. Zero data loss/duplicate rewards is required; evaluate latency against the calibrated repeated-fixture threshold. |
+
+[Cloudflare rollback](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/)
+uses a specific previously deployed version, for example `npx --no-install
+wrangler rollback <isolated-version-id> --config artifacts/rehearsal/wrangler.json`.
+Check current provider limitations first: DO class lifecycle changes and changed
+bindings can make an older version incompatible. Worker versions do not rewind
+Neon rows, R2 objects or Durable Object storage. Never run down-migrations or
+restore a production database merely to undo a Worker release. Treat data repair
+as its own reviewed operation with backups and idempotent reconciliation.
+
+C11 Worker `86111493-688d-41c2-9462-b050044b3d10` / runtime
+`a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad` is the current accepted production
+baseline, **not a rehearsed C12 rollback target**. C12 adds only release identity
+to the application; no schema/reward/saved-room change. An older version without
+identity metadata needs provider-version verification and its original acceptance
+harness during the isolated drill; do not weaken the new guard to claim it passed.
+
+C12 cannot be signed off, nor expansion resumed, until the remaining gates in the
+review are evidenced or explicitly revised by the owner. No gate is waived here.
