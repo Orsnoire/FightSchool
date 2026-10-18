@@ -1,3 +1,16 @@
+# C10 active — combat modules (October 18, 2026)
+
+- Registered branch: `cleanup/c10-combat-modules`; published as [draft PR #73](https://github.com/Orsnoire/FightSchool/pull/73). This claim precedes substantive code changes.
+- Baseline: current main `33e692ff055be47b0f8411d4a0d40d3e7ab3d0e7`; fresh GitHub inspection found no open PR or C10 branch. C09 is merged, deployed and accepted (evidence below).
+- Scope: C10 / F13–F14. Separate phase transitions, abilities, damage/healing, command parsing, public projection and persistence effects. Preserve deterministic outcomes, one serialized room authority, durable receipts/retries and saved-room compatibility.
+- Completed: repository/authority/checkpoint inspection; scope registration. No runtime changes yet.
+- Verification: baseline and new replay/fault/recovery regressions pending. Previous released baseline passed 289 tests and three Chromium jobs.
+- Exact next action: capture seeded replay baselines before extracting modules in small pushed checkpoints.
+- Boundary: implementation and verification only; not merged, deployed or live-accepted. No production data reset or schema change. Preserve records, permissions, academic evidence and atomic cross-room rewards. C11 remains unstarted.
+- Report: [C10 implementation and verification](reviews/2026-10-18-c10-combat-modules.md). Branch checkpoint and live PR contain the newest progress.
+
+## Previous completed release — C09
+
 # C09 complete — released October 18, 2026 (UTC)
 
 - Owner explicitly authorized **merge and deployment**. This supersedes the previous draft-only boundary. No production-data reset was authorized or performed.
