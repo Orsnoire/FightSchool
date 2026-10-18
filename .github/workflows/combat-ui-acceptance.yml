@@ -126,3 +126,48 @@ jobs:
           path: artifacts/c08-browser
           if-no-files-found: ignore
           retention-days: 7
+
+  authoring-lobby:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install isolated browser test tooling
+        run: |
+          npm install --prefix /tmp/c11-browser-tools --no-save --package-lock=false playwright@1.62.1
+          ln -s /tmp/c11-browser-tools/node_modules/playwright node_modules/playwright
+          node /tmp/c11-browser-tools/node_modules/playwright/cli.js install chromium
+      - name: Verify authoring and lobby against the pinned C10 baseline
+        shell: bash
+        run: |
+          git fetch origin e02f46d7367f8f006a97565fec0d4d5b85ff648b
+          git worktree add --detach /tmp/c11-baseline e02f46d7367f8f006a97565fec0d4d5b85ff648b
+          ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/c11-baseline/node_modules
+          printf "import config from './vite.config'; export default {...config, cacheDir: '/tmp/c11-baseline/.vite-cache'};\n" > /tmp/c11-baseline/c11.vite.config.ts
+          (cd /tmp/c11-baseline && "$GITHUB_WORKSPACE/node_modules/.bin/vite" --config c11.vite.config.ts --host 127.0.0.1 --port 4176) > /tmp/c11-before.log 2>&1 &
+          baseline_pid=$!
+          npx vite --host 127.0.0.1 --port 4177 > /tmp/c11-after.log 2>&1 &
+          current_pid=$!
+          trap 'kill "$baseline_pid" "$current_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4176/ > /dev/null && curl --fail --silent http://127.0.0.1:4177/ > /dev/null; then break; fi
+            sleep 1
+          done
+          C11_BASELINE=1 C11_LABEL=before UI_ORIGIN=http://127.0.0.1:4176 node --import tsx tests/browser/authoring-lobby.mjs
+          C11_LABEL=after UI_ORIGIN=http://127.0.0.1:4177 node --import tsx tests/browser/authoring-lobby.mjs
+      - name: Print authoring/lobby diagnostics
+        if: failure()
+        run: cat /tmp/c11-before.log /tmp/c11-after.log
+      - name: Preserve authoring and lobby evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: authoring-lobby-evidence
+          path: artifacts/c11-browser
+          if-no-files-found: ignore
+          retention-days: 7

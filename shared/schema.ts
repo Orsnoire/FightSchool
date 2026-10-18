@@ -1,10 +1,10 @@
-import { paletteSchema, equipmentVisualSchema, validVisualSlot } from "./avatar/visuals";
-import type { EnemySwarm } from "./combat/swarm";
-import { EQUIPMENT_ITEMS } from "./equipment-items";
-import { EQUIPMENT_SLOTS, type EquipmentSlot } from "./equipment-slots";
 import { z } from "zod";
+import { equipmentVisualSchema } from "./avatar/visuals";
+import type { EnemySwarm } from "./combat/swarm";
+import { insertFightSchema } from "./contracts/fights";
 import { STARTER_LOADOUTS } from "./equipment-catalog";
-import { getTotalPassiveBonuses, getTotalMechanicUpgrades } from "./jobSystem";
+import { EQUIPMENT_ITEMS } from "./equipment-items";
+import { EQUIPMENT_SLOTS,type EquipmentSlot } from "./equipment-slots";
 
 // Generate 6-character alphanumeric ID (used for session IDs and guild codes)
 export function generateSessionId(): string {
@@ -214,8 +214,7 @@ export interface Fight {
   createdAt: number;
 }
 
-export { questionSchema, enemySchema, insertFightSchema } from "./contracts/fights";
-import { insertFightSchema } from "./contracts/fights";
+export { enemySchema,insertFightSchema,questionSchema } from "./contracts/fights";
 
 export type InsertFight = z.infer<typeof insertFightSchema>;
 
@@ -504,99 +503,10 @@ export function calculateCharacterStats(
   };
 }
 
-// Calculate player's current combat stats from PlayerState
-export function getPlayerCombatStats(playerState: PlayerState, weapon: string, headgear: string, armor: string): CharacterStats {
-  const passiveBonuses = getTotalPassiveBonuses(playerState.jobLevels);
-  const mechanicUpgrades = getTotalMechanicUpgrades(playerState.jobLevels);
-  const equipmentStats = calculateEquipmentStats(weapon, headgear, armor);
-  
-  return calculateCharacterStats(
-    playerState.characterClass,
-    equipmentStats,
-    passiveBonuses,
-    mechanicUpgrades
-  );
-}
-
-// Calculate critical hit chance and apply multiplier
-export function calculateCriticalHit(agi: number): { isCritical: boolean; multiplier: number } {
-  // 2 AGI = 1% critical hit chance
-  const critChance = (agi / 2) / 100;
-  const isCritical = Math.random() < critChance;
-  return {
-    isCritical,
-    multiplier: isCritical ? 2 : 1
-  };
-}
-
-// Calculate damage for different attack types
-export function calculatePhysicalDamage(atk: number, str: number, agi: number): number {
-  const baseDamage = atk + str;
-  const { multiplier } = calculateCriticalHit(agi);
-  return Math.floor(baseDamage * multiplier);
-}
-
-export function calculateMagicalDamage(mat: number, int: number): number {
-  return mat + int;
-}
-
-export function calculateRangedDamage(rtk: number, agi: number): number {
-  const baseDamage = rtk + agi;
-  const { multiplier } = calculateCriticalHit(agi);
-  return Math.floor(baseDamage * multiplier);
-}
-
-export function calculateHybridDamage(mat: number, agi: number, mnd: number): number {
-  // For Herbalist base damage (no critical hits on hybrid damage)
-  return mat + agi + mnd;
-}
-
-// Calculate damage reduction
-export function calculateDamageReduction(def: number, vit: number): number {
-  return def + Math.floor(vit / 2);
-}
-
 // Calculate base damage for a player (without critical hit variance)
 export function calculatePlayerBaseDamage(stats: CharacterStats, job: CharacterClass): number {
   const {atk,mat,rtk,str,int,agi,mnd,vit}=stats;
   return {warrior:atk+str,wizard:mat+int,scout:rtk+agi,herbalist:mat+agi+mnd,warlock:mat+int,priest:mat+mnd,paladin:atk+str+mnd,dark_knight:atk+str+vit/2,blood_knight:atk+str+int,monk:atk+str+agi,ranger:rtk+2*agi,bard:rtk+str+int+agi+mnd+vit}[job];
-}
-
-// Calculate solo mode enemy scaling
-export function calculateSoloModeEnemyScaling(
-  playerStats: CharacterStats,
-  characterClass: CharacterClass,
-  questionCount: number
-): { enemyHP: number; enemyDamageCap: number } {
-  // Step 1: Calculate base damage per round
-  const baseDamage = calculatePlayerBaseDamage(playerStats, characterClass);
-  
-  // Step 2: Initial enemy HP = base damage × question count
-  let enemyHP = baseDamage * questionCount;
-  
-  // Step 3: Enemy AI damage cap = player HP ÷ question count (min 1)
-  const enemyDamageCap = Math.max(1, Math.floor(playerStats.hp / questionCount));
-  
-  // Step 4: Survivability check
-  // Player survives for Math.floor(playerHP / enemyDamageCap) rounds
-  const roundsToSurvive = Math.floor(playerStats.hp / enemyDamageCap);
-  
-  // At 100% accuracy, player deals baseDamage per round for roundsToSurvive rounds
-  const damageAt100Percent = baseDamage * roundsToSurvive;
-  
-  // If player can't win at 100% accuracy, scale down
-  if (damageAt100Percent < enemyHP) {
-    // Reduce to 70% accuracy scenario: player wins with 1 round to spare
-    // At 70% accuracy with N questions, player gets ~0.7N correct
-    // They survive roundsToSurvive rounds, so can answer that many questions
-    // Damage = baseDamage × (roundsToSurvive - 1) to ensure victory before death
-    enemyHP = baseDamage * Math.max(1, roundsToSurvive - 1);
-  }
-  
-  return {
-    enemyHP: Math.floor(enemyHP),
-    enemyDamageCap: enemyDamageCap
-  };
 }
 
 // Guild level system (exponential curve for quest progression)
@@ -689,51 +599,6 @@ export function calculateTierPrice(tier: number, quality: ItemQuality): number {
   };
   
   return Math.floor(basePrice * qualityMultipliers[quality]);
-}
-
-// Question Resolution Feedback Types
-export type ResolutionFeedbackType =
-  | "correct_damage"             // Student answered correctly and dealt base damage
-  | "incorrect_damage"           // Student answered incorrectly and took damage
-  | "correct_ability"            // Student answered correctly and used an ability (phase 1)
-  | "blocked_for_player"         // Tank successfully blocked damage for another player
-  | "got_blocked"                // Student got their damage blocked by a tank
-  | "healed_player"              // Healer successfully healed another player
-  | "ability_damage_phase2"      // Student used a block/healing phase ability that dealt damage
-  | "ability_missed"             // Student used an ability but answered incorrectly, ability missed
-
-export interface ResolutionFeedback {
-  type: ResolutionFeedbackType;
-  damage?: number;              // Damage dealt or taken
-  defendedAmount?: number;      // Amount of damage defended (for incoming damage)
-  enemyName?: string;           // Enemy that was damaged or that attacked
-  abilityName?: string;         // Name of ability used
-  blockedPlayer?: string;       // Player who was blocked (for blocked_for_player)
-  blockedDamage?: number;       // Amount of damage blocked
-  blockingPlayer?: string;      // Player who did the blocking (for got_blocked)
-  healedPlayer?: string;        // Player who was healed
-  healedAmount?: number;        // Amount of HP healed
-}
-
-export interface EnemyAIAttackData {
-  enemyName: string;
-  enemyImage: string;
-  enemyId: string;
-  targetPlayer: string;      // Threat leader nickname
-  damage: number;
-  defendedAmount?: number;   // Amount of damage defended (for unblocked attacks)
-  blocked: boolean;
-  blockerName?: string;      // If blocked, who blocked it
-}
-
-export interface PartyDamageData {
-  totalDamage: number;
-  enemiesHit: Array<{
-    enemyId: string;
-    enemyName: string;
-    enemyImage: string;
-    damageTaken: number;
-  }>;
 }
 
 // Compatibility exports; transport definitions do not import Worker/Drizzle.
