@@ -1,13 +1,13 @@
 # Current status
 
-**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is next and unstarted.
+**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is complete and verified in draft PR #73, not merged or deployed.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
-## Next implementation
+## Active implementation
 
-**C10 (combat modules)** is next and unstarted. No cleanup implementation is active. Register its claim, branch and draft PR before implementation. C09 is complete, merged, deployed and accepted in [PR #72](https://github.com/Orsnoire/FightSchool/pull/72): domain routes/services, explicit authorization and projections, and independent contracts preserve API and reward behavior. [Report and release evidence](reviews/2026-10-18-c09-api-services.md).
+**C10 (combat modules)** is implemented in [draft PR #73](https://github.com/Orsnoire/FightSchool/pull/73), with 298 tests, TypeScript, both builds and all three Chromium jobs passing. It is not merged or deployed. [Implementation and verification](reviews/2026-10-18-c10-combat-modules.md). C11 remains unstarted. C09 is complete, merged, deployed and accepted in [PR #72](https://github.com/Orsnoire/FightSchool/pull/72): domain routes/services, explicit authorization and projections, and independent contracts preserve API and reward behavior. [Report and release evidence](reviews/2026-10-18-c09-api-services.md).
 C08 battlefield rendering is complete, merged, deployed and accepted. [Report and measurements](reviews/2026-10-17-c08-battlefield-rendering.md).
 [C07 / PR #70](https://github.com/Orsnoire/FightSchool/pull/70) has shipped deferred
 routes/MathLive, owner-only SQL fight summaries and focused live-session polling.
@@ -170,7 +170,7 @@ plan and [active-work checkpoint](ACTIVE_WORK.md).
 - **Data costs F06/F08–F09 (C06 released):** event-scoped quest evaluation, SQL evidence/history aggregates, read-only views, bounded history, measured indexes and lost-acknowledgement recovery. Academic evidence and atomic receipts remain authoritative.
 - **Initial loading F10 / list-polling F12 (C07 released):** deferred routes/MathLive, accessible recovery and text fallback, SQL fight summaries and foreground live-session polling. The measured 80.11% login gzip JS reduction exceeds the 40% gate.
 - **Battlefield rendering F11 / countdown F12 (C08 released):** display/DPR-sized backing, byte-bounded caching and isolated countdown updates exceed the 80% backing-allocation gate in 30/60-player browser fixtures; physical hardware and cold-input limits remain explicit.
-- **Remaining performance/refactoring work:** C08 physical Chromebook observation and mixed modules (C10–C11); repeated live query/load/recovery measurements remain C12 work.
+- **Remaining performance/refactoring work:** C08 physical Chromebook observation and C10 draft review/release and mixed UI modules (C11); repeated live query/load/recovery measurements remain C12 work.
 - **Documentation reconciliation (F17): COMPLETE for this baseline.** Status,
   history and plans are now separated; updating them remains part of each release.
 
