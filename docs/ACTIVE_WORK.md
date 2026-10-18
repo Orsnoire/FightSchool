@@ -1,13 +1,15 @@
-# C10 active — combat modules (October 18, 2026)
+# C10 complete — verified draft, awaiting review (October 18, 2026)
 
-- Registered branch: `cleanup/c10-combat-modules`; published as [draft PR #73](https://github.com/Orsnoire/FightSchool/pull/73). This claim precedes substantive code changes.
-- Baseline: current main `33e692ff055be47b0f8411d4a0d40d3e7ab3d0e7`; fresh GitHub inspection found no open PR or C10 branch. C09 is merged, deployed and accepted (evidence below).
-- Scope: C10 / F13–F14. Separate phase transitions, abilities, damage/healing, command parsing, public projection and persistence effects. Preserve deterministic outcomes, one serialized room authority, durable receipts/retries and saved-room compatibility.
-- Completed: repository/authority/checkpoint inspection; scope registration. No runtime changes yet.
-- Verification: baseline and new replay/fault/recovery regressions pending. Previous released baseline passed 289 tests and three Chromium jobs.
-- Exact next action: capture seeded replay baselines before extracting modules in small pushed checkpoints.
-- Boundary: implementation and verification only; not merged, deployed or live-accepted. No production data reset or schema change. Preserve records, permissions, academic evidence and atomic cross-room rewards. C11 remains unstarted.
-- Report: [C10 implementation and verification](reviews/2026-10-18-c10-combat-modules.md). Branch checkpoint and live PR contain the newest progress.
+- Active branch: `cleanup/c10-combat-modules`, published as [draft PR #73](https://github.com/Orsnoire/FightSchool/pull/73). Main is the discovery pointer; this branch and the live PR are the resume sources.
+- Scope completed: C10 / F13–F14. Combat phases, abilities, damage/healing, encounter/participant/choice/host rules, command decoding/application, public messages, persistence effects and saved-room adapters have explicit owners. The Durable Object retains one serialized authority and the existing checkpoint/receipt/acknowledgement order.
+- Baseline: main `33e692ff055be47b0f8411d4a0d40d3e7ab3d0e7`. Claim/draft, frozen replay, engine extraction and room extraction were published as separate recoverable checkpoints. No duplicate C10 implementation existed at claim time.
+- Verified implementation: `92bbbca579e6db2899bd119c269a7864c13b3d87`; subsequent handoff edits are documentation only. The newest pushed SHA and exact-head checks are in the live PR description.
+- Verification: **298 tests**, TypeScript and both production builds pass locally and in [CI 39130097869](https://github.com/Orsnoire/FightSchool/actions/runs/39130097869). All three jobs in [Chromium 39130097749](https://github.com/Orsnoire/FightSchool/actions/runs/39130097749) pass: combat UI, initial loading and battlefield rendering.
+- Determinism/recovery: **80 frozen scenarios / 1,813 steps** match pre-extraction persisted state and public output, including JSON recovery at every operation. All **31 original engine function bodies are unchanged**; combat runtime imports are acyclic. Seven new boundary tests cover command atomicity, checkpoint faults, SQL-success/storage-failure retry after eviction, both saved-room adapters, secrecy and rule dependency separation. Existing populated-guild and cross-room SQL reward/retry tests pass.
+- Release boundary: **IMPLEMENTED / VERIFIED / DRAFT**. Not merged, deployed or live-accepted. No migration, SQL/reward-procedure change, saved-room version bump or production-data reset. The deployed/accepted runtime remains C09 `9efcfeada5a64e0ff115dd64430df4c255f4e479`.
+- Exact next action: review PR #73 and its latest-head checks. Merge/deployment await a separate owner request. If work resumes, recheck remote heads and PR before editing; preserve current records, permissions, academic evidence and atomic rewards. C11 remains unstarted; register it before implementation after C10 is finished.
+- Limits: these are fixture/CI checks, not production performance or Cloudflare recovery/rollback drills. C08 physical-device/performance limits and C12 fixture-isolation/recovery work remain open.
+- [Report and reproduction](reviews/2026-10-18-c10-combat-modules.md); [module ownership map](combat/modules.md).
 
 ## Previous completed release — C09
 

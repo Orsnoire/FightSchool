@@ -1,0 +1,405 @@
+{
+  "source": "33e692ff055be47b0f8411d4a0d40d3e7ab3d0e7",
+  "traces": [
+    {
+      "scenario": "warrior:attack",
+      "steps": 8,
+      "sha256": "68270f0025c6b3c82f2e135372f4597a56f780588f6043c9ba309bef9f51238e"
+    },
+    {
+      "scenario": "warrior:warrior_block",
+      "steps": 8,
+      "sha256": "25482cf3b73a839c2deccb8a1814c89617993ee2a97fee4a8f8f572825f790b5"
+    },
+    {
+      "scenario": "warrior:shield_bash",
+      "steps": 8,
+      "sha256": "b113c9647b407f990b3b16e2d0b668c3e4672614d40c61285ec0f8ba9380249e"
+    },
+    {
+      "scenario": "warrior:provoke",
+      "steps": 8,
+      "sha256": "c5bb1b75b72f526c9771da3f872dc16194dda07f1d48fe398daa8b559912e85b"
+    },
+    {
+      "scenario": "warrior:crushing_blow",
+      "steps": 8,
+      "sha256": "497f12814dd9fb94a2a8abcc2c9bebc9b071c557b89a8b74cdb56781abac2762"
+    },
+    {
+      "scenario": "warrior:unbreakable",
+      "steps": 8,
+      "sha256": "e90345e00c28dc94b939b622b220386eeb35309ae60b91c68102c8d3a42ad634"
+    },
+    {
+      "scenario": "wizard:attack",
+      "steps": 8,
+      "sha256": "b11efd73e4764b608beab10df372aafac3a4ae0af938b9becde71960aa8e46c0"
+    },
+    {
+      "scenario": "wizard:fireball",
+      "steps": 8,
+      "sha256": "70f68add7c064c3784d57231e7cf6176dcc1d0397c1bb92e212f1dcfd3f264c0"
+    },
+    {
+      "scenario": "wizard:frostbolt",
+      "steps": 8,
+      "sha256": "89015c8986bd3dbd2c105d96aa9bd4d58bb646420048dea6217caa7ac796d256"
+    },
+    {
+      "scenario": "wizard:manashield",
+      "steps": 8,
+      "sha256": "14889d3a4dbf637b31dad72df06b58681fc29c01dbc13ba20123e2c9f04060ac"
+    },
+    {
+      "scenario": "wizard:fireblast",
+      "steps": 8,
+      "sha256": "445be822b77488d6569f34c15e7279199d19a8fc5a7195c74f2586b22d1abf74"
+    },
+    {
+      "scenario": "wizard:manabomb",
+      "steps": 8,
+      "sha256": "7e1ed9c6e8fd682f5c44d83e7189b8a033f22ad7d4e54e81ac7e09d3960f2567"
+    },
+    {
+      "scenario": "scout:attack",
+      "steps": 8,
+      "sha256": "6d7e28076e65fec0e981c1a3dcc1c68ed9473d43a1f18747027814010781e846"
+    },
+    {
+      "scenario": "scout:headshot",
+      "steps": 8,
+      "sha256": "7a0b2bf9aa2853c9ef6475baead8448b2e73dfdfd82b8644271bf5de4e2c0d51"
+    },
+    {
+      "scenario": "scout:aim",
+      "steps": 8,
+      "sha256": "3d41c7c1cc6402b75a3baf9f62cb5aa04de3cdd8e1180611f1bf4b1c8bd16e61"
+    },
+    {
+      "scenario": "scout:mark",
+      "steps": 8,
+      "sha256": "1b707e2f6d864c393216421e32a3be44a2180d2065f949794b25beec838f1103"
+    },
+    {
+      "scenario": "scout:dodge",
+      "steps": 8,
+      "sha256": "7873ec9439c06a81d85168ef6140463bccba421f21d38708ff84e1a0da688b0a"
+    },
+    {
+      "scenario": "scout:killshot",
+      "steps": 8,
+      "sha256": "5f77d2fd55edb988ec33080ce01e07b9ab18ea42963a5b9b65e2ee67e5b396e0"
+    },
+    {
+      "scenario": "herbalist:attack",
+      "steps": 8,
+      "sha256": "dcecd334c05d27ae3a15d43e9cee98ae1039905a4701397c7c0709bb4765f7f3"
+    },
+    {
+      "scenario": "herbalist:healing_potion",
+      "steps": 8,
+      "sha256": "2750d6aa89ba8126d0d8aeedd19854a566550e12ed362578526a1a281c41fa3b"
+    },
+    {
+      "scenario": "herbalist:craft_healing_potion",
+      "steps": 8,
+      "sha256": "397236b7d9b47f26c67a48fa407fd4f0c2ea10ef637be05729e21aee8a4fa518"
+    },
+    {
+      "scenario": "herbalist:craft_shield_potion",
+      "steps": 8,
+      "sha256": "11ec0204d2b4fc3ea6cd8f3536099b4033ea127ccbf620c03c58153165b676de"
+    },
+    {
+      "scenario": "herbalist:shield_potion",
+      "steps": 8,
+      "sha256": "26c5d8091cf7b99a12460ec766bf283dd79f62d4a96ee31e41bb0013d0638850"
+    },
+    {
+      "scenario": "herbalist:potion_diffuser",
+      "steps": 8,
+      "sha256": "12c1e91a4a3651d8f5b9646cfb40a616ab66ababadaf9d80a0c69fdf822323a5"
+    },
+    {
+      "scenario": "herbalist:life_potion",
+      "steps": 8,
+      "sha256": "1c42c64df0e6193956922fb9a9305481fb9ece3bfc8b8001d5651cb412d6deb4"
+    },
+    {
+      "scenario": "warlock:attack",
+      "steps": 8,
+      "sha256": "39a85fba0037525ba645e2740ae23a0f525bd28f27ffab4b73c8f54fc58f0f38"
+    },
+    {
+      "scenario": "warlock:hex",
+      "steps": 8,
+      "sha256": "08f15a70e327f6bc03f0943eb45387d938df5a63032491f70363d60970f6994a"
+    },
+    {
+      "scenario": "warlock:siphon",
+      "steps": 8,
+      "sha256": "da8fcd5be1a2b48639fdf44a8c7a61886a5641b31ad02c9db82a93fc32b38a3d"
+    },
+    {
+      "scenario": "warlock:pact_surge",
+      "steps": 8,
+      "sha256": "dc97e2bb8ed20975e8bb78d7607d1363eed6aedb1bd61972373e79082ea2f97a"
+    },
+    {
+      "scenario": "warlock:abyssal_drain",
+      "steps": 8,
+      "sha256": "45ea9e20ee3948c442728bd9baf947fa5b138355f4a9310ef849715065dfa067"
+    },
+    {
+      "scenario": "priest:first_aid",
+      "steps": 8,
+      "sha256": "9882d6eedf5f50514f610e07dadd414089066df075496e838b9b83e526300c02"
+    },
+    {
+      "scenario": "priest:mend",
+      "steps": 8,
+      "sha256": "9d459a78b75b8fd2dd04ee8ad885653d18fe2d74adfa16d5d9faf5d28ca38fe6"
+    },
+    {
+      "scenario": "priest:purify",
+      "steps": 8,
+      "sha256": "193e4f583ee38075a922162e1b6bf342c8c8addc0e6a4e880b18fa86cfe835df"
+    },
+    {
+      "scenario": "priest:bless",
+      "steps": 8,
+      "sha256": "047ca136f44d34f6f679fad6dd7ba260eb577833a99aec93cb42f6ea6424cfc3"
+    },
+    {
+      "scenario": "priest:holy_light",
+      "steps": 8,
+      "sha256": "efa56d6b210f5652e9142dfad0d3688832d97cebe87d4b31a00da1839978988a"
+    },
+    {
+      "scenario": "priest:divine_grace",
+      "steps": 8,
+      "sha256": "091105cded0f02ad441c1bacfee1180ca00eb0f9dca9c89487c0f8af8939a0a5"
+    },
+    {
+      "scenario": "paladin:attack",
+      "steps": 8,
+      "sha256": "9cd75b7053f794eacf01cc15fb7b521303aa5d33f5200611ff47e319d59490e6"
+    },
+    {
+      "scenario": "paladin:healing_guard",
+      "steps": 8,
+      "sha256": "1bb6e632cb835017bdaa0a9a25aed0c979f19c324f6c2624879134e9fb391668"
+    },
+    {
+      "scenario": "paladin:lay_on_hands",
+      "steps": 8,
+      "sha256": "d98497985b11b91899970f7d12c7460490e1920f779bd720b68261336e903e27"
+    },
+    {
+      "scenario": "paladin:aegis",
+      "steps": 8,
+      "sha256": "3d35ffa23733f62e8ba147b9b1e9f2fec9eabf1ec128e6bde7e2cdb17d5f4602"
+    },
+    {
+      "scenario": "paladin:sacred_strike",
+      "steps": 8,
+      "sha256": "1620a6010d21ade712bd45d12f9108a7d7b79bfa8493f64a399cca7cca5d748c"
+    },
+    {
+      "scenario": "paladin:holy_judgment",
+      "steps": 8,
+      "sha256": "0745e719248ecd4efa2e6785b8d7072c7d3285d40196c00345add5829e0d4652"
+    },
+    {
+      "scenario": "dark_knight:attack",
+      "steps": 8,
+      "sha256": "3974f80f9e4bde0e798f7962a02423a86759c3f105aecc0b428b17c0077e5100"
+    },
+    {
+      "scenario": "dark_knight:ruin_strike",
+      "steps": 8,
+      "sha256": "c5c35d5ca260cf00939d27bd8172dba9e711fc0e73ad879b18d7f6f81eba4778"
+    },
+    {
+      "scenario": "dark_knight:blood_sword",
+      "steps": 8,
+      "sha256": "3f4dd49f7ec43d23f3c256f55590a18005978d3cd51da1b5a7c44a6478db8a4c"
+    },
+    {
+      "scenario": "dark_knight:blood_price",
+      "steps": 8,
+      "sha256": "76e1cd394f68ce0e856131aa76453150a8027654c453d998286bc6baf1501f7d"
+    },
+    {
+      "scenario": "dark_knight:dread_aura",
+      "steps": 8,
+      "sha256": "6e4e25badf71a7f02f559a78782bf531e1771afd515a1b2848088efc6aac7754"
+    },
+    {
+      "scenario": "dark_knight:shadow_requiem",
+      "steps": 8,
+      "sha256": "573fec10febda19477de2d160feb345e86d2497494c05ee68349b760f88127e7"
+    },
+    {
+      "scenario": "blood_knight:attack",
+      "steps": 8,
+      "sha256": "0ad159885d6926e366147b78c23732f535fce7dc02cb4a710f7a0513bb567b52"
+    },
+    {
+      "scenario": "blood_knight:crimson_slash",
+      "steps": 8,
+      "sha256": "df3fffcab1241cfe1a8bcb05b8be0c7c6e7d19ed98a0ab74c7ecb596d1cd3a96"
+    },
+    {
+      "scenario": "blood_knight:hemorrhage",
+      "steps": 8,
+      "sha256": "dd03b688bd0ce0ffa1b6dc98c3f5a7e354891310a65b4affc94129cc76256f0a"
+    },
+    {
+      "scenario": "blood_knight:vampiric_guard",
+      "steps": 8,
+      "sha256": "67818cfb40dddbc48163e935f8b1a1988b744a2586c27c4c86d21eb1b075c8cb"
+    },
+    {
+      "scenario": "blood_knight:raining_blood",
+      "steps": 8,
+      "sha256": "a99dfb803ed8a1b51f20e8d88c876c7d9661daac79d5d60dbb00ee9098cd035a"
+    },
+    {
+      "scenario": "monk:attack",
+      "steps": 8,
+      "sha256": "9a68f829df1069194294503730113938fe59b1fd3341e06aa8b2809d8532f59e"
+    },
+    {
+      "scenario": "monk:fortify",
+      "steps": 8,
+      "sha256": "f56a7b20d53db25c021505f471006e5ac69d4760a46d98669a03a90a4eee14e3"
+    },
+    {
+      "scenario": "monk:flurry",
+      "steps": 8,
+      "sha256": "de705bfebacf9201065974e91f473001c12b0e3f6d3b2d6d66755d7ccc3cd3f8"
+    },
+    {
+      "scenario": "monk:deflect",
+      "steps": 8,
+      "sha256": "3c8e9b83d9e19c7a31acabfd1b19091c47dafcf0423d3e6be5983519e720c57f"
+    },
+    {
+      "scenario": "monk:focused_palm",
+      "steps": 8,
+      "sha256": "86050956cc324b1747c3ab6b0ddd38fc3df764b1eaeefd512f7ebe6ae1bae30f"
+    },
+    {
+      "scenario": "monk:inner_peace",
+      "steps": 8,
+      "sha256": "6d7f7b8a11b12a28502035a8632999f87c31e744961e058e82971463bd3af630"
+    },
+    {
+      "scenario": "ranger:attack",
+      "steps": 8,
+      "sha256": "5935425444e3e7bb88ea6d86cc00da26fdc36e892084cec5852c5289491c0fd8"
+    },
+    {
+      "scenario": "ranger:prey",
+      "steps": 8,
+      "sha256": "e434431734e494a4dbc599aee494485ec5f557b3608c1ebe4d56cfc37b70ca16"
+    },
+    {
+      "scenario": "ranger:twin_shot",
+      "steps": 8,
+      "sha256": "b9d332cb24b2b5ba79cd94943765a8c1564de32db2dd7095f81e5a2bd4e373ab"
+    },
+    {
+      "scenario": "ranger:disengage",
+      "steps": 8,
+      "sha256": "acb4e779d5f2a23183314db3083a764999d02b2de14db7cfdc4b7ba2a84bdf87"
+    },
+    {
+      "scenario": "ranger:hunters_volley",
+      "steps": 8,
+      "sha256": "c50aa4a38bb17bec56cd884900430787872b5062d0b05e3ea9a50d825ffccc56"
+    },
+    {
+      "scenario": "ranger:arrowstorm",
+      "steps": 8,
+      "sha256": "ea0ae1360fa9f3aee6b703b9728c7632118e1539ec9380362a8cdd8f65f7dd46"
+    },
+    {
+      "scenario": "bard:attack",
+      "steps": 8,
+      "sha256": "a76b47e3fbc0678f4d021775970383ba94238096545204e063fe8bc4f811734e"
+    },
+    {
+      "scenario": "bard:inspire",
+      "steps": 8,
+      "sha256": "f7685f589c16476104cd4c1a4a1c27dc4184a0a2c0f73b277b7bb4d6fc6ca8b5"
+    },
+    {
+      "scenario": "bard:cleansing_chorus",
+      "steps": 8,
+      "sha256": "0da6f65cd38830b8efe9370e0a691b32d8a48812cc092c551c3fb8c072189169"
+    },
+    {
+      "scenario": "bard:finale",
+      "steps": 8,
+      "sha256": "8a44f21fa36fe2eba58995d264c69d8d36e5a5c4e37ad3d1569dde1189f00e56"
+    },
+    {
+      "scenario": "bard:battle_hymn",
+      "steps": 8,
+      "sha256": "614f546e4fd3c5bc4bab265cda3ac53ee1b0e009058801f3a8f9b58116771e76"
+    },
+    {
+      "scenario": "bard:crescendo",
+      "steps": 8,
+      "sha256": "642f1d0cba6f19c2e93a9b343ed350b1621191619eed68af55d7f94318da902a"
+    },
+    {
+      "scenario": "C10-a:1",
+      "steps": 97,
+      "sha256": "ca229e5e92142e49b94b9f2b379d0e2ce837183a54ef6a8adb1eaa61fe5fe16f"
+    },
+    {
+      "scenario": "C10-b:1",
+      "steps": 97,
+      "sha256": "ca8c741ac3ae7776d0045e4c98f8c426be2bedabc6e5a18e60d5815a99257756"
+    },
+    {
+      "scenario": "C10-c:1",
+      "steps": 97,
+      "sha256": "7ba7a01e6bc210629ecd36e9c914ca8cb81c92a170e44add5a52c82fd4376957"
+    },
+    {
+      "scenario": "C10-a:7",
+      "steps": 95,
+      "sha256": "175ae13c1cc0b2420cf014604618c972935a79f234c22ba53c78372c8aebe3ec"
+    },
+    {
+      "scenario": "C10-b:7",
+      "steps": 95,
+      "sha256": "a6f5180a2934a8f47507ea726ab8f04f5683b6c7fe78d4036872050efe91b725"
+    },
+    {
+      "scenario": "C10-c:7",
+      "steps": 95,
+      "sha256": "de45960372caa279814d7572bcac00a666c62b1c4404cc611a239f661032b393"
+    },
+    {
+      "scenario": "C10-a:30",
+      "steps": 223,
+      "sha256": "9232efba161efb14665446b927d20394adb1b0fce90b6a2527feb1baddb45d23"
+    },
+    {
+      "scenario": "C10-b:30",
+      "steps": 223,
+      "sha256": "5d797f57a2309bbeaa1a45e238bcc493b520ab2c24a55c2da8ce969edc5df8a7"
+    },
+    {
+      "scenario": "C10-c:30",
+      "steps": 223,
+      "sha256": "21226566fff9ab0623bef672287a123883f51f347ac1cd2eac295ea3c0dab184"
+    }
+  ]
+}
