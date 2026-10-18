@@ -1,13 +1,15 @@
 # Current status
 
-**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is complete and verified in draft PR #73, not merged or deployed.
+**CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73; C11 is next and unstarted.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.
 The [cleanup plan](CLEANUP_PLAN.md) controls sequencing; expansion is [deferred](EXPANSION_PLAN.md).
 
-## Active implementation
+## Next implementation
 
-**C10 (combat modules)** is implemented in [draft PR #73](https://github.com/Orsnoire/FightSchool/pull/73), with 298 tests, TypeScript, both builds and all three Chromium jobs passing. It is not merged or deployed. [Implementation and verification](reviews/2026-10-18-c10-combat-modules.md). C11 remains unstarted. C09 is complete, merged, deployed and accepted in [PR #72](https://github.com/Orsnoire/FightSchool/pull/72): domain routes/services, explicit authorization and projections, and independent contracts preserve API and reward behavior. [Report and release evidence](reviews/2026-10-18-c09-api-services.md).
+**C11 (authoring and lobby UI)** is next and unstarted. No cleanup implementation is active; register its claim, branch and draft PR before implementation.
+C10 is complete, merged, deployed and accepted in [PR #73](https://github.com/Orsnoire/FightSchool/pull/73): explicit combat module ownership with deterministic rules, one serialized room authority and compatible persistence. All 298 tests and all three Chromium jobs pass. [Implementation and release evidence](reviews/2026-10-18-c10-combat-modules.md).
+C09 API/services work is complete and released in [PR #72](https://github.com/Orsnoire/FightSchool/pull/72). [Report](reviews/2026-10-18-c09-api-services.md).
 C08 battlefield rendering is complete, merged, deployed and accepted. [Report and measurements](reviews/2026-10-17-c08-battlefield-rendering.md).
 [C07 / PR #70](https://github.com/Orsnoire/FightSchool/pull/70) has shipped deferred
 routes/MathLive, owner-only SQL fight summaries and focused live-session polling.
@@ -15,7 +17,29 @@ routes/MathLive, owner-only SQL fight summaries and focused live-session polling
 
 ## Verified release baseline
 
-The current deployed runtime is `9efcfeada5a64e0ff115dd64430df4c255f4e479`, merged [PR #72](https://github.com/Orsnoire/FightSchool/pull/72), released October 18 (UTC).
+The current deployed runtime is `bb753955c1b042ee52f0f5bb5b9a260e015ce5cd`, merged [PR #73](https://github.com/Orsnoire/FightSchool/pull/73), released October 18 (UTC).
+Immutable Worker `d925c8ca-ff82-48bc-9843-36a49b2582d6` was published at 14:45:04 UTC.
+Later documentation-only commits do not require redeployment. All earlier releases remain included.
+
+| Evidence | Result |
+| --- | --- |
+| [CI 39130563643](https://github.com/Orsnoire/FightSchool/actions/runs/39130563643) | Final reviewed head `e9d13ac`: 298 tests, TypeScript and both builds pass; merged tree is identical |
+| [Chromium 39130563649](https://github.com/Orsnoire/FightSchool/actions/runs/39130563649) | All three jobs pass on `e9d13ac` |
+| [Deployment 39137219072](https://github.com/Orsnoire/FightSchool/actions/runs/39137219072) | Passed on `bb75395`: tests/builds, R2, existing migration gate and both hostname smoke checks |
+| [Canonical live acceptance 39137585694](https://github.com/Orsnoire/FightSchool/actions/runs/39137585694) | Passed on the same runtime and canonical domain: combat, guild quests/shop/history, durable rewards, owner isolation, storage, 30-player concurrency/reconnect/completion, room isolation, moderation and revocation |
+| Database evidence | C10 adds no migration or SQL/reward-procedure change. Existing additive migration gate passed at 14:44:48 UTC; no data reset. Individual live ledger/catalog rows were not independently queried. |
+
+C10 gives combat rules, protocol, public messages, recovery and persistence effects
+explicit owners while retaining one serial room authority. All 80 frozen replay
+scenarios / 1,813 steps match the baseline, including JSON recovery.
+One live 30-answer burst measured p50 703 ms, p95 1,354 ms and maximum 1,404 ms;
+this is functional acceptance, not a repeated performance benchmark.
+C08 physical-device/performance limits and C12 infrastructure/fixture-isolation/
+recovery/rollback drills remain open. [Release screenshot](releases/2026-10-18-c10-live-accepted.jpg).
+
+### Previous C09 release evidence (historical)
+
+The preceding C09 runtime is `9efcfeada5a64e0ff115dd64430df4c255f4e479`, merged [PR #72](https://github.com/Orsnoire/FightSchool/pull/72), released October 18 (UTC).
 Immutable Worker `bf61bb30-1d67-45f6-a18d-4022189e3cda` was published at 11:47:24 UTC.
 Later documentation-only commits do not require redeployment. All earlier releases remain included.
 
@@ -170,7 +194,7 @@ plan and [active-work checkpoint](ACTIVE_WORK.md).
 - **Data costs F06/F08–F09 (C06 released):** event-scoped quest evaluation, SQL evidence/history aggregates, read-only views, bounded history, measured indexes and lost-acknowledgement recovery. Academic evidence and atomic receipts remain authoritative.
 - **Initial loading F10 / list-polling F12 (C07 released):** deferred routes/MathLive, accessible recovery and text fallback, SQL fight summaries and foreground live-session polling. The measured 80.11% login gzip JS reduction exceeds the 40% gate.
 - **Battlefield rendering F11 / countdown F12 (C08 released):** display/DPR-sized backing, byte-bounded caching and isolated countdown updates exceed the 80% backing-allocation gate in 30/60-player browser fixtures; physical hardware and cold-input limits remain explicit.
-- **Remaining performance/refactoring work:** C08 physical Chromebook observation and C10 draft review/release and mixed UI modules (C11); repeated live query/load/recovery measurements remain C12 work.
+- **Remaining performance/refactoring work:** C08 physical Chromebook observation and mixed UI modules (C11); repeated live query/load/recovery measurements remain C12 work. C10 is released and accepted.
 - **Documentation reconciliation (F17): COMPLETE for this baseline.** Status,
   history and plans are now separated; updating them remains part of each release.
 

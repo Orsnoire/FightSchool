@@ -1,6 +1,6 @@
 # Worker migration and combat recovery
 
-> **RELEASE HISTORY + OPEN OPERATIONS — updated October 17, 2026.**
+> **RELEASE HISTORY + OPEN OPERATIONS — updated October 18, 2026 (UTC).**
 > The application migration is deployed; full operational signoff remains open.
 > [Current status](../CURRENT_STATUS.md) names the latest runtime. Dated entries
 > below retain earlier evidence and historical blockers; they are not competing
@@ -8,8 +8,8 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-**Latest verified runtime:** `8f280b7`, released October 17 with C07 / PR #70.
-Deployment 39080264978 and canonical acceptance 39080459577 passed.
+**Latest verified runtime:** `bb753955c1b042ee52f0f5bb5b9a260e015ce5cd`, released October 18 with C10 / PR #73.
+[Deployment 39137219072](https://github.com/Orsnoire/FightSchool/actions/runs/39137219072) and [canonical acceptance 39137585694](https://github.com/Orsnoire/FightSchool/actions/runs/39137585694) passed on that same revision. Immutable Worker: `d925c8ca-ff82-48bc-9843-36a49b2582d6`. No new migration or production-data reset.
 See the [current release record](../ACTIVE_WORK.md) and [current status](../CURRENT_STATUS.md).
 Earlier releases and R2 failures below are historical.
 Full infrastructure recovery/rollback signoff remains open.

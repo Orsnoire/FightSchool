@@ -2,9 +2,9 @@
 
 ## Scope and publication
 
-C10 / F13–F14 is implemented in [draft PR #73](https://github.com/Orsnoire/FightSchool/pull/73), branch `cleanup/c10-combat-modules`. Work started from main `33e692ff055be47b0f8411d4a0d40d3e7ab3d0e7` after verifying no C10 branch or open PR. The claim/draft and main discovery pointer were published before substantive code changes. Claim, frozen baseline, engine extraction and room extraction were published as separate recoverable checkpoints.
+C10 / F13–F14 is complete, merged, deployed and accepted in [PR #73](https://github.com/Orsnoire/FightSchool/pull/73), branch `cleanup/c10-combat-modules`. Work started from main `33e692ff055be47b0f8411d4a0d40d3e7ab3d0e7` after verifying no C10 branch or open PR. The claim/draft and main discovery pointer were published before substantive code changes. Claim, frozen baseline, engine extraction and room extraction were published as separate recoverable checkpoints.
 
-Implementation revision: `92bbbca579e6db2899bd119c269a7864c13b3d87`. The final documentation checkpoint retains this runtime. The live PR records the newest pushed SHA and its exact-head checks. **Not merged, deployed or live-accepted.** C09 remains the released runtime `9efcfeada5a64e0ff115dd64430df4c255f4e479`. No migration, SQL/reward-procedure change, saved-room version bump or production-data reset.
+Implementation revision: `92bbbca579e6db2899bd119c269a7864c13b3d87`; final reviewed head: `e9d13ac1d7f201c1db346614f9494a37fa6bf7f7`. The owner subsequently authorized merge and deployment. Runtime `bb753955c1b042ee52f0f5bb5b9a260e015ce5cd` has the identical reviewed tree (`c0eb163ac5111d1d7fce39aab2f4e36529e29198`) and was released October 18, 2026. No migration, SQL/reward-procedure change, saved-room version bump or production-data reset. Later documentation-only commits do not change the deployed runtime.
 
 ## Changes
 
@@ -41,7 +41,26 @@ Seven new room-boundary tests cover:
 
 The result-checkpoint failure test uses a receipt-aware repository double to verify orchestration; SQL atomicity itself is established by the separate existing migrated PGlite tests. Existing playback, reporting failure, restored Priest actions, revocation, host moderation, duplicate delivery and classroom batching gates continue to pass.
 
-GitHub verification **passes** on the implementation revision: [CI 39130097869](https://github.com/Orsnoire/FightSchool/actions/runs/39130097869) and all three jobs in [Chromium 39130097749](https://github.com/Orsnoire/FightSchool/actions/runs/39130097749): combat UI, initial loading and battlefield rendering. Exact-head results for the final documentation publication are tracked in the live PR.
+GitHub verification **passes** on the implementation revision: [CI 39130097869](https://github.com/Orsnoire/FightSchool/actions/runs/39130097869) and all three jobs in [Chromium 39130097749](https://github.com/Orsnoire/FightSchool/actions/runs/39130097749): combat UI, initial loading and battlefield rendering. Final reviewed head `e9d13ac` also passes [CI 39130563643](https://github.com/Orsnoire/FightSchool/actions/runs/39130563643) and [all three Chromium jobs 39130563649](https://github.com/Orsnoire/FightSchool/actions/runs/39130563649).
+
+## Release evidence — October 18, 2026 (UTC)
+
+| Evidence | Result |
+| --- | --- |
+| Merge | PR #73 merged at `bb753955c1b042ee52f0f5bb5b9a260e015ce5cd` using the expected reviewed head; identical Git tree |
+| [Deployment 39137219072](https://github.com/Orsnoire/FightSchool/actions/runs/39137219072) | Passed on the exact merged runtime: all 298 tests, TypeScript, builds, R2, existing additive migration gate and both hostname smoke checks |
+| Immutable Worker | `d925c8ca-ff82-48bc-9843-36a49b2582d6`, published at 14:45:04 UTC |
+| [Canonical live acceptance 39137585694](https://github.com/Orsnoire/FightSchool/actions/runs/39137585694) | Passed on the same runtime, targeting `https://questacademy.bookwyrminteractive.studio` |
+| Database | Existing migration gate succeeded at 14:44:48 UTC; no new migration, schema/reward-procedure change or data reset. Individual live ledger/catalog rows were not independently queried. |
+
+Live checks cover teacher/student combat, durable XP and reward claims,
+guild quests/shop/history, owner isolation, R2, 30-player answers/reconnect/
+completion, concurrent room isolation, moderation and socket revocation.
+One 30-answer burst measured p50 **703 ms**, p95 **1,354 ms** and maximum
+**1,404 ms**. This functional sample does not establish a repeated latency
+comparison or the proposed sub-second p95 performance target.
+
+![C10 canonical live acceptance passed](../releases/2026-10-18-c10-live-accepted.jpg)
 
 ## Reproduction
 
@@ -58,6 +77,6 @@ The 31-function audit compares TypeScript AST function-body text from baseline `
 
 ## Limits and next action
 
-These checks establish regression parity and fault handling in local/migrated fixtures and CI browsers. They do not establish production performance, actual Cloudflare eviction/rollback recovery or physical Chromebook behavior. C08 observation limitations and C12 infrastructure/fixture-isolation/recovery drills remain open.
+Fixture and CI checks establish regression parity and fault handling; canonical live acceptance confirms the deployed functional flows. These checks do not establish production performance, actual Cloudflare eviction/rollback recovery or physical Chromebook behavior. C08 observation limitations and C12 infrastructure/fixture-isolation/recovery drills remain open.
 
-Review PR #73. Merge and deployment await a separate owner request. C11 is the next unstarted package and must be registered before implementation; do not begin another cleanup package while C10 remains the active draft.
+C10 is **complete, merged, deployed and accepted**. C11 (authoring and lobby UI) is the next unstarted package. Recheck current main, the active-work checkpoint and open PRs, then publish its claim, branch and draft PR before implementation. No cleanup implementation is active.
