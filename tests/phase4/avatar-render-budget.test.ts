@@ -57,3 +57,23 @@ test('real composition coalesces requests, keys sizes/palettes, releases scratch
   const changed=await composeStaticAvatar(urls,swapped,f.job,f.loadout,{},size);
   assert.notDeepEqual(Buffer.from(changed.getContext('2d')!.getImageData(0,0,96,156).data),Buffer.from(output.getContext('2d')!.getImageData(0,0,96,156).data));
 });
+
+test('sized compositions retain both bodies, headwear and custom colors against full-detail rendering',async()=>{
+  (globalThis as any).Image=Image;(globalThis as any).document={createElement:()=>createCanvas(1,1)};
+  const urls=avatarAssetPaths();
+  for(const index of [0,1,2,3,12,13,14,15]) {
+    const f=avatarFixture(index),visuals={hands:{baseItemId:'t1_caster_hands',palette:{primary:'#2266aa',secondary:'#ddaa55'}}};
+    const full=await composeStaticAvatar(urls,f.appearance,f.job,f.loadout,visuals);
+    const size={width:96,height:156};
+    const low=await composeStaticAvatar(urls,f.appearance,f.job,f.loadout,visuals,size);
+    const reference=createCanvas(size.width,size.height),ctx=reference.getContext('2d');
+    ctx.drawImage(full as any,0,0,size.width,size.height);
+    const a=ctx.getImageData(0,0,size.width,size.height).data,b=low.getContext('2d')!.getImageData(0,0,size.width,size.height).data;
+    let difference=0;
+    // Compare visible colors over white; RGB in fully transparent pixels is immaterial.
+    for(let i=0;i<a.length;i+=4)for(let channel=0;channel<3;channel++)difference+=Math.abs((a[i+channel]*a[i+3]/255+255-a[i+3])-(b[i+channel]*b[i+3]/255+255-b[i+3]));
+    assert.ok(difference/(size.width*size.height*3)<2,`fixture ${index} retains rendered colors and silhouette`);
+    const reordered={hands:{palette:{secondary:'#ddaa55',primary:'#2266aa'},baseItemId:'t1_caster_hands'}};
+    assert.strictEqual(await composeStaticAvatar(urls,Object.fromEntries(Object.entries(f.appearance).reverse()) as typeof f.appearance,f.job,f.loadout,reordered,size),low);
+  }
+});

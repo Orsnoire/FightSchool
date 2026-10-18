@@ -96,7 +96,10 @@ jobs:
           git fetch origin 56a1f758bde901ff9739e5ea0ee8d44d55f7ba91
           git worktree add --detach /tmp/c08-baseline 56a1f758bde901ff9739e5ea0ee8d44d55f7ba91
           ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/c08-baseline/node_modules
-          (cd /tmp/c08-baseline && "$GITHUB_WORKSPACE/node_modules/.bin/vite" --host 127.0.0.1 --port 4175) > /tmp/c08-before.log 2>&1 &
+          # Each Vite root needs its own optimizer cache even though packages
+          # are shared. Otherwise simultaneous starts overwrite dependency URLs.
+          printf "import config from './vite.config'; export default {...config, cacheDir: '/tmp/c08-baseline/.vite-cache'};\n" > /tmp/c08-baseline/c08.vite.config.ts
+          (cd /tmp/c08-baseline && "$GITHUB_WORKSPACE/node_modules/.bin/vite" --config c08.vite.config.ts --host 127.0.0.1 --port 4175) > /tmp/c08-before.log 2>&1 &
           baseline_pid=$!
           npx vite --host 127.0.0.1 --port 4173 > /tmp/c08-after.log 2>&1 &
           current_pid=$!
@@ -107,6 +110,9 @@ jobs:
           done
           C08_LABEL=before UI_ORIGIN=http://127.0.0.1:4175 node --import tsx tests/browser/battlefield-rendering.mjs
           C08_LABEL=after UI_ORIGIN=http://127.0.0.1:4173 node --import tsx tests/browser/battlefield-rendering.mjs
+      - name: Print C08 server diagnostics
+        if: failure()
+        run: cat /tmp/c08-before.log /tmp/c08-after.log
       - name: Preserve C08 measurements and visual comparisons
         if: always()
         uses: actions/upload-artifact@v7

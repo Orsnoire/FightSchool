@@ -20,6 +20,8 @@ try {
   const context=await browser.newContext({viewport:{width:config.width,height:config.height},deviceScaleFactor:config.dpr});
   const page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
+  page.on('response',response=>{if(response.status()>=400)console.log('C08_HTTP',response.status(),response.url());});
+  page.on('requestfailed',request=>console.log('C08_REQUEST_FAILED',request.url(),request.failure()));
   await page.addInitScript(({studentId})=>{
     localStorage.setItem('studentId',studentId);localStorage.setItem('sessionId','ABC234');
     window.c08={sockets:[],sent:[],renders:{HostFight:0,Combat:0,CombatBoard:0,StaticAvatar:0}};
@@ -40,7 +42,8 @@ try {
   await page.route(`**/api/fights/${fight.id}/sessions`,route=>route.fulfill({json:{sessionId:'ABC234'}}));
   await page.route('**/api/student/**/stamina',route=>route.fulfill({json:{completedCombats:0,xpMultiplier:1,resetsAt:Date.now()+3600000,timeZone:'America/Denver'}}));
   await page.goto(origin+(config.role==='teacher'?`/teacher/host/${fight.id}`:'/student/combat'));
-  await page.waitForFunction(()=>window.c08.sockets.some(s=>typeof s.onmessage==='function'));
+  try {await page.waitForFunction(()=>window.c08.sockets.some(s=>typeof s.onmessage==='function'));}
+  catch(error){console.error('C08_INIT_FAILURE',JSON.stringify({config,errors,body:await page.locator('body').innerText()}));throw error;}
   const state=started(),template=structuredClone(state.players[student().id]);state.players={};
   for(let i=0;i<config.count;i++){
     const id=i===0?student().id:`fixture-${i}`,f=avatarFixture(i);
