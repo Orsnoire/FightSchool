@@ -1,3 +1,11 @@
+# Owner-requested role-weighted fight HP — implementation in progress
+
+- October 19, 2026: the owner requested healer HP scaling at 0.25 DPS, tanks at 0.33, Blood Knight/Dark Knight at 1, Paladin at 0.25 and Priest at 0.
+- Branch: `balance/role-weighted-fight-hp`, based on current main `7cd6fab97c5306514a04d6e591ba3d5495dd0d8e`. This is a separately authorized balance change; C12 continues in its existing branch/PR below.
+- Scope: shared job weights, starting/preview and late-entry enemy HP, deterministic regressions and current balance documentation. Retain question-length tuning, enemy pressure, swarm counts, rewards and existing active-room HP.
+- Status: claim published before implementation; draft PR registration follows. No code changes or verification yet; not merged or deployed.
+- Next action: implement the shared weights and preserve entry accounting across late joins/reconnects, then run relevant regression gates and update the PR with exact verification.
+
 # C12 active — Phase 6 release review
 
 - Resume [draft PR #75](https://github.com/Orsnoire/FightSchool/pull/75), branch `cleanup/c12-release-review`, and that branch's current `docs/ACTIVE_WORK.md` before editing. Initial claim: `7335a21ee74654f1ad5e4883aa46480c149d062c`.
