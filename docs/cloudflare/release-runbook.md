@@ -28,7 +28,7 @@ Current deployed/accepted baseline remains C11 `a580b30b6e9826fbaaca9f3e2cfc914a
    fixtures within 24 hours; artifact expiry is not data cleanup.
 6. Record CI, deployment, migration gate, Worker ID, acceptance and the monitoring
    window separately in ACTIVE_WORK/CURRENT_STATUS. Documentation-only commits
-   do not change runtime. C12 itself has not been deployed.
+   do not change runtime. C12 has been deployed only to the isolated rehearsal Worker; production remains C11.
 
 Deployment, migration and live acceptance share one non-cancelling production
 concurrency group. This serializes these workflows, not dashboard/API changes;
@@ -53,20 +53,35 @@ records; do not invent a release identity.
 
 ## Isolated rehearsal inventory
 
-**October 19 checkpoint:** owner-authorized Cloudflare scaffolding now exists:
-a fresh UUID-named Worker with only its workers.dev address configured, zero code
-versions/no deployment, and a distinct empty private R2 bucket. Creation receipts
-and provider verification are retained outside git; see [active work](../ACTIVE_WORK.md).
-An additional authorized preparation step created a separate Neon project with a
-fresh root branch/database/role and distinct provider-mapped endpoint. A read-only
-catalog check reports zero user tables/storage relations; no production clone was
-made. Fresh secrets are prepared locally but not uploaded. The actual isolated
-URL passes the generator against all inventoried production endpoint aliases,
-and the generated local SQLite DO/R2 configuration passes Wrangler dry-run.
-No rehearsal Durable Object namespace exists yet: Cloudflare provisions it on
-the first deployment. No application deployment, migration, drill or cleanup
-has run. These preparation checks do not pass the complete isolation gate. Before a disruptive test, complete and
-independently verify the inventory outside git with these fields:
+**October 19 checkpoint:** the owner-authorized rehearsal deployment now serves
+pinned source `5ef077768db537a0c871356f3d1a06c4a5d7d13f`, immutable Worker version
+`cc85f8d6-acbe-411e-9320-bbea1188e66d`. The separate, initially empty Neon database
+has all 18 committed migrations with matching Drizzle ledger hashes/timestamps.
+The ordinary migrator could not connect from this workspace and left zero tables;
+the committed SQL was applied atomically through the explicit rehearsal database
+and role with empty-catalog/identity guards. Four fresh secrets were installed in
+the same provider upload as the built Worker. Provider readback confirms the new
+local SQLite CombatSession namespace, distinct R2 bucket, exact workers.dev origin,
+no classroom domains and disabled previews. Pinned health, smoke and combat
+acceptance and all eight checks in one bounded 30-player run pass. Its answer
+burst measured p50 705 ms, p95 1308 ms and maximum 1359 ms; this is not a repeated
+benchmark or a sub-second-threshold pass. Independent provider reads exactly match
+the journaled 3 teachers, 32 students, 5 fights, 7 sessions, 1 guild, 1 equipment
+item and 1 R2 object. Both manifests passed with zero unresolved writes. Fixtures
+remain retained, with review due within 24 hours. Initial Python 1010
+and direct WebSocket DNS failures were client transport limitations; no provider
+security setting was weakened. The tests use the workspace HTTPS proxy, restricted
+to the rehearsal host for WebSockets, without changing their assertions.
+
+Creation/deployment receipts, exact IDs, provider bindings, runtime observation and
+fixture journals are retained outside git; see [active work](../ACTIVE_WORK.md).
+The deployment used the authenticated provider API with separate application/DB
+credentials; no separate GitHub environment or narrower Cloudflare management
+token was created. Production's opaque uploaded DATABASE_URL mapping remains
+unverified. Those credential/inventory limits and all other C12 operational gates
+remain open. Production C11 is unchanged; no disruption or cleanup has run.
+Before a disruptive test, complete and independently verify the inventory outside
+git with these fields:
 
 | Field | Required value / proof |
 | --- | --- |
