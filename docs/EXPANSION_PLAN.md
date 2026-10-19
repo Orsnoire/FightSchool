@@ -1,6 +1,6 @@
 # Expansion plan after cleanup
 
-**FUTURE — reconciled October 12, 2026. No further expansion implementation is started by this plan.**
+**FUTURE — updated October 19, 2026. No further expansion implementation is started by this plan.**
 
 New feature development follows the [cleanup exit gates](CLEANUP_PLAN.md#exit-gates-before-expansion-resumes).
 This is the current backlog of remaining product direction, not a claim that
@@ -17,6 +17,7 @@ is deployed; it does not start another cleanup or expansion package.
 | --- | --- | --- |
 | Team race | Feasibility and design direction recorded; no race implementation | Persistent coordinator and assignments, one public join code with two private child rooms, shared immutable content/seed, synchronized controls and durable retries, split host view, scoring/ties, late-entry and recovery tests with 30–60 players |
 | Classroom balance refinements | Initial tier presets and enemy AI are released; classroom observation still needed | Gather evidence for tier scaling, large-party hypnosis, vampire healing, poison and enemy composition; approve individual rule changes separately from cleanup |
+| Early AoE access for DPS and tanks | Owner-requested future work, October 19; not implemented in the HP balance release | Every DPS must have an AoE available by job level 4; every tank by job level 8. Change the behavior of an existing ability. Audit job roles and unlock levels, select the ability for each uncovered job, and define target coverage, damage and resource behavior before implementation; verify every applicable job meets its threshold. |
 | AA upgrade purchases | Overflow XP banking exists; spending system does not | Define catalog, prices, caps, effects, progression pacing, UI and atomic spending rules; preserve earned AA balances |
 | Further static artwork | Front-facing Human gear/Tier 1 recolors are released | Define near-profile fitting and custom-item art coverage, fallbacks and owner visual review |
 | Animated avatars | Isolated rig prototype only; no approved full collection | Complete both models, segmentation, calibrated attachments, starter/signature gear, ability/weapon coverage and owner signoff under the existing animation gate |

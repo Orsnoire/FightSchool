@@ -109,8 +109,14 @@ Wizard starts at full `(INT + MND) * 3` MP; Fireball costs 2 MP. Monster MDF is
 `2 * (tier - 1)` (0/2/4/6), used separately from physical DEF. PR #77 is merged
 at `c9f8280` with CI/browser checks passing and deployed as `5bb24b0` (same runtime
 plus docs). [Deployment 39313909643](https://github.com/Orsnoire/FightSchool/actions/runs/39313909643)
-passed both hostname smoke checks on October 19. Full live combat acceptance is
-pending with corrected acceptance tests from `72e6775`; see the checkpoint.
+passed both hostname smoke checks on October 19. [Canonical live acceptance
+39315198519](https://github.com/Orsnoire/FightSchool/actions/runs/39315198519) passed
+with corrected tests at `cd5bc74`; the release is deployed and accepted.
+
+The owner also requested future AoE coverage on October 19: every DPS by job
+level 4 and every tank by job level 8, by changing an existing ability's
+behavior. This is recorded in the [expansion backlog](EXPANSION_PLAN.md), not
+implemented in the HP balance release; per-job ability selections remain open.
 
 The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
 record the latest explicit changes to XP stamina, Block targeting and threat,
