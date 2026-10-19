@@ -57,9 +57,15 @@ records; do not invent a release identity.
 a fresh UUID-named Worker with only its workers.dev address configured, zero code
 versions/no deployment, and a distinct empty private R2 bucket. Creation receipts
 and provider verification are retained outside git; see [active work](../ACTIVE_WORK.md).
-Rehearsal Neon, fresh secrets and Durable Object bindings are not yet established.
-No application deployment, migration, drill or cleanup has run. This partial
-scaffold does not pass the isolation gate. Before a disruptive test, complete and
+An additional authorized preparation step created a separate Neon project with a
+fresh root branch/database/role and distinct provider-mapped endpoint. A read-only
+catalog check reports zero user tables/storage relations; no production clone was
+made. Fresh secrets are prepared locally but not uploaded. The actual isolated
+URL passes the generator against all inventoried production endpoint aliases,
+and the generated local SQLite DO/R2 configuration passes Wrangler dry-run.
+No rehearsal Durable Object namespace exists yet: Cloudflare provisions it on
+the first deployment. No application deployment, migration, drill or cleanup
+has run. These preparation checks do not pass the complete isolation gate. Before a disruptive test, complete and
 independently verify the inventory outside git with these fields:
 
 | Field | Required value / proof |
@@ -84,6 +90,19 @@ uploaded to the Worker. Independently check that the actual `DATABASE_URL` secre
 is the validated isolated URL and that all other secrets are freshly generated.
 The database migrator also consumes `DATABASE_URL` directly; it is not protected
 by the rehearsal generator. Verify its credential scope before any future use.
+
+For a new Worker, treat secret installation and Durable Object provisioning as
+part of the separately authorized first rehearsal deployment. Ordinary
+[`wrangler secret put`](https://developers.cloudflare.com/workers/configuration/secrets/)
+deploys a new version immediately. A
+[`durable_objects` binding plus `exports` declaration](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/)
+is preparation only: the namespace is provisioned on first deployment, and
+`wrangler versions upload` does not apply lifecycle changes. Do not substitute
+production's namespace to make an upload succeed. Record the actual new namespace
+ID and inspect the resulting bindings before running fixture tests. Locally
+prepared secrets are temporary; regenerate them if unavailable, and never put
+values in git or inventory/CI artifacts. No secret upload or namespace provisioning
+is claimed by a dry-run.
 
 With `ISOLATED_DATABASE_URL`, `PRODUCTION_DATABASE_HOST` and `RELEASE_SHA` set
 through the trusted environment, run:
