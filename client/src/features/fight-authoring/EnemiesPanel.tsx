@@ -122,7 +122,7 @@ export function EnemiesPanel({ enemies, onChange, encounterTier, enemyDisplayMod
 
           <div className="flex items-center justify-center rounded bg-slate-800 p-3"><RecoloredSprite src={currentEnemy.image || ENEMY_CATALOG.zombie.image} palette={currentEnemy.palette} alt="Enemy color preview" className="h-36 w-36 object-contain" /></div>
           <PaletteEditor value={currentEnemy.palette} onChange={palette => setCurrentEnemy({ ...currentEnemy, palette })} />
-          <EnemySwarmEditor enemy={currentEnemy} onChange={setCurrentEnemy} />
+          <EnemySwarmEditor enemy={currentEnemy} encounterTier={encounterTier || 1} onChange={setCurrentEnemy} />
           <EnemyAIEditor enemy={currentEnemy} onChange={setCurrentEnemy} />
           <Button type="button" onClick={addEnemy} className="w-full" data-testid={editingEnemyIndex !== null ? "button-update-enemy" : "button-add-enemy"}>
             <PlusCircle className="mr-2 h-4 w-4" />

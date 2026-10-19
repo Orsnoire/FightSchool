@@ -10,7 +10,7 @@ import { tierMagicDefense } from "../../shared/combat/damage-types";
 import { currentHP, maximumHP } from "../../shared/combat/hp";
 
 function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
-  return expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive', players).map((e) => ({
+  return expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive', players, fight.encounterTier || 1).map((e) => ({
       ...e,
       enemyType: e.enemyType || (e.species === "goblin" ? "goblin" : inferEnemyType(e.image)),
       ai: enemyAISchema.parse(e.ai || {}),

@@ -78,11 +78,12 @@ export function expandEnemies(
   }>,
   consecutive: boolean,
   players = 0,
+  encounterTier = 1,
 ): CombatEnemy[] {
   const modern = enemies.some((e) => e.quantity !== undefined || e.swarm || resolveEnemyType(e) === "goblin");
   const counts = swarmCounts(enemies.map(e => ({ ...e,
     quantity: resolveEnemyType(e) === "goblin" ? Math.max(5, e.quantity || 5) : e.quantity || 1,
-  })), players);
+  })), players, encounterTier);
   return enemies.flatMap((e, i) =>
     Array.from({ length: counts[i] }, (_, j) => ({
       ...e,

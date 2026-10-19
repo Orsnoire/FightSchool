@@ -7,17 +7,19 @@ export const enemySwarmSchema = z.object({
 }).strict();
 export type EnemySwarm = z.infer<typeof enemySwarmSchema>;
 
-/** Reserve authored counts, then share remaining capacity between swarm groups. */
+/** Reserve authored counts, then share capacity for tier and attendance growth. */
 export function swarmCounts(
   groups: ReadonlyArray<{ quantity?: number; swarm?: EnemySwarm }>,
   players: number,
+  encounterTier = 1,
 ): number[] {
+  const tier = Number.isInteger(encounterTier) ? Math.max(1, Math.min(4, encounterTier)) : 1;
   const batches = Number.isFinite(players) ? Math.max(0, Math.floor(players / 4) - 1) : 0;
   const counts = groups.map(g => g.quantity || 1);
   const wanted = groups.map((g, i) => {
     const increment = g.swarm?.enemiesPerFourPlayers || 0;
     return Number.isInteger(increment) && increment > 0 && increment <= MAX_ENEMIES_PER_GROUP
-      ? Math.max(counts[i], Math.min(MAX_ENEMIES_PER_GROUP, counts[i] + batches * increment))
+      ? Math.max(counts[i], Math.min(MAX_ENEMIES_PER_GROUP, counts[i] * tier + batches * increment))
       : counts[i];
   });
   let remaining = MAX_ENEMIES_PER_FIGHT - counts.reduce((sum, n) => sum + n, 0);
