@@ -1,5 +1,7 @@
 # Current status
 
+**October 19 balance release update:** [PR #77](https://github.com/Orsnoire/FightSchool/pull/77) is merged at `c9f8280ec1ae34cc82171ca94982657ea23bbfe8`; 320 tests, TypeScript/builds, PR/main CI and four Chromium suites pass. Deployment is authorized but has not started: browser workflow controls are unavailable and the connector has no dispatch operation. The C11 live baseline below remains the last verified deployment. See [resume instructions](ACTIVE_WORK.md).
+
 **CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73; C11 is complete, merged, deployed and accepted in PR #74; C12 is next and unstarted.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
 Read [active work](ACTIVE_WORK.md) for the interruption checkpoint and next action.

@@ -106,8 +106,9 @@ old goblin HP bonus is removed. Each enemy has **at least 1 HP**, explicitly
 allowed to exceed a role's budget when necessary. Maximum HP floors; current HP
 ceils and clamps. Tank/healer discounts and named exceptions are in the decision.
 Wizard starts at full `(INT + MND) * 3` MP; Fireball costs 2 MP. Monster MDF is
-`2 * (tier - 1)` (0/2/4/6), used separately from physical DEF. PR #77 is draft;
-see its checkpoint for implementation/verification. No deployment is claimed.
+`2 * (tier - 1)` (0/2/4/6), used separately from physical DEF. PR #77 is merged
+at `c9f8280` with CI/browser checks passing. Deployment is authorized but has not
+started because workflow-dispatch controls are unavailable; see the checkpoint.
 
 The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
 record the latest explicit changes to XP stamina, Block targeting and threat,
