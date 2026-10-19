@@ -59,17 +59,25 @@ record an independent inventory outside git with these fields:
 | Field | Required value / proof |
 | --- | --- |
 | `id` | Fresh UUID identifying this disposable environment |
+| `cloudflareAccountId` | Independently verified 32-character account ID; the generated config pins it and cleanup requires the credential environment's account to match |
 | `workerName` | `questacademy-rehearsal-` plus the UUID's first eight characters; independently confirm this is a new Worker |
 | `bucketName` | Same unique name, a fresh R2 bucket containing only this rehearsal's objects |
 | `origin` | This Worker's exact HTTPS `workers.dev` origin, no custom classroom domain |
 | `databaseHost`, `neonBranchId` | Fresh empty Neon database/branch, not a production data clone; confirm endpoint-to-branch mapping in Neon |
-| Separate retained record | Cloudflare account, namespace IDs, empty-resource evidence, creation time, operator, expiry/cleanup owner and actual production DB hostname |
+| Separate retained record | Account-to-workers.dev-subdomain mapping, namespace IDs, empty-resource evidence, creation time, operator, expiry/cleanup owner and all actual production DB endpoints/branch identities |
 
 Use a separate GitHub environment/credential scope for this inventory. The
 existing `cloudflare-staging` environment has production secrets. Never copy its
 DATABASE_URL, R2 bucket, session secret, password pepper or room binding into a
 rehearsal. Create the empty database using the committed migrations; do not copy
 real learners into it. Do not use the production `ensure-r2.mjs` helper here.
+Do not reuse the staging-named deployment or migration workflows for rehearsal:
+they deliberately select the production environment and root configuration.
+The generated configuration does not choose or validate the secret values later
+uploaded to the Worker. Independently check that the actual `DATABASE_URL` secret
+is the validated isolated URL and that all other secrets are freshly generated.
+The database migrator also consumes `DATABASE_URL` directly; it is not protected
+by the rehearsal generator. Verify its credential scope before any future use.
 
 With `ISOLATED_DATABASE_URL`, `PRODUCTION_DATABASE_HOST` and `RELEASE_SHA` set
 through the trusted environment, run:
@@ -85,6 +93,14 @@ prove the inventory is true. Inspect the generated bindings and provision
 independent secrets before deploying the selected immutable commit using that
 explicit config. Keep its generated config/secret material out of git/artifacts
 published as release evidence; the target inventory itself contains no passwords.
+The generator now constructs an explicit configuration and rejects unreviewed
+base fields, external DO bindings, namespace-transfer declarations and changed R2
+bindings. Future configuration changes require a rehearsal isolation review.
+DNS case/root-dot aliases are compared consistently; malformed inventory hosts
+and database query overrides are refused. Only single `sslmode` (require,
+verify-ca or verify-full) and `channel_binding` (require, prefer or disable)
+options are accepted. A different Neon endpoint can still serve the same branch:
+the hostname guard does not prove a different or empty database.
 
 For acceptance, set `ACCEPTANCE_MODE=isolated`, `ISOLATED_ORIGIN` and
 `STAGING_ORIGIN` to the inventory origin, `ISOLATION_ID` to its UUID, and
@@ -94,6 +110,13 @@ two staging test scripts. The bounded repeated driver is:
 ```sh
 ACCEPTANCE_REPETITIONS=5 node scripts/release/repeat-acceptance.mjs
 ```
+
+All acceptance entry points, including the older static-avatar suite, require
+the explicit target, mode and observed release identity and journal their own
+fixtures. Isolated origins must be the exact UUID-named workers.dev origin;
+live aliases, arbitrary domains and alternate ports are rejected. Fixture HTTP
+requests refuse redirects after the health check. This does not detect a Worker
+that proxies requests or has incorrect provider bindings; inventory remains a gate.
 
 It runs five fresh 30-player and five 60-player functional fixtures, serially,
 records every answer percentile/fixture manifest, and refuses live targets.
@@ -129,7 +152,10 @@ node scripts/release/cleanup-fixtures.mjs /absolute/path/isolated-target.json /a
 ```
 
 Use the isolated DB and Cloudflare credentials plus the independently recorded
-production DB hostname. The first command runs deletion inside a rolled-back
+production DB hostname. The Cloudflare account must match `cloudflareAccountId`
+before even the Worker absence request; a 404 in another account is not useful
+evidence. A matching account still does not prove token scope or namespace disposal.
+The first command runs deletion inside a rolled-back
 transaction to verify FK ordering. It verifies aliases, exact IDs and reference
 closure: unrecorded children, outside guild members, cross-room results, external
 quest completions and custom-equipment references all block deletion. Locks are
@@ -144,6 +170,9 @@ branch are disposed of in their providers and retain their receipts. Worker
 absence alone is not proof that all historical namespace storage was destroyed.
 The script does not claim that provider-level disposal. No cleanup has been
 executed against production or any provider during this implementation.
+
+See the [separate isolation audit](../reviews/2026-10-19-c12-isolation-audit.md)
+for reproduced bypasses, retained safeguards and provider-only verification limits.
 
 ## Recovery and rollback rehearsal
 

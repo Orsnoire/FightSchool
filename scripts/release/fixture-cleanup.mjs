@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
-import { liveOrigins } from '../../tests/staging/fixture-run.mjs';
-const uuid = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/;
+import { liveOrigins, isolationUuid as uuid, rehearsalOrigin, validateDatabaseEndpoint } from './isolation.mjs';
 export function validateManifest(m) {
   assert.equal(m.schemaVersion, 1);
   assert.ok(Array.isArray(m.pending) && m.pending.length === 0, 'Unresolved creation intent: reconcile exact request/identity before cleanup');
@@ -31,24 +30,17 @@ export function validateManifest(m) {
   }
   return m;
 }
-const endpoint = host => host.toLowerCase().replace(/-pooler(?=\.)/, '');
 export function validateIsolation(target, manifest, databaseUrl, productionHost) {
   validateManifest(manifest);
   assert.match(target.id, uuid);
   assert.equal(manifest.isolationId, target.id);
   assert.equal(target.workerName, `questacademy-rehearsal-${target.id.slice(0,8)}`);
   assert.equal(target.bucketName, target.workerName);
+  assert.match(target.cloudflareAccountId ?? '', /^[a-f0-9]{32}$/, 'Cloudflare account ID is required in the independent inventory');
   assert.equal(target.origin, manifest.origin);
-  const origin = new URL(target.origin);
-  assert.equal(origin.protocol, 'https:');
-  assert.equal(origin.origin, target.origin);
-  assert.ok(origin.hostname.startsWith(`${target.workerName}.`) && origin.hostname.endsWith('.workers.dev'));
+  rehearsalOrigin(target.origin, target.id);
   assert.match(target.neonBranchId, /^br-[a-z0-9-]+$/);
-  assert.ok(productionHost && !productionHost.includes('/'), 'Independent production database hostname is required');
-  const database = new URL(databaseUrl);
-  assert.ok(['postgres:', 'postgresql:'].includes(database.protocol));
-  assert.equal(database.hostname, target.databaseHost);
-  assert.notEqual(endpoint(target.databaseHost), endpoint(productionHost), 'Rehearsal database is the production endpoint');
+  validateDatabaseEndpoint(databaseUrl, target.databaseHost, productionHost);
   return target;
 }
 
