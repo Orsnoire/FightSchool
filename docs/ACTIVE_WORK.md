@@ -1,3 +1,11 @@
+# Battlefield enemy labels — implementation claimed October 19, 2026
+
+- Owner requested enemy text in a list at the top of the battlefield, with the wave heading at the very top, rather than labels overlapping enemy health bars.
+- Active branch: `fix/battlefield-enemy-labels`. Separate from C12 / PR #75 and future AoE/editor-estimate backlog items. Base main: `6b5c9db4d7193b563913d160067e6b1e1112b51c`.
+- Scope: shared teacher/student battlefield presentation, enemy list and wave placement; preserve combat rules, health bars, targeting/accessibility, playback and host elimination controls.
+- Status: claim only; no implementation or validation yet. Exact next action: implement the layout, verify TypeScript/build and relevant Chromium UI coverage at desktop/phone sizes, then publish a reviewable PR checkpoint.
+- The accepted balance release below remains deployed. This follow-up is not deployed.
+
 # Owner-requested fight balance — deployed and accepted October 19, 2026
 
 - Owner authorized deployment on October 19, 2026. [PR #77](https://github.com/Orsnoire/FightSchool/pull/77) merged at **`c9f8280ec1ae34cc82171ca94982657ea23bbfe8`**. The expected-head merge has the same tree (`f25f2119ee1bcca6efda5aa97c4bd3d1ac8e473c`) as reviewed head `64b4f9ff9faea414901003e0086b83cf1a330fc6`.
