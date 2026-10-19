@@ -1,9 +1,82 @@
 # Additive, role-weighted encounter HP — October 19, 2026
 
 Owner-authorized balance change in [PR #77](https://github.com/Orsnoire/FightSchool/pull/77).
-Implementation and local verification are complete; not merged or deployed.
+The first implementation passed local and remote checks, but the owner has
+expanded/corrected the requirements below. PR #77 remains incomplete, draft,
+not merged and not deployed.
 This supersedes the earlier HP formulas in the classroom, enemy-wave and swarm
 specifications. C12 release review remains separate in PR #75.
+
+## October 19 follow-up — required corrections, not yet implemented
+
+The owner clarified that the question coefficient replaces 0.5 with
+`idealized four-player party output / 2`. Interpret output as average damage per
+question, not whole-quiz damage, so quiz length is counted once. The first draft
+below incorrectly omitted that output baseline. Do not release its raw-HP formula.
+
+Confirmed requirements:
+
+- Keep the named player weights below and add the player and question terms.
+  The question term is `question count * (reference average output / 2)`.
+  The proposed corrected pool is
+  `floor(weighted players + questions * (tier reference average output / 2))`.
+  Tier selects reference stats, equipment and abilities; applying another numeric
+  tier multiplier would scale the reference output a second time. This corrects
+  the earlier assistant explanation, which treated the scaling sum as raw HP.
+- The entire encounter has one HP cap. All individuals in a swarm wave share
+  that wave's 25% allocation; population must not multiply the wave's allocation.
+  Remove any species HP bonus that would exceed the encounter cap.
+- Maximum/total HP and current HP must be integers for players and enemies.
+  Floor calculated maximum HP. Ceil calculated current HP, then clamp to
+  `[0, maxHealth]`. Starting current HP equals the integer maximum. Damage/heal
+  events and statistics must report the actual resulting HP change. Apply the
+  rule to allocation, late-entry rescaling, damage, healing, temporary maximum-HP
+  effects and recovery, with an explicit compatibility decision for active rooms.
+- Target a swarmer surviving one or at most two regular attacks. Use this as a
+  balance regression against reference basic attacks, not an independent HP
+  bonus that exceeds its wave's budget.
+- Audit Wizard basic damage. Change Fireball and cross-class Fireball from 1 MP
+  to 2 MP. New Wizard entrants and previews start at full maximum MP, calculated
+  by the existing `(INT + MND) * 3` formula; remove the half-MP initialization.
+  Preserve spent MP for existing participants/reconnections. Update reference
+  simulation and visible costs consistently.
+
+Read-only audit of the currently deployed calculation:
+
+- At tier 1 with 30 questions, the reference Warrior/Priest/Wizard/Scout party
+  estimates 651 damage across the whole quiz (60 + 0 + 140 + 451).
+- At 20 players, the old pool is `651 * (20 / 4) * 1.1 = 3580.5`.
+  A group of 25 leader-role enemies therefore receives 35.805 HP **each**.
+  This reproduces the reported magnitude; the reported live fight's saved role
+  configuration was not inspected, so its exact cause is not established.
+- Goblin-trash HP also adds 1% per three goblins after role allocation. A
+  100-HP fixture containing all roles and ten goblins allocates 100.3 HP,
+  demonstrating a separate cap violation.
+- Using raw average whole-party output per question gives `651 / 30 = 21.7`.
+  The proposed question-only coefficient gives
+  `floor(20 + 0.5 * 30 * 21.7) = 345` HP at tier 1 and a swarm budget of
+  `floor(345 * 0.25) = 86` HP. This example treats all 20 players as full DPS;
+  support-job discounts lower the pool.
+- The reference simulator also repeats Fireblast without spending its all-MP
+  cost. This inflates tier-4 output; correct the new HP coefficient's simulation
+  before using it. Preserve or explicitly version historical active-room rules.
+
+Product decisions still required before replacing the allocator:
+
+1. More than four 25% swarm waves, or swarms plus other roles requesting over
+   100%, cannot satisfy both exact per-wave shares and the total cap. Decide
+   between rejecting such configurations or reducing their allocations to fit.
+   Define integer remainder distribution and the case where a wave's allocation
+   cannot provide at least 1 HP per authored individual.
+
+The proposed coefficient uses the existing bounded rotation over the quiz length
+to account for resource depletion and ramping abilities, divides its damage by
+the question count, then divides by two. It excludes the old extra 1.1 HP margin.
+Thus the raw reference average can vary with quiz length; it is not a constant
+per-tier lookup. Record any further owner correction before implementation.
+
+The following sections describe the **superseded first draft** until these
+corrections are implemented and verified.
 
 ## Full encounter pool
 

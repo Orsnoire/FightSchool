@@ -1,4 +1,30 @@
-# Owner-requested additive, role-weighted fight HP — implemented and locally verified
+# Owner-requested additive, role-weighted fight HP — follow-up corrections pending
+
+- October 19 follow-up: the owner requires a hard encounter HP cap, one shared
+  25% allocation per swarm wave, integer maximum/current HP (floor/ceil), and the
+  idealized reference-party output coefficient on the question term only.
+  The previous raw-HP formula below is superseded; do not merge/deploy it.
+- Further owner direction: target one or at most two regular attacks per swarmer;
+  audit Wizard basic attack; change Fireball (including cross-class) to 2 MP;
+  restore full starting Wizard MP using the existing `(INT + MND) * 3` formula.
+  The apparent 3-MP cap is a half-starting-MP rule, not a maximum-MP cap.
+- Audit and exact open math decisions are recorded in
+  [the updated specification](combat/role-weighted-hp.md#october-19-follow-up--required-corrections-not-yet-implemented).
+  The old formula reproduces 35.805 HP per enemy for 25 leader-role enemies with
+  20 players/30 questions/tier 1. The actual reported room was not inspected.
+  A separate goblin bonus can exceed the cap; the tier-4 reference simulator also
+  fails to consume Fireblast's all-MP cost. No runtime changes for these follow-ups
+  have been made yet.
+- First-draft published runtime `79b45ea58781ddbc4a259e248b321d696fc86965` passes
+  [CI 39285668039](https://github.com/Orsnoire/FightSchool/actions/runs/39285668039)
+  and [all four Chromium jobs 39285667936](https://github.com/Orsnoire/FightSchool/actions/runs/39285667936).
+  These results verify the earlier draft only, not the pending corrected rules.
+- Exact next action: resolve over-budget/low-budget wave
+  allocation behavior with the owner, then implement the corrected formula,
+  capped integer allocation and HP mutation rules with focused regressions. Keep
+  PR #77 draft; no merge/deployment authorization has been given for this patch.
+
+## First-draft checkpoint (superseded scope; retained verification evidence)
 
 - October 19, 2026: the owner requested healer HP scaling at 0.25 DPS, tanks at 0.33, Blood Knight/Dark Knight at 1, Paladin at 0.25 and Priest at 0.
 - Branch: `balance/role-weighted-fight-hp`, based on current main `7cd6fab97c5306514a04d6e591ba3d5495dd0d8e`. This is a separately authorized balance change; C12 continues in its existing branch/PR below.

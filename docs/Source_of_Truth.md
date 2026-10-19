@@ -97,9 +97,13 @@ Guild progression is intended to support long-term classroom engagement across a
 ## Classroom balance and daily stamina
 
 The [October 19 additive, role-weighted HP decision](combat/role-weighted-hp.md)
-supersedes earlier encounter HP formulas: `tier * (weighted players + 0.5 * questions)`.
-It includes the healer/tank discounts and named job exceptions. Implementation is
-tracked in PR #77; this design decision does not claim production deployment.
+supersedes earlier encounter HP formulas. The owner's follow-up replaces the
+question coefficient with half the idealized tier-appropriate four-player party's
+average output, added to weighted players. It also requires an encounter HP cap,
+25% shared swarm-wave allocations and integer HP (floor maximum, ceil current).
+The initial PR #77 draft omitted the output baseline and is incomplete pending
+these corrections; see the linked decision and open allocation questions.
+The healer/tank discounts and named job exceptions remain. No deployment is claimed.
 
 The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
 record the latest explicit changes to XP stamina, Block targeting and threat,
