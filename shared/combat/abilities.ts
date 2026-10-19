@@ -65,7 +65,7 @@ export const ALLIES = new Set([
   "manashield",
 ]);
 export const COSTS: Record<string, number> = {
-  fireball: 1,
+  fireball: 2,
   frostbolt: 1,
   mend: 1,
   purify: 1,

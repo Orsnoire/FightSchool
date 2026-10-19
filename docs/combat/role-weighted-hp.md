@@ -40,6 +40,27 @@ Confirmed requirements:
   by the existing `(INT + MND) * 3` formula; remove the half-MP initialization.
   Preserve spent MP for existing participants/reconnections. Update reference
   simulation and visible costs consistently.
+- Monster Magic Defense is `2 * (tier - 1)`: tiers 1–4 use 0/2/4/6. Magical
+  damage, including Wizard's MAT+INT basic attack, uses MDF separately from
+  physical DEF. Per-family MDF overrides are deferred.
+
+### Implemented Wizard checkpoint
+
+Fireball now costs 2 MP in selection, resolution, cross-class metadata and UI.
+Wizard initialization, lobby preview and the current reference party use full
+`(INT + MND) * 3` MP. Existing participant resources are not refilled. Basic
+attack is verified as `MAT + INT` (3 with starter gear before defense/critical
+hits), consistent with the class specification; its formula is unchanged.
+The current reference simulator now consumes Fireblast's all-MP cost. A separate
+historical reference path preserves already-running encounters' old HP budgets.
+MDF and the corrected HP allocator are still pending at this checkpoint.
+
+Validation: 311 tests, TypeScript and both production builds pass locally.
+The historical C10 file is unchanged: 79 unaffected traces still match its
+hashes; the intentionally changed Wizard/Fireball trace is covered by explicit
+resource/damage tests. Every new trace, including Fireball, matches across JSON
+recovery. New tests cover basic damage, two-MP affordability and cross-class
+spending, full-MP lobby/reference initialization and finite Fireblast simulation.
 
 Read-only audit of the currently deployed calculation:
 

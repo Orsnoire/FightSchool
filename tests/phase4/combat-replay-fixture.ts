@@ -46,6 +46,10 @@ export function combatReplayTraces(recover = false, historicalScaling?: Record<s
       // already-started rooms, whose budgets must survive the new release.
       Object.assign(s, structuredClone(historicalScaling[String(count)]));
       delete s.encounterHpPool;
+      // Recreate the saved MP of participants who already started before the
+      // full-MP change. Reconnection never refills those participants.
+      for (const p of Object.values(s.players))
+        if (p.characterClass === "wizard") p.mp = Math.floor(p.maxMp / 2);
     }
     s = record(engine.startQuestion(s, 2000));
     for (let turn = 0; turn < 12 && s.currentPhase !== 'game_over'; turn++) {

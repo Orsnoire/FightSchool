@@ -56,7 +56,7 @@ export function addStudent(
     appearance: profile.appearance ? { ...profile.appearance } : null,
     health: stats.maxHp,
     maxHealth: stats.maxHp,
-    mp: job === "wizard" ? Math.floor(stats.maxMp / 2) : stats.maxMp,
+    mp: stats.maxMp,
     maxMp: stats.maxMp,
     comboPoints: 0,
     consecutiveCorrectAnswers: 0,

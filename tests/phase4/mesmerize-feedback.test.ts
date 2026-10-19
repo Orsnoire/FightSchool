@@ -44,7 +44,7 @@ test("final recovery answer opens choices immediately and is counted once across
     s = selectAction(s, id, "fireball", "e1");
     const mp = s.players[id].mp;
     s = advanceTo(JSON.parse(JSON.stringify(s)), "question_resolution");
-    assert.equal(s.players[id].mp, mp - 1);
+    assert.equal(s.players[id].mp, mp - 2);
     assert.equal(s.players[id].statuses?.length, 0);
   }
   let s = started();

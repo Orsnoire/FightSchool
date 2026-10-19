@@ -107,8 +107,9 @@ export function expandEnemies(
   );
 }
 /** One bounded, conservative rotation, not a search or a guarantee of success. */
-export function performance(player: CombatPlayer, questions: number) {
+export function performance(player: CombatPlayer, questions: number, historical = false) {
   const p = structuredClone(player);
+  const cost = (id: string) => historical && id === "fireball" ? 1 : COSTS[id] || 0;
   let damage = 0,
     healing = 0;
   for (let turn = 1; turn <= questions; turn++) {
@@ -117,7 +118,8 @@ export function performance(player: CombatPlayer, questions: number) {
       (id) =>
         !SUPPORT.has(id) &&
         !ULTIMATES.has(id) &&
-        (COSTS[id] || 0) <= p.mp &&
+        cost(id) <= p.mp &&
+        (historical || id !== "fireblast" || p.mp >= 1) &&
         (COMBOS[id] || 0) <= p.comboPoints &&
         !(p.cooldowns[id] > 0) &&
         !(id === "healing_potion" && p.healingPotions <= 0),
@@ -135,7 +137,10 @@ export function performance(player: CombatPlayer, questions: number) {
     if (choice) {
       if (healingTurn) healing += choice.value;
       else damage += choice.value;
-      p.mp -= COSTS[choice.id] || 0;
+      p.mp -= cost(choice.id);
+      // Fireblast spends all MP in combat; it must not repeat at full power in
+      // the reference rotation. Historical active-room budgets retain their rule.
+      if (!historical && choice.id === "fireblast") p.mp = 0;
       p.comboPoints -= COMBOS[choice.id] || 0;
       if (choice.id === "healing_potion") p.healingPotions--;
       if (choice.id === "headshot") p.comboPoints += 2;
@@ -156,7 +161,7 @@ export function performance(player: CombatPlayer, questions: number) {
 }
 /** Use the previous tier's full gear: real starters for tier 1, then tier 1 sets
  * extrapolated for unshipped tiers. Character levels remain at the encounter midpoint. */
-export function referenceParty(tier: number): CombatPlayer[] {
+export function referenceParty(tier: number, historical = false): CombatPlayer[] {
   const level = [2, 6, 9, 13][tier - 1] || 2;
   const gearTier = Math.max(0, tier - 1);
   return (["warrior", "priest", "wizard", "scout"] as CharacterClass[]).map(
@@ -209,7 +214,7 @@ export function referenceParty(tier: number): CombatPlayer[] {
         stats,
         jobLevels: levels,
         availableAbilities: availableAbilities(job, levels, []),
-        mp: job === "wizard" ? Math.floor(stats.maxMp / 2) : stats.maxMp,
+        mp: historical && job === "wizard" ? Math.floor(stats.maxMp / 2) : stats.maxMp,
         maxHealth: stats.maxHp,
         health: stats.maxHp,
         comboPoints: 0,
@@ -258,7 +263,7 @@ export function encounterBudgetFromEntries(
   roleWeighted = entries.some(p => p.hpWeight !== undefined),
 ) {
   const q = Math.max(1, questions);
-  const reference = entries.length > 2 ? referenceParty(tier).map(p => performance(p, q)) : [];
+  const reference = entries.length > 2 ? referenceParty(tier, !roleWeighted).map(p => performance(p, q, !roleWeighted)) : [];
   const damage = entries.length <= 2
     ? entries.reduce((n, p) => n + p.damage, 0)
     : reference.reduce((n, p) => n + p.damage, 0) * (entries.length / 4);

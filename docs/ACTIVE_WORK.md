@@ -8,6 +8,13 @@
   audit Wizard basic attack; change Fireball (including cross-class) to 2 MP;
   restore full starting Wizard MP using the existing `(INT + MND) * 3` formula.
   The apparent 3-MP cap is a half-starting-MP rule, not a maximum-MP cap.
+- Wizard checkpoint implemented: full starting MP and 2-MP Fireball throughout
+  engine/lobby/reference/UI; basic MAT+INT damage audited; Fireblast simulation
+  now spends all MP. 311 tests, TypeScript and client/Worker builds pass locally.
+  Original C10 hashes remain unchanged for 79 unaffected scenarios; Fireball's
+  intentional resource change has direct tests and JSON replay coverage.
+- Latest owner correction: monster MDF is `2 * (tier - 1)` (0/2/4/6), separate
+  from physical DEF. Implement this next; corrected HP allocation remains pending.
 - Audit and exact open math decisions are recorded in
   [the updated specification](combat/role-weighted-hp.md#october-19-follow-up--required-corrections-not-yet-implemented).
   The old formula reproduces 35.805 HP per enemy for 25 leader-role enemies with
