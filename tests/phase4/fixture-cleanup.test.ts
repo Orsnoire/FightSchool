@@ -49,7 +49,7 @@ test('scoped cleanup preserves outsiders, rolls back faults, rejects cross-room 
 
 test('cleanup rejects production aliases, pooled production endpoints, foreign R2 keys and missing isolation proof', () => {
   const id='12345678-1234-1234-1234-123456789abc';
-  const target={id,workerName:'questacademy-rehearsal-12345678',bucketName:'questacademy-rehearsal-12345678',origin:'https://questacademy-rehearsal-12345678.example.workers.dev',databaseHost:'ep-rehearsal.neon.tech',neonBranchId:'br-rehearsal'};
+  const target={id,cloudflareAccountId:'a'.repeat(32),workerName:'questacademy-rehearsal-12345678',bucketName:'questacademy-rehearsal-12345678',origin:'https://questacademy-rehearsal-12345678.example.workers.dev',databaseHost:'ep-rehearsal.neon.tech',neonBranchId:'br-rehearsal'};
   const m:any={schemaVersion:1,pending:[],runId:id,suffix:`c12-${id}`,mode:'isolated',isolationId:id,origin:target.origin,status:'running',teachers:[],students:[],fights:[],guilds:[],equipment:[],sessions:[],objects:[]};
   const url='postgres://example:unused@ep-rehearsal.neon.tech/test';
   assert.equal(validateIsolation(target,m,url,'ep-live.neon.tech'),target);

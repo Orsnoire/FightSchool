@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
-import { startFixtureRun } from "./fixture-run.mjs";
+import { startFixtureRun, fixtureFetch as fetch } from "./fixture-run.mjs";
 const fixtures = await startFixtureRun("combat");
 const origin = fixtures.manifest.origin;
 const suffix = fixtures.suffix;

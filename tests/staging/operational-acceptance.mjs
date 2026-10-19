@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
-import { startFixtureRun, acceptancePlayers } from "./fixture-run.mjs";
+import { startFixtureRun, acceptancePlayers, fixtureFetch as fetch } from "./fixture-run.mjs";
 
 const fixtures = await startFixtureRun("operations");
 const origin = fixtures.manifest.origin;

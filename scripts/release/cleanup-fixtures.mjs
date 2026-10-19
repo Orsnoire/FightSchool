@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import WebSocket from 'ws';
 import { validateIsolation, cleanupDatabase, cleanupObjects } from './fixture-cleanup.mjs';
+import { validateCloudflareAccount } from './isolation.mjs';
 
 const [targetFile, manifestFile, option] = process.argv.slice(2);
 assert.ok(targetFile && manifestFile && (!option || option === '--apply'), 'Usage: cleanup-fixtures.mjs <isolated-target.json> <fixture-manifest.json> [--apply]');
@@ -10,10 +11,10 @@ const target = JSON.parse(readFileSync(targetFile, 'utf8'));
 const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'));
 validateIsolation(target, manifest, process.env.ISOLATED_DATABASE_URL, process.env.PRODUCTION_DATABASE_HOST);
 const account = process.env.CLOUDFLARE_ACCOUNT_ID, token = process.env.CLOUDFLARE_API_TOKEN;
-assert.match(account ?? '', /^[a-f0-9]{32}$/); assert.ok(token);
+validateCloudflareAccount(target.cloudflareAccountId, account); assert.ok(token);
 // No room may resurrect rows after deletion. A 403 is not evidence of absence.
 const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/workers/scripts/${target.workerName}`, {
-  headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(30_000),
+  headers: { Authorization: `Bearer ${token}` }, redirect:'error', signal: AbortSignal.timeout(30_000),
 });
 assert.equal(response.status, 404, 'Remove the independently isolated Worker before fixture cleanup; it must be confirmed absent');
 neonConfig.webSocketConstructor = WebSocket;
@@ -27,7 +28,7 @@ try {
     // Exact keys only; there is no bucket listing, prefix deletion or bucket reset.
     await cleanupObjects(manifest, async key => {
       const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/r2/buckets/${target.bucketName}/objects/${key}`, {
-        method:'DELETE', headers:{Authorization:`Bearer ${token}`, 'cf-r2-data-catalog-check':'true'}, signal:AbortSignal.timeout(30_000),
+        method:'DELETE', headers:{Authorization:`Bearer ${token}`, 'cf-r2-data-catalog-check':'true'}, redirect:'error', signal:AbortSignal.timeout(30_000),
       });
       return response.status;
     });

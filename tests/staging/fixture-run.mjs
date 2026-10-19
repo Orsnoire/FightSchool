@@ -2,8 +2,14 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync, renameSync } from 'node:fs';
 import { observeRelease } from '../../scripts/release/gates.mjs';
+import { liveOrigins, rehearsalOrigin } from '../../scripts/release/isolation.mjs';
 
-export const liveOrigins = new Set(['https://questacademy.bookwyrminteractive.studio', 'https://questacademy-staging.coxsonator.workers.dev']);
+export { liveOrigins };
+// Keep every fixture request on its checked endpoint. A subsequent redirect
+// must not carry a signup, mutation or upload to the classroom application.
+export function fixtureFetch(url, options = {}) {
+  return fetch(url, { ...options, redirect: 'error' });
+}
 export function acceptanceTarget(env) {
   const origin = env.STAGING_ORIGIN;
   assert.ok(origin, 'STAGING_ORIGIN must be explicit');
@@ -14,7 +20,7 @@ export function acceptanceTarget(env) {
   else {
     assert.ok(!liveOrigins.has(origin), 'The staging-named Worker is production, not isolated');
     assert.equal(env.ISOLATED_ORIGIN, origin, 'Isolated target must match its independently configured origin');
-    assert.match(env.ISOLATION_ID ?? '', /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/, 'Isolation identity required');
+    rehearsalOrigin(origin, env.ISOLATION_ID);
   }
   assert.ok(env.WORKER_VERSION, 'Expected deployed Worker version is required');
   return { origin, mode: env.ACCEPTANCE_MODE, ...(env.ACCEPTANCE_MODE === 'isolated' ? { isolationId: env.ISOLATION_ID } : {}) };

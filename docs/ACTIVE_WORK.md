@@ -1,11 +1,12 @@
-# C12 rehearsal isolation audit — separate safety follow-up
+# C12 rehearsal isolation safety follow-up — implementation verified locally
 
-- User explicitly requested a separate branch and PR for this audit: `safety/c12-rehearsal-isolation`, based on PR #75 head `bac84636cdc55000e8ab0e9c96628f955b870608`. This is a focused follow-up, not a replacement C12 implementation. PR #75 remains draft/unmerged/undeployed; C11 remains live.
-- Scope: inspect rehearsal configuration, target validation, cleanup and workflows; implement only evidence-backed safety improvements with regressions.
-- Completed: checked current main discovery pointer, PR #75 and open PRs; inspected existing runbook and guards. Existing exact fixture ownership, unresolved-intent and transaction safeguards are retained.
-- In progress: reproduce configuration inheritance, database-host and isolated-origin validation gaps; verify against existing tests.
-- Boundaries: no deployment, disruptive provider tests, production/student-data writes or cleanup execution. Independent Cloudflare/Neon/R2 inventory and all operational C12 exit gates remain unverified.
-- Next action: finish the code audit, add focused regression tests and fixes, publish verification and provider-only requirements in this PR.
+- Separate branch: `safety/c12-rehearsal-isolation`; draft [PR #76](https://github.com/Orsnoire/FightSchool/pull/76) targets `cleanup/c12-release-review`, as explicitly requested by the user. This is a bounded follow-up to #75, not a replacement package. Parent audit head: `bac84636cdc55000e8ab0e9c96628f955b870608`.
+- Completed: audited the generator, shared target/manifest guards, SQL/R2 cleanup, all six workflows and direct acceptance entry points. Fixed hostname/connection-option bypasses, weak isolated-origin validation, unreviewed config inheritance, cleanup account mismatch, HTTP redirects and the static-avatar script's live default. Existing ownership, transaction, release-tree and latest-check safeguards are preserved.
+- Evidence: the initial focused baseline reproduced 12 failures out of 13 tests; the valid current config passed. Final local verification passes **334 tests** (31 release tests), TypeScript and client/Worker builds under available Node 24.19.0/npm 11.9.0. Existing populated PGlite cleanup tests pass. The PR CI uses the repository-pinned Node 22.23.3/npm 10.9.9; exact-head results belong in the live PR body.
+- Review: [isolation audit and independent gates](reviews/2026-10-19-c12-isolation-audit.md). The runbook now requires `cloudflareAccountId`, exact rehearsal origins and restricted database URL options. Generated configuration is ignored by git. No application-runtime, schema or gameplay changes.
+- Boundaries: no deployment, live acceptance, provider inventory access, migration, disruptive drill, production/student-data mutation or cleanup CLI execution. Local synthetic/PGlite regression tests are not provider cleanup. #75 remains draft/unmerged/undeployed, and C11 remains the recorded live version.
+- Remaining: independent Cloudflare/DO/R2/Neon freshness, actual binding/secret and token-scope verification; all C12 operational exit gates. Neither this audit nor green CI establishes those facts. Main's existing workflows have not acquired the unmerged C12 safeguards.
+- Exact next action: review the separate #76 patch and its latest CI results before any integration. No merge, deployment or provider operation is authorized by this checkpoint. Keep #75 and all operational gates open.
 
 ## Parent C12 checkpoint (historical; final automated checks passed on PR #75)
 
