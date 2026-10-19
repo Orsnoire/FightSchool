@@ -12,7 +12,8 @@ import { applyAbility } from "./ability-execution";
 import { abilityProblem, ULTIMATES } from "../../shared/combat/abilities.ts";
 import { questionKey } from "../progression/question-key";
 import { event, leader } from "./state-events";
-import { damagePlayer, hit, heal } from "./health";
+import { damagePlayer, hit, heal, resolvedHP } from "./health";
+import { currentHP } from "../../shared/combat/hp";
 import { baseDamage } from "./damage-values";
 import { activeEnemies, performance, encounterEntry, encounterBudgetFromEntries, allocateHP, roundHP } from "../../shared/combat/encounters";
 import { makePlayback } from "../../shared/combat/presentation";
@@ -241,8 +242,8 @@ export function advancePhase(
         if (--b.rounds <= 0) {
           if (k.startsWith("stat:")) p.stats[k.slice(5) as "str"] -= b.amount;
           if (k === "inspire") {
-            p.maxHealth -= b.amount;
-            p.health = Math.min(p.health, p.maxHealth);
+            p.maxHealth -= b.hpAmount ?? b.amount;
+            p.health = s.encounterHpPool === undefined ? Math.min(p.health, p.maxHealth) : resolvedHP(s, Math.min(p.health, p.maxHealth), p.maxHealth);
             p.maxMp -= b.amount;
             p.mp = Math.min(p.mp, p.maxMp);
           }
@@ -266,11 +267,11 @@ export function advancePhase(
         const budget=encounterBudgetFromEntries(entries,fight.encounterTier||1,q);
         const hp=roleWeighted?Math.max(s.encounterHpPool||0,budget.hp):budget.hp;
         if(!roleWeighted || hp!==s.encounterHpPool){
-          const nextAllocation=allocateHP(s.enemies,hp);
+          const nextAllocation=allocateHP(s.enemies,hp,!roleWeighted);
           s.enemies=s.enemies.map((e,i)=>{
             const maxHealth=nextAllocation[i].maxHealth;
             const health=maxHealth*e.health/e.maxHealth;
-            return {...e,maxHealth,health:e.health>0?(roleWeighted?health:Math.max(.001,roundHP(health))):0};
+            return {...e,maxHealth,health:e.health>0?(roleWeighted?currentHP(health,maxHealth):Math.max(.001,roundHP(health))):0};
           });
         }
         if(roleWeighted)s.encounterHpPool=hp;

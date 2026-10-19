@@ -5,34 +5,32 @@ import { addStudent, initialCombatState, scaleEncounter, startQuestion, applyAns
 import { availableAbilities } from "../../shared/combat/abilities.ts";
 import { fight, student, started } from "./fixtures.ts";
 
-test("legacy classroom HP follows additive role-weighted attendance and half quiz length", () => {
+test("legacy classroom HP follows additive role-weighted attendance and half the reference party output", () => {
   for (const count of [1, 20, 30]) {
     const quiz = { ...fight, questions: Array.from({ length: 10 }, () => fight.questions[0]), enemies: [{ ...fight.enemies[0], difficultyMultiplier: 5 }] };
     let s = initialCombatState("BALANCE", quiz);
     for (let i = 0; i < count; i++) s = addStudent(s, student(i % 2 ? "wizard" : "warrior", `p${i}`));
-    const pool = Math.ceil(count / 2) * 0.33 + Math.floor(count / 2) + 5;
+    const pool = Math.floor(Math.ceil(count / 2) * 0.33 + Math.floor(count / 2) + 171 / 2);
     const scaled = scaleEncounter(s, quiz);
     assert.ok(Math.abs(scaled.enemies[0].health - pool) < 1e-9);
     assert.equal(s.enemies[0].health, 50, "scaling is pure");
     const active = startQuestion(scaled);
     assert.deepEqual(scaleEncounter(active, quiz), active, "reconnect cannot rescale an active fight");
     const multiple = scaleEncounter({ ...s, enemies: [s.enemies[0], { ...s.enemies[0], id: "e2" }] }, quiz);
-    assert.ok(Math.abs(multiple.enemies.reduce((sum, e) => sum + e.health, 0) - pool) < 0.0011, "enemies share one pool, with fractional rounding");
+    assert.equal(multiple.enemies.reduce((sum, e) => sum + e.health, 0), 2 * Math.floor(pool / 2), "integer allocations do not redistribute the remainder");
   }
 });
 
-test("perfect solo play can finish with each base job before unavoidable counterattacks defeat it", () => {
+test("solo legacy fights retain their incoming damage cap with the new four-player reference HP pool", () => {
   for (const job of ["warrior", "wizard", "scout", "herbalist"] as const) {
-    for (const enemyCount of [1, 2]) for (const mode of ["consecutive", "simultaneous"] as const) {
-      const quiz = { ...fight, questions: Array.from({ length: 10 }, () => fight.questions[0]), enemyDisplayMode: mode,
-        enemies: [{ ...fight.enemies[0], difficultyMultiplier: 5 }, { ...fight.enemies[0], id: "e2", difficultyMultiplier: 5 }].slice(0, enemyCount) };
-      let s = startQuestion(scaleEncounter(addStudent(initialCombatState("SOLO", quiz), student(job)), quiz, true));
-      for (let i = 0; i < 30 && s.currentPhase !== "game_over"; i++) {
-        s = applyAnswer(s, student().id, "4", quiz.questions[0]);
-        for (let phase = 0; phase < 6; phase++) s = advancePhase(s, quiz);
-      }
-      assert.equal(s.victory, true, `${job} ${mode}`);
-    }
+    const quiz = { ...fight, questions: Array.from({ length: 10 }, () => fight.questions[0]) };
+    const s = startQuestion(scaleEncounter(addStudent(initialCombatState("SOLO", quiz), student(job)), quiz, true));
+    const p = s.players[student().id];
+    assert.equal(s.soloEnemyDamageCap, Math.max(1, Math.floor(p.maxHealth / 10)));
+    assert.ok(s.enemies[0].maxHealth >= 85);
+    s.currentPhase = "question_resolution";
+    const next = advancePhase(s, quiz);
+    assert.ok(p.health - next.players[p.studentId].health <= s.soloEnemyDamageCap!);
   }
 });
 

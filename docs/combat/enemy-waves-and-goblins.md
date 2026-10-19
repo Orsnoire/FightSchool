@@ -22,8 +22,9 @@ fields live in the existing enemy JSON. Conversion affects subsequent sessions.
 
 The HP calculation below is historical for already-running sessions. The owner's
 [October 19 additive HP specification](role-weighted-hp.md) replaces it for new
-sessions once PR #77 is released. Role allocation and outgoing pressure remain as
-described here.
+sessions once PR #77 is released. New role shares are 10/15/25/50% across the
+whole fight, floored per individual with a 1 HP minimum and no goblin HP bonus.
+Outgoing pressure retains the calculation described here, with integer HP results.
 
 The four-person reference party is Warrior, Priest, Wizard and Scout at the tier
 midpoint (levels 2, 6, 9, 13). The October 12 owner correction in
@@ -41,8 +42,9 @@ An offensive healer alternates healing and available attacks in this estimate.
 Across the entire encounter, including all waves, bosses receive 50% of the full
 HP budget, leaders 25%, normals 15%, and trash 10%. Each present role divides its
 share equally among its members; absent roles leave their shares unused.
-Goblin trash receives another 1% of its allocated HP per three goblins. Fractional
-HP avoids rounding a large weak swarm into an unintended HP wall. No excess
+Historical behavior, retained only for already-running rooms: goblin trash
+received another 1% of its allocated HP per three goblins and fractional HP
+avoided rounding large weak swarms up. No excess
 attack damage spills into another enemy, so individual hit count still imposes
 a minimum duration. AoE hits only the active wave.
 

@@ -476,7 +476,7 @@ export function calculateCharacterStats(
   const vit = (baseJob.vit || 0) + (equipmentStats?.vit || 0) + (passiveBonuses?.vit || 0);
   
   // Calculate derived stats
-  const maxHp = baseJob.baseHP + vit;
+  const maxHp = Math.max(1, Math.floor(baseJob.baseHP + vit));
   const maxMp = (int + mnd) * 3;
   const def = (equipmentStats?.def || 0);
   const atk = (equipmentStats?.atk || 0);

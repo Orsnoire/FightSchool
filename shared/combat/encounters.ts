@@ -24,6 +24,7 @@ import {
 } from "./abilities";
 import { abilityDamage, abilityHealing } from "./abilityValues";
 import { swarmCounts, type EnemySwarm } from "./swarm";
+import { maximumHP } from "./hp";
 
 export const ROLE_SHARES: Record<EnemyRole, number> = {
   boss: 0.5,
@@ -100,8 +101,8 @@ export function expandEnemies(
         : {}),
       name: counts[i] > 1 ? `${e.name} ${j + 1}` : e.name,
       image: enemyImage(e),
-      health: Math.max(1, 10 * e.difficultyMultiplier),
-      maxHealth: Math.max(1, 10 * e.difficultyMultiplier),
+      health: Math.max(1, maximumHP(10 * e.difficultyMultiplier)),
+      maxHealth: Math.max(1, maximumHP(10 * e.difficultyMultiplier)),
       effects: [],
     })),
   );
@@ -250,9 +251,20 @@ export function effectivePlayerCount(weights: number[]): number {
   return weights.reduce((sum, weight) => sum + Math.round(weight * 100), 0) / 100;
 }
 
-/** Owner-defined full HP pool; no damage estimate or extra question multiplier. */
+/** Average raw output per question of the tier's idealized four-player party. */
+export function referenceOutput(tier: number, questions: number): number {
+  const q = Math.max(1, questions);
+  return referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0) / q;
+}
+
+/** The question coefficient is reference average output / 2. Attendance is
+ * additive. Tier is already in the reference party; never multiply it again. */
 export function encounterHpPool(playerWeight: number, tier: number, questions: number): number {
-  return tier * (playerWeight + 0.5 * Math.max(1, questions));
+  const q = Math.max(1, questions);
+  // Sum whole rotation damage directly to avoid a divide/multiply round-trip
+  // turning an exact integer just below itself before the final floor.
+  const output = referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0);
+  return maximumHP(playerWeight + output / 2);
 }
 
 /** Missing weights retain the calculation for rooms started before role scaling. */
@@ -281,13 +293,13 @@ export function encounterBudgetFromEntries(
   const hp = roleWeighted
     ? encounterHpPool(effectivePlayerCount(entries.map(p => p.hpWeight ?? 1)), tier, q)
     : damage * 1.1;
-  return { hp: Math.max(0.001, hp), rawPressure, damage };
+  return { hp: roleWeighted ? hp : Math.max(0.001, hp), rawPressure, damage };
 }
 
 export function encounterBudget(players: CombatPlayer[], tier: number, questions: number) {
   return encounterBudgetFromEntries(players.map(p => encounterEntry(p, Math.max(1, questions))), tier, questions, true);
 }
-export function allocateHP(enemies: CombatEnemy[], fullBudget: number) {
+export function allocateHP(enemies: CombatEnemy[], fullBudget: number, historical = false) {
   const counts = Object.fromEntries(
     Object.keys(ROLE_SHARES).map((role) => [
       role,
@@ -299,6 +311,12 @@ export function allocateHP(enemies: CombatEnemy[], fullBudget: number) {
   ).length;
   return enemies.map((e) => {
     const role = e.role || "normal";
+    if (!historical) {
+      // One share per role across the WHOLE fight, irrespective of wave or
+      // population. The owner-approved 1 HP minimum is the only budget exception.
+      const health = Math.max(1, maximumHP(maximumHP(fullBudget * ROLE_SHARES[role]) / counts[role]));
+      return { ...e, health, maxHealth: health };
+    }
     const bonus =
       e.species === "goblin" && role === "trash"
         ? 1 + Math.floor(swarm / 3) * 0.01

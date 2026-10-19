@@ -87,7 +87,7 @@ export interface CombatPlayer {
   ultimatesUsed: string[];
   healingPotions: number;
   shieldPotions: number;
-  buffs: Record<string, { rounds: number; amount: number }>;
+  buffs: Record<string, { rounds: number; amount: number; hpAmount?: number }>;
   totals: CombatTotals;
 }
 export interface CombatEnemy {

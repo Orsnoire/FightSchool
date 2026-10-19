@@ -1,113 +1,24 @@
 # Additive, role-weighted encounter HP — October 19, 2026
 
 Owner-authorized balance change in [PR #77](https://github.com/Orsnoire/FightSchool/pull/77).
-The first implementation passed local and remote checks, but the owner has
-expanded/corrected the requirements below. PR #77 remains incomplete, draft,
-not merged and not deployed.
-This supersedes the earlier HP formulas in the classroom, enemy-wave and swarm
-specifications. C12 release review remains separate in PR #75.
-
-## October 19 follow-up — required corrections, not yet implemented
-
-The owner clarified that the question coefficient replaces 0.5 with
-`idealized four-player party output / 2`. Interpret output as average damage per
-question, not whole-quiz damage, so quiz length is counted once. The first draft
-below incorrectly omitted that output baseline. Do not release its raw-HP formula.
-
-Confirmed requirements:
-
-- Keep the named player weights below and add the player and question terms.
-  The question term is `question count * (reference average output / 2)`.
-  The proposed corrected pool is
-  `floor(weighted players + questions * (tier reference average output / 2))`.
-  Tier selects reference stats, equipment and abilities; applying another numeric
-  tier multiplier would scale the reference output a second time. This corrects
-  the earlier assistant explanation, which treated the scaling sum as raw HP.
-- The entire encounter has one HP cap. All swarmers across ALL waves share
-  ONE 25% allocation for the whole fight (final owner clarification). Neither
-  wave count nor population multiplies that allocation.
-  Remove any species HP bonus that would exceed the encounter cap.
-- Maximum/total HP and current HP must be integers for players and enemies.
-  Floor calculated maximum HP. Ceil calculated current HP, then clamp to
-  `[0, maxHealth]`. Starting current HP equals the integer maximum. Damage/heal
-  events and statistics must report the actual resulting HP change. Apply the
-  rule to allocation, late-entry rescaling, damage, healing, temporary maximum-HP
-  effects and recovery, with an explicit compatibility decision for active rooms.
-- Target a swarmer surviving one or at most two regular attacks. Use this as a
-  balance regression against reference basic attacks, not an independent HP
-  bonus that exceeds its wave's budget.
-- Audit Wizard basic damage. Change Fireball and cross-class Fireball from 1 MP
-  to 2 MP. New Wizard entrants and previews start at full maximum MP, calculated
-  by the existing `(INT + MND) * 3` formula; remove the half-MP initialization.
-  Preserve spent MP for existing participants/reconnections. Update reference
-  simulation and visible costs consistently.
-- Monster Magic Defense is `2 * (tier - 1)`: tiers 1–4 use 0/2/4/6. Magical
-  damage, including Wizard's MAT+INT basic attack, uses MDF separately from
-  physical DEF. Per-family MDF overrides are deferred.
-
-### Implemented Wizard checkpoint
-
-Fireball now costs 2 MP in selection, resolution, cross-class metadata and UI.
-Wizard initialization, lobby preview and the current reference party use full
-`(INT + MND) * 3` MP. Existing participant resources are not refilled. Basic
-attack is verified as `MAT + INT` (3 with starter gear before defense/critical
-hits), consistent with the class specification; its formula is unchanged.
-The current reference simulator now consumes Fireblast's all-MP cost. A separate
-historical reference path preserves already-running encounters' old HP budgets.
-The corrected HP allocator remains pending at this checkpoint.
-
-MDF is implemented locally: every new monster receives `2 * (tier - 1)`
-(0/2/4/6). Magical hits subtract MDF only, physical hits use DEF and its existing
-buffs. Existing active rooms with no MDF retain their old defense behavior.
-Basic/spell/cross-class/AoE/DOT paths, lobby/start/public projection and JSON
-recovery are covered. All 315 tests, TypeScript and both builds pass locally.
-
-Validation: 311 tests, TypeScript and both production builds pass locally.
-The historical C10 file is unchanged: 79 unaffected traces still match its
-hashes; the intentionally changed Wizard/Fireball trace is covered by explicit
-resource/damage tests. Every new trace, including Fireball, matches across JSON
-recovery. New tests cover basic damage, two-MP affordability and cross-class
-spending, full-MP lobby/reference initialization and finite Fireblast simulation.
-
-Read-only audit of the currently deployed calculation:
-
-- At tier 1 with 30 questions, the reference Warrior/Priest/Wizard/Scout party
-  estimates 651 damage across the whole quiz (60 + 0 + 140 + 451).
-- At 20 players, the old pool is `651 * (20 / 4) * 1.1 = 3580.5`.
-  A group of 25 leader-role enemies therefore receives 35.805 HP **each**.
-  This reproduces the reported magnitude; the reported live fight's saved role
-  configuration was not inspected, so its exact cause is not established.
-- Goblin-trash HP also adds 1% per three goblins after role allocation. A
-  100-HP fixture containing all roles and ten goblins allocates 100.3 HP,
-  demonstrating a separate cap violation.
-- Using raw average whole-party output per question gives `651 / 30 = 21.7`.
-  The proposed question-only coefficient gives
-  `floor(20 + 0.5 * 30 * 21.7) = 345` HP at tier 1 and a swarm budget of
-  `floor(345 * 0.25) = 86` HP. This example treats all 20 players as full DPS;
-  support-job discounts lower the pool.
-- The reference simulator also repeats Fireblast without spending its all-MP
-  cost. This inflates tier-4 output; correct the new HP coefficient's simulation
-  before using it. Preserve or explicitly version historical active-room rules.
-
-The owner resolved the earlier wave-allocation conflict: all swarms collectively
-share 25% of the whole fight, not 25% per wave. Integer allocation must never
-inflate that share. Configurations that cannot give every authored individual
-positive integer HP need an explicit start-time validation error.
-
-The proposed coefficient uses the existing bounded rotation over the quiz length
-to account for resource depletion and ramping abilities, divides its damage by
-the question count, then divides by two. It excludes the old extra 1.1 HP margin.
-Thus the raw reference average can vary with quiz length; it is not a constant
-per-tier lookup. Record any further owner correction before implementation.
-
-The following sections describe the **superseded first draft** until these
-corrections are implemented and verified.
+This supersedes older HP formulas and the initial draft of this PR. See
+[ACTIVE_WORK](../ACTIVE_WORK.md) for verification and release status. Separate
+from C12 release review; no production-data changes are required.
 
 ## Full encounter pool
 
 ```
-full HP pool = tier * (sum(player weights) + 0.5 * question count)
+question coefficient = idealized four-player party average raw damage per question / 2
+full HP pool = floor(sum(player weights) + question count * question coefficient)
 ```
+
+Tier selects the existing reference Warrior/Priest/Wizard/Scout party's stats,
+equipment and abilities. Do not multiply the resulting pool by tier again.
+The bounded reference rotation runs over the actual quiz length, accounting for
+finite MP and ramping abilities. Its average output can therefore vary with quiz
+length. This is raw potential damage before enemy DEF/MDF. Sum the reference
+rotation damage and divide by two directly to avoid floating-point round trips.
+The old 1.1 margin and player-count multiplier no longer apply to HP.
 
 | Jobs | Player weight |
 | --- | ---: |
@@ -116,61 +27,109 @@ full HP pool = tier * (sum(player weights) + 0.5 * question count)
 | Priest | 0 |
 | Wizard, Scout, Warlock, Ranger, Bard, Dark Knight, Blood Knight | 1 |
 
-The question contribution is added once for the entire encounter, not once per
-player, enemy or wave. Tier multiplies that sum exactly once. There is no additional
-damage-estimate, gear, level, 0.9 or 1.1 HP multiplier. Solo and duo HP use this same
-formula. Cross-class offensive abilities do not change Priest's zero weight.
-Questions still contribute HP to an all-Priest fight; the existing solo warning
-for loadouts without offensive abilities remains applicable.
+Player and question contributions are additive. Actual players' gear and
+cross-class loadouts do not change HP weights or the reference party. Solo/duo
+and all-Priest fights use the same coefficient; the existing warning for a
+non-offensive solo loadout remains. The old guarantee that a solo legacy fight
+fits its character's own damage/survival window is superseded by this shared
+reference formula; legacy solo incoming-damage caps remain.
 
-Example: four DPS, one Warrior, one Paladin and one Priest contribute 4.58 players.
-Ten questions add 5, making the full pool 9.58 at tier 1 or 19.16 at tier 2.
+## One role allocation for the whole fight
 
-## Allocation and unrelated balance rules
+| Enemy role | Share of full HP pool |
+| --- | ---: |
+| Swarm/trash (`trash`) | 10% |
+| Normal | 15% |
+| Leader | 25% |
+| Boss | 50% |
 
-For individual-enemy encounters, bosses share 50%, leaders 25%, normals 15% and
-trash 10% of the pool across all waves. Each role divides its share equally among
-its individuals. An absent role leaves its share unused. The existing goblin-trash
-allocation bonus of 1% per three goblins remains; the full pool above is before
-that species-specific bonus. Fractional HP rounds to three decimal places with a
-0.001 minimum per individual, so rounding can slightly affect the allocated total.
+All individuals of a role across **every wave** divide that role's one share:
 
-Legacy fight definitions without individual-enemy rules use the same full pool,
-with tier 1 when no tier is set, and retain their difficulty-proportional division.
-Their former whole-basic-attack rounding and survivability HP adjustment no longer
-override the pool. Their solo outgoing-damage cap remains.
+```
+role budget = floor(full HP pool * role share)
+individual maximum HP = max(1, floor(role budget / total individuals of that role))
+```
 
-Enemy outgoing pressure, attack stats, question mechanics, rewards, role XP shares,
-swarm headcount thresholds and locked enemy counts are unchanged. The reference
-party and entry performance still determine outgoing pressure, not new-fight HP.
+Five swarm waves share 10% altogether, not 10% each. The same rule applies to
+normal, leader and boss waves. Missing roles leave their shares unused. Rounding
+remainders are not redistributed. Remove the old goblin HP bonus entirely from
+new encounters. Adding waves or enemies never multiplies the budget.
 
-## Session behavior and compatibility
+**Explicit owner-approved exception:** every individual has at least 1 maximum
+HP, even when the number of enemies exceeds its role's HP budget. Such a fight
+may exceed the nominal pool solely because of this minimum; it can still start.
 
-Lobby preview and Start Fight use the same calculator and current selected jobs.
-For new individual-enemy sessions, persist each participant's entry weight and the
-full pool. At a late-entry boundary, add a new participant only once, retain
-departed participants' contributions, preserve surviving enemies' HP percentages,
-and keep defeated enemies defeated. A Priest adds no HP, even across the old
-two-to-three-player threshold. Reconnection does not add another contribution or
-change the original job weight. Swarm counts continue to use actual attendance,
-including Priests, and lock at Start Fight.
+Swarm/trash is intentionally extremely weak; its pressure comes from numbers.
+The target is one or at most two regular attacks per swarmer. This target does
+not add another HP bonus or override the shared-budget formula. The existing
+Swarm checkbox controls attendance-based population growth independently of
+role/species; it does not silently turn a boss into trash.
 
-Already-running sessions retain their saved HP and historical late-entry formula.
-Missing entry weights identify that historical behavior. New fields are optional
-server-only snapshot data, so no database migration or saved-room reset is needed.
-Legacy-definition active fights retain their existing no-late-rescaling behavior.
+Legacy definitions without role/quantity rules use the same full pool, divide it
+in proportion to difficulty, floor each maximum and apply the same 1 HP minimum.
+No tier defaults to tier 1. Their existing no-late-rescaling behavior remains.
+
+### Reported encounter regression
+
+At tier 1 and 30 questions the reference party estimates 651 raw damage:
+60 Warrior + 0 Priest + 140 Wizard + 451 Scout. The coefficient is 10.85.
+With 20 full-DPS players, the pool is `floor(20 + 30 * 10.85) = 345`.
+Swarm/trash receives `floor(345 * 0.10) = 34` HP. Twenty-five swarmers therefore
+receive **1 HP each**, whether in one wave or five waves of five. Support-player
+discounts reduce the pool further, subject to the same minimum.
+
+The deployed old formula would produce `651 * (20 / 4) * 1.1 = 3580.5` HP.
+Twenty-five leader-role enemies would receive 35.805 HP each. This reproduces the
+reported magnitude, but the actual live fight's saved roles were not inspected.
+The old goblin-trash bonus could separately exceed the nominal role budget.
+
+## Integer HP throughout combat
+
+For newly scaled fights, player/enemy maximum HP always rounds down. Current HP
+rounds up and clamps to `[0, maximum HP]`; current HP may reach zero on defeat.
+Starting current HP equals the floored maximum. Damage/heal events and statistics
+report actual HP changes after rounding. This includes damage caps, healing,
+self costs, temporary maximum-HP effects, late-entry percentages and recovery.
+A temporary HP buff records its actual integer maximum increase so expiry removes
+exactly that increase. MP retains its own rules.
+
+Lobby preview and Start Fight use the same calculation. New participant weights
+are frozen at admission and counted once. Late arrivals add only their weight,
+retain prior contributions after departure, and rescale surviving enemies by
+remaining percentage with current HP rounded up. Dead enemies stay dead. A Priest
+adds no HP. Reconnecting does not refill HP/MP or count a participant twice.
+Population scaling still counts actual attendance, including Priests, and enemy
+counts lock at Start Fight.
+
+Existing active rooms without `encounterHpPool` retain their saved fractional
+HP rule, old allocation and historical reference calculations until completion.
+Recovery normalizes only new-rule rooms and preserves spent resources. No room
+reset, database migration or live-data rewrite is required.
+
+## Wizard and magic defense
+
+- Wizard basic attack is **MAT + INT**, unchanged: starter MAT 1 + INT 2 = 3 raw.
+- Fireball and cross-class Fireball cost **2 MP** throughout selection, execution
+  and visible descriptions.
+- New Wizard entrants, previews and current reference parties start with full
+  **`(INT + MND) * 3` MP**. There is no 3-MP cap or half-MP initialization.
+- The reference simulator consumes Fireblast's all-MP cost rather than repeating
+  full-power Fireblast every question. Historical HP reference paths remain
+  compatible for active old rooms.
+- New monster Magic Defense is **`2 * (tier - 1)`**, giving **0, 2, 4, 6** at tiers
+  1–4. Magical basics, spells, cross-class spells, AoE and magical DOT subtract MDF
+  only. Physical hits use DEF; physical defense buffs do not increase MDF.
+  Per-family MDF is deferred. Old active monsters lacking MDF retain their saved
+  defense behavior.
 
 ## Verification
 
-Regression coverage checks all twelve job weights, all four tiers, additive player
-and question increments, solo/all-Priest groups, exact examples, role allocation,
-unchanged outgoing pressure and swarm attendance, preview/start equality, late
-entry, departure/re-entry and JSON recovery. Pre-change starting allocations were
-captured from main `7cd6fab97c5306514a04d6e591ba3d5495dd0d8e` before implementation;
-they exercise historical active-room behavior against the unchanged C10 hashes.
-New-balance traces also compare normal execution with JSON recovery at every step.
-Local validation: all 308 tests, TypeScript and client/Worker production builds
-pass. The final entry-estimate sharing change also passes the 19 focused
-HP/preview/replay/swarm tests, TypeScript and Worker build. Local Node is 24.19.0;
-the PR's existing CI runs Node 22. See the PR/checkpoint for exact published SHA
-and CI/browser results.
+Tests cover every job/tier, frozen reference outputs, additive attendance and
+question terms, whole-fight role budgets over five waves, missing roles, the
+25-swarmer example, the 1 HP exception, preview/start parity, late entry and
+re-entry, integer mutations/temporary buffs/recovery, Wizard resources and damage
+routing. Historical C10 baseline files remain unchanged: 79 unaffected traces
+retain their hashes; Fireball's authorized resource change is directly tested.
+All new replay scenarios compare execution with JSON recovery at every step.
+All 320 local tests, TypeScript and both production builds pass. See the PR and
+checkpoint for exact published head and CI/browser results before release.

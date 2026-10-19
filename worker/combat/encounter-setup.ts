@@ -2,11 +2,12 @@ import { type FightRecord } from "../db/schema.ts";
 import { type CombatEnemy, type CombatSnapshot } from "../../shared/combat/model.ts";
 import {
   expandEnemies, encounterBudgetFromEntries, allocateHP, encounterEntry,
-  encounterHpWeight, effectivePlayerCount, encounterHpPool, roundHP, ROLE_SHARES,
+  encounterHpWeight, effectivePlayerCount, encounterHpPool, ROLE_SHARES,
 } from "../../shared/combat/encounters";
 import { inferEnemyType, enemyAISchema, resolveEnemyType } from "../../shared/combat/enemy-ai";
 import { CombatRuleError } from "../../shared/combat/errors";
 import { tierMagicDefense } from "../../shared/combat/damage-types";
+import { currentHP, maximumHP } from "../../shared/combat/hp";
 
 function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
   return expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive', players).map((e) => ({
@@ -17,8 +18,8 @@ function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
       attackPower: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 1,
       defense: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 0,
       magicDefense: tierMagicDefense(fight.encounterTier),
-      health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
-      maxHealth: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
+      health: Math.max(1, maximumHP(10 * e.difficultyMultiplier)),
+      maxHealth: Math.max(1, maximumHP(10 * e.difficultyMultiplier)),
       effects: [],
     }));
 }
@@ -61,7 +62,10 @@ export function initialCombatState(
 // Attendance and equipment are frozen at start; each quiz has one total HP budget.
 export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo = false): CombatSnapshot {
   if (state.currentPhase !== "waiting") return state;
-  const players = Object.values(state.players);
+  const normalizedPlayers = Object.fromEntries(Object.entries(state.players).map(([id, p]) => [id, {
+    ...p, maxHealth: maximumHP(p.maxHealth), health: currentHP(p.health, p.maxHealth),
+  }]));
+  const players = Object.values(normalizedPlayers);
   const questions = Math.max(1, fight.questions.length);
   if (state.encounterRules === 2) {
     const entryPerformance = Object.fromEntries(players.map(p => [p.studentId, encounterEntry(p, questions)]));
@@ -72,7 +76,7 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
     }));
     const present = new Set(enemies.map(e => e.role || "normal"));
     return {
-      ...state, enemies, entryPerformance, autoAdvanceWaves: solo,
+      ...state, players: normalizedPlayers, enemies, entryPerformance, autoAdvanceWaves: solo,
       encounterAttendance: players.length, referenceDamage: budget.damage,
       enemyRoundBudget: budget.rawPressure,
       encounterXpFraction: [...present].reduce((n, r) => n + ROLE_SHARES[r], 0),
@@ -88,10 +92,10 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   }
   const weight = state.enemies.reduce((sum, e) => sum + e.difficultyMultiplier, 0) || 1;
   const enemies = state.enemies.map((e) => {
-    const health = Math.max(0.001, roundHP(budget * e.difficultyMultiplier / weight));
+    const health = Math.max(1, maximumHP(budget * e.difficultyMultiplier / weight));
     return { ...e, health, maxHealth: health, magicDefense: tierMagicDefense(fight.encounterTier) };
   });
-  return { ...state, soloEnemyDamageCap, enemies, encounterHpPool: budget };
+  return { ...state, players: normalizedPlayers, soloEnemyDamageCap, enemies, encounterHpPool: budget };
 }
 
 export function startQuestion(
