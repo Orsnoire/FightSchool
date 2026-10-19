@@ -1,3 +1,14 @@
+# C12 rehearsal isolation audit — separate safety follow-up
+
+- User explicitly requested a separate branch and PR for this audit: `safety/c12-rehearsal-isolation`, based on PR #75 head `bac84636cdc55000e8ab0e9c96628f955b870608`. This is a focused follow-up, not a replacement C12 implementation. PR #75 remains draft/unmerged/undeployed; C11 remains live.
+- Scope: inspect rehearsal configuration, target validation, cleanup and workflows; implement only evidence-backed safety improvements with regressions.
+- Completed: checked current main discovery pointer, PR #75 and open PRs; inspected existing runbook and guards. Existing exact fixture ownership, unresolved-intent and transaction safeguards are retained.
+- In progress: reproduce configuration inheritance, database-host and isolated-origin validation gaps; verify against existing tests.
+- Boundaries: no deployment, disruptive provider tests, production/student-data writes or cleanup execution. Independent Cloudflare/Neon/R2 inventory and all operational C12 exit gates remain unverified.
+- Next action: finish the code audit, add focused regression tests and fixes, publish verification and provider-only requirements in this PR.
+
+## Parent C12 checkpoint (historical; final automated checks passed on PR #75)
+
 # C12 implementation verified — operational signoff open (October 18, 2026 UTC)
 
 - Registered branch: `cleanup/c12-release-review`. Draft [PR #75](https://github.com/Orsnoire/FightSchool/pull/75). Main carries the discovery pointer.
