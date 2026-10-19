@@ -74,9 +74,13 @@
 .battle-enemy-field.is-swarm .battle-enemy-info {display:none;}
 .battle-enemy-field.is-swarm .battle-enemy:hover .battle-enemy-info,.battle-enemy-field.is-swarm .battle-enemy:focus-within .battle-enemy-info {display:block;}
 .battle-enemy-summary { position:absolute; top:var(--enemy-list-top); bottom:calc(100% - var(--enemy-field-top) + 14px); left:53%; width:44%; z-index:100; display:flex; flex-direction:column; gap:5px; color:#203d30; font-size:12px; }
-.battle-enemy-heading { margin:0; font-size:12px; line-height:16px; font-weight:800; }
+.battle-enemy-heading { margin:0; flex:none; font-size:12px; line-height:16px; font-weight:800; }
 .battle-enemy-list { margin:0; padding:6px 8px; list-style:none; min-height:0; overflow:auto; flex:1; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); align-content:start; gap:6px 12px; border:1px solid #dbe5ca; border-radius:7px; background:#f7f5e9f2; }
 .battle-enemy-list:focus-visible { outline:2px solid #274b43; outline-offset:2px; }
 .battle-enemy-list li { min-width:0; display:flex; flex-direction:column; line-height:1.35; }
 .battle-enemy-status { color:#684213; font-size:11px; overflow-wrap:anywhere; }
 @media(max-width:600px){.battlefield{--enemy-field-top:30%;}.battle-enemy-field{left:51%;width:47%;height:52%;}.battle-enemy-summary{left:51%;width:47%;}}
+/* Nonmodal student status stays in the party lane, clear of the enemy list. */
+.battle-student .battle-wait { left:20px; top:156px; transform:none; max-width:min(360px,calc(48% - 32px)); flex-wrap:wrap; }
+.battle-student .battle-roster { top:102px; }
+@media(max-width:760px){.battle-student .battle-wait{left:12px;max-width:calc(49% - 24px);}}

@@ -258,14 +258,14 @@ export function referenceOutput(tier: number, questions: number): number {
   return referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0) / q;
 }
 
-/** The question coefficient is reference average output / 2. Attendance is
+/** The question coefficient is the full reference average output. Attendance is
  * additive. Tier is already in the reference party; never multiply it again. */
-export function encounterHpPool(playerWeight: number, tier: number, questions: number): number {
+export function encounterHpPool(playerWeight: number, tier: number, questions: number, referenceFraction: 0.5 | 1 = 1): number {
   const q = Math.max(1, questions);
   // Sum whole rotation damage directly to avoid a divide/multiply round-trip
   // turning an exact integer just below itself before the final floor.
   const output = referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0);
-  return maximumHP(playerWeight + output / 2);
+  return maximumHP(playerWeight + output * referenceFraction);
 }
 
 /** Missing weights retain the calculation for rooms started before role scaling. */
@@ -274,6 +274,7 @@ export function encounterBudgetFromEntries(
   tier: number,
   questions: number,
   roleWeighted = entries.some(p => p.hpWeight !== undefined),
+  referenceFraction: 0.5 | 1 = 1,
 ) {
   const q = Math.max(1, questions);
   const reference = entries.length > 2 ? referenceParty(tier, !roleWeighted).map(p => performance(p, q, !roleWeighted)) : [];
@@ -292,7 +293,7 @@ export function encounterBudgetFromEntries(
       0,
     ) * factor;
   const hp = roleWeighted
-    ? encounterHpPool(effectivePlayerCount(entries.map(p => p.hpWeight ?? 1)), tier, q)
+    ? encounterHpPool(effectivePlayerCount(entries.map(p => p.hpWeight ?? 1)), tier, q, referenceFraction)
     : damage * 1.1;
   return { hp: roleWeighted ? hp : Math.max(0.001, hp), rawPressure, damage };
 }

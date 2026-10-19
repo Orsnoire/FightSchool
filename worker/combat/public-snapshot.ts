@@ -31,10 +31,12 @@ function player(p:CombatPlayer, reveal:boolean):PublicCombatPlayer {
   };
 }
 export function publicSnapshot(snapshot:CombatSnapshot,fight?:FightRecord):PublicCombatSnapshot {
-  const enemies=fight&&snapshot.currentPhase==='waiting'&&Object.keys(snapshot.players).length?scaleEncounter(snapshot,fight).enemies:snapshot.enemies;
+  const preview=fight&&snapshot.currentPhase==='waiting'&&Object.keys(snapshot.players).length?scaleEncounter(snapshot,fight):snapshot;
+  const enemies=preview.enemies;
   const reveal=answersRevealed(snapshot.currentPhase);
   return {
-    ...pick(snapshot,snapshotFields),seed:0,
+    ...pick(preview,snapshotFields),seed:0,
+    ...(fight && snapshot.currentPhase === 'waiting' ? { encounterTier: preview.encounterTier || fight.encounterTier || 1 } : {}),
     playback:snapshot.playback?{...pick(snapshot.playback,['id','round','phase']),eventIds:[...snapshot.playback.eventIds],initialHealth:{...snapshot.playback.initialHealth}}:undefined,
     players:Object.fromEntries(Object.entries(snapshot.players).map(([id,p])=>[id,player(p,reveal)])),
     pendingPlayers:Object.fromEntries(Object.entries(snapshot.pendingPlayers||{}).map(([id,p])=>[id,player(p,false)])),

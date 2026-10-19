@@ -8,6 +8,7 @@ import { inferEnemyType, enemyAISchema, resolveEnemyType } from "../../shared/co
 import { CombatRuleError } from "../../shared/combat/errors";
 import { tierMagicDefense } from "../../shared/combat/damage-types";
 import { currentHP, maximumHP } from "../../shared/combat/hp";
+import { encounterTierForLevels } from "../../shared/encounter-tiers";
 
 function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
   return expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive', players, fight.encounterTier || 1).map((e) => ({
@@ -67,16 +68,19 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   }]));
   const players = Object.values(normalizedPlayers);
   const questions = Math.max(1, fight.questions.length);
+  const encounterTier = encounterTierForLevels(players.map(p => p.jobLevels[p.characterClass] || 1), fight.encounterTier || 1);
+  const tieredFight = { ...fight, encounterTier };
   if (state.encounterRules === 2) {
     const entryPerformance = Object.fromEntries(players.map(p => [p.studentId, encounterEntry(p, questions)]));
-    const budget = encounterBudgetFromEntries(Object.values(entryPerformance), fight.encounterTier || 1, questions, true);
-    const individuals = fight.enemies.some(e => e.swarm) ? initialEnemies(fight, players.length) : state.enemies;
+    const budget = encounterBudgetFromEntries(Object.values(entryPerformance), encounterTier, questions, true);
+    const individuals = fight.enemies.some(e => e.swarm) ? initialEnemies(tieredFight, players.length) : state.enemies;
     const enemies = allocateHP(individuals, budget.hp).map(e => ({
-      ...e, magicDefense: tierMagicDefense(fight.encounterTier),
+      ...e, magicDefense: tierMagicDefense(encounterTier),
+      ...(e.enemyType === "samhain" ? { attackPower: encounterTier, defense: encounterTier } : {}),
     }));
     const present = new Set(enemies.map(e => e.role || "normal"));
     return {
-      ...state, players: normalizedPlayers, enemies, entryPerformance, autoAdvanceWaves: solo,
+      ...state, players: normalizedPlayers, enemies, entryPerformance, autoAdvanceWaves: solo, encounterTier,
       encounterAttendance: players.length, referenceDamage: budget.damage,
       enemyRoundBudget: budget.rawPressure,
       encounterXpFraction: [...present].reduce((n, r) => n + ROLE_SHARES[r], 0),
@@ -84,7 +88,7 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
     };
   }
   const playerWeight = effectivePlayerCount(players.map(p => encounterHpWeight(p.characterClass)));
-  const budget = encounterHpPool(playerWeight, fight.encounterTier || 1, questions);
+  const budget = encounterHpPool(playerWeight, encounterTier, questions);
   let soloEnemyDamageCap: number | undefined;
   if (solo && players.length === 1) {
     const p = players[0];
@@ -93,9 +97,10 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   const weight = state.enemies.reduce((sum, e) => sum + e.difficultyMultiplier, 0) || 1;
   const enemies = state.enemies.map((e) => {
     const health = Math.max(1, maximumHP(budget * e.difficultyMultiplier / weight));
-    return { ...e, health, maxHealth: health, magicDefense: tierMagicDefense(fight.encounterTier) };
+    return { ...e, health, maxHealth: health, magicDefense: tierMagicDefense(encounterTier),
+      ...(e.enemyType === "samhain" ? { attackPower: encounterTier, defense: encounterTier } : {}) };
   });
-  return { ...state, players: normalizedPlayers, soloEnemyDamageCap, enemies, encounterHpPool: budget };
+  return { ...state, players: normalizedPlayers, soloEnemyDamageCap, enemies, encounterHpPool: budget, encounterTier };
 }
 
 export function startQuestion(

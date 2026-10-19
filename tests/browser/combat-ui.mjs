@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { started, student } from '../phase4/fixtures.ts';
+import { verifyEnemyOverview } from './enemy-overview.mjs';
 
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 const output = 'artifacts/combat-ui';
@@ -110,6 +111,15 @@ try {
     await page.getByText('Waiting for other players', { exact: true }).waitFor();
     await page.keyboard.press('Escape');
     await screenshot('waiting');
+    const beforeSwarm = structuredClone(state);
+    state.encounterRules = 2; state.encounterTier = 4; state.activeWave = 1;
+    state.enemies = Array.from({length:60}, (_, i) => ({...beforeSwarm.enemies[0],id:`swarm-${i}`,name:`Goblin ${i + 1}`,wave:1,health:1,maxHealth:1}));
+    await emit();
+    await page.waitForFunction(() => document.querySelectorAll('[data-enemy-list-id]').length === 60);
+    await verifyEnemyOverview(page, 60, 1);
+    await page.screenshot({path:`${output}/${viewport.width}-student-enemy-list.png`});
+    state = beforeSwarm;
+    await emit();
     state.currentPhase = 'abilities';
     state.players[id].ready = false;
     await emit();

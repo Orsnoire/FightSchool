@@ -19,6 +19,7 @@ import { activeEnemies, performance, encounterEntry, encounterBudgetFromEntries,
 import { makePlayback } from "../../shared/combat/presentation";
 import { resolveEnemyTurn } from "./enemy-turn";
 import { abilityDamage } from "../../shared/combat/abilityValues.ts";
+import { ENCOUNTER_TIERS } from "../../shared/encounter-tiers";
 
 export function advancePhase(
   state: CombatSnapshot,
@@ -26,6 +27,11 @@ export function advancePhase(
   now = Date.now(),
 ): CombatSnapshot {
   const s = structuredClone(state);
+  // Use the saved tier for all later waves and admissions; never re-average an active fight.
+  if (s.encounterTier && s.encounterTier > (fight.encounterTier || 1)) {
+    fight = { ...fight, encounterTier: s.encounterTier,
+      baseEnemyDamage: Math.max(fight.baseEnemyDamage, ENCOUNTER_TIERS[s.encounterTier - 1]?.damage || 1) };
+  }
   s.revision++;
   s.phaseStartTime = now;
   delete s.playback;
@@ -264,7 +270,7 @@ export function advancePhase(
       const count=Object.keys(s.entryPerformance).length;
       if(count>(s.encounterAttendance||0)){
         const entries=Object.values(s.entryPerformance);
-        const budget=encounterBudgetFromEntries(entries,fight.encounterTier||1,q);
+        const budget=encounterBudgetFromEntries(entries,s.encounterTier||fight.encounterTier||1,q,roleWeighted,s.encounterTier===undefined?0.5:1);
         const hp=roleWeighted?Math.max(s.encounterHpPool||0,budget.hp):budget.hp;
         if(!roleWeighted || hp!==s.encounterHpPool){
           const nextAllocation=allocateHP(s.enemies,hp,!roleWeighted);

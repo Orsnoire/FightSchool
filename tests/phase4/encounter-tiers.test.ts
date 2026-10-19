@@ -31,7 +31,7 @@ test("tier/role pressure presets are monotonic; HP uses each tier’s reference 
       };
       const state = addStudent(initialCombatState("TIER01", f), student());
       const hp = scaleEncounter(state, f).enemies[0].health;
-      assert.equal(hp, [7, 23, 40, 2404][tier - 1]);
+      assert.equal(hp, [15, 46, 81, 4808][tier - 1]);
       assert.ok(hp >= health);
       health = hp;
       if (tier > 1)

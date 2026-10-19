@@ -48,6 +48,7 @@ export function combatReplayTraces(recover = false, historicalScaling?: Record<s
       // already-started rooms, whose budgets must survive the new release.
       Object.assign(s, structuredClone(historicalScaling[String(count)]));
       delete s.encounterHpPool;
+      delete s.encounterTier; // These captured active rooms predate automatic tier/full-output scaling.
       for (const e of s.enemies) delete e.magicDefense;
       // Recreate the saved MP of participants who already started before the
       // full-MP change. Reconnection never refills those participants.

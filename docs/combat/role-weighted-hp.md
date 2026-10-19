@@ -1,6 +1,8 @@
 # Additive, role-weighted encounter HP — October 19, 2026
 
-Owner-authorized balance change in [PR #77](https://github.com/Orsnoire/FightSchool/pull/77).
+Owner-authorized balance change in [PR #77](https://github.com/Orsnoire/FightSchool/pull/77),
+with the later full-output coefficient and adaptive tier follow-up in
+[PR #78](https://github.com/Orsnoire/FightSchool/pull/78).
 This supersedes older HP formulas and the initial draft of this PR. See
 [ACTIVE_WORK](../ACTIVE_WORK.md) for verification and release status. Separate
 from C12 release review; no production-data changes are required.
@@ -8,16 +10,16 @@ from C12 release review; no production-data changes are required.
 ## Full encounter pool
 
 ```
-question coefficient = idealized four-player party average raw damage per question / 2
+question coefficient = idealized four-player party average raw damage per question
 full HP pool = floor(sum(player weights) + question count * question coefficient)
 ```
 
-Tier selects the existing reference Warrior/Priest/Wizard/Scout party's stats,
+The [effective encounter tier](adaptive-encounter-tier.md) selects the existing reference Warrior/Priest/Wizard/Scout party's stats,
 equipment and abilities. Do not multiply the resulting pool by tier again.
 The bounded reference rotation runs over the actual quiz length, accounting for
 finite MP and ramping abilities. Its average output can therefore vary with quiz
 length. This is raw potential damage before enemy DEF/MDF. Sum the reference
-rotation damage and divide by two directly to avoid floating-point round trips.
+rotation damage directly to avoid floating-point round trips.
 The old 1.1 margin and player-count multiplier no longer apply to HP.
 
 | Jobs | Player weight |
@@ -72,10 +74,10 @@ No tier defaults to tier 1. Their existing no-late-rescaling behavior remains.
 ### Reported encounter regression
 
 At tier 1 and 30 questions the reference party estimates 651 raw damage:
-60 Warrior + 0 Priest + 140 Wizard + 451 Scout. The coefficient is 10.85.
-With 20 full-DPS players, the pool is `floor(20 + 30 * 10.85) = 345`.
-Swarm/trash receives `floor(345 * 0.10) = 34` HP. Twenty-five swarmers therefore
-receive **1 HP each**, whether in one wave or five waves of five. Support-player
+60 Warrior + 0 Priest + 140 Wizard + 451 Scout. The coefficient is 21.7.
+With 20 full-DPS players, the pool is `floor(20 + 30 * 21.7) = 671`.
+Swarm/trash receives `floor(671 * 0.10) = 67` HP. Twenty-five swarmers therefore
+receive **2 HP each**, whether in one wave or five waves of five. Support-player
 discounts reduce the pool further, subject to the same minimum.
 
 The deployed old formula would produce `651 * (20 / 4) * 1.1 = 3580.5` HP.
@@ -101,7 +103,9 @@ adds no HP. Reconnecting does not refill HP/MP or count a participant twice.
 Population scaling still counts actual attendance, including Priests, and enemy
 counts lock at Start Fight.
 
-Existing active rooms without `encounterHpPool` retain their saved fractional
+Existing active rooms without `encounterTier` retain the preceding half-reference
+coefficient for late-entry HP updates; new rooms lock their effective tier and use
+full reference output. Rooms without `encounterHpPool` retain their saved fractional
 HP rule, old allocation and historical reference calculations until completion.
 Recovery normalizes only new-rule rooms and preserves spent resources. No room
 reset, database migration or live-data rewrite is required.

@@ -137,6 +137,9 @@ export interface CombatSnapshot {
   /** Server-only durable reporting outbox, removed after confirmed projection. */
   pendingAttempts?: import("./attempts").QuestionAttempt[];
   encounterRules?: 2;
+  /** Effective tier locked at Start Fight; also marks full-reference HP scaling.
+   * Absent in older active rooms, which retain their original tier/coefficient. */
+  encounterTier?: number;
   autoAdvanceWaves?: boolean;
   activeWave?: number;
   encounterAttendance?: number;

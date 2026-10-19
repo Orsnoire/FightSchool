@@ -73,7 +73,7 @@ export const CombatBoard = memo(function CombatBoard({ state: sourceState, selfI
     <div className="combat-effects-layer" aria-hidden="true">{active.map(cue=><BattleEffect key={cue.event.id} cue={cue} board={board} onComplete={completeCue}/>)}</div>
     <div className="battle-scene-label"><span>THE PARTY</span><span>{state.currentPhase === "waiting" ? "GATHER YOUR PARTY" : `ROUND ${state.round}`}</span></div>
     <section className="battle-enemy-summary" aria-label="Enemy overview">
-      <h2 className="battle-enemy-heading">{state.encounterRules === 2 && state.enemyDisplayMode === "consecutive" && <strong>Wave {state.activeWave} · </strong>}Enemies · {shownEnemies.length}</h2>
+      <h2 className="battle-enemy-heading">{state.encounterRules === 2 && state.enemyDisplayMode === "consecutive" && <strong>Wave {state.activeWave} · </strong>}Enemies · {shownEnemies.length}{state.encounterTier && <span className="battle-tier"> · Tier {state.encounterTier}{waiting ? " (estimate)" : ""}</span>}</h2>
       <ul className="battle-enemy-list" aria-label="Enemy list" tabIndex={0}>
         {shownEnemies.map(e => <li key={e.id} data-enemy-list-id={e.id}>
           <span className="battle-enemy-name">{e.name}</span>

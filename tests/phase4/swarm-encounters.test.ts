@@ -67,8 +67,8 @@ test("HP uses additive role counts independent of gear while pressure retains th
   const party = referenceParty(1);
   const four = encounterBudget(party, 1, 10),
     eight = encounterBudget([...party, ...party], 1, 10);
-  assert.equal(four.hp, 87);
-  assert.equal(eight.hp, 90, "doubling players must not double the question contribution");
+  assert.equal(four.hp, 173);
+  assert.equal(eight.hp, 175, "doubling players must not double the question contribution");
   assert.equal(eight.rawPressure, four.rawPressure * 2);
   const enhanced = structuredClone(party);
   enhanced.forEach((p) => (p.stats.str += 100));
@@ -76,7 +76,7 @@ test("HP uses additive role counts independent of gear while pressure retains th
   assert.ok(
     performance(enhanced[0], 10).damage > performance(party[0], 10).damage,
   );
-  assert.equal(encounterBudget([enhanced[0]], 1, 10).hp, 85);
+  assert.equal(encounterBudget([enhanced[0]], 1, 10).hp, 171);
   const s = scaleEncounter(room(), quiz);
   assert.equal(s.encounterXpFraction, 0.1);
   s.currentPhase = "question";
@@ -231,7 +231,7 @@ test("late entry grows remaining budgets without resurrecting defeated enemies",
   const next = advancePhase(s, quiz, 1000);
   assert.equal(next.encounterAttendance, 5);
   assert.equal(next.enemies[0].health, 0);
-  assert.equal(next.encounterHpPool! - oldPool, 1);
+  assert.equal(next.encounterHpPool! - oldPool, 0, "a 0.33 tank contribution does not cross the next integer here");
   assert.equal(next.enemies[1].maxHealth, 1);
   assert.ok(
     next.enemies[1].health === 1,

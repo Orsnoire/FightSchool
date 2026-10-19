@@ -98,7 +98,7 @@ Guild progression is intended to support long-term classroom engagement across a
 
 The [October 19 additive, role-weighted HP decision](combat/role-weighted-hp.md)
 supersedes earlier encounter HP formulas. HP is the floor of weighted players
-plus question count times half the tier-appropriate idealized four-player party's
+plus question count times the tier-appropriate idealized four-player party's
 average raw output per question. Tier is already represented by that output.
 All waves share one allocation per role: **swarm/trash 10%, normal 15%, leader
 25%, boss 50%**. Missing-role shares and rounding remainders stay unused; the
@@ -112,6 +112,13 @@ plus docs). [Deployment 39313909643](https://github.com/Orsnoire/FightSchool/act
 passed both hostname smoke checks on October 19. [Canonical live acceptance
 39315198519](https://github.com/Orsnoire/FightSchool/actions/runs/39315198519) passed
 with corrected tests at `cd5bc74`; the release is deployed and accepted.
+
+The later [PR #78 follow-up](combat/adaptive-encounter-tier.md) removes the `/2`
+coefficient, multiplies starting Swarm-enabled counts by tier, and raises the
+effective tier at average combat job levels 2/6/10 (authored tier is the minimum).
+Tier and counts lock at Start Fight. It also moves individual enemy text and the
+wave heading to the top of the battlefield. This follow-up is not yet deployed;
+its branch checkpoint controls verification. Existing active rooms retain their rules.
 
 The owner also requested future AoE coverage on October 19: every DPS by job
 level 4 and every tank by job level 8, by changing an existing ability's

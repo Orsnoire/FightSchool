@@ -36,7 +36,7 @@ test("every job has the requested HP contribution, independent of its attacks or
   for (const job of ALL_CHARACTER_CLASSES) {
     assert.equal(encounterHpWeight(job), expectedWeights[job], job);
     const players = Object.values(waiting(["wizard", "scout", "ranger", job]).players);
-    const expected = Math.floor(3 + expectedWeights[job] + 171 / 2);
+    const expected = Math.floor(3 + expectedWeights[job] + 171);
     assert.equal(encounterBudget(players, 1, 10).hp, expected);
     players[3].availableAbilities = ["fireball", "attack"];
     players[3].stats.mat += 100;
@@ -44,7 +44,7 @@ test("every job has the requested HP contribution, independent of its attacks or
   }
 });
 
-test("HP adds weighted players to half reference output, with tier included exactly once", () => {
+test("HP adds weighted players to full reference output, with tier included exactly once", () => {
   const compositions: CharacterClass[][] = [
     ["priest"], ["warrior"], ["wizard", "priest"], ["priest", "priest", "priest"],
     ["wizard", "scout", "ranger", "warlock", "warrior", "paladin", "priest"],
@@ -54,7 +54,7 @@ test("HP adds weighted players to half reference output, with tier included exac
     const f = template(tier, questions);
     const s = waiting(jobs, f);
     const weight = Math.round(jobs.reduce((n, job) => n + expectedWeights[job], 0) * 100) / 100;
-    const expected = Math.floor(weight + output[tier][questions] / 2);
+    const expected = Math.floor(weight + output[tier][questions]);
     assert.equal(referenceOutput(tier, questions), output[tier][questions] / questions);
     assert.equal(encounterBudget(Object.values(s.players), tier, questions).hp, expected);
     const scaled = scaleEncounter(s, f);
@@ -71,10 +71,10 @@ test("question contribution does not multiply attendance; a DPS adds one HP befo
   for (const tier of [1, 4]) for (const count of [1, 2, 3, 30]) {
     const players = Object.values(waiting(Array.from({ length: count }, () => "wizard")).players);
     const base = encounterBudget(players, tier, 10).hp;
-    assert.equal(encounterBudget(players, tier, 11).hp - base, Math.floor(output[tier][11] / 2) - Math.floor(output[tier][10] / 2));
+    assert.equal(encounterBudget(players, tier, 11).hp - base, Math.floor(output[tier][11]) - Math.floor(output[tier][10]));
     for (const job of ALL_CHARACTER_CLASSES) {
       const extra = Object.values(waiting([job]).players)[0];
-      assert.equal(encounterBudget([...players, extra], tier, 10).hp, Math.floor(count + expectedWeights[job] + output[tier][10] / 2));
+      assert.equal(encounterBudget([...players, extra], tier, 10).hp, Math.floor(count + expectedWeights[job] + output[tier][10]));
     }
   }
 });
@@ -83,33 +83,33 @@ test("every role shares one budget across all waves, leaves missing roles unused
   const f = template(2);
   f.enemies = f.enemies.flatMap(e => Array.from({ length: 5 }, (_, i) => ({ ...e, id: `${e.id}-${i}`, wave: i + 1 })));
   const s = scaleEncounter(waiting(["wizard", "scout", "ranger", "warlock", "warrior", "paladin", "priest"], f), f);
-  assert.equal(s.encounterHpPool, 279);
+  assert.equal(s.encounterHpPool, 554);
   for (const [role, share] of Object.entries({ boss: 0.5, leader: 0.25, normal: 0.15, trash: 0.1 })) {
     const enemies = s.enemies.filter(e => e.role === role);
     assert.equal(enemies.length, 10);
-    for (const e of enemies) assert.equal(e.maxHealth, Math.floor(279 * share / 10));
-    assert.ok(enemies.reduce((n, e) => n + e.maxHealth, 0) <= Math.floor(279 * share));
+    for (const e of enemies) assert.equal(e.maxHealth, Math.floor(554 * share / 10));
+    assert.ok(enemies.reduce((n, e) => n + e.maxHealth, 0) <= Math.floor(554 * share));
   }
-  assert.ok(s.enemies.reduce((n, e) => n + e.maxHealth, 0) <= 279);
+  assert.ok(s.enemies.reduce((n, e) => n + e.maxHealth, 0) <= 554);
   const normals = { ...f, enemies: f.enemies.filter(e => e.role === "normal") };
   const onlyNormal = scaleEncounter(waiting(["wizard"], normals), normals);
-  assert.equal(onlyNormal.enemies.reduce((n, e) => n + e.maxHealth, 0), 40);
+  assert.equal(onlyNormal.enemies.reduce((n, e) => n + e.maxHealth, 0), 80);
 });
 
-test("20 players and 30 questions give 25 swarmers 1 HP each, independent of waves and without goblin bonuses", () => {
+test("20 players and 30 questions give 25 swarmers 2 HP each, independent of waves and without goblin bonuses", () => {
   const jobs = Array.from({ length: 20 }, () => "wizard" as const);
   for (const waves of [1, 5]) {
     const f = template(1, 30);
     f.enemies = Array.from({ length: waves }, (_, i) => ({ ...f.enemies[0], id: `swarm${i}`, enemyType: "goblin", species: "goblin", role: "trash", quantity: 25 / waves, wave: i + 1 }));
     const s = startQuestion(scaleEncounter(waiting(jobs, f), f));
-    assert.equal(s.encounterHpPool, 345);
+    assert.equal(s.encounterHpPool, 671);
     assert.equal(s.enemies.length, 25);
-    assert.ok(s.enemies.every(e => e.health === 1 && e.maxHealth === 1));
+    assert.ok(s.enemies.every(e => e.health === 2 && e.maxHealth === 2));
   }
   const tiny = template(1, 1);
   tiny.enemies = [{ ...tiny.enemies[0], role: "trash", quantity: 60 }];
   const s = startQuestion(scaleEncounter(waiting(["priest"], tiny), tiny));
-  assert.equal(s.encounterHpPool, 7);
+  assert.equal(s.encounterHpPool, 15);
   assert.equal(s.enemies.reduce((sum, e) => sum + e.maxHealth, 0), 60, "explicit 1 HP floor is the budget exception");
 });
 
@@ -138,7 +138,7 @@ test("late jobs add their weight once, ceil rescaled current HP, preserve deaths
     s = addStudent(s, student(job, "late"));
     s.currentPhase = "enemy_ai";
     s = advancePhase(JSON.parse(JSON.stringify(s)), f, 5000);
-    assert.equal(s.encounterHpPool, Math.floor(277 + expectedWeights[job]));
+    assert.equal(s.encounterHpPool, Math.floor(552 + expectedWeights[job]));
     assert.equal(s.encounterAttendance, 3);
     assert.equal(s.enemies[0].health, 0);
     assert.equal(s.enemies[1].health, Math.ceil(before.enemies[1].health / before.enemies[1].maxHealth * s.enemies[1].maxHealth));
@@ -161,7 +161,7 @@ test("legacy definitions use the same reference pool and floor proportional diff
       enemies: [{ ...fight.enemies[0], difficultyMultiplier: 1 }, { ...fight.enemies[0], id: "e2", difficultyMultiplier: 3 }],
     };
     const s = scaleEncounter(waiting(["wizard", "warrior", "paladin", "priest"], f), f);
-    assert.equal(s.encounterHpPool, Math.floor(1.58 + output[tier || 1][10] / 2));
+    assert.equal(s.encounterHpPool, Math.floor(1.58 + output[tier || 1][10]));
     assert.equal(s.enemies[0].maxHealth, Math.floor(s.encounterHpPool! / 4));
     assert.equal(s.enemies[1].maxHealth, Math.floor(s.encounterHpPool! * 3 / 4));
   }
