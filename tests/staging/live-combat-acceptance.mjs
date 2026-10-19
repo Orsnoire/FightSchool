@@ -264,6 +264,11 @@ try {
   host.send("start_fight");
   const opened = await player.state(1, "question");
   assert.ok(!JSON.stringify(opened).includes("correctAnswer"));
+  const startingWizard = opened.state.players[studentId];
+  assert.equal(startingWizard.mp, (startingWizard.stats.int + startingWizard.stats.mnd) * 3,
+    "Wizard starts with full formula-based MP");
+  assert.ok(opened.state.enemies.every(e => Number.isInteger(e.health) && Number.isInteger(e.maxHealth)),
+    "New encounters start with integer current and maximum HP");
   await new Promise((r) => setTimeout(r, 3100));
   const duplicateId = player.send("answer", {
     round: 1,
@@ -322,7 +327,7 @@ try {
   );
   for (let round = 2; round <= 10; round++) {
     const before = await restored.state(round, "question");
-    const ability = before.state.players[studentId].mp > 0 ? "fireball" : "attack";
+    const ability = before.state.players[studentId].mp >= 2 ? "fireball" : "attack";
     await new Promise((r) => setTimeout(r, 3100));
     const answer = restored.send("answer", {
       round,
@@ -346,8 +351,8 @@ try {
     await restored.state(round, "abilities");
     restored.send("ready", { round });
     const resolved = await restored.state(round, "question_resolution");
-    assert.equal(resolved.state.players[studentId].mp, before.state.players[studentId].mp - (ability === "fireball" ? 1 : 0),
-      "Fireball spends exactly 1 MP; basic attacks remain available after MP runs out");
+    assert.equal(resolved.state.players[studentId].mp, before.state.players[studentId].mp - (ability === "fireball" ? 2 : 0),
+      "Fireball spends exactly 2 MP; basic attacks remain available after MP runs out");
     await completePlayback(resolved.state, [host, restored]);
     // A defeated enemy produces an empty batch, which advances directly to victory.
     if (resolved.state.enemies.every(enemy => enemy.health <= 0)) break;
