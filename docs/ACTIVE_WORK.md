@@ -1,8 +1,9 @@
-# Battlefield enemy labels — implementation claimed October 19, 2026
+# Battlefield enemy labels and tier-scaled swarms — implementation claimed October 19, 2026
 
 - Owner requested enemy text in a list at the top of the battlefield, with the wave heading at the very top, rather than labels overlapping enemy health bars.
 - Active branch: `fix/battlefield-enemy-labels`, [draft PR #78](https://github.com/Orsnoire/FightSchool/pull/78). Separate from C12 / PR #75 and future AoE/editor-estimate backlog items. Base main: `6b5c9db4d7193b563913d160067e6b1e1112b51c`.
-- Scope: shared teacher/student battlefield presentation, enemy list and wave placement; preserve combat rules, health bars, targeting/accessibility, playback and host elimination controls.
+- Owner added starting swarm count multiplied by encounter tier: `base * tier + extraPerFourPlayers * max(0, floor(players / 4) - 1)`. Apply to Swarm-enabled groups; fixed groups keep their counts. Preserve the 60/group and 120/fight limits, shared role HP budgets and 1 HP minimum. Preview and Start Fight must agree; active counts stay locked.
+- Scope: shared teacher/student battlefield presentation, enemy list and wave placement, tier-scaled starting swarm counts and matching editor examples; preserve health bars, targeting/accessibility, playback and host elimination controls.
 - Status: claim only; no implementation or validation yet. Exact next action: implement the layout, verify TypeScript/build and relevant Chromium UI coverage at desktop/phone sizes, then publish a reviewable PR checkpoint.
 - The accepted balance release below remains deployed. This follow-up is not deployed.
 
