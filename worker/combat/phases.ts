@@ -130,7 +130,7 @@ export function advancePhase(
           const amount = baseDamage(p);
           activeEnemies(s)
             .filter((e) => e.health > 0 && e.id !== a.targetId)
-            .forEach((e) => hit(s, p, e.id, amount));
+            .forEach((e) => hit(s, p, e.id, amount, false, "magic"));
           heal(s, p, p.studentId, p.totals.damageDealt - before);
         }
       } else {
@@ -160,7 +160,8 @@ export function advancePhase(
     for (const e of activeEnemies(s))
       for (const effect of e.effects)
         if (effect.damage > 0 && s.players[effect.ownerId])
-          hit(s, s.players[effect.ownerId], e.id, effect.damage, true);
+          hit(s, s.players[effect.ownerId], e.id, effect.damage, true,
+            effect.type === "hex" ? "magic" : "physical");
     // Transfer once per blocker/target after this round's damage has generated threat.
     // Self-blocks never manufacture threat; Block + Shield Bash cannot transfer twice.
     for (const p of ordered.filter((p) => !p.isDead)) {

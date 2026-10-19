@@ -23,8 +23,9 @@ Confirmed requirements:
   Tier selects reference stats, equipment and abilities; applying another numeric
   tier multiplier would scale the reference output a second time. This corrects
   the earlier assistant explanation, which treated the scaling sum as raw HP.
-- The entire encounter has one HP cap. All individuals in a swarm wave share
-  that wave's 25% allocation; population must not multiply the wave's allocation.
+- The entire encounter has one HP cap. All swarmers across ALL waves share
+  ONE 25% allocation for the whole fight (final owner clarification). Neither
+  wave count nor population multiplies that allocation.
   Remove any species HP bonus that would exceed the encounter cap.
 - Maximum/total HP and current HP must be integers for players and enemies.
   Floor calculated maximum HP. Ceil calculated current HP, then clamp to
@@ -53,7 +54,13 @@ attack is verified as `MAT + INT` (3 with starter gear before defense/critical
 hits), consistent with the class specification; its formula is unchanged.
 The current reference simulator now consumes Fireblast's all-MP cost. A separate
 historical reference path preserves already-running encounters' old HP budgets.
-MDF and the corrected HP allocator are still pending at this checkpoint.
+The corrected HP allocator remains pending at this checkpoint.
+
+MDF is implemented locally: every new monster receives `2 * (tier - 1)`
+(0/2/4/6). Magical hits subtract MDF only, physical hits use DEF and its existing
+buffs. Existing active rooms with no MDF retain their old defense behavior.
+Basic/spell/cross-class/AoE/DOT paths, lobby/start/public projection and JSON
+recovery are covered. All 315 tests, TypeScript and both builds pass locally.
 
 Validation: 311 tests, TypeScript and both production builds pass locally.
 The historical C10 file is unchanged: 79 unaffected traces still match its
@@ -82,13 +89,10 @@ Read-only audit of the currently deployed calculation:
   cost. This inflates tier-4 output; correct the new HP coefficient's simulation
   before using it. Preserve or explicitly version historical active-room rules.
 
-Product decisions still required before replacing the allocator:
-
-1. More than four 25% swarm waves, or swarms plus other roles requesting over
-   100%, cannot satisfy both exact per-wave shares and the total cap. Decide
-   between rejecting such configurations or reducing their allocations to fit.
-   Define integer remainder distribution and the case where a wave's allocation
-   cannot provide at least 1 HP per authored individual.
+The owner resolved the earlier wave-allocation conflict: all swarms collectively
+share 25% of the whole fight, not 25% per wave. Integer allocation must never
+inflate that share. Configurations that cannot give every authored individual
+positive integer HP need an explicit start-time validation error.
 
 The proposed coefficient uses the existing bounded rotation over the quiz length
 to account for resource depletion and ramping abilities, divides its damage by

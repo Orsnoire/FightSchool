@@ -1,44 +1,13 @@
-# Owner-requested additive, role-weighted fight HP — follow-up corrections pending
+# Owner-requested fight balance — implementation in progress
 
-- October 19 follow-up: the owner requires a hard encounter HP cap, one shared
-  25% allocation per swarm wave, integer maximum/current HP (floor/ceil), and the
-  idealized reference-party output coefficient on the question term only.
-  The previous raw-HP formula below is superseded; do not merge/deploy it.
-- Further owner direction: target one or at most two regular attacks per swarmer;
-  audit Wizard basic attack; change Fireball (including cross-class) to 2 MP;
-  restore full starting Wizard MP using the existing `(INT + MND) * 3` formula.
-  The apparent 3-MP cap is a half-starting-MP rule, not a maximum-MP cap.
-- Wizard checkpoint implemented: full starting MP and 2-MP Fireball throughout
-  engine/lobby/reference/UI; basic MAT+INT damage audited; Fireblast simulation
-  now spends all MP. 311 tests, TypeScript and client/Worker builds pass locally.
-  Original C10 hashes remain unchanged for 79 unaffected scenarios; Fireball's
-  intentional resource change has direct tests and JSON replay coverage.
-- Latest owner correction: monster MDF is `2 * (tier - 1)` (0/2/4/6), separate
-  from physical DEF. Implement this next; corrected HP allocation remains pending.
-- Audit and exact open math decisions are recorded in
-  [the updated specification](combat/role-weighted-hp.md#october-19-follow-up--required-corrections-not-yet-implemented).
-  The old formula reproduces 35.805 HP per enemy for 25 leader-role enemies with
-  20 players/30 questions/tier 1. The actual reported room was not inspected.
-  A separate goblin bonus can exceed the cap; the tier-4 reference simulator also
-  fails to consume Fireblast's all-MP cost. No runtime changes for these follow-ups
-  have been made yet.
-- First-draft published runtime `79b45ea58781ddbc4a259e248b321d696fc86965` passes
-  [CI 39285668039](https://github.com/Orsnoire/FightSchool/actions/runs/39285668039)
-  and [all four Chromium jobs 39285667936](https://github.com/Orsnoire/FightSchool/actions/runs/39285667936).
-  These results verify the earlier draft only, not the pending corrected rules.
-- Exact next action: resolve over-budget/low-budget wave
-  allocation behavior with the owner, then implement the corrected formula,
-  capped integer allocation and HP mutation rules with focused regressions. Keep
-  PR #77 draft; no merge/deployment authorization has been given for this patch.
-
-## First-draft checkpoint (superseded scope; retained verification evidence)
-
-- October 19, 2026: the owner requested healer HP scaling at 0.25 DPS, tanks at 0.33, Blood Knight/Dark Knight at 1, Paladin at 0.25 and Priest at 0.
-- Branch: `balance/role-weighted-fight-hp`, based on current main `7cd6fab97c5306514a04d6e591ba3d5495dd0d8e`. This is a separately authorized balance change; C12 continues in its existing branch/PR below.
-- Scope: shared job weights, starting/preview and late-entry enemy HP, deterministic regressions and current balance documentation. The owner's follow-ups define the exact full pool as `tier * (weighted players + 0.5 * questions)`, then allocate it among enemies. Retain enemy pressure, swarm counts, rewards and existing active-room HP.
-- Status: implemented in [PR #77](https://github.com/Orsnoire/FightSchool/pull/77), following claim checkpoint `18ea7b901a656a9ec02476fec4f9dfd7ef445757`; not merged or deployed. [Specification](combat/role-weighted-hp.md). The existing goblin allocation bonus and absent-role allocation rules remain.
-- Local verification: 308 tests pass, TypeScript passes, client and Worker production builds pass on Node 24.19.0. After sharing the start-time entry estimates, all 19 focused HP/preview/replay/swarm tests and TypeScript/Worker build pass again. The unchanged C10 hashes still match 80 historical scenarios; new balance traces survive JSON recovery at every step. No database migration or provider operation.
-- Exact next action: review the pushed head and its CI/browser checks on PR #77, then obtain the owner's merge/deploy direction. The PR carries the exact published SHA and check results. C12 remains independent; do not deploy its unmerged changes with this balance patch.
+- Resume branch `balance/role-weighted-fight-hp`, [draft PR #77](https://github.com/Orsnoire/FightSchool/pull/77). This is separate from C12 below; not merged or deployed.
+- Final owner clarification: **all swarmers across the entire fight share one 25% HP allocation**, regardless of wave count. This supersedes the earlier per-wave interpretation and resolves the over-budget-wave conflict.
+- Required HP formula: weighted players plus question count times half the idealized tier-appropriate four-player party's average raw output per question. Tier selects reference stats/gear/abilities; do not multiply by tier again. Player weights: tanks .33, healers .25, Blood/Dark Knight 1, Paladin .25, Priest 0. Floor total/max HP; ceil current HP and clamp to maximum. Target one or at most two regular attacks per swarmer.
+- Wizard checkpoint `f0b58d05a029601c9aa473e74de5bb933ab29d85` is published: Fireball costs 2 MP, Wizard starts with full `(INT + MND) * 3` MP, previews/cross-class descriptions agree. Basic attack is verified as MAT + INT, unchanged (starter damage 3). The reference simulator consumes all MP for Fireblast. It passed 311 local tests, TypeScript/builds, [CI 39291764069](https://github.com/Orsnoire/FightSchool/actions/runs/39291764069) and [four-job Chromium 39291763740](https://github.com/Orsnoire/FightSchool/actions/runs/39291763740).
+- MDF implementation complete locally: monster MDF = `2 * (tier - 1)` (0/2/4/6). Magical hits use MDF only; physical hits retain DEF. Covers basic/spell/cross-class/AoE/DOT paths, lobby/start, public projection and JSON recovery. Existing active rooms without MDF retain their saved mitigation.
+- MDF validation: **315 tests**, TypeScript and both production builds pass locally. Original C10 baseline is unchanged; 79 unaffected traces retain their hashes. The authorized Fireball cost change has direct tests and all new traces match across JSON recovery.
+- Remaining: implement the corrected HP formula, shared whole-fight swarm budget, strict integer HP mutations and allocation/low-budget checks; update editor help and tests. The initial draft's raw-HP formula and old goblin bonus/fractional allocator must not be released. No ambiguity remains about the 25% swarm share's scope.
+- Exact next action: publish the MDF checkpoint and continue HP allocation. Keep PR draft through full verification. No merge/deployment authorization for this patch and no production data operations.
 
 # C12 active — Phase 6 release review
 

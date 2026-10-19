@@ -19,7 +19,9 @@ export function combatReplayTraces(recover = false, historicalScaling?: Record<s
       steps.push({ phase: s.currentPhase, seed: s.seed, persisted: digest(s), public: digest(publicSnapshot(s, fight)) });
       return recover ? json(s) : s;
     };
-    let s = engine.startQuestion(engine.addStudent(engine.initialCombatState('C10-abilities', fight, 1000), student(job), { levels }), 2000);
+    const initial = engine.initialCombatState('C10-abilities', fight, 1000);
+    if (historicalScaling) for (const e of initial.enemies) delete e.magicDefense;
+    let s = engine.startQuestion(engine.addStudent(initial, student(job), { levels }), 2000);
     const p = s.players[student().id];
     p.mp = p.maxMp = 100; p.comboPoints = p.maxComboPoints = 50;
     p.shieldPotions = 2; p.healingPotions = 4; p.health = 5;
@@ -46,6 +48,7 @@ export function combatReplayTraces(recover = false, historicalScaling?: Record<s
       // already-started rooms, whose budgets must survive the new release.
       Object.assign(s, structuredClone(historicalScaling[String(count)]));
       delete s.encounterHpPool;
+      for (const e of s.enemies) delete e.magicDefense;
       // Recreate the saved MP of participants who already started before the
       // full-MP change. Reconnection never refills those participants.
       for (const p of Object.values(s.players))

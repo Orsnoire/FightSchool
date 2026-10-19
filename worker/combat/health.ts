@@ -3,6 +3,7 @@ import { type CombatSnapshot, type CombatPlayer } from "../../shared/combat/mode
 import { event } from "./state-events";
 import { roundHP, activeEnemies } from "../../shared/combat/encounters";
 import { effectiveDefense, isHypnosis, releaseInvalidStatuses } from "../../shared/combat/status-effects";
+import type { DamageType } from "../../shared/combat/damage-types";
 
 export const integer = (n: number) => Math.max(0, Math.floor(n));
 
@@ -133,6 +134,7 @@ export function hit(
   id: string,
   raw: number,
   bonus = false,
+  damageType: DamageType = "physical",
 ) {
   const e = s.enemies.find((e) => e.id === id);
   if (!e || e.health <= 0 || (s.encounterRules===2&&!activeEnemies(s).some(x=>x.id===id))) return 0;
@@ -145,7 +147,11 @@ export function hit(
   let amount = integer(raw);
   if (e.effects.some((x) => ["mark", "prey"].includes(x.type))) amount *= 2;
   if (p.buffs.doubleDamage) amount *= 2;
-  const defense = (e.defense || 0) * (1 + 0.5 * protection.filter(b => b.type === "defense").length);
+  // Older running rooms have no MDF field and retain their saved defense rule.
+  // Physical defense buffs do not increase MDF; never subtract both defenses.
+  const defense = damageType === "magic" && e.magicDefense !== undefined
+    ? e.magicDefense
+    : (e.defense || 0) * (1 + 0.5 * protection.filter(b => b.type === "defense").length);
   amount = Math.max(0, Math.ceil(amount - defense));
   const actual = Math.min(e.health, amount);
   e.health = roundHP(e.health - actual);

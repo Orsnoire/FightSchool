@@ -6,6 +6,7 @@ import {
 } from "../../shared/combat/encounters";
 import { inferEnemyType, enemyAISchema, resolveEnemyType } from "../../shared/combat/enemy-ai";
 import { CombatRuleError } from "../../shared/combat/errors";
+import { tierMagicDefense } from "../../shared/combat/damage-types";
 
 function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
   return expandEnemies(fight.enemies, fight.enemyDisplayMode === 'consecutive', players).map((e) => ({
@@ -15,6 +16,7 @@ function initialEnemies(fight: FightRecord, players = 0): CombatEnemy[] {
       aiState: { readyRounds: {}, buffs: [] },
       attackPower: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 1,
       defense: (e.enemyType || inferEnemyType(e.image)) === "samhain" ? fight.encounterTier || 1 : 0,
+      magicDefense: tierMagicDefense(fight.encounterTier),
       health: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
       maxHealth: Math.max(1, Math.ceil(10 * e.difficultyMultiplier)),
       effects: [],
@@ -65,7 +67,9 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
     const entryPerformance = Object.fromEntries(players.map(p => [p.studentId, encounterEntry(p, questions)]));
     const budget = encounterBudgetFromEntries(Object.values(entryPerformance), fight.encounterTier || 1, questions, true);
     const individuals = fight.enemies.some(e => e.swarm) ? initialEnemies(fight, players.length) : state.enemies;
-    const enemies = allocateHP(individuals, budget.hp);
+    const enemies = allocateHP(individuals, budget.hp).map(e => ({
+      ...e, magicDefense: tierMagicDefense(fight.encounterTier),
+    }));
     const present = new Set(enemies.map(e => e.role || "normal"));
     return {
       ...state, enemies, entryPerformance, autoAdvanceWaves: solo,
@@ -85,7 +89,7 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   const weight = state.enemies.reduce((sum, e) => sum + e.difficultyMultiplier, 0) || 1;
   const enemies = state.enemies.map((e) => {
     const health = Math.max(0.001, roundHP(budget * e.difficultyMultiplier / weight));
-    return { ...e, health, maxHealth: health };
+    return { ...e, health, maxHealth: health, magicDefense: tierMagicDefense(fight.encounterTier) };
   });
   return { ...state, soloEnemyDamageCap, enemies, encounterHpPool: budget };
 }

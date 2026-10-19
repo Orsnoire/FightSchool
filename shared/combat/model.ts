@@ -97,6 +97,8 @@ export interface CombatEnemy {
   aiState?: EnemyAIState;
   attackPower?: number;
   defense?: number;
+  /** Absent in historical active rooms; present (including zero) in new fights. */
+  magicDefense?: number;
   role?: import("../encounter-tiers").EnemyRole;
   templateId?: string;
   quantity?: number;
