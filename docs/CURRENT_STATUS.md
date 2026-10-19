@@ -1,6 +1,6 @@
 # Current status
 
-**October 19 balance release update:** [PR #77](https://github.com/Orsnoire/FightSchool/pull/77) is merged at `c9f8280ec1ae34cc82171ca94982657ea23bbfe8`; 320 tests, TypeScript/builds, PR/main CI and four Chromium suites pass. Deployment is authorized but has not started: browser workflow controls are unavailable and the connector has no dispatch operation. The C11 live baseline below remains the last verified deployment. See [resume instructions](ACTIVE_WORK.md).
+**October 19 balance release update:** [PR #77](https://github.com/Orsnoire/FightSchool/pull/77) is merged at `c9f8280ec1ae34cc82171ca94982657ea23bbfe8` and **deployed** as `5bb24b00377e511d118bc3ee4c61eb0cdcab235f` (same runtime plus docs). [Deployment 39313909643](https://github.com/Orsnoire/FightSchool/actions/runs/39313909643) passed, including 320 tests, TypeScript/builds, R2, additive migrations and both hostname smoke checks. Immutable Worker: `aa86b4da-3c2f-497a-8f80-69c1f9412030`, published at 19:50:08 UTC. PR/main CI and four Chromium suites also pass. **Full live combat acceptance remains pending** and must use the corrected test in `72e6775` ([passing CI 39314403925](https://github.com/Orsnoire/FightSchool/actions/runs/39314403925)); this test-only correction needs no redeployment. See [resume instructions](ACTIVE_WORK.md).
 
 **CURRENT — GitHub rechecked October 18, 2026 (UTC).** Cleanup Phases 1–2 are complete; C05 is complete; Usability Patch 1 is complete, deployed and accepted; C06 is complete, merged, deployed and accepted in PR #69; C07 is complete, merged, deployed and accepted in PR #70; C08 is complete, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73; C11 is complete, merged, deployed and accepted in PR #74; C12 is next and unstarted.
 **C01, C02 and C03 are COMPLETE:** PRs [#53](https://github.com/Orsnoire/FightSchool/pull/53), [#56](https://github.com/Orsnoire/FightSchool/pull/56) and [#58](https://github.com/Orsnoire/FightSchool/pull/58) are merged and included in the live runtime. **HP preview, PR #59, is deployed and accepted. C04 / PRs #60 and #62 are merged, deployed and accepted. PR #61 is merged, deployed and accepted.**
@@ -18,9 +18,9 @@ C08 battlefield rendering is complete, merged, deployed and accepted. [Report an
 routes/MathLive, owner-only SQL fight summaries and focused live-session polling.
 [Measured login JS falls 80.11%](reviews/2026-10-17-c07-initial-loading.md).
 
-## Verified release baseline
+## Previous fully accepted release — C11
 
-The current deployed runtime is `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`, merged [PR #74](https://github.com/Orsnoire/FightSchool/pull/74), released October 18 (UTC).
+The preceding fully accepted runtime is `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`, merged [PR #74](https://github.com/Orsnoire/FightSchool/pull/74), released October 18 (UTC).
 Immutable Worker `86111493-688d-41c2-9462-b050044b3d10` was published at 19:59:21 UTC.
 Later documentation-only commits do not change the deployed runtime. All earlier releases remain included.
 

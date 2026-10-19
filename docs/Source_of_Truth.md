@@ -107,8 +107,10 @@ allowed to exceed a role's budget when necessary. Maximum HP floors; current HP
 ceils and clamps. Tank/healer discounts and named exceptions are in the decision.
 Wizard starts at full `(INT + MND) * 3` MP; Fireball costs 2 MP. Monster MDF is
 `2 * (tier - 1)` (0/2/4/6), used separately from physical DEF. PR #77 is merged
-at `c9f8280` with CI/browser checks passing. Deployment is authorized but has not
-started because workflow-dispatch controls are unavailable; see the checkpoint.
+at `c9f8280` with CI/browser checks passing and deployed as `5bb24b0` (same runtime
+plus docs). [Deployment 39313909643](https://github.com/Orsnoire/FightSchool/actions/runs/39313909643)
+passed both hostname smoke checks on October 19. Full live combat acceptance is
+pending with corrected acceptance tests from `72e6775`; see the checkpoint.
 
 The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
 record the latest explicit changes to XP stamina, Block targeting and threat,
