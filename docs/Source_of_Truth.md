@@ -113,7 +113,7 @@ passed both hostname smoke checks on October 19. [Canonical live acceptance
 39315198519](https://github.com/Orsnoire/FightSchool/actions/runs/39315198519) passed
 with corrected tests at `cd5bc74`; the release is deployed and accepted.
 
-The later [PR #78 follow-up](combat/adaptive-encounter-tier.md) removes the `/2`
+The later [PR #79 follow-up](combat/adaptive-encounter-tier.md) removes the `/2`
 coefficient, multiplies starting Swarm-enabled counts by tier, and raises the
 effective tier at average combat job levels 2/6/10 (authored tier is the minimum).
 Tier and counts lock at Start Fight. It also moves individual enemy text and the

@@ -1,6 +1,6 @@
 # Adaptive encounter tier and battlefield labels — October 19, 2026
 
-Owner-directed follow-up in [PR #78](https://github.com/Orsnoire/FightSchool/pull/78).
+Owner-directed follow-up in [PR #79](https://github.com/Orsnoire/FightSchool/pull/79).
 See [ACTIVE_WORK](../ACTIVE_WORK.md) for verification and release status. This is
 separate from C12, the future AoE rollout and the teacher editor HP-estimate backlog.
 

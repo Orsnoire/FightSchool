@@ -1,6 +1,6 @@
 import { EQUIPMENT_ITEMS } from "../../shared/schema.ts";
 import assert from 'node:assert/strict';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
 import { started, student } from '../phase4/fixtures.ts';
 import { verifyEnemyOverview } from './enemy-overview.mjs';
@@ -10,7 +10,8 @@ const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE});
 const id = student().id;
-const enemyImage = 'data:image/png;base64,' + (await readFile('attached_assets/generated_images/Goblin_swarm_RPG_enemy_68c45c1e.png')).toString('base64');
+// Use the production URL so swarm snapshots do not repeat megabytes of base64 per enemy.
+const enemyImage = '/enemies/goblin-v1.png';
 try {
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
     const page = await browser.newPage({ viewport, hasTouch: viewport.width < 600 });
