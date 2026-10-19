@@ -18,10 +18,17 @@ export async function verifyEnemyOverview(page, count, wave) {
   const list = overview.getByRole('list');
   assert.ok(await list.evaluate(el => el.scrollWidth <= el.clientWidth + 1), 'enemy names wrap without horizontal overflow');
   if (count >= 30) {
-    assert.ok(await list.evaluate(el => el.scrollHeight > el.clientHeight), 'large swarms scroll within the list');
+    assert.equal(await list.evaluate(el => getComputedStyle(el).overflowY), 'auto', 'enemy list supports internal scrolling');
+    if (page.viewportSize().width <= 1366) {
+      assert.ok(await list.evaluate(el => el.scrollHeight > el.clientHeight), 'large swarms scroll on phone and Chromebook screens');
+    }
     await list.focus();
     await page.keyboard.press('End');
     await list.locator('li').last().scrollIntoViewIfNeeded();
+    assert.ok(await list.evaluate(el => {
+      const box = el.getBoundingClientRect(), last = el.lastElementChild.getBoundingClientRect();
+      return last.top >= box.top - 1 && last.bottom <= box.bottom + 1;
+    }), 'last enemy is fully readable, whether the list fits or scrolls');
     await list.evaluate(el => { el.scrollTop = 0; });
   }
 }
