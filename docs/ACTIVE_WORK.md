@@ -1,4 +1,13 @@
-# C12 safety follow-up integrated — provider verification next
+# C12 Cloudflare rehearsal scaffold created — application undeployed
+
+- Owner authorized separate Cloudflare rehearsal resources/routing after connecting the provider API. Production inventory was read directly; the live staging-named Worker, canonical domain, R2 binding and CombatSession namespace were confirmed. The active Worker version remains C11 `86111493-688d-41c2-9462-b050044b3d10` at 100% traffic.
+- October 19, 2026 UTC: created a fresh UUID-named rehearsal Worker with only its own workers.dev address enabled, preview URLs disabled, no custom domains, zero code versions and no deployment. Created a distinct R2 bucket; provider reads confirm zero objects, disabled public r2.dev access and no custom domains. Live domain mapping and deployment were rechecked unchanged.
+- Exact resource IDs, creation receipts, account/subdomain mapping, ownership, review date and verification responses are retained outside git in `questacademy-c12-provider-inventory-2026-10-19.json`. Review date is October 26; it does not schedule or authorize automatic cleanup. Resume from that inventory and verify provider state before further operations; do not create duplicate resources.
+- Neon metadata shows only the existing production branch/database in the connected project. The live Worker's DATABASE_URL is opaque: its uploaded value and endpoint-to-branch use remain unverified. No rehearsal Neon branch, Worker secrets/bindings or rehearsal Durable Object namespaces exist yet.
+- Next operational step: establish a distinct empty Neon database/branch, fresh secrets and separate credential scope; then generate/review configuration for the pinned C12 source. Application deployment, migrations, disruptive drills and cleanup have not been performed or authorized by this Cloudflare setup. Full isolation and all remaining operational exit gates stay open. PR #75 remains draft, unmerged into main and undeployed.
+- This checkpoint changes documentation only. The implementation and its previously recorded 334-test/four-Chromium verification remain unchanged; future main merge still requires checks on the exact current head.
+
+## Previous checkpoint — safety follow-up integrated
 
 - Active branch: `cleanup/c12-release-review`; [PR #75](https://github.com/Orsnoire/FightSchool/pull/75) remains **draft, unmerged into main and undeployed**. C11 remains the recorded live runtime. Main's discovery pointer still identifies #75.
 - The owner authorized the next step: review and integrate the safety follow-up. [PR #76](https://github.com/Orsnoire/FightSchool/pull/76) is merged **only into the C12 branch**, at `6f15e6faf6d5189bc4f270bea7d7a02a38fd5227`, using expected head `be1bf5be8d18a5edef2970abc9928a0c15ba83be`. Both commits have tree `bf0cd9decea53dd27cc925f285400298a079ef48`; the integrated source exactly matches the reviewed source.

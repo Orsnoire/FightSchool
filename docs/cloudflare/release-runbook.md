@@ -53,8 +53,14 @@ records; do not invent a release identity.
 
 ## Isolated rehearsal inventory
 
-Provider provisioning and drills have **not** been run. Before a disruptive test,
-record an independent inventory outside git with these fields:
+**October 19 checkpoint:** owner-authorized Cloudflare scaffolding now exists:
+a fresh UUID-named Worker with only its workers.dev address configured, zero code
+versions/no deployment, and a distinct empty private R2 bucket. Creation receipts
+and provider verification are retained outside git; see [active work](../ACTIVE_WORK.md).
+Rehearsal Neon, fresh secrets and Durable Object bindings are not yet established.
+No application deployment, migration, drill or cleanup has run. This partial
+scaffold does not pass the isolation gate. Before a disruptive test, complete and
+independently verify the inventory outside git with these fields:
 
 | Field | Required value / proof |
 | --- | --- |
