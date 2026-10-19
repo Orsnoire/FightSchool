@@ -99,6 +99,10 @@ crafting. Shield potion behavior and its three-potion cap are preserved.
 
 ## Encounter HP and solo play
 
+The HP formula and whole-basic-attack HP rounding below are superseded for new
+sessions by the [October 19 additive HP decision](role-weighted-hp.md), tracked
+in PR #77. Existing active sessions and outgoing-damage caps remain compatible.
+
 The old classroom formula was `10 * difficulty * attendance`, unrelated to quiz
 length or player damage. At the start of a new encounter, the total HP budget is:
 
@@ -130,6 +134,13 @@ restarts cannot rescale a running encounter. Already-running rooms retain their
 HP. This release does not reset student data, job XP, or ongoing encounters.
 
 ## Validation and approved Wizard/Scout balance
+
+**October 19 correction (PR #77, not deployed):** Wizard starts at full
+`(INT + MND) * 3` MP and Fireball costs 2 MP, including cross-class use. This
+supersedes the half-MP/1-MP-Fireball rule below. The starter still has three
+Fireballs (6 MP / 2); the original ten-question damage comparison remains valid.
+Wizard basic attack is `MAT + INT`, unchanged. See the
+[current balance checkpoint](role-weighted-hp.md).
 
 Coverage includes Denver midnight/DST, TypeScript/SQL curve agreement, fractional
 XP, retries and concurrent room completions, job/mode sharing, 30-player query

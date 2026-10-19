@@ -87,7 +87,7 @@ export interface CombatPlayer {
   ultimatesUsed: string[];
   healingPotions: number;
   shieldPotions: number;
-  buffs: Record<string, { rounds: number; amount: number }>;
+  buffs: Record<string, { rounds: number; amount: number; hpAmount?: number }>;
   totals: CombatTotals;
 }
 export interface CombatEnemy {
@@ -97,6 +97,8 @@ export interface CombatEnemy {
   aiState?: EnemyAIState;
   attackPower?: number;
   defense?: number;
+  /** Absent in historical active rooms; present (including zero) in new fights. */
+  magicDefense?: number;
   role?: import("../encounter-tiers").EnemyRole;
   templateId?: string;
   quantity?: number;
@@ -138,7 +140,10 @@ export interface CombatSnapshot {
   autoAdvanceWaves?: boolean;
   activeWave?: number;
   encounterAttendance?: number;
-  entryPerformance?: Record<string,{damage:number;healing:number;health:number;mitigation:number}>;
+  /** Full additive HP pool, before enemy-role allocation; absent in older running rooms. */
+  encounterHpPool?: number;
+  /** Entry estimates are retained across departures; absent hpWeight means pre-role-scaling rules. */
+  entryPerformance?: Record<string,{damage:number;healing:number;health:number;mitigation:number;hpWeight?:number}>;
   referenceDamage?: number;
   enemyRoundBudget?: number;
   encounterXpFraction?: number;

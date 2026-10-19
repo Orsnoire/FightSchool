@@ -188,7 +188,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
     id: "wizard",
     armorExclusions: ARMOR_EXCLUSIONS.wizard,
     name: "Wizard",
-    description: "DPS - Powerful opening spells. Starts combat with half of maximum MP.",
+    description: "DPS - Powerful opening spells. Starts combat with full MP.",
     maxLevel: 15,
     unlockRequirements: null,
     levelRewards: {
@@ -196,7 +196,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "fireball",
           name: "Fireball",
-          description: "Deals INT*3 damage to current target. Active. Costs 1 MP.",
+          description: "Deals INT*3 damage to current target. Active. Costs 2 MP.",
           isCrossClass: false,
         }]
       },
@@ -217,7 +217,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "fireball_crossclass",
           name: "Fireball",
-          description: "Cross-class unlock. Deals INT*3 damage to current target. Costs 1 MP.",
+          description: "Cross-class unlock. Deals INT*3 damage to current target. Costs 2 MP.",
           isCrossClass: true,
         }]
       },

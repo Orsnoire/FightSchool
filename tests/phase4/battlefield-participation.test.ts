@@ -12,7 +12,7 @@ test("late entrants wait for the next question, never affect the current phase, 
   const beforeHP = structuredClone(current.enemies);
   const queued = addStudent(current, student("wizard", "late"));
   assert.equal(queued.players.late, undefined);
-  assert.equal(queued.pendingPlayers?.late.mp, 3);
+  assert.equal(queued.pendingPlayers?.late.mp, 6);
   assert.equal(queued.phaseDeadline, current.phaseDeadline);
   assert.throws(() => applyAnswer(queued, "late", "4", fight.questions[0]), /unavailable/);
   let s = applyAnswer(queued, id, "4", fight.questions[0]);

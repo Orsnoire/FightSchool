@@ -10,7 +10,7 @@ import { fight, student } from './fixtures.ts';
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 /** Frozen inputs, clocks and output hashes captured from pre-C10 main. No production data. */
-export function combatReplayTraces(recover = false) {
+export function combatReplayTraces(recover = false, historicalScaling?: Record<string, Partial<CombatSnapshot>>) {
   const traces: { scenario: string; steps: unknown[] }[] = [];
   const levels = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, 15]));
   for (const job of ALL_CHARACTER_CLASSES) for (const ability of availableAbilities(job, levels)) {
@@ -19,7 +19,9 @@ export function combatReplayTraces(recover = false) {
       steps.push({ phase: s.currentPhase, seed: s.seed, persisted: digest(s), public: digest(publicSnapshot(s, fight)) });
       return recover ? json(s) : s;
     };
-    let s = engine.startQuestion(engine.addStudent(engine.initialCombatState('C10-abilities', fight, 1000), student(job), { levels }), 2000);
+    const initial = engine.initialCombatState('C10-abilities', fight, 1000);
+    if (historicalScaling) for (const e of initial.enemies) delete e.magicDefense;
+    let s = engine.startQuestion(engine.addStudent(initial, student(job), { levels }), 2000);
     const p = s.players[student().id];
     p.mp = p.maxMp = 100; p.comboPoints = p.maxComboPoints = 50;
     p.shieldPotions = 2; p.healingPotions = 4; p.health = 5;
@@ -40,7 +42,19 @@ export function combatReplayTraces(recover = false) {
     };
     let s = engine.initialCombatState(seed, authored, 1000);
     for (let i = 0; i < count; i++) s = engine.addStudent(s, student(ALL_CHARACTER_CLASSES[i % ALL_CHARACTER_CLASSES.length], `p${i}`), { levels });
-    s = record(engine.startQuestion(engine.scaleEncounter(s, authored, count === 1), 2000));
+    s = engine.scaleEncounter(s, authored, count === 1);
+    if (historicalScaling) {
+      // Captured from main before the owner changed HP balance. These represent
+      // already-started rooms, whose budgets must survive the new release.
+      Object.assign(s, structuredClone(historicalScaling[String(count)]));
+      delete s.encounterHpPool;
+      for (const e of s.enemies) delete e.magicDefense;
+      // Recreate the saved MP of participants who already started before the
+      // full-MP change. Reconnection never refills those participants.
+      for (const p of Object.values(s.players))
+        if (p.characterClass === "wizard") p.mp = Math.floor(p.maxMp / 2);
+    }
+    s = record(engine.startQuestion(s, 2000));
     for (let turn = 0; turn < 12 && s.currentPhase !== 'game_over'; turn++) {
       if (s.currentPhase === 'wave_break') s = record(engine.advancePhase(s, authored, 10000 + steps.length * 1000));
       if (turn === 1) s = record(engine.addStudent(s, student('priest', 'late'), { levels }));

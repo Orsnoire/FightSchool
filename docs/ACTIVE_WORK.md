@@ -1,3 +1,14 @@
+# Owner-requested fight balance — implementation verified locally
+
+- Resume branch `balance/role-weighted-fight-hp`, [draft PR #77](https://github.com/Orsnoire/FightSchool/pull/77). Separate from C12 below; not merged or deployed.
+- Final owner decisions: one whole-fight allocation per role — **swarm/trash 10%, normal 15%, leader 25%, boss 50%**. Each individual has **at least 1 HP**, even if that exceeds the nominal budget. No per-wave refill or goblin HP bonus.
+- Implemented corrected pool: `floor(weighted players + questions * (reference average raw damage per question / 2))`. Reference party is tier-appropriate; no extra tier multiplier. Player weights: tanks .33, healers .25, Blood/Dark Knight 1, Paladin .25, Priest 0. Twenty DPS, tier 1, 30 questions: pool 345; 25 swarmers get 1 HP each across any number of waves.
+- Maximum HP floors; current HP ceils/clamps. Actual damage/healing accounting, temporary maximum-HP grants/expiry, late-entry rescaling and new-room recovery enforce integer HP. Existing active rooms retain saved balance; no data reset or migration.
+- Wizard checkpoint `f0b58d05a029601c9aa473e74de5bb933ab29d85`: Fireball 2 MP, full starting `(INT + MND) * 3` MP, MAT + INT basic unchanged, reference Fireblast consumes all MP. Passed 311 tests/builds and both CI/browser workflows.
+- MDF checkpoint `fb770cd989f0a61977067bca93c6d244e8ae5308`: 0/2/4/6 MDF at tiers 1–4, distinct magic/physical routing. Passed 315 local tests, TypeScript/builds and CI 39293074107 plus four-job Chromium 39293075604.
+- Corrected HP checkpoint: **320 tests** pass (5 phase 2, 7 phase 3, 301 phase 4, 7 rich content), plus TypeScript and both production builds. Includes allocation/preview/broadcast/recovery, integer mutations and historical replay compatibility. Editor help and authoritative specification match final rules; frozen historical baseline is unchanged.
+- Exact next action: publish this locally verified HP checkpoint with expected-head checks, update PR with SHA/results, and inspect exact-head CI/browser checks. Keep the PR draft; no merge/deployment authorization or production operations.
+
 # C12 active — Phase 6 release review
 
 - Resume [draft PR #75](https://github.com/Orsnoire/FightSchool/pull/75), branch `cleanup/c12-release-review`, and that branch's current `docs/ACTIVE_WORK.md` before editing. Initial claim: `7335a21ee74654f1ad5e4883aa46480c149d062c`.

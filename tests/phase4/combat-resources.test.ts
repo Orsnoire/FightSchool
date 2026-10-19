@@ -13,15 +13,15 @@ function answered(job: CharacterClass, level = 1, answer = "4") {
 }
 const resolve = (s: ReturnType<typeof answered>) => advanceTo(s, "question_resolution", fight, 300);
 
-test("Fireball queues without spending, spends exactly one MP on a correct answer, and survives storage", () => {
+test("Fireball queues without spending, spends exactly two MP on a correct answer, and survives storage", () => {
   const s = answered("wizard");
   const mp = s.players[id].mp;
   const selected = selectAction(s, id, "fireball", "e1");
   assert.equal(selected.players[id].mp, mp);
   const resolved = resolve(JSON.parse(JSON.stringify(selected)));
-  assert.equal(resolved.players[id].mp, mp - 1);
+  assert.equal(resolved.players[id].mp, mp - 2);
   assert.equal(resolved.players[id].totals.damageDealt, s.players[id].stats.int * 3);
-  assert.equal(advancePhase(resolved, fight, 400).players[id].mp, mp - 1);
+  assert.equal(advancePhase(resolved, fight, 400).players[id].mp, mp - 2);
   assert.equal(s.players[id].questionAction?.ability, "attack");
 });
 test("wrong-answer question actions do not spend MP or potions or craft potions", () => {

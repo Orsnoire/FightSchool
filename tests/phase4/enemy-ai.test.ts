@@ -104,7 +104,7 @@ test("two nonconsecutive correct answers clear stacked stun AND paralysis and ex
   s = selectAction(advanceTo(applyAnswer(s, id, "4", f.questions[0]), "actions", f), id, "fireball", "e1");
   s = advanceTo(s, "question_resolution", f);
   assert.equal(s.players[id].statuses!.length, 0);
-  assert.equal(s.players[id].mp, mp - 1);
+  assert.equal(s.players[id].mp, mp - 2);
   assert.equal(s.players[id].totals.questionsCorrect, 2);
   assert.equal(s.players[id].totals.questionsIncorrect, 1);
   assert.equal(addStatus(s, s.players[id], effect("stun", { appliedRound: s.round })), false);

@@ -1,0 +1,1124 @@
+{
+  "source": "7cd6fab97c5306514a04d6e591ba3d5495dd0d8e",
+  "starts": {
+    "1": {
+      "enemies": [
+        {
+          "id": "e0:1",
+          "name": "zombie",
+          "image": "/enemies/zombie-v2.png",
+          "enemyType": "zombie",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 1,
+          "role": "normal",
+          "templateId": "e0",
+          "species": "other",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e1:1",
+          "name": "ghost",
+          "image": "/enemies/ghost-v2.png",
+          "enemyType": "ghost",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 2,
+          "role": "normal",
+          "templateId": "e1",
+          "species": "other",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e2:1",
+          "name": "spider",
+          "image": "/enemies/spider-v2.png",
+          "enemyType": "spider",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 3,
+          "role": "normal",
+          "templateId": "e2",
+          "species": "other",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e3:1",
+          "name": "vampire",
+          "image": "/enemies/vampire-v2.png",
+          "enemyType": "vampire",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 4,
+          "role": "normal",
+          "templateId": "e3",
+          "species": "other",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e4:1",
+          "name": "slime",
+          "image": "/enemies/slime-v2.png",
+          "enemyType": "slime",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 5,
+          "role": "normal",
+          "templateId": "e4",
+          "species": "other",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e5:1",
+          "name": "samhain",
+          "image": "/enemies/samhain-v2.png",
+          "enemyType": "samhain",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 6,
+          "role": "normal",
+          "templateId": "e5",
+          "species": "other",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 2,
+          "defense": 2
+        },
+        {
+          "id": "e6:1",
+          "name": "goblin 1",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:2",
+          "name": "goblin 2",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:3",
+          "name": "goblin 3",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:4",
+          "name": "goblin 4",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:5",
+          "name": "goblin 5",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 0.69,
+          "maxHealth": 0.69,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        }
+      ],
+      "entryPerformance": {
+        "p0": {
+          "damage": 46,
+          "healing": 0,
+          "health": 44,
+          "mitigation": 16
+        }
+      },
+      "autoAdvanceWaves": true,
+      "encounterAttendance": 1,
+      "referenceDamage": 46,
+      "enemyRoundBudget": 27,
+      "encounterXpFraction": 0.15
+    },
+    "7": {
+      "enemies": [
+        {
+          "id": "e0:1",
+          "name": "zombie",
+          "image": "/enemies/zombie-v2.png",
+          "enemyType": "zombie",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 1,
+          "role": "normal",
+          "templateId": "e0",
+          "species": "other",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e1:1",
+          "name": "ghost",
+          "image": "/enemies/ghost-v2.png",
+          "enemyType": "ghost",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 2,
+          "role": "normal",
+          "templateId": "e1",
+          "species": "other",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e2:1",
+          "name": "spider",
+          "image": "/enemies/spider-v2.png",
+          "enemyType": "spider",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 3,
+          "role": "normal",
+          "templateId": "e2",
+          "species": "other",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e3:1",
+          "name": "vampire",
+          "image": "/enemies/vampire-v2.png",
+          "enemyType": "vampire",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 4,
+          "role": "normal",
+          "templateId": "e3",
+          "species": "other",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e4:1",
+          "name": "slime",
+          "image": "/enemies/slime-v2.png",
+          "enemyType": "slime",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 5,
+          "role": "normal",
+          "templateId": "e4",
+          "species": "other",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e5:1",
+          "name": "samhain",
+          "image": "/enemies/samhain-v2.png",
+          "enemyType": "samhain",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 6,
+          "role": "normal",
+          "templateId": "e5",
+          "species": "other",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 2,
+          "defense": 2
+        },
+        {
+          "id": "e6:1",
+          "name": "goblin 1",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:2",
+          "name": "goblin 2",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:3",
+          "name": "goblin 3",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:4",
+          "name": "goblin 4",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:5",
+          "name": "goblin 5",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 2.678,
+          "maxHealth": 2.678,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        }
+      ],
+      "entryPerformance": {
+        "p0": {
+          "damage": 46,
+          "healing": 0,
+          "health": 44,
+          "mitigation": 16
+        },
+        "p1": {
+          "damage": 7128,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p2": {
+          "damage": 51,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p3": {
+          "damage": 30,
+          "healing": 17,
+          "health": 38,
+          "mitigation": 16
+        },
+        "p4": {
+          "damage": 46,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p5": {
+          "damage": 0,
+          "healing": 34,
+          "health": 38,
+          "mitigation": 16
+        },
+        "p6": {
+          "damage": 89,
+          "healing": 0,
+          "health": 45,
+          "mitigation": 16
+        }
+      },
+      "autoAdvanceWaves": false,
+      "encounterAttendance": 7,
+      "referenceDamage": 178.5,
+      "enemyRoundBudget": 69.91250000000001,
+      "encounterXpFraction": 0.15
+    },
+    "30": {
+      "enemies": [
+        {
+          "id": "e0:1",
+          "name": "zombie",
+          "image": "/enemies/zombie-v2.png",
+          "enemyType": "zombie",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 1,
+          "role": "normal",
+          "templateId": "e0",
+          "species": "other",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e1:1",
+          "name": "ghost",
+          "image": "/enemies/ghost-v2.png",
+          "enemyType": "ghost",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 2,
+          "role": "normal",
+          "templateId": "e1",
+          "species": "other",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e2:1",
+          "name": "spider",
+          "image": "/enemies/spider-v2.png",
+          "enemyType": "spider",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 3,
+          "role": "normal",
+          "templateId": "e2",
+          "species": "other",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e3:1",
+          "name": "vampire",
+          "image": "/enemies/vampire-v2.png",
+          "enemyType": "vampire",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 4,
+          "role": "normal",
+          "templateId": "e3",
+          "species": "other",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e4:1",
+          "name": "slime",
+          "image": "/enemies/slime-v2.png",
+          "enemyType": "slime",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 5,
+          "role": "normal",
+          "templateId": "e4",
+          "species": "other",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e5:1",
+          "name": "samhain",
+          "image": "/enemies/samhain-v2.png",
+          "enemyType": "samhain",
+          "difficultyMultiplier": 1,
+          "quantity": 1,
+          "wave": 6,
+          "role": "normal",
+          "templateId": "e5",
+          "species": "other",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 2,
+          "defense": 2
+        },
+        {
+          "id": "e6:1",
+          "name": "goblin 1",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:2",
+          "name": "goblin 2",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:3",
+          "name": "goblin 3",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:4",
+          "name": "goblin 4",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        },
+        {
+          "id": "e6:5",
+          "name": "goblin 5",
+          "image": "/enemies/goblin-v1.png",
+          "enemyType": "goblin",
+          "difficultyMultiplier": 1,
+          "quantity": 5,
+          "wave": 7,
+          "role": "normal",
+          "templateId": "e6",
+          "species": "goblin",
+          "health": 11.475,
+          "maxHealth": 11.475,
+          "effects": [],
+          "ai": {
+            "mode": "default",
+            "paralysisSkipChance": 0.3,
+            "biome": "grasslands"
+          },
+          "aiState": {
+            "readyRounds": {},
+            "buffs": []
+          },
+          "attackPower": 1,
+          "defense": 0
+        }
+      ],
+      "entryPerformance": {
+        "p0": {
+          "damage": 46,
+          "healing": 0,
+          "health": 44,
+          "mitigation": 16
+        },
+        "p1": {
+          "damage": 7128,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p2": {
+          "damage": 51,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p3": {
+          "damage": 30,
+          "healing": 17,
+          "health": 38,
+          "mitigation": 16
+        },
+        "p4": {
+          "damage": 46,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p5": {
+          "damage": 0,
+          "healing": 34,
+          "health": 38,
+          "mitigation": 16
+        },
+        "p6": {
+          "damage": 89,
+          "healing": 0,
+          "health": 45,
+          "mitigation": 16
+        },
+        "p7": {
+          "damage": 230,
+          "healing": 0,
+          "health": 43,
+          "mitigation": 16
+        },
+        "p8": {
+          "damage": 92,
+          "healing": 0,
+          "health": 49,
+          "mitigation": 16
+        },
+        "p9": {
+          "damage": 76,
+          "healing": 0,
+          "health": 39,
+          "mitigation": 16
+        },
+        "p10": {
+          "damage": 70,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p11": {
+          "damage": 1512,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p12": {
+          "damage": 46,
+          "healing": 0,
+          "health": 44,
+          "mitigation": 16
+        },
+        "p13": {
+          "damage": 7128,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p14": {
+          "damage": 51,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p15": {
+          "damage": 30,
+          "healing": 17,
+          "health": 38,
+          "mitigation": 16
+        },
+        "p16": {
+          "damage": 46,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p17": {
+          "damage": 0,
+          "healing": 34,
+          "health": 38,
+          "mitigation": 16
+        },
+        "p18": {
+          "damage": 89,
+          "healing": 0,
+          "health": 45,
+          "mitigation": 16
+        },
+        "p19": {
+          "damage": 230,
+          "healing": 0,
+          "health": 43,
+          "mitigation": 16
+        },
+        "p20": {
+          "damage": 92,
+          "healing": 0,
+          "health": 49,
+          "mitigation": 16
+        },
+        "p21": {
+          "damage": 76,
+          "healing": 0,
+          "health": 39,
+          "mitigation": 16
+        },
+        "p22": {
+          "damage": 70,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p23": {
+          "damage": 1512,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p24": {
+          "damage": 46,
+          "healing": 0,
+          "health": 44,
+          "mitigation": 16
+        },
+        "p25": {
+          "damage": 7128,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p26": {
+          "damage": 51,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p27": {
+          "damage": 30,
+          "healing": 17,
+          "health": 38,
+          "mitigation": 16
+        },
+        "p28": {
+          "damage": 46,
+          "healing": 0,
+          "health": 35,
+          "mitigation": 16
+        },
+        "p29": {
+          "damage": 0,
+          "healing": 34,
+          "health": 38,
+          "mitigation": 16
+        }
+      },
+      "autoAdvanceWaves": false,
+      "encounterAttendance": 30,
+      "referenceDamage": 765,
+      "enemyRoundBudget": 299.625,
+      "encounterXpFraction": 0.15
+    }
+  }
+}

@@ -4,6 +4,11 @@ import { test } from "node:test";
 import { addStudent, initialCombatState, startQuestion, applyAnswer, selectAction, advancePhase } from "../../worker/combat/engine.ts";
 import { fight, student, started } from "./fixtures.ts";
 import type { CombatSnapshot } from "../../shared/combat/model.ts";
+import { baseDamage } from "../../worker/combat/engine.ts";
+import { abilityDamage } from "../../shared/combat/abilityValues.ts";
+import { ABILITY_DISPLAYS } from "../../shared/abilityUI.ts";
+import { referenceParty, performance } from "../../shared/combat/encounters.ts";
+import { createLobbyPreview } from "../../client/src/features/lobby/preview.ts";
 
 const id = student().id;
 function round(state: CombatSnapshot, ability: string, answer: string | null = "4") {
@@ -28,7 +33,7 @@ test("starter Scout overtakes Wizard on question six and clears the 1.25x minimu
     let s = durableFight(job);
     for (let question = 1; question <= 10; question++) {
       const p = s.players[id];
-      const ability = job === "scout" ? (p.comboPoints >= 3 ? "headshot" : "attack") : (p.mp > 0 ? "fireball" : "attack");
+      const ability = job === "scout" ? (p.comboPoints >= 3 ? "headshot" : "attack") : (p.mp >= 2 ? "fireball" : "attack");
       s = round(s, ability);
       totals[job].push(s.players[id].totals.damageDealt);
       assert.equal(s.players[id].consecutiveCorrectAnswers, question);
@@ -62,17 +67,65 @@ test("missed and unanswered Scout questions lose only one CP, reset the streak, 
   assert.equal(empty.players[id].comboPoints, 0);
 });
 
-test("only Wizard starts at half MP; new fights reset streaks and older saved snapshots default safely", () => {
-  assert.equal(started("wizard").players[id].mp, 3);
+test("Wizard starts at full derived MP; new fights reset streaks and older snapshots default safely", () => {
+  assert.equal(started("wizard").players[id].mp, 6);
   assert.equal(started("wizard").players[id].maxMp, 6);
   assert.equal(started("priest").players[id].mp, 9);
   const odd = addStudent(initialCombatState("ODDMP", fight), student("wizard"), { levels: { wizard: 2 } }).players[id];
   assert.equal(odd.maxMp, 9);
-  assert.equal(odd.mp, 4);
+  assert.equal(odd.mp, 9);
   assert.equal(started("scout").players[id].consecutiveCorrectAnswers, 0);
   const old = durableFight("scout");
   delete old.players[id].consecutiveCorrectAnswers;
   assert.equal(round(old, "attack").players[id].consecutiveCorrectAnswers, 1);
+});
+
+test("Wizard basic attacks use MAT plus INT in previews and resolved combat", () => {
+  let s = durableFight("wizard");
+  const p = s.players[id];
+  assert.equal(baseDamage(p), 3, "starter staff MAT 1 plus base INT 2");
+  p.stats.mat = 7;
+  p.stats.int = 5;
+  p.stats.atk = 100;
+  assert.equal(abilityDamage(p, "attack"), 12);
+  s = round(s, "attack");
+  assert.equal(s.players[id].totals.damageDealt, 12);
+});
+
+test("Fireball costs two MP for Wizard and cross-class users, including affordability", () => {
+  for (const job of ["wizard", "priest"] as const) {
+    let s = startQuestion(addStudent(initialCombatState("FIREBALL", fight), student(job), {
+      levels: { wizard: 8, priest: 1 }, crossClass: job === "priest" ? ["fireball_crossclass"] : [],
+    }));
+    s.enemies[0].health = s.enemies[0].maxHealth = 1000;
+    s = applyAnswer(s, id, "4", fight.questions[0]);
+    s.players[id].mp = 1;
+    assert.throws(() => selectAction(s, id, "fireball", "e1"), /MP/);
+    s.players[id].mp = 2;
+    s = advanceTo(selectAction(s, id, "fireball", "e1"), "question_resolution");
+    assert.equal(s.players[id].mp, 0);
+    assert.equal(s.players[id].totals.damageDealt, 3 * s.players[id].stats.int);
+  }
+  for (const key of ["fireball", "fireball_crossclass"]) {
+    assert.equal(ABILITY_DISPLAYS[key].mpCost, 2);
+    assert.match(ABILITY_DISPLAYS[key].description, /2 MP/);
+  }
+});
+
+test("lobby and reference Wizards start at full MP and Fireblast spends its entire reference reserve once", () => {
+  const preview = createLobbyPreview(student("wizard") as Parameters<typeof createLobbyPreview>[0], [], []);
+  assert.equal(preview.previewPlayer.mp, 6);
+  for (const tier of [1, 2, 3, 4]) {
+    const p = referenceParty(tier).find(p => p.characterClass === "wizard")!;
+    assert.equal(p.mp, p.stats.maxMp);
+    assert.equal(p.mp, 3 * (p.stats.int + p.stats.mnd));
+  }
+  const p = referenceParty(4).find(p => p.characterClass === "wizard")!;
+  const before = structuredClone(p);
+  const blast = p.stats.int * p.mp * 3;
+  assert.equal(performance(p, 1).damage, blast);
+  assert.equal(performance(p, 30).damage, blast + 29 * baseDamage(p));
+  assert.deepEqual(p, before, "reference simulation does not spend actual player MP");
 });
 
 test("equipped cross-class Headshot shares its formula and miss penalty without changing other combo jobs", () => {

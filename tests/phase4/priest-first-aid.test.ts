@@ -82,19 +82,19 @@ test("First Aid requires correct answers and living allies; missing choices, tim
   assert.deepEqual(resurrectPlayer(s, id).players[id].questionAction, {ability: "first_aid", targetId: id});
 });
 
-test("pure healers add no encounter damage; legitimate offensive cross-class loadouts suppress the solo warning", () => {
+test("Priests add no HP scaling even with offensive cross-class loadouts, which still suppress the solo warning", () => {
   const quiz = {...fight, questions: Array.from({length: 10}, () => fight.questions[0])};
   let s = addStudent(initialCombatState("ABC234", quiz), student("warrior", "tank"));
   const baseline = scaleEncounter(s, quiz).enemies[0].health;
   s = addStudent(s, student("priest"));
   assert.equal(scaleEncounter(s, quiz).enemies[0].health, baseline);
   const allHealer = addStudent(initialCombatState("ABC234", quiz), student("priest"));
-  assert.equal(scaleEncounter(allHealer, quiz).enemies[0].health, 1);
+  assert.equal(scaleEncounter(allHealer, quiz).enemies[0].health, 85, "only the ten questions contribute HP");
   assert.equal(hasOffensiveAbility(availableAbilities("priest", {priest: 1}, ["fireball_crossclass"])), false, "locked equipped IDs do not count");
   const profile = {levels: {priest: 1, wizard: 8}, crossClass: ["fireball_crossclass"]};
   const offensive = addStudent(initialCombatState("ABC234", quiz), student("priest"), profile);
   assert.equal(hasOffensiveAbility(offensive.players[id].availableAbilities), true);
-  assert.equal(scaleEncounter(offensive, quiz).enemies[0].health, Math.ceil(9 * baseDamage(offensive.players[id])));
+  assert.equal(scaleEncounter(offensive, quiz).enemies[0].health, 85, "Priest remains zero-weight even with Fireball");
   let active = startQuestion(offensive);
   active = applyAnswer(active, id, "4", fight.questions[0]);
   active = resolve(selectAction(active, id, "fireball", "e1"));

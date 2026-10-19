@@ -1,3 +1,4 @@
+import { currentHP } from "../../shared/combat/hp";
 import { activeEnemies, goblinTargets, ROLE_SHARES } from "../../shared/combat/encounters";
 import type { FightRecord } from "../db/schema";
 import type { CombatEnemy, CombatPlayer, CombatSnapshot, CombatStatus, StatusType } from "../../shared/combat/model";
@@ -90,8 +91,10 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
     };
     const healEnemy = (amount: number) => {
       if (enemy.health <= 0) return;
-      const actual = Math.min(enemy.maxHealth - enemy.health, Math.max(0, Math.floor(amount)));
-      enemy.health += actual;
+      const requested = Math.min(enemy.maxHealth - enemy.health, Math.max(0, Math.floor(amount)));
+      const before = enemy.health;
+      enemy.health = s.encounterHpPool === undefined ? enemy.health + requested : currentHP(enemy.health + requested, enemy.maxHealth);
+      const actual = s.encounterHpPool === undefined ? requested : enemy.health - before;
       ports.say(enemy.id, enemy.id, `${enemy.name} restored ${actual} HP`, actual, true);
     };
     ai.lastMove = rule.move;
@@ -143,7 +146,8 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
         break;
       case "cobble_hollow": ai.buffs.push({ type: "attack", throughRound: s.round + 3 }); break;
       case "blood_strike": {
-        enemy.health -= Math.ceil(enemy.maxHealth * 0.1);
+        const remainingHealth = enemy.health - Math.ceil(enemy.maxHealth * 0.1);
+        enemy.health = s.encounterHpPool === undefined ? remainingHealth : currentHP(remainingHealth, enemy.maxHealth);
         healEnemy(strike(target, raw * attack) * 0.05);
         break;
       }

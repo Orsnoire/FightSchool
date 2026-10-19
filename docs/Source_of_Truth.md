@@ -96,6 +96,19 @@ Guild progression is intended to support long-term classroom engagement across a
 
 ## Classroom balance and daily stamina
 
+The [October 19 additive, role-weighted HP decision](combat/role-weighted-hp.md)
+supersedes earlier encounter HP formulas. HP is the floor of weighted players
+plus question count times half the tier-appropriate idealized four-player party's
+average raw output per question. Tier is already represented by that output.
+All waves share one allocation per role: **swarm/trash 10%, normal 15%, leader
+25%, boss 50%**. Missing-role shares and rounding remainders stay unused; the
+old goblin HP bonus is removed. Each enemy has **at least 1 HP**, explicitly
+allowed to exceed a role's budget when necessary. Maximum HP floors; current HP
+ceils and clamps. Tank/healer discounts and named exceptions are in the decision.
+Wizard starts at full `(INT + MND) * 3` MP; Fireball costs 2 MP. Monster MDF is
+`2 * (tier - 1)` (0/2/4/6), used separately from physical DEF. PR #77 is draft;
+see its checkpoint for implementation/verification. No deployment is claimed.
+
 The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
 record the latest explicit changes to XP stamina, Block targeting and threat,
 potion replenishment, encounter HP, and the approved Wizard/Scout balance. They

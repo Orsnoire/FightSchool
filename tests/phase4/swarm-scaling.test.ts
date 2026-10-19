@@ -27,7 +27,8 @@ test("non-goblin swarms share their HP budget without multiplying it again and i
   const fixed = scaleEncounter(waiting(8, fixedTemplate), fixedTemplate);
   assert.equal(grown.enemies.length, 3);
   assert.ok(grown.enemies.every(e => e.attackPower === 1 && e.defense === 1 && e.ai && e.aiState));
-  assert.ok(Math.abs(grown.enemies.reduce((sum, e) => sum + e.maxHealth, 0) - fixed.enemies[0].maxHealth) < 0.003);
+  assert.equal(grown.enemies.reduce((sum, e) => sum + e.maxHealth, 0), 3);
+  assert.equal(fixed.enemies[0].maxHealth, 5);
   assert.equal(grown.enemyRoundBudget, fixed.enemyRoundBudget);
   assert.equal(grown.encounterXpFraction, fixed.encounterXpFraction);
   const solo = scaleEncounter(waiting(1, scaledTemplate), scaledTemplate, true);
@@ -76,13 +77,13 @@ test("late entry and reconnect preserve locked swarm counts and defeated enemies
   let s = startQuestion(scaleEncounter(waiting(7), template));
   s.currentPhase = "enemy_ai";
   s.enemies[0].health = 0;
-  s.enemies[1].health /= 2;
+  s.enemies[1].health = Math.ceil(s.enemies[1].health / 2);
   s = addStudent(s, student("warrior", "late"));
   const next = advancePhase(s, template, 1000);
   assert.equal(next.encounterAttendance, 8);
   assert.equal(next.enemies.length, 5);
   assert.equal(next.enemies[0].health, 0);
-  assert.ok(Math.abs(next.enemies[1].health / next.enemies[1].maxHealth - 0.5) < 0.001);
+  assert.equal(next.enemies[1].health, 1);
   assert.deepEqual(roster(publicSnapshot(JSON.parse(JSON.stringify(next)), template)), roster(next));
   assert.deepEqual(scaleEncounter(next, template), next);
 });
