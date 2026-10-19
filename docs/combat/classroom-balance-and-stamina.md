@@ -99,6 +99,10 @@ crafting. Shield potion behavior and its three-potion cap are preserved.
 
 ## Encounter HP and solo play
 
+The HP formula and whole-basic-attack HP rounding below are superseded for new
+sessions by the [October 19 additive HP decision](role-weighted-hp.md), tracked
+in PR #77. Existing active sessions and outgoing-damage caps remain compatible.
+
 The old classroom formula was `10 * difficulty * attendance`, unrelated to quiz
 length or player damage. At the start of a new encounter, the total HP budget is:
 

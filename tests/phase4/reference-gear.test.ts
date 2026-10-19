@@ -14,7 +14,7 @@ test("tier 1 reference uses real starter gear at level 2, including starter weap
     assert.equal(player.equipmentEffects?.healingBonus, 0);
     assert.deepEqual(player.jobLevels, levels);
   }
-  assert.ok(encounterBudget(referenceParty(1), 1, 10).hp < 534.6, "lower than the previous full tier 1 baseline");
+  assert.equal(encounterBudget(referenceParty(1), 1, 10).hp, 7.33, "HP uses the new additive formula independently of reference gear");
 });
 
 test("higher-tier reference uses previous-tier gear while retaining the encounter's level midpoint", () => {

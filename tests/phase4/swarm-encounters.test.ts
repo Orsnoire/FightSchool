@@ -63,19 +63,20 @@ test("quantities create unique individuals; role budgets remain separate across 
     "/enemies/goblin-v1.png",
   );
 });
-test("classroom reference scales n/4 independent of actual gear; solo setup changes the entry budget", () => {
+test("HP uses additive role counts independent of gear while pressure retains the classroom reference", () => {
   const party = referenceParty(1);
   const four = encounterBudget(party, 1, 10),
     eight = encounterBudget([...party, ...party], 1, 10);
-  assert.equal(eight.hp, four.hp * 2);
+  assert.equal(four.hp, 7.33);
+  assert.equal(eight.hp, 9.66, "doubling players must not double the question contribution");
   assert.equal(eight.rawPressure, four.rawPressure * 2);
   const enhanced = structuredClone(party);
   enhanced.forEach((p) => (p.stats.str += 100));
   assert.equal(encounterBudget(enhanced, 1, 10).hp, four.hp);
   assert.ok(
-    encounterBudget([enhanced[0]], 1, 10).hp >
-      encounterBudget([party[0]], 1, 10).hp,
+    performance(enhanced[0], 10).damage > performance(party[0], 10).damage,
   );
+  assert.equal(encounterBudget([enhanced[0]], 1, 10).hp, 5.33);
   const s = scaleEncounter(room(), quiz);
   assert.equal(s.encounterXpFraction, 0.1);
   s.currentPhase = "question";
@@ -224,13 +225,14 @@ test("late entry grows remaining budgets without resurrecting defeated enemies",
   s.currentPhase = "enemy_ai";
   s.enemies[0].health = 0;
   s.enemies[1].health = s.enemies[1].maxHealth / 2;
-  const oldMax = s.enemies[1].maxHealth;
+  const oldPool = s.encounterHpPool!;
   s = addStudent(s, student("warrior", "late"));
   assert.ok(s.pendingPlayers?.late);
   const next = advancePhase(s, quiz, 1000);
   assert.equal(next.encounterAttendance, 5);
   assert.equal(next.enemies[0].health, 0);
-  assert.ok(Math.abs(next.enemies[1].maxHealth / oldMax - 1.25) < 0.01);
+  assert.ok(Math.abs(next.encounterHpPool! - oldPool - 0.33) < 1e-9);
+  assert.equal(next.enemies[1].maxHealth, Math.round(6.65 * 0.1 / 30 * 1.1 * 1000) / 1000);
   assert.ok(
     Math.abs(next.enemies[1].health / next.enemies[1].maxHealth - 0.5) < 0.001,
   );

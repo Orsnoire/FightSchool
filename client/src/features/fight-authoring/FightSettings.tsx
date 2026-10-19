@@ -69,7 +69,8 @@ export function FightSettings({ form, encounterTier, changeTier }: {
           )}
         />
         <div className="space-y-3"><Label>Fight tier: {encounterTier || 'Legacy tuning'}</Label>
-          {encounterTier ? <><input className="w-full" aria-label="Fight tier" type="range" min="1" max="4" step="1" value={encounterTier} onChange={e => changeTier(+e.target.value)} /><div className="flex justify-between text-xs">{ENCOUNTER_TIERS.map(t => <span key={t.label}>{t.label} · up to Lv {t.level}</span>)}</div><p className="text-sm text-muted-foreground">Choose the intended progression tier. Enemy roles set the challenge within it; HP uses the tier reference party and quiz length; solo/duo fights use their entry loadouts.</p></> : <><p className="text-sm text-muted-foreground">This fight retains its existing tuning. Switch explicitly to use tier and role presets.</p><Button type="button" variant="outline" onClick={() => changeTier(1)}>Use tier presets</Button></>}
+          {encounterTier ? <><input className="w-full" aria-label="Fight tier" type="range" min="1" max="4" step="1" value={encounterTier} onChange={e => changeTier(+e.target.value)} /><div className="flex justify-between text-xs">{ENCOUNTER_TIERS.map(t => <span key={t.label}>{t.label} · up to Lv {t.level}</span>)}</div><p className="text-sm text-muted-foreground">HP pool = tier × (weighted players + 0.5 × questions). Enemy roles divide this pool across all waves.</p></> : <><p className="text-sm text-muted-foreground">HP uses the additive formula at tier 1; enemy damage retains its existing tuning. Switch to use tier and role presets.</p><Button type="button" variant="outline" onClick={() => changeTier(1)}>Use tier presets</Button></>}
+          <p className="text-xs text-muted-foreground">Player weights: DPS 1; tanks 0.33; healers 0.25. Blood Knight and Dark Knight count as 1, Paladin as 0.25, and Priest as 0.</p>
         </div>
         <FormField
           control={form.control}

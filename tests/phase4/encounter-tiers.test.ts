@@ -9,7 +9,7 @@ import {
 import { handleFights } from "../../worker/routes/fights";
 import { issueSession } from "../../worker/auth/session";
 import { fight, student } from "./fixtures";
-test("tier/role presets are monotonic and change a single enemy HP budget; legacy fights remain unchanged", () => {
+test("tier/role pressure presets are monotonic; additive HP scales linearly by tier with a tier-1 legacy default", () => {
   for (let tier = 1; tier <= 4; tier++) {
     let previous = 0,
       health = 0;
@@ -31,6 +31,7 @@ test("tier/role presets are monotonic and change a single enemy HP budget; legac
       };
       const state = addStudent(initialCombatState("TIER01", f), student());
       const hp = scaleEncounter(state, f).enemies[0].health;
+      assert.equal(hp, Math.round(tier * 0.83 * 1000) / 1000);
       assert.ok(hp >= health);
       health = hp;
       if (tier > 1)

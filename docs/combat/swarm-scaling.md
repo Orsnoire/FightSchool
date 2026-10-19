@@ -14,6 +14,10 @@ Required verification: 0/1/4/7/8/11/12/16/30/60-player boundaries, caps and mixe
 
 ## Reference gear correction — October 12 owner direction
 
+The [October 19 HP decision](role-weighted-hp.md), tracked in PR #77, replaces
+reference-gear and solo/duo loadout HP scaling with the additive tier formula.
+The reference gear below still determines outgoing pressure.
+
 Classroom groups (3+) now budget against the previous tier's full gear set while retaining the encounter tier's level midpoint. Tier 1 uses actual complete tier 0 starter loadouts, including starter weapon and defense stats; tier 2 uses full tier 1 equipment. Tiers 3/4 provisionally extrapolate tier 1 bonuses by 2/3 until those collections exist. The Priest healing bonus follows the same equipment tier. This lowers both reference HP and outgoing pressure; solo/duo still use their real capped entry loadouts. Waiting preview and Start Fight continue to share the calculator.
 
 ## Host controls — October 12 owner direction

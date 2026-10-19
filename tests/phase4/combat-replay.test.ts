@@ -3,10 +3,14 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { combatReplayTraces } from './combat-replay-fixture.ts';
 const baseline = JSON.parse(readFileSync(new URL('./data/c10-combat-baseline.json', import.meta.url), 'utf8'));
+const historicalScaling = JSON.parse(readFileSync(new URL('./data/pre-role-weighted-hp.json', import.meta.url), 'utf8')).starts;
 
-test('C10 preserves pre-extraction seeded outcomes, resources, events and public projections', () => {
-  assert.deepEqual(combatReplayTraces(), baseline.traces);
+test('already-started pre-balance rooms preserve C10 seeded outcomes, resources, events and public projections', () => {
+  assert.deepEqual(combatReplayTraces(false, historicalScaling), baseline.traces);
 });
 test('C10 replay remains identical when every command and phase crosses JSON storage', () => {
-  assert.deepEqual(combatReplayTraces(true), baseline.traces);
+  assert.deepEqual(combatReplayTraces(true, historicalScaling), baseline.traces);
+});
+test('new additive HP encounters replay identically across JSON storage at every command and phase', () => {
+  assert.deepEqual(combatReplayTraces(true), combatReplayTraces());
 });

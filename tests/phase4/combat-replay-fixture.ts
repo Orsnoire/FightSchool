@@ -10,7 +10,7 @@ import { fight, student } from './fixtures.ts';
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const json = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 /** Frozen inputs, clocks and output hashes captured from pre-C10 main. No production data. */
-export function combatReplayTraces(recover = false) {
+export function combatReplayTraces(recover = false, historicalScaling?: Record<string, Partial<CombatSnapshot>>) {
   const traces: { scenario: string; steps: unknown[] }[] = [];
   const levels = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, 15]));
   for (const job of ALL_CHARACTER_CLASSES) for (const ability of availableAbilities(job, levels)) {
@@ -40,7 +40,14 @@ export function combatReplayTraces(recover = false) {
     };
     let s = engine.initialCombatState(seed, authored, 1000);
     for (let i = 0; i < count; i++) s = engine.addStudent(s, student(ALL_CHARACTER_CLASSES[i % ALL_CHARACTER_CLASSES.length], `p${i}`), { levels });
-    s = record(engine.startQuestion(engine.scaleEncounter(s, authored, count === 1), 2000));
+    s = engine.scaleEncounter(s, authored, count === 1);
+    if (historicalScaling) {
+      // Captured from main before the owner changed HP balance. These represent
+      // already-started rooms, whose budgets must survive the new release.
+      Object.assign(s, structuredClone(historicalScaling[String(count)]));
+      delete s.encounterHpPool;
+    }
+    s = record(engine.startQuestion(s, 2000));
     for (let turn = 0; turn < 12 && s.currentPhase !== 'game_over'; turn++) {
       if (s.currentPhase === 'wave_break') s = record(engine.advancePhase(s, authored, 10000 + steps.length * 1000));
       if (turn === 1) s = record(engine.addStudent(s, student('priest', 'late'), { levels }));

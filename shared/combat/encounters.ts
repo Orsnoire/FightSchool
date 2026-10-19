@@ -7,6 +7,8 @@ import {
   calculateLoadoutEquipmentStats,
   getStartingEquipment,
   calculatePlayerBaseDamage,
+  TANK_CLASSES,
+  HEALER_CLASSES,
   type CharacterClass,
   type EquipmentStats,
 } from "../schema";
@@ -223,17 +225,45 @@ export function referenceParty(tier: number): CombatPlayer[] {
     },
   );
 }
-export function encounterBudget(
-  players: CombatPlayer[],
+/** Enemy HP contribution only; combat roles, damage and swarm attendance stay unchanged. */
+export function encounterHpWeight(job: CharacterClass): number {
+  if (job === "priest") return 0;
+  if (job === "blood_knight" || job === "dark_knight") return 1;
+  // Paladin belongs to both lists: its healer contribution takes precedence.
+  if (HEALER_CLASSES.includes(job)) return 0.25;
+  if (TANK_CLASSES.includes(job)) return 0.33;
+  return 1;
+}
+
+export function encounterEntry(player: CombatPlayer, questions: number) {
+  return { ...performance(player, questions), hpWeight: encounterHpWeight(player.characterClass) };
+}
+
+type EncounterEntry = NonNullable<CombatSnapshot["entryPerformance"]>[string];
+
+export function effectivePlayerCount(weights: number[]): number {
+  return weights.reduce((sum, weight) => sum + Math.round(weight * 100), 0) / 100;
+}
+
+/** Owner-defined full HP pool; no damage estimate or extra question multiplier. */
+export function encounterHpPool(playerWeight: number, tier: number, questions: number): number {
+  return tier * (playerWeight + 0.5 * Math.max(1, questions));
+}
+
+/** Missing weights retain the calculation for rooms started before role scaling. */
+export function encounterBudgetFromEntries(
+  entries: EncounterEntry[],
   tier: number,
   questions: number,
+  roleWeighted = entries.some(p => p.hpWeight !== undefined),
 ) {
-  const q = Math.max(1, questions),
-    small = players.length <= 2;
-  const source = small ? players : referenceParty(tier),
-    factor = small ? 1 : players.length / 4;
-  const samples = source.map((p) => performance(p, q));
-  const damage = samples.reduce((n, p) => n + p.damage, 0) * factor;
+  const q = Math.max(1, questions);
+  const reference = entries.length > 2 ? referenceParty(tier).map(p => performance(p, q)) : [];
+  const damage = entries.length <= 2
+    ? entries.reduce((n, p) => n + p.damage, 0)
+    : reference.reduce((n, p) => n + p.damage, 0) * (entries.length / 4);
+  const samples = entries.length <= 2 ? entries : reference;
+  const factor = entries.length <= 2 ? 1 : entries.length / 4;
   const rawPressure =
     samples.reduce(
       (n, p) =>
@@ -243,7 +273,14 @@ export function encounterBudget(
         p.mitigation,
       0,
     ) * factor;
-  return { hp: Math.max(0.001, damage * 1.1), rawPressure, damage };
+  const hp = roleWeighted
+    ? encounterHpPool(effectivePlayerCount(entries.map(p => p.hpWeight ?? 1)), tier, q)
+    : damage * 1.1;
+  return { hp: Math.max(0.001, hp), rawPressure, damage };
+}
+
+export function encounterBudget(players: CombatPlayer[], tier: number, questions: number) {
+  return encounterBudgetFromEntries(players.map(p => encounterEntry(p, Math.max(1, questions))), tier, questions, true);
 }
 export function allocateHP(enemies: CombatEnemy[], fullBudget: number) {
   const counts = Object.fromEntries(

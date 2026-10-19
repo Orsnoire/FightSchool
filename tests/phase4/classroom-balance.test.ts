@@ -5,21 +5,19 @@ import { addStudent, initialCombatState, scaleEncounter, startQuestion, applyAns
 import { availableAbilities } from "../../shared/combat/abilities.ts";
 import { fight, student, started } from "./fixtures.ts";
 
-test("classroom HP follows quiz length and real damage for 1, 20 and 30 participants", () => {
+test("legacy classroom HP follows additive role-weighted attendance and half quiz length", () => {
   for (const count of [1, 20, 30]) {
     const quiz = { ...fight, questions: Array.from({ length: 10 }, () => fight.questions[0]), enemies: [{ ...fight.enemies[0], difficultyMultiplier: 5 }] };
     let s = initialCombatState("BALANCE", quiz);
     for (let i = 0; i < count; i++) s = addStudent(s, student(i % 2 ? "wizard" : "warrior", `p${i}`));
-    const damage = Object.values(s.players).reduce((sum, p) => sum + baseDamage(p), 0);
+    const pool = Math.ceil(count / 2) * 0.33 + Math.floor(count / 2) + 5;
     const scaled = scaleEncounter(s, quiz);
-    assert.equal(scaled.enemies[0].health, damage * 9);
-    assert.equal(scaled.enemies[0].health / damage, 9, "perfect basic attacks take 90% of questions");
-    assert.equal(scaled.enemies[0].health / (damage * 0.72), 12.5, "72% accuracy targets 125% of questions");
+    assert.ok(Math.abs(scaled.enemies[0].health - pool) < 1e-9);
     assert.equal(s.enemies[0].health, 50, "scaling is pure");
     const active = startQuestion(scaled);
     assert.deepEqual(scaleEncounter(active, quiz), active, "reconnect cannot rescale an active fight");
     const multiple = scaleEncounter({ ...s, enemies: [s.enemies[0], { ...s.enemies[0], id: "e2" }] }, quiz);
-    assert.ok(multiple.enemies.reduce((sum, e) => sum + e.health, 0) <= damage * 9 + 1, "enemies share the budget");
+    assert.ok(Math.abs(multiple.enemies.reduce((sum, e) => sum + e.health, 0) - pool) < 0.0011, "enemies share one pool, with fractional rounding");
   }
 });
 

@@ -1,10 +1,11 @@
-# Owner-requested role-weighted fight HP — implementation in progress
+# Owner-requested additive, role-weighted fight HP — implemented and locally verified
 
 - October 19, 2026: the owner requested healer HP scaling at 0.25 DPS, tanks at 0.33, Blood Knight/Dark Knight at 1, Paladin at 0.25 and Priest at 0.
 - Branch: `balance/role-weighted-fight-hp`, based on current main `7cd6fab97c5306514a04d6e591ba3d5495dd0d8e`. This is a separately authorized balance change; C12 continues in its existing branch/PR below.
-- Scope: shared job weights, starting/preview and late-entry enemy HP, deterministic regressions and current balance documentation. Retain question-length tuning, enemy pressure, swarm counts, rewards and existing active-room HP.
-- Status: claim published before implementation; draft PR registration follows. No code changes or verification yet; not merged or deployed.
-- Next action: implement the shared weights and preserve entry accounting across late joins/reconnects, then run relevant regression gates and update the PR with exact verification.
+- Scope: shared job weights, starting/preview and late-entry enemy HP, deterministic regressions and current balance documentation. The owner's follow-ups define the exact full pool as `tier * (weighted players + 0.5 * questions)`, then allocate it among enemies. Retain enemy pressure, swarm counts, rewards and existing active-room HP.
+- Status: implemented in [PR #77](https://github.com/Orsnoire/FightSchool/pull/77), following claim checkpoint `18ea7b901a656a9ec02476fec4f9dfd7ef445757`; not merged or deployed. [Specification](combat/role-weighted-hp.md). The existing goblin allocation bonus and absent-role allocation rules remain.
+- Local verification: 308 tests pass, TypeScript passes, client and Worker production builds pass on Node 24.19.0. After sharing the start-time entry estimates, all 19 focused HP/preview/replay/swarm tests and TypeScript/Worker build pass again. The unchanged C10 hashes still match 80 historical scenarios; new balance traces survive JSON recovery at every step. No database migration or provider operation.
+- Exact next action: review the pushed head and its CI/browser checks on PR #77, then obtain the owner's merge/deploy direction. The PR carries the exact published SHA and check results. C12 remains independent; do not deploy its unmerged changes with this balance patch.
 
 # C12 active — Phase 6 release review
 

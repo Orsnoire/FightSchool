@@ -96,6 +96,11 @@ Guild progression is intended to support long-term classroom engagement across a
 
 ## Classroom balance and daily stamina
 
+The [October 19 additive, role-weighted HP decision](combat/role-weighted-hp.md)
+supersedes earlier encounter HP formulas: `tier * (weighted players + 0.5 * questions)`.
+It includes the healer/tank discounts and named job exceptions. Implementation is
+tracked in PR #77; this design decision does not claim production deployment.
+
 The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
 record the latest explicit changes to XP stamina, Block targeting and threat,
 potion replenishment, encounter HP, and the approved Wizard/Scout balance. They

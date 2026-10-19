@@ -20,6 +20,11 @@ fields live in the existing enemy JSON. Conversion affects subsequent sessions.
 
 ## Encounter budget
 
+The HP calculation below is historical for already-running sessions. The owner's
+[October 19 additive HP specification](role-weighted-hp.md) replaces it for new
+sessions once PR #77 is released. Role allocation and outgoing pressure remain as
+described here.
+
 The four-person reference party is Warrior, Priest, Wizard and Scout at the tier
 midpoint (levels 2, 6, 9, 13). The October 12 owner correction in
 [swarm scaling and host controls](swarm-scaling.md) changes the reference to
