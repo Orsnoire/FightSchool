@@ -3,8 +3,8 @@
 - Owner authorized the one-dungeon campaign pilot and town services; [draft PR #81](https://github.com/Orsnoire/FightSchool/pull/81), branch `feature/campaign-pilot`.
 - Scope: [pilot specification](CAMPAIGN_PILOT.md). Persistent campaign HP, healing/consumables, inn job changes, weapon/armor shops, unlock quest givers. C12 remains separate.
 - Foundation published at `d752ea9e471a7733e52c824aa47b7a2ebe90a5a2`; this checkpoint adds authenticated routes, atomic town actions, combat resource handoff/settlement, teacher setup and student map/menu UI. The live PR carries the exact newer pushed SHA.
-- Verification in progress: TypeScript passes; generation/healing tests and migration catalog/no-op checks pass. Full lifecycle and browser verification are next. No production migration, merge or deployment.
-- Next: finish lifecycle/reconnect/defeat and browser checks, run regression gates, publish results. Full party exploration and 3–8-player boss matchmaking remain roadmap work; this pilot is solo.
+- Verification: TypeScript, both production builds and the full 328-test suite pass locally. Added defeat/inn recovery and Durable Object eviction/reconnect cases also pass (four focused campaign tests; full suite now 329). Migration history/catalog/no-op checks pass. Browser acceptance is registered for desktop and phone; local Chromium download was unavailable, so CI is the pending browser gate. No production migration, merge or deployment.
+- Next: inspect current-head CI/browser checks and resolve any failures; update this checkpoint with results. Full party exploration and 3–8-player boss matchmaking remain roadmap work; this pilot is solo.
 
 # Battlefield labels and adaptive encounter scaling — released October 20, 2026
 

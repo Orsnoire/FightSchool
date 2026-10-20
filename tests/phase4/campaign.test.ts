@@ -13,6 +13,9 @@ import { initialCombatState, scaleEncounter } from '../../worker/combat/encounte
 import { combatProfile, persistCombatResults } from '../../worker/db/game-repository';
 import { handleGame } from '../../worker/routes/game';
 import { issueSession } from '../../worker/auth/session';
+import { CombatSessionObject } from '../../worker/combat/session-object';
+import { removeStudent } from '../../worker/combat/participants';
+import { startQuestion } from '../../worker/combat/engine';
 import { fight, student, fightSummary } from './fixtures';
 
 test('campaign generation is repeatable, connected, and creates one keeper per unlock', () => {
@@ -115,8 +118,10 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     await db.update(s.campaignPlayers).set({ state: { ...view.progress, position: { x: 2, y: 5 }, health: 2, mp: 1 } }).where(eq(s.campaignPlayers.campaignId, created.body.id));
     view = (await call(path)).body;
     assert.equal((await action({ type: 'job', job: 'priest' })).status, 200);
-    assert.equal(view.progress.health, 2); assert.equal(view.progress.mp, 1);
+    assert.equal(view.progress.health, 2); assert.equal(view.progress.mp, 0, 'MP cannot grow when changing from a job with no MP');
     assert.equal((await action({ type: 'job', job: 'paladin' })).status, 400, 'locked job');
+    await db.update(s.campaignPlayers).set({ state: { ...view.progress, mp: 1 } }).where(eq(s.campaignPlayers.campaignId, created.body.id));
+    view = (await call(path)).body;
     assert.equal((await action({ type: 'heal', ability: 'mend' })).status, 200);
     assert.equal(view.progress.mp, 0); assert.ok(view.progress.health > 2);
     assert.equal((await action({ type: 'rest' })).status, 200);
@@ -155,10 +160,58 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     view = (await call(path)).body;
     assert.equal(view.gold, settled.gold); assert.equal(view.progressRevision, settled.progressRevision);
     assert.deepEqual(view.layout, initialLayout);
+    // A subsequent failed/abandoned run returns at zero HP. Departed solo players
+    // still settle resources, although they receive no victory reward.
+    await db.update(s.campaignPlayers).set({ state: { ...view.progress, cleared: false } }).where(eq(s.campaignPlayers.campaignId, created.body.id));
+    view = (await call(path)).body;
+    assert.equal((await action({ type: 'encounter' })).status, 200);
+    const [failedEncounter] = await db.select().from(s.campaignEncounters).where(eq(s.campaignEncounters.sessionId, view.progress.activeSessionId));
+    let failed = startQuestion(addStudent(initialCombatState(failedEncounter.sessionId, failedEncounter.fightSnapshot), actor, { levels: {}, campaignPlayer: failedEncounter.playerSnapshot }), Date.now(), 30);
+    failed.players[actor.id].health = 0; failed.players[actor.id].isDead = true;
+    failed = removeStudent(failed, actor.id);
+    await persistCombatResults(db as any, failed, failedEncounter.fightSnapshot);
+    view = (await call(path)).body;
+    assert.equal(view.progress.health, 0); assert.equal(view.progress.zone, 'overworld');
+    assert.deepEqual(view.progress.position, view.layout.overworld.spawn);
+    assert.equal((await action({ type: 'heal', ability: 'first_aid' })).status, 400);
+    await move(-1, 0); await move(0, -1);
+    assert.equal((await action({ type: 'rest' })).status, 200);
+    assert.equal(view.progress.health, view.progress.maxHealth);
     // Re-closing a gate removes its questions immediately, including after completion.
     assert.equal((await call(`${path}/gates`, 'PUT', { revision: 1, gates: [{ id: gateId, open: false }] }, teacherCookie)).status, 200);
     assert.equal((await call(path)).body.eligibleQuestionCount, 0);
     await db.update(s.guilds).set({ isArchived: true }).where(eq(s.guilds.id, guild.id));
     assert.equal((await call(path)).status, 404);
   } finally { await pg.close(); }
+});
+
+test('campaign room joins use frozen resources; eviction and reconnect do not refill them', async () => {
+  const actor = student(), sessionId = 'CPTESTROOM';
+  const campaignFight = { ...fight, campaignContext: { campaignId: crypto.randomUUID(), studentId: actor.id, objective: false, fixedTier: 1 } };
+  const player = addStudent(initialCombatState(sessionId, campaignFight), actor).players[actor.id];
+  player.health = 2; player.healingPotions = 1;
+  const data = new Map<string, any>(), messages: any[] = [], persisted: any[] = [];
+  let profileReads = 0;
+  const socket = { send: (value: string) => messages.push(JSON.parse(value)), close() {}, serializeAttachment() {},
+    deserializeAttachment: () => ({ actorId: actor.id, role: 'student', sessionId, tokenHash: 'campaign-test' }) };
+  const durable = { storage: { get: async (key: string) => structuredClone(data.get(key)), put: async (key: string, value: any) => { data.set(key, structuredClone(value)); }, setAlarm: async () => {}, deleteAlarm: async () => {} }, getWebSockets: () => [socket] };
+  const restore = () => {
+    const room = new CombatSessionObject(durable as any, { DATABASE_URL: 'unused' });
+    room.setRepository({ findActiveSession: async () => ({ actorId: actor.id, actorType: 'student' }), findStudentById: async () => actor,
+      findLiveCombatSession: async () => ({ sessionId, fightId: fight.id, soloStudentId: actor.id, teacherId: fight.teacherId, status: 'active' }),
+      findFightById: async () => { throw new Error('Must use campaign snapshot'); }, findCombatFight: async () => structuredClone(campaignFight),
+      getCombatProfile: async () => { profileReads++; return { levels: {}, campaignPlayer: player }; }, updateLiveCombatSessionStatus: async () => {},
+      persistResults: async (state: any) => { persisted.push(structuredClone(state)); return []; } } as any);
+    return room;
+  };
+  await restore().webSocketMessage(socket as any, JSON.stringify({ type: 'join', commandId: 'campaign-join-1' }));
+  assert.equal(messages.some(m => m.type === 'protocol_error'), false, JSON.stringify(messages));
+  assert.equal(data.get('room').snapshot.players[actor.id].health, 2);
+  assert.equal(data.get('room').snapshot.players[actor.id].healingPotions, 1);
+  assert.equal(data.get('room').fight.lootTable.length, 0, 'no fallback classroom loot injected');
+  data.get('room').snapshot.players[actor.id].health = 1;
+  await restore().webSocketMessage(socket as any, JSON.stringify({ type: 'join', commandId: 'campaign-rejoin-2' }));
+  assert.equal(data.get('room').snapshot.players[actor.id].health, 1); assert.equal(profileReads, 1);
+  await restore().webSocketMessage(socket as any, JSON.stringify({ type: 'leave_fight', commandId: 'campaign-leave-3' }));
+  assert.equal(persisted.length, 1); assert.equal(persisted[0].departedPlayers[actor.id].health, 1);
 });
