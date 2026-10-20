@@ -51,10 +51,11 @@ export default function Combat() {
   const p = studentId ? state?.players[studentId] || state?.pendingPlayers?.[studentId] : null;
   const queued = !!(studentId && state?.pendingPlayers?.[studentId]);
   const result = results.find((r) => r.studentId === studentId);
+  const returnCampaign = sessionId ? localStorage.getItem(`campaignReturn:${sessionId}`) : null;
   const returnToLobby = () => {
     if (localStorage.getItem("sessionId") === sessionId) localStorage.removeItem("sessionId");
     queryClient.invalidateQueries();
-    navigate("/student");
+    navigate(returnCampaign ? `/student/campaign/${returnCampaign}` : "/student");
   };
   const requestLeave = () => {
     const message = state?.currentPhase === "game_over"
@@ -323,7 +324,7 @@ export default function Combat() {
                   leave();
                 }}
               >
-                Return to lobby
+                {returnCampaign ? 'Return to adventure' : 'Return to lobby'}
               </Button>
             </>
           ) : (

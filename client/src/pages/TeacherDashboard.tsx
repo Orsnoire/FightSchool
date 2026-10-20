@@ -117,6 +117,7 @@ export default function TeacherDashboard() {
             Quest Master
           </h1>
           <div className="flex flex-wrap gap-2">
+            <Link href="/teacher/campaigns"><Button variant="outline">Campaigns</Button></Link>
             <Link href="/teacher/items">
               <Button variant="outline" size="default" data-testid="button-manage-items">
                 <Swords className="mr-2 h-5 w-5" />
