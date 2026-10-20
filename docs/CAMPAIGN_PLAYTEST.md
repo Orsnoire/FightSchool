@@ -77,3 +77,5 @@ and tier-specific random gear rewards remain in the
 
 Verification and preview scope are recorded in
 [the October 20 playtest report](reviews/2026-10-20-campaign-playtest.md).
+
+Movement and equipment follow-up: [verification and remaining limits](reviews/2026-10-20-campaign-movement-equipment.md). Refresh the page to load the updated controls. The FF/DQ visual workshop is specified in [campaign art direction](CAMPAIGN_ART_DIRECTION.md).

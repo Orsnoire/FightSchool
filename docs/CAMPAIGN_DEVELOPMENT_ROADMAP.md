@@ -375,6 +375,11 @@ smaller coherent changes.
 
 ### UI workshop — owner playtest feedback, October 20
 
+**DECIDED visual target:** 16-bit-era Final Fantasy / Dragon Quest, using the
+owner-supplied map/tileset images and Maru's MV Bits as reference material.
+See [campaign art direction](CAMPAIGN_ART_DIRECTION.md) for the references and
+first overworld/town/menu workshop brief.
+
 The solo pilot's map tiles, layout and sidebar are placeholders. Workshop the
 exploration UI before final visual acceptance: map prominence and scale, compact
 resource status, movement feedback, equipment/healing/quest menus, nearby town

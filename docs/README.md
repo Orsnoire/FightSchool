@@ -84,3 +84,4 @@ dated; move remaining scope into the active plans instead of leaving competing
 C05 [room-cost methods and measurements](cloudflare/room-costs.md) are complete and released; their documented measurement limits remain.
 
 - [Campaign pilot playtest](CAMPAIGN_PLAYTEST.md): preview access, student walkthrough, teacher gates and scope.
+- [Campaign art direction](CAMPAIGN_ART_DIRECTION.md): owner-supplied FF/DQ references and the exploration UI workshop brief.

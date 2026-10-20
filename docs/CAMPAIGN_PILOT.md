@@ -160,6 +160,9 @@ reset progress, or add fixture data.
 
 ### UI workshop — pending owner review
 
+The owner specified a 16-bit-era FF/DQ visual direction and supplied map/tileset
+references. See [campaign art direction](CAMPAIGN_ART_DIRECTION.md).
+
 The current tiles, map layout and sidebar are a mechanics prototype, not the final
 UI. Workshop the exploration screen before visual acceptance. Proposed direction:
 a map-first screen with a larger exploration viewport, compact HP/MP/job status,
