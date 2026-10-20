@@ -1,9 +1,9 @@
 # Campaign pilot — active October 20, 2026
 
-- Owner authorized development of a one-dungeon test campaign with unlocks, exploration, persistent campaign HP, a healing/consumable menu, an inn for job changes, separate weapon/armor shops, and generated unlock quest givers.
-- Branch: `feature/campaign-pilot`; draft PR will be linked after creation. Scope and acceptance: [campaign pilot](CAMPAIGN_PILOT.md); broader decisions: [campaign roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md).
-- State: planning/claim only; no campaign runtime, migration, or deployment yet. Current production and separate C12 work are unchanged.
-- Next: implement the scoped pilot, keep this branch checkpoint and draft PR current, and verify before proposing release.
+- Owner authorized the one-dungeon campaign pilot and town services; [draft PR #81](https://github.com/Orsnoire/FightSchool/pull/81), branch `feature/campaign-pilot`.
+- Scope: [pilot specification](CAMPAIGN_PILOT.md). Persistent campaign HP, healing/consumables, inn job changes, weapon/armor shops, unlock quest givers. C12 remains separate.
+- Planning claim published at `53fc92f16965b48e280ec2aa252b5b38aae64599`. Runtime implementation and verification pending; no production deployment.
+- Next: contracts, persistence, map/services UI, combat integration and tests.
 
 # Battlefield labels and adaptive encounter scaling — released October 20, 2026
 

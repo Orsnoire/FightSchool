@@ -1,4 +1,5 @@
 import type { SavedJobLoadouts } from "../../shared/job-loadouts";
+import type { CampaignGate, CampaignLayout, CampaignProgress } from "../../shared/campaign/model";
 import { sql } from "drizzle-orm";
 import type {
   CharacterClass,
@@ -222,7 +223,7 @@ export const liveCombatSessions = pgTable(
 export type TeacherRecord = typeof teachers.$inferSelect;
 export type NewTeacherRecord = typeof teachers.$inferInsert;
 export type AppSessionRecord = typeof appSessions.$inferSelect;
-export type FightRecord = typeof fights.$inferSelect;
+export type FightRecord = typeof fights.$inferSelect & { campaignContext?: { campaignId: string; studentId: string; objective: boolean; fixedTier: number } };
 export type NewFightRecord = typeof fights.$inferInsert;
 export type StudentRecord = typeof students.$inferSelect;
 export type NewStudentRecord = typeof students.$inferInsert;
@@ -705,3 +706,34 @@ export const questionAttempts = pgTable('question_attempts', {
   sessionRound: index('question_attempts_session_round_idx').on(t.sessionId,t.round),
   validOutcome: check('question_attempts_outcome_check',sql`${t.outcome} IN ('correct','incorrect','unanswered')`),
 }));
+
+export const campaigns = pgTable('campaigns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teacherId: uuid('teacher_id').notNull().references(() => teachers.id),
+  guildId: uuid('guild_id').notNull().references(() => guilds.id),
+  fightId: uuid('fight_id').notNull().references(() => fights.id),
+  name: text('name').notNull(), dungeonName: text('dungeon_name').notNull(),
+  theme: text('theme').notNull().default('normal_cave'),
+  gates: jsonb('gates').$type<CampaignGate[]>().notNull(),
+  layout: jsonb('layout').$type<CampaignLayout>().notNull(),
+  fightSnapshot: jsonb('fight_snapshot').$type<FightRecord>().notNull(),
+  revision: integer('revision').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => ({ guildIndex: index('campaigns_guild_idx').on(t.guildId), teacherIndex: index('campaigns_teacher_idx').on(t.teacherId) }));
+
+export const campaignPlayers = pgTable('campaign_players', {
+  campaignId: uuid('campaign_id').notNull().references(() => campaigns.id),
+  studentId: uuid('student_id').notNull().references(() => students.id),
+  state: jsonb('state').$type<CampaignProgress>().notNull(),
+  revision: integer('revision').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => ({ pk: primaryKey({columns: [t.campaignId, t.studentId]}), studentIndex: index('campaign_players_student_idx').on(t.studentId) }));
+
+export const campaignEncounters = pgTable('campaign_encounters', {
+  sessionId: text('session_id').primaryKey().references(() => liveCombatSessions.sessionId),
+  campaignId: uuid('campaign_id').notNull().references(() => campaigns.id),
+  studentId: uuid('student_id').notNull().references(() => students.id),
+  fightSnapshot: jsonb('fight_snapshot').$type<FightRecord>().notNull(),
+  playerSnapshot: jsonb('player_snapshot').$type<import('../../shared/combat/model').CombatPlayer>().notNull(),
+  settled: boolean('settled').notNull().default(false),
+}, t => ({ playerIndex: index('campaign_encounters_player_idx').on(t.campaignId, t.studentId) }));

@@ -42,8 +42,10 @@ and loadout rules and do not implicitly restore HP.
 
 Only existing supported healing actions with defined healing amounts and costs
 can appear in the exploration menu. Consumable use must spend an actual saved
-charge. New recovery prices, automatic resurrection, and shop restocking rules
-are not assumed. The inn's explicitly requested service is job changing.
+charge. For this prototype, a separate free inn-rest action restores HP/MP and
+the existing five healing charges. Defeat returns the character to town at zero
+HP, where rest is required. These are pilot tuning defaults, not settled economy
+design. Job changing alone never restores resources. Shops use existing prices.
 
 The pilot must make limitations visible: one dungeon/theme initially, and
 campaign boss matchmaking/party exploration remain separately tracked roadmap
@@ -65,6 +67,5 @@ the full CAM-00 through CAM-09 roadmap complete after shipping this slice.
 
 ## Checkpoint
 
-Planning/claim only. No campaign code or migration has been implemented yet.
-Next: implement domain contracts, persistence and authenticated route boundaries,
-then exploration/services and combat integration; publish small checkpoints.
+Domain contracts, seeded map generation and additive persistence are in development.
+Next: authenticated services, combat integration, exploration UI and verification.
