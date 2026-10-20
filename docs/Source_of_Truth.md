@@ -155,6 +155,28 @@ October 8 with successful migration-gate evidence for 0012; see the same wardrob
 document for restoration and concurrency rules and the October 8 checkpoint below.
 
 
+## Campaign design direction — October 20, 2026
+
+The [campaign development roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md) records the
+owner's current campaign decisions and distinguishes them from proposed defaults
+and unresolved policies. Read it before campaign, map generation, cooperative
+exploration, boss matchmaking, or campaign-reward work.
+
+It specifies quiz/topic dungeons, unlocked-dungeon overworld question pools,
+class-controlled transportation and named-key gates, thirteen themes with tilesets
+and fight backgrounds, fixed maps at campaign generation with later procedural
+variation intended as premium, and one chest per assigned loot entry. Party
+leaders control overworld group movement. Matchmade bosses support **3–8 players**
+with at least one tank, healer, and DPS; encounter level caps are **4/8/12/15**.
+Random authored gear uses the **encounter tier**, with owned items converted to
+gold. The Tier 3 boss cap of 12 is explicit; interaction with existing guild caps
+and adaptive classroom tiers remains a scoped design decision.
+
+This is **FUTURE IMPLEMENTATION**, not a release or a change to current classroom
+behavior. The roadmap's CAM packages do not replace cleanup/release claims in
+[active work](ACTIVE_WORK.md). Its proposed chest-claim, fixed-boss-tier, and
+premium-regeneration policies must not be treated as separately approved details.
+
 ## Tier 1 gear and instance loot
 
 The [October 13 default shop correction](guild-quests-and-tiers.md#october-13-default-shop-inventory-correction)

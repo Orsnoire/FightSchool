@@ -14,6 +14,7 @@ Read [active work](ACTIVE_WORK.md) before editing.
 | [Active work / resume here](ACTIVE_WORK.md) | One package, branch/PR, checkpoint and next action | CURRENT COORDINATION |
 | [Current status](CURRENT_STATUS.md) | Shipped features, verified runtime, known defects and open acceptance | CURRENT |
 | [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01/C02 COMPLETE; C03 COMPLETE; C04 COMPLETE, deployed and accepted; C05 COMPLETE, deployed and accepted; C06 COMPLETE, deployed and accepted; C07 COMPLETE, deployed and accepted; C08 COMPLETE, merged, deployed and accepted; C09 COMPLETE, merged, deployed and accepted; C10 COMPLETE, merged, deployed and accepted; C11 complete, merged, deployed and accepted; C12 unstarted |
+| [Campaign development roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md) | October 20 owner decisions: generated maps, quiz dungeons, gates, party exploration, 3–8-player bosses, tier sync and rewards; staged packages and open decisions | DESIGN RECORD / FUTURE IMPLEMENTATION |
 | [Expansion plan](EXPANSION_PLAN.md) | Deferred features, design dependencies and long-term direction | FUTURE — after cleanup |
 | [October 9 engineering review](reviews/2026-10-09-code-review.md) | Findings F01–F17 and measured baseline behind the cleanup plan | BASELINE RECORD |
 | [Source of Truth](Source_of_Truth.md) | Product authority, design rules and conflict resolution | CURRENT AUTHORITY |
