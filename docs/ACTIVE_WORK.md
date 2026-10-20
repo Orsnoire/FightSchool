@@ -1,3 +1,10 @@
+# Campaign pilot — active October 20, 2026
+
+- Owner authorized development of a one-dungeon test campaign with unlocks, exploration, persistent campaign HP, a healing/consumable menu, an inn for job changes, separate weapon/armor shops, and generated unlock quest givers.
+- Branch: `feature/campaign-pilot`; [draft PR #81](https://github.com/Orsnoire/FightSchool/pull/81). Scope and acceptance: [campaign pilot](https://github.com/Orsnoire/FightSchool/blob/feature/campaign-pilot/docs/CAMPAIGN_PILOT.md); broader decisions: [campaign roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md).
+- State: planning/claim only; no campaign runtime, migration, or deployment yet. Current production and separate C12 work are unchanged.
+- Next: implement the scoped pilot, keep this branch checkpoint and draft PR current, and verify before proposing release.
+
 # Battlefield labels and adaptive encounter scaling — released October 20, 2026
 
 - Owner authorized review, merge, production deployment and canonical live acceptance. [PR #79](https://github.com/Orsnoire/FightSchool/pull/79) merged at **`989c9ec63453d06804900d0458d89664391bf849`**, with an identical tree to reviewed head `be6916406e6c9990d1a01273817966545214d9e7`.
