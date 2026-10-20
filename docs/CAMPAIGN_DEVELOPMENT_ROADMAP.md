@@ -172,6 +172,28 @@ The theme list and two asset types are DECIDED. Generation families are PROPOSED
 implementation reuse, not thirteen independently required algorithms. Theme alone
 does not establish an academic difficulty or encounter tier.
 
+#### Environment bestiaries — decided October 20; polish phase
+
+Every biome/environment requires its own bestiary of **3–5 unique enemies**.
+This includes dungeon themes **and overworld terrain/tile types**. Each environment
+must have a distinct roster rather than all locations drawing from one shared
+generic enemy pool.
+
+Random encounters select enemies from the player's current environment: walking
+on an overworld forest tile draws from the forest bestiary; moving into another
+terrain type uses that terrain's bestiary. Dungeon encounters use the dungeon's
+assigned environment. Defining a bestiary does not enable random encounters in
+locations otherwise designated safe.
+
+Enemy selection and academic question selection are independent. Overworld
+questions still come only from currently unlocked dungeons under C-R03; terrain
+changes the enemies, not which academic topics are eligible.
+
+Deliver this in **CAM-08 content and polish**, with the acceptance checks below.
+It is future work, not a requirement already satisfied by the one-cave pilot.
+New enemy types require complete movesets, default AI, combat sprites, and
+catalogue verification before they can be used in authored encounters.
+
 ### C-R07 — Assigned dungeon treasure
 
 Teachers can assign loot to a dungeon. **Each assigned loot entry appears in its
@@ -271,7 +293,7 @@ campaign rules with prototype behavior.
 | [Role-weighted HP](combat/role-weighted-hp.md): quiz question count participates in HP budgeting | Continuing question delivery requires a finite, explicit encounter budget independent of question-pool exhaustion. Decide the campaign budget before adapting the current formula. |
 | [Guild quest/evidence rules](guild-quests-and-tiers.md) | Maintain academic evidence scope and durable awards. Define hosting/content scope for matching players from different classes or campaign instances. |
 | [Existing Tier 1 and fallback loot](combat/tier-one-equipment.md) | Campaign boss random same-tier gear and duplicate-to-gold are explicit new rules. Reuse reliable claim machinery without silently inheriting incompatible loot-choice behavior. |
-| [Enemy roster](combat/enemy-ai.md) and [agent instructions](../AGENTS.md) | Themes do not authorize new enemy species. Reuse registered enemies unless complete movesets, default AI, art, and catalogue verification are separately added. |
+| [Enemy roster](combat/enemy-ai.md) and [agent instructions](../AGENTS.md) | C-R06 requires distinct environment bestiaries during CAM-08 polish. Until those are implemented, use registered enemies. Each new type must have complete movesets, default AI, combat sprites, and catalogue verification before authoring it into encounters. |
 | [Cleanup plan](CLEANUP_PLAN.md) and [active work](ACTIVE_WORK.md) | Design documentation can be published now. Implementation is separately scoped and coordinated with ongoing release work; this document does not mark cleanup complete or claim its branches. |
 
 ## 5. Proposed architecture and generation approach
@@ -348,8 +370,20 @@ smaller coherent changes.
 | CAM-05 — Cooperative adventures | CAM-03; party-policy decisions | Form/join/leave parties; leader-controlled overworld movement; shared encounter transitions; gate enforcement; disconnect/leadership recovery | Nonleader movement rejected; eligible members remain synchronized; reconnect/leave cannot duplicate movement, rewards, or transport access |
 | CAM-06 — Boss queues and level synchronization | CAM-05; matchmaking/sync decisions | Direct/random eligible queues; boss unlocks; 3-8 players with tank/healer/DPS; entry minima; caps 4/8/12/15; admission and recovery | Boundary tests for sizes/roles, queue access, level/gear/ability policy, same-content matching, departures, and reconnection |
 | CAM-07 — Boss rewards and first complete pilot | CAM-04 and CAM-06 | Encounter-tier authored gear, owned-item gold conversion, EXP/quest integration; one complete campaign segment with town, dungeon, boss, treasure, and onward access | End-to-end teacher/student acceptance, atomic reward tests, replay/reconnect tests, and a documented release with known limits |
-| CAM-08 — Campaign breadth and authored content | Accepted pilot | Remaining theme catalogue, transportation/region breadth, generated campaign usability, authored ACT standards divisions and question content | All 13 themes have tilesets/backgrounds; generated campaigns honor varied gate arrangements; content review and classroom usability acceptance |
+| CAM-08 — Campaign breadth, authored content and polish | Accepted pilot | Remaining theme catalogue; dedicated bestiaries of 3–5 unique enemies per biome/environment, including overworld tile types; environment-based encounter selection; transportation/region breadth, generated campaign usability, authored ACT standards divisions and question content | All 13 themes have tilesets/backgrounds; every environment has its required bestiary; terrain/dungeon pool checks below pass; generated campaigns honor varied gate arrangements; content review and classroom usability acceptance |
 | CAM-09 — Premium map variation | Stable core and explicit premium decisions | Post-generation rerolls and/or per-run variation, versioned layouts, entitlements, progress/reward preservation | Premium boundary enforced; active parties share a layout; generation changes do not lose progression or reset rewards unless explicitly designed to |
+
+### CAM-08 polish acceptance — environment bestiaries
+
+- [ ] Every dungeon biome and overworld environment/tile type has a dedicated
+  bestiary containing 3–5 unique enemies, with complete registered combat content.
+- [ ] Encounter selection uses the current terrain or dungeon environment;
+  forest-tile checks draw only from the forest bestiary. Crossing terrain
+  boundaries and entering/exiting dungeons selects the appropriate roster.
+- [ ] Missing environment mappings fail content validation rather than silently
+  falling back to a global pool or another environment's enemies.
+- [ ] Environment selection preserves unlocked-dungeon question eligibility and
+  existing safe-area rules.
 
 The first complete pilot covers one coherent region and a limited content set.
 It proves the full exploration-to-boss loop before expanding all artwork and
@@ -425,6 +459,7 @@ This is a future release checklist, not a claim that checks have already run.
 | 2026-10-20 | Minimum viable boss party clarified as three players: tank, healer, DPS. Students can adventure together with the leader controlling overworld group movement. |
 | 2026-10-20 | Owner requested this shared Markdown development map in GitHub /docs. Planning document published; no campaign implementation claimed. |
 | 2026-10-20 (later) | Owner authorized a one-dungeon test campaign with unlocks and exploration; persistent HP, field healing/consumables, an inn for job changes, separate weapon/armor shops, and generated quest givers per unlock. Scoped pilot in PR #81; full CAM packages remain incomplete. |
+| 2026-10-20 (polish addition) | Every biome/environment, including overworld tile types, needs its own bestiary of 3–5 unique enemies. Random encounters use the current environment's roster; academic question eligibility remains tied to unlocked dungeons. Scheduled for CAM-08 content and polish, not implemented in the current pilot. |
 
 For subsequent handoffs, record the CAM package, branch/PR, exact head, decisions
 resolved, acceptance evidence, unfinished work, and next action through
