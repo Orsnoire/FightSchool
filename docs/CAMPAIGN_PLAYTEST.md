@@ -21,8 +21,9 @@ Credentials must not be committed to this repository.
    full resource bar.
 5. Visit **W** and **A** to try the separate weapon and armor shops. This character
    starts with **500 gold**. Purchased equipment goes into inventory; existing
-   job/level equip requirements still apply. Use **Manage saved equipment** at
-   the inn to manage loadouts.
+   job/level equip requirements still apply. Open **Equipment** in the adventure menu to change gear. Only owned gear
+   usable by your campaign job and effective level appears. Tier 1 equipment
+   requires job level 2; purchased gear stays hidden until usable.
 6. Follow the path east to **D** and select **Enter Lantern Cave**. Random battles
    can interrupt exploration. Answer questions, select actions/support and ready
    up through the normal combat screen. Use **Return to adventure** after battle.
@@ -60,7 +61,10 @@ avoid that confusion.
 ## What to judge
 
 - Can you find the keeper, inn, shops and cave without outside explanation?
-- Does movement feel responsive? Are services and battle-return controls obvious?
+- Does movement feel immediate, including several quick steps? It should stop at
+  walls and encounters, show saving status, and recover after a lost connection.
+- Can you change usable equipment without leaving the adventure? Are services
+  and battle-return controls obvious?
 - Does persistent damage make healing and the inn useful without becoming tedious?
 - Does the guardian require an appropriate number of questions, for each job?
 - Does teacher gate control match how you would pace an instructional unit?

@@ -373,6 +373,16 @@ smaller coherent changes.
 | CAM-08 — Campaign breadth, authored content and polish | Accepted pilot | Remaining theme catalogue; dedicated bestiaries of 3–5 unique enemies per biome/environment, including overworld tile types; environment-based encounter selection; transportation/region breadth, generated campaign usability, authored ACT standards divisions and question content | All 13 themes have tilesets/backgrounds; every environment has its required bestiary; terrain/dungeon pool checks below pass; generated campaigns honor varied gate arrangements; content review and classroom usability acceptance |
 | CAM-09 — Premium map variation | Stable core and explicit premium decisions | Post-generation rerolls and/or per-run variation, versioned layouts, entitlements, progress/reward preservation | Premium boundary enforced; active parties share a layout; generation changes do not lose progression or reset rewards unless explicitly designed to |
 
+### UI workshop — owner playtest feedback, October 20
+
+The solo pilot's map tiles, layout and sidebar are placeholders. Workshop the
+exploration UI before final visual acceptance: map prominence and scale, compact
+resource status, movement feedback, equipment/healing/quest menus, nearby town
+services, and keyboard/touch use at desktop and phone sizes. A map-first layout
+with menus opened on demand is PROPOSED, not yet owner-approved. The pilot
+follow-up adds responsive movement and an equipment menu filtered to currently
+usable owned gear; broader art/layout work remains separate.
+
 ### CAM-08 polish acceptance — environment bestiaries
 
 - [ ] Every dungeon biome and overworld environment/tile type has a dedicated
@@ -459,6 +469,7 @@ This is a future release checklist, not a claim that checks have already run.
 | 2026-10-20 | Minimum viable boss party clarified as three players: tank, healer, DPS. Students can adventure together with the leader controlling overworld group movement. |
 | 2026-10-20 | Owner requested this shared Markdown development map in GitHub /docs. Planning document published; no campaign implementation claimed. |
 | 2026-10-20 (later) | Owner authorized a one-dungeon test campaign with unlocks and exploration; persistent HP, field healing/consumables, an inn for job changes, separate weapon/armor shops, and generated quest givers per unlock. Scoped pilot in PR #81; full CAM packages remain incomplete. |
+| 2026-10-20 (playtest feedback) | Movement should respond faster, including appropriate client-side work; expose equipment changes within the adventure and show only currently usable gear. Current UI is a placeholder requiring a workshop. |
 | 2026-10-20 (polish addition) | Every biome/environment, including overworld tile types, needs its own bestiary of 3–5 unique enemies. Random encounters use the current environment's roster; academic question eligibility remains tied to unlocked dungeons. Scheduled for CAM-08 content and polish, not implemented in the current pilot. |
 
 For subsequent handoffs, record the CAM package, branch/PR, exact head, decisions

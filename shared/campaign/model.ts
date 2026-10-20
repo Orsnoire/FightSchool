@@ -1,5 +1,7 @@
 import type { CharacterClass } from '../schema';
 import type { CombatPlayer } from '../combat/model';
+import type { EquipmentLoadout } from '../equipment-catalog';
+import type { EquipmentSlot, EquipmentStats } from '../schema';
 
 export type CampaignZone = 'overworld' | 'dungeon';
 export type CampaignTile = 'grass' | 'water' | 'mountain' | 'path' | 'floor' | 'wall';
@@ -24,6 +26,7 @@ export interface CampaignView extends CampaignSummary {
   player: CombatPlayer; unlockedJobs: CharacterClass[]; gold: number; inventory: string[];
   healingActions: Array<{ id: string; name: string; amount: number; mp: number; potions: number }>;
   eligibleQuestionCount: number;
+  equipment: { loadout: EquipmentLoadout; items: Array<{ id: string; name: string; slot: EquipmentSlot; tier: number; stats: Partial<EquipmentStats> }> };
 }
 export const samePoint = (a: CampaignPoint, b: CampaignPoint) => a.x === b.x && a.y === b.y;
 export const pointKey = (zone: CampaignZone, p: CampaignPoint) => `${zone}:${p.x}:${p.y}`;

@@ -16,7 +16,7 @@ preserved. Migrations through 0017 are now shipped and immutable.
 | All 27 relational tables, 246 columns, defaults, checks, keys and indexes | `worker/db/schema.ts`; includes `quest_fight_evidence` and `personal_quest_receipts`. Match the shipped constraint names and delete actions. |
 | `award_combat_results_with_stamina(jsonb)` | Handwritten PL/pgSQL; introduced in 0008, replaced in 0010 and 0014. Latest definition is in 0014. |
 | `award_quest_batch(uuid,jsonb)` | Handwritten PL/pgSQL in 0014. Owns atomic quest rewards and receipt checks. |
-| `apply_campaign_action(jsonb)` | Handwritten PL/pgSQL in unshipped 0018. Serializes authenticated, server-calculated campaign state changes, purchases and encounter creation. |
+| `apply_campaign_action(jsonb)` | Handwritten PL/pgSQL introduced in 0018 and extended by forward-only 0019 for atomic equipment changes. Serializes authenticated, server-calculated campaign state changes, saved job loadouts, purchases and encounter creation. These campaign migrations are preview-only pending release. |
 | `settle_campaign_encounter(jsonb)` | Handwritten PL/pgSQL in unshipped 0018. Idempotent resource/progress settlement from the combat room completion outbox. |
 | Avatar catalog seeds and recolor metadata | Handwritten data SQL in 0006/0007. These are product assets, not disposable test fixtures. |
 | Historical data backfills/default transitions | Handwritten SQL: 0008 base XP backfill; 0010 fractional base XP conversion; 0014 legacy guild ceiling and personal receipt backfill. Preserve their order. |

@@ -18,6 +18,9 @@ The classroom site has not received this pilot.
 - Include an inn where students can change jobs.
 - Include separate weapon and armor shops.
 - Generate a quest giver for every required campaign unlock.
+- Owner playtest follow-up: immediate movement feedback and in-adventure equipment
+  changes showing only currently usable owned gear. Workshop the placeholder UI
+  before visual acceptance.
 
 These requirements extend [the campaign roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md).
 Existing classroom fights retain their current independent encounter resources.
@@ -99,7 +102,9 @@ acceptance are not established by those tests.
    opening the gate and collecting keys includes it before the cave is cleared.
 5. Visit `I` to change to an unlocked campaign job or rest. Weapon (`W`) and armor
    (`A`) shops use existing tier-1 inventory and prices. Purchased gear joins the
-   student's inventory; the existing equipment screen manages saved loadouts.
+   student's inventory. The adventure **Equipment** panel changes the current
+   campaign job's saved loadout and shows only usable owned gear (including
+   permanent starters), filtered by effective level, job, slot and hand pairing.
 6. Leave town and enter `D`. Wild encounters sample up to two quiz questions;
    the cave guardian samples up to five. The existing engine repeats the sample
    until the encounter ends. All pilot encounters are tier 1, capped at level 4.
@@ -127,3 +132,38 @@ acceptance are not established by those tests.
 - Migration `0018_campaign_pilot.sql` adds three tables and two Worker-owned SQL
   functions. Apply it through the normal reviewed release workflow. No fixture
   users, campaigns or authored questions are seeded into production.
+
+## October 20 playtest follow-up — movement, equipment and UI
+
+The original screen waited for every movement request and rebuilt the combat
+profile twice per step. The follow-up predicts legal movement locally, buffers
+at most eight unconfirmed steps, and sends queued steps as bounded paths. The
+server validates every tile and stops at the first encounter. Local walls and
+collision checks remain immediate; teacher gates, HP, battle outcomes, gold and
+rewards remain authoritative on the server. Polling cannot overwrite pending
+movement. A conflict or connection error clears queued input and reloads saved
+state. An encounter stops travel and opens the existing combat screen.
+
+The action response reuses its already-validated combat profile when job/loadout
+revision still matches, avoiding the second rebuild. This is responsiveness work,
+not an offline or client-authoritative combat mode.
+
+Equipment is available throughout exploration and locked during combat or pending
+movement. Selections use the current campaign job and tier-1 effective level cap;
+other-job, unowned, too-high-level and incompatible hand-pair choices are hidden.
+The server applies the same eligibility checks. Changes save to that job's loadout,
+including the character's active slots when it is also the classroom job, without
+changing the classroom job. HP/MP clamp to new maxima but never refill. Remove an
+incompatible off-hand item before changing weapons. Migration 0019 updates only
+the existing atomic campaign action routine; it does not rewrite migration 0018,
+reset progress, or add fixture data.
+
+### UI workshop — pending owner review
+
+The current tiles, map layout and sidebar are a mechanics prototype, not the final
+UI. Workshop the exploration screen before visual acceptance. Proposed direction:
+a map-first screen with a larger exploration viewport, compact HP/MP/job status,
+and equipment, healing, quests and services opened when needed. Review map scale,
+movement feedback, service discoverability, keyboard/touch controls and desktop/
+phone layouts together. Biome artwork and the environment bestiaries remain in
+CAM-08; this proposal does not approve a final layout or asset style.

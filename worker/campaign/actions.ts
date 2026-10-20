@@ -1,7 +1,10 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { z } from 'zod';
 import { campaignAction } from '../../shared/contracts/campaigns';
-import { dungeonAccessible, near, pointKey, samePoint, walkable } from '../../shared/campaign/model';
+import { dungeonAccessible, near, pointKey } from '../../shared/campaign/model';
+import { campaignPath } from '../../shared/campaign/movement';
+import { equipmentUnavailable, handConflict } from '../../shared/equipment-rules';
+import type { JobLoadout } from '../../shared/job-loadouts';
 import { fieldHeal, normalizeResources } from '../../shared/campaign/resources';
 import { builtinShopItems } from '../../shared/equipment-shop';
 import { calculateTierPrice } from '../../shared/schema';
@@ -24,7 +27,8 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
   if (row.state.lastCommandId === input.commandId) return campaignView(db, campaign, student);
   if (row.revision !== input.revision) throw new GameError('Adventure changed. Refresh and try again.', 409);
   if (row.state.activeSessionId) throw new GameError('Finish or leave the active encounter first.', 409);
-  let { player, unlockedJobs } = await campaignPlayer(db, campaign, student, row.state.job);
+  let context = await campaignPlayer(db, campaign, student, row.state.job);
+  let { player, unlockedJobs } = context;
   let next = normalizeResources(row.state, player);
   const action = input.action;
   const service = (kind: string) => {
@@ -33,19 +37,34 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
   };
   const open = () => dungeonAccessible(campaign.gates, next);
   let startEncounter = false, objective = false;
+  let equipment: { job: string; loadout: JobLoadout } | undefined;
   let purchase: { id: string; price: number; tier: number } | undefined;
   switch (action.type) {
-    case 'move': {
-      if (Math.abs(action.dx) + Math.abs(action.dy) !== 1) throw new GameError('Move one tile at a time.');
-      const position = { x: next.position.x + action.dx, y: next.position.y + action.dy };
-      if (!walkable(campaign.layout[next.zone], position)) throw new GameError('That route is blocked.');
-      const inTown = next.zone === 'overworld' && position.x <= 7 && position.y >= 3 && position.y <= 9;
-      if (next.health <= 0 && !inTown) throw new GameError('Rest at the inn before adventuring.');
-      next = { ...next, position, steps: next.steps + 1 };
-      next.explored = [...new Set([...next.explored, pointKey(next.zone, position)])];
-      // Stable pseudo-random checks cannot be rerolled by refreshing; town is safe.
-      const roll = Array.from(`${campaign.id}:${next.steps}`).reduce((n, c) => Math.imul(n ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
-      startEncounter = !inTown && next.health > 0 && open() && roll % 7 === 0;
+    case 'move':
+    case 'move_path': {
+      try {
+        const moved = campaignPath(campaign, next, action.type === 'move' ? [action] : action.steps);
+        next = moved.progress; startEncounter = moved.encounter;
+      } catch (e) { throw new GameError((e as Error).message); }
+      break;
+    }
+    case 'equip': {
+      const { catalog, owned, loadout, levels } = context;
+      if (action.itemId) {
+        const item = catalog[action.itemId];
+        if (!item || item.slot !== action.slot || !owned.includes(action.itemId)) throw new GameError('Equipment is not owned or has the wrong slot.');
+        const reason = equipmentUnavailable(next.job, item, levels[next.job] || 1, catalog[loadout.weapon || ''] || null, catalog[loadout.offhand || ''] || null);
+        if (reason) throw new GameError(reason);
+      }
+      const changed = { ...loadout, [action.slot]: action.itemId };
+      if (handConflict(catalog[changed.weapon || ''] || null, catalog[changed.offhand || ''] || null))
+        throw new GameError('Remove the incompatible off-hand item first.');
+      equipment = { job: next.job, loadout: changed };
+      const updated = { ...student, ...(student.characterClass === next.job ? changed : {}),
+        jobLoadouts: { ...student.jobLoadouts, [next.job]: changed }, loadoutRevision: student.loadoutRevision + 1 };
+      context = await campaignPlayer(db, campaign, updated, next.job);
+      player = context.player;
+      next = normalizeResources(next, player);
       break;
     }
     case 'enter':
@@ -70,7 +89,8 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
     case 'job': {
       service('inn');
       if (!unlockedJobs.includes(action.job)) throw new GameError('This job is not unlocked.');
-      ({ player } = await campaignPlayer(db, campaign, student, action.job));
+      context = await campaignPlayer(db, campaign, student, action.job);
+      player = context.player;
       next = normalizeResources({ ...next, job: action.job }, player); break;
     }
     case 'buy': {
@@ -105,9 +125,9 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
   }
   const result = await db.execute(sql`SELECT apply_campaign_action(${JSON.stringify({ campaign: campaign.id, student: student.id,
     revision: input.revision, campaignRevision: campaign.revision, loadoutRevision: student.loadoutRevision,
-    command: input.commandId, state: next, ...(purchase ? { purchase } : {}), ...(encounter ? { encounter } : {}) })}::jsonb) AS result`);
+    command: input.commandId, state: next, ...(purchase ? { purchase } : {}), ...(equipment ? { equipment } : {}), ...(encounter ? { encounter } : {}) })}::jsonb) AS result`);
   const outcome = result.rows[0].result as { error?: string };
   if (outcome.error) throw new GameError(outcome.error, 409);
   const [fresh] = await db.select().from(s.students).where(eq(s.students.id, student.id));
-  return campaignView(db, campaign, fresh);
+  return campaignView(db, campaign, fresh, context);
 }

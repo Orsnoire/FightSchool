@@ -2,6 +2,8 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { restoreLoadout } from '../../shared/job-loadouts';
 import { EQUIPMENT_ITEMS, type CharacterClass } from '../../shared/schema';
 import { EQUIPMENT_SLOTS } from '../../shared/equipment-slots';
+import { ownedEquipment, snapshotEquipmentLoadout } from '../../shared/equipment-catalog';
+import { equipmentUnavailable } from '../../shared/equipment-rules';
 import { effectiveLevels } from '../../shared/quests';
 import { getUnlockedJobs } from '../../shared/jobSystem';
 import { combatProfile } from '../db/game-repository';
@@ -20,7 +22,8 @@ export async function campaignPlayer(db: GameDatabase, campaign: CampaignRecord,
   const earned = Object.fromEntries(jobs.map(j => [j.jobClass, j.level]));
   const levels = effectiveLevels(earned, 1);
   const saved = job === student.characterClass ? student : student.jobLoadouts[job];
-  const ids = EQUIPMENT_SLOTS.map(slot => saved?.[slot]).filter((id): id is string => !!id && !EQUIPMENT_ITEMS[id]);
+  const owned = ownedEquipment([...student.inventory, ...EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id)]);
+  const ids = owned.filter(id => !EQUIPMENT_ITEMS[id]);
   const custom = ids.length ? await db.select().from(s.equipmentItems).where(inArray(s.equipmentItems.id, ids)) : [];
   const catalog = { ...EQUIPMENT_ITEMS, ...Object.fromEntries(custom.map(item => [item.id, item])) };
   const loadout = restoreLoadout(job, saved, [...student.inventory, ...EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id)], levels, catalog);
@@ -29,7 +32,8 @@ export async function campaignPlayer(db: GameDatabase, campaign: CampaignRecord,
   const profile = await combatProfile(db, actor);
   profile.levels = levels; profile.questGuildId = campaign.guildId; profile.limitTier = 1;
   const player = addStudent(initialCombatState('campaign-preview', campaign.fightSnapshot), actor, profile).players[student.id];
-  return { player, unlockedJobs: getUnlockedJobs(earned as Record<CharacterClass, number>, student.grantedJobs || []) };
+  return { player, loadout, catalog, owned, levels, loadoutRevision: student.loadoutRevision,
+    unlockedJobs: getUnlockedJobs(earned as Record<CharacterClass, number>, student.grantedJobs || []) };
 }
 
 export async function getCampaignProgress(db: GameDatabase, campaign: CampaignRecord, student: s.StudentRecord) {
@@ -47,14 +51,21 @@ export async function getCampaignProgress(db: GameDatabase, campaign: CampaignRe
   return record;
 }
 
-export async function campaignView(db: GameDatabase, campaign: CampaignRecord, student: s.StudentRecord): Promise<CampaignView> {
+export async function campaignView(db: GameDatabase, campaign: CampaignRecord, student: s.StudentRecord, prepared?: Awaited<ReturnType<typeof campaignPlayer>>): Promise<CampaignView> {
   const record = await getCampaignProgress(db, campaign, student);
-  const { player, unlockedJobs } = await campaignPlayer(db, campaign, student, record.state.job);
+  const context = prepared?.loadoutRevision === student.loadoutRevision && prepared.player.characterClass === record.state.job
+    ? prepared : await campaignPlayer(db, campaign, student, record.state.job);
+  const { player, unlockedJobs, loadout, catalog, owned, levels } = context;
   const progress = normalizeResources(record.state, player);
   Object.assign(player, { health: progress.health, mp: progress.mp, healingPotions: progress.healingPotions, shieldPotions: progress.shieldPotions, isDead: progress.health <= 0 });
   const [guild] = await db.select().from(s.guilds).where(eq(s.guilds.id, campaign.guildId));
   return { id: campaign.id, name: campaign.name, dungeonName: campaign.dungeonName, theme: 'normal_cave', guildId: campaign.guildId, guildName: guild.name,
     gates: campaign.gates, revision: campaign.revision, layout: campaign.layout, progress, progressRevision: record.revision,
+    equipment: { loadout: snapshotEquipmentLoadout(loadout), items: owned.flatMap(id => {
+      const item = catalog[id];
+      if (!item || equipmentUnavailable(progress.job, item, levels[progress.job] || 1, catalog[loadout.weapon || ''] || null, catalog[loadout.offhand || ''] || null)) return [];
+      return [{ id: item.id, name: item.name, slot: item.slot, tier: item.tier ?? 1, stats: item.stats }];
+    }) },
     player, unlockedJobs, gold: student.gold, inventory: safeStudent(student).inventory,
     healingActions: healingActions(player), eligibleQuestionCount: dungeonAccessible(campaign.gates, progress) ? campaign.fightSnapshot.questions.length : 0 };
 }

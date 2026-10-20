@@ -7,6 +7,7 @@ import { eq, sql } from 'drizzle-orm';
 import * as s from '../../worker/db/schema';
 import { generateCampaignLayout, validateCampaignLayout } from '../../shared/campaign/generation';
 import { fieldHeal, normalizeResources } from '../../shared/campaign/resources';
+import { campaignPath } from '../../shared/campaign/movement';
 import type { CampaignProgress } from '../../shared/campaign/model';
 import { addStudent } from '../../worker/combat/participants';
 import { initialCombatState, scaleEncounter } from '../../worker/combat/encounter-setup';
@@ -88,6 +89,22 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     };
     const move = async (dx: number, dy: number) => { const r = await action({ type: 'move', dx, dy }); assert.equal(r.status, 200, JSON.stringify(r.body)); };
     assert.equal((await action({ type: 'move', dx: 1, dy: 1 })).status, 400);
+    const start = view.progress.position, startSteps = view.progress.steps;
+    const pathCommand = crypto.randomUUID(), pathRevision = view.progressRevision;
+    const pathAction = { type: 'move_path', steps: [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }] };
+    assert.equal((await action(pathAction, pathRevision, pathCommand)).status, 200);
+    assert.deepEqual(view.progress.position, start); assert.equal(view.progress.steps, startSteps + 2);
+    assert.equal((await action(pathAction, pathRevision, pathCommand)).status, 200);
+    assert.equal(view.progress.steps, startSteps + 2, 'retry cannot duplicate a path');
+    assert.equal((await action({ type: 'move_path', steps: Array(9).fill({ dx: 1, dy: 0 }) })).status, 400);
+    const beforeBlocked = view.progressRevision;
+    assert.equal((await action({ type: 'move_path', steps: Array(8).fill({ dx: 0, dy: -1 }) })).status, 400);
+    assert.equal((await call(path)).body.progressRevision, beforeBlocked, 'a blocked path is not partially committed');
+    assert.equal(view.equipment.items.some((i: any) => i.id === 't1_fighter_armor'), false, 'unowned equipment hidden');
+    assert.equal(view.equipment.items.some((i: any) => i.id === 'basic_staff'), false, 'wrong-job weapons hidden');
+    assert.equal((await action({ type: 'equip', slot: 'weapon', itemId: 'basic_staff' })).status, 400);
+    assert.equal((await action({ type: 'equip', slot: 'armor', itemId: 't1_fighter_armor' })).status, 400);
+
     assert.equal((await action({ type: 'job', job: 'priest' })).status, 400, 'remote inn rejected');
     assert.equal((await action({ type: 'rest', health: 999 })).status, 400, 'browser health rejected');
     // Reach a keeper while the teacher gate is closed.
@@ -114,10 +131,38 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     assert.equal((await action({ type: 'buy', shop: 'weapons', itemId: item.id })).status, 400);
     assert.equal((await action({ type: 'buy', shop: 'armor', itemId: item.id })).status, 409);
     const stale = await action({ type: 'move', dx: 0, dy: -1 }, revision); assert.equal(stale.status, 409);
+    assert.ok(view.equipment.items.some((i: any) => i.id === item.id));
+    const hpBeforeEquip = view.progress.health;
+    assert.equal((await action({ type: 'equip', slot: 'armor', itemId: item.id })).status, 200);
+    assert.equal(view.equipment.loadout.armor, item.id); assert.equal(view.player.equipmentLoadout.armor, item.id);
+    assert.ok(view.progress.health <= hpBeforeEquip, 'equipping cannot heal');
+    assert.equal((await call(path)).body.equipment.loadout.armor, item.id, 'gear persists across reload');
+    const [equippedStudent] = await db.select().from(s.students).where(eq(s.students.id, student().id));
+    assert.equal(equippedStudent.armor, item.id); assert.equal(equippedStudent.jobLoadouts.warrior?.armor, item.id);
+    // Level caps and current hand pair filter otherwise-owned gear as well.
+    await db.update(s.students).set({ inventory: [...equippedStudent.inventory, 't1_healer_herbs', 't1_fighter_claymore', 't1_healer_armor'] }).where(eq(s.students.id, student().id));
+    view = (await call(path)).body;
+    assert.equal(view.equipment.items.some((i: any) => i.id === 't1_fighter_claymore'), false, 'shield blocks two-handed weapon');
+    assert.equal((await action({ type: 'equip', slot: 'weapon', itemId: 't1_fighter_claymore' })).status, 400);
+    assert.equal((await action({ type: 'equip', slot: 'offhand', itemId: null })).status, 200);
+    assert.equal(view.equipment.items.some((i: any) => i.id === 't1_fighter_claymore'), false, 'warrior cannot use two-handed swords');
+    assert.equal((await action({ type: 'equip', slot: 'weapon', itemId: null })).status, 200);
+    assert.equal((await action({ type: 'equip', slot: 'offhand', itemId: 'basic_shield' })).status, 400);
+    assert.equal((await action({ type: 'equip', slot: 'weapon', itemId: 'basic_sword' })).status, 200);
+
     // Seed injury as a server-side prior result; changing jobs at the inn does not heal.
     await db.update(s.campaignPlayers).set({ state: { ...view.progress, position: { x: 2, y: 5 }, health: 2, mp: 1 } }).where(eq(s.campaignPlayers.campaignId, created.body.id));
     view = (await call(path)).body;
     assert.equal((await action({ type: 'job', job: 'priest' })).status, 200);
+    assert.equal(view.equipment.items.some((i: any) => i.id === item.id), false, 'heavy armor hidden for priest');
+    assert.equal(view.equipment.items.some((i: any) => i.id === 't1_healer_armor'), false, 'level-one priest cannot equip owned tier-one gear');
+    assert.equal((await action({ type: 'equip', slot: 'armor', itemId: 't1_healer_armor' })).status, 400);
+    assert.equal((await action({ type: 'equip', slot: 'armor', itemId: item.id })).status, 400);
+    assert.equal((await action({ type: 'equip', slot: 'headgear', itemId: 'basic_wizard_cap' })).status, 200);
+    const [separateJob] = await db.select().from(s.students).where(eq(s.students.id, student().id));
+    assert.equal(separateJob.characterClass, 'warrior'); assert.equal(separateJob.headgear, equippedStudent.headgear);
+    assert.equal(separateJob.jobLoadouts.priest?.headgear, 'basic_wizard_cap', 'campaign job loadout saved without changing classroom job');
+
     assert.equal(view.progress.health, 2); assert.equal(view.progress.mp, 0, 'MP cannot grow when changing from a job with no MP');
     assert.equal((await action({ type: 'job', job: 'paladin' })).status, 400, 'locked job');
     await db.update(s.campaignPlayers).set({ state: { ...view.progress, mp: 1 } }).where(eq(s.campaignPlayers.campaignId, created.body.id));
@@ -134,6 +179,7 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     const sessionId = view.progress.activeSessionId; assert.ok(sessionId);
     assert.equal((await action({ type: 'return_to_town' })).status, 409);
     assert.equal((await action({ type: 'rest' })).status, 409);
+    assert.equal((await action({ type: 'equip', slot: 'armor', itemId: null })).status, 409, 'equipment frozen during encounter');
     const [encounter] = await db.select().from(s.campaignEncounters).where(eq(s.campaignEncounters.sessionId, sessionId));
     const [actor] = await db.select().from(s.students).where(eq(s.students.id, student().id));
     const profile = await combatProfile(db as any, actor, sessionId);

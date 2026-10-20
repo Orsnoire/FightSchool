@@ -134,6 +134,13 @@
       "when": 1792509048751,
       "tag": "0018_campaign_pilot",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792516168947,
+      "tag": "0019_campaign_equipment",
+      "breakpoints": true
     }
   ]
 }

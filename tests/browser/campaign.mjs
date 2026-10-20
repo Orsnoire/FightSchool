@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
+import { EQUIPMENT_ITEMS, getStartingEquipment } from '../../shared/schema.ts';
+import { ownedEquipment } from '../../shared/equipment-catalog.ts';
+import { equipmentUnavailable } from '../../shared/equipment-rules.ts';
+import { campaignPath } from '../../shared/campaign/movement.ts';
 import { generateCampaignLayout } from '../../shared/campaign/generation.ts';
 import { healingActions, fieldHeal, normalizeResources } from '../../shared/campaign/resources.ts';
 import { initialCombatState, addStudent } from '../../worker/combat/engine.ts';
@@ -23,6 +27,9 @@ try {
       layout, progressRevision: 0, unlockedJobs: ['warrior', 'herbalist'], gold: 500, inventory: [], eligibleQuestionCount: 0,
       progress: { version: 1, zone: 'overworld', position: layout.overworld.spawn, job: 'herbalist', health: 1, maxHealth: player.maxHealth, mp: player.mp, maxMp: player.maxMp,
         healingPotions: 5, shieldPotions: 0, steps: 0, claimedUnlocks: [], explored: [], cleared: false, activeSessionId: null, lastCommandId: null } };
+    let loadout = getStartingEquipment('herbalist');
+    const equipment = () => ({ loadout, items: ownedEquipment(view.inventory).map(id => EQUIPMENT_ITEMS[id]).filter(i => i && !equipmentUnavailable(view.progress.job, i, 2, EQUIPMENT_ITEMS[loadout.weapon], EQUIPMENT_ITEMS[loadout.offhand])).map(i => ({ ...i, stats: i.stats || {} })) });
+    let moveDelay = 0;
     const creations = [], commands = [];
     const stock = [{ id: 't1_fighter_sword', name: "Fighter's Sword", price: 150, shop: 'weapons', slot: 'weapon' }, { id: 't1_fighter_armor', name: "Fighter's Cuirass", price: 150, shop: 'armor', slot: 'armor' }];
     await page.addInitScript(({ teacherId, studentId }) => { localStorage.setItem('teacherId', teacherId); localStorage.setItem('studentId', studentId); }, { teacherId: fight.teacherId, studentId: student().id });
@@ -38,16 +45,18 @@ try {
       else if (path.endsWith('/actions')) {
         const input = request.postDataJSON(), a = input.action; commands.push(input);
         assert.equal(input.revision, view.progressRevision);
+        if (a.type === 'move_path') { if (moveDelay) await new Promise(resolve => setTimeout(resolve, moveDelay)); view.progress = campaignPath(view, view.progress, a.steps).progress; }
+        if (a.type === 'equip') loadout = { ...loadout, [a.slot]: a.itemId };
         if (a.type === 'move') view.progress.position = { x: view.progress.position.x + a.dx, y: view.progress.position.y + a.dy };
         if (a.type === 'quest') { view.progress.claimedUnlocks = [a.gateId]; view.eligibleQuestionCount = 10; }
         if (a.type === 'heal') view.progress = fieldHeal(view.progress, player, a.ability);
-        if (a.type === 'job') { player = addStudent(initialCombatState('preview', fight), student(a.job)).players[student().id]; view.progress = normalizeResources({ ...view.progress, job: a.job }, player); }
+        if (a.type === 'job') { loadout = getStartingEquipment(a.job); player = addStudent(initialCombatState('preview', fight), student(a.job)).players[student().id]; view.progress = normalizeResources({ ...view.progress, job: a.job }, player); }
         if (a.type === 'rest') view.progress = { ...view.progress, health: player.maxHealth, mp: player.maxMp, healingPotions: 5 };
         if (a.type === 'buy') { const item = stock.find(i => i.id === a.itemId); view.gold -= item.price; view.inventory.push(item.id); }
         if (a.type === 'encounter') view.progress.activeSessionId = 'CPBROWSERTEST';
         view.progressRevision++;
-        result = { ...view, player, healingActions: healingActions(player) };
-      } else if (path === `/api/campaigns/${id}`) result = { ...view, player, healingActions: healingActions(player) };
+        result = { ...view, player, equipment: equipment(), healingActions: healingActions(player) };
+      } else if (path === `/api/campaigns/${id}`) result = { ...view, player, equipment: equipment(), healingActions: healingActions(player) };
       else result = [];
       await route.fulfill({ json: result });
     });
@@ -71,7 +80,16 @@ try {
     const healedHP = view.progress.health;
     await page.reload(); await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
     assert.equal(view.progress.health, healedHP);
-    const step = async direction => { const previous = view.progressRevision; await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: `Move ${direction}`, exact: true }).click()]); await page.waitForFunction(() => !document.querySelector('button[aria-label="Move north"]').disabled); assert.equal(view.progressRevision, previous + 1); };
+    const step = async direction => { const previous = view.progressRevision; await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: `Move ${direction}`, exact: true }).click()]); await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor(); assert.equal(view.progressRevision, previous + 1); };
+    // Hold the first response: movement must paint before acknowledgement and queue the next input.
+    moveDelay = 700;
+    const before = { ...view.progress.position };
+    await page.getByRole('button', { name: 'Move east', exact: true }).click();
+    await page.getByRole('button', { name: `You, ${before.x + 1}, ${before.y}`, exact: true }).waitFor({ timeout: 500 });
+    assert.deepEqual(view.progress.position, before, 'marker moves before delayed server response');
+    await page.getByRole('button', { name: 'Move west', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor();
+    assert.deepEqual(view.progress.position, before); moveDelay = 0;
     await step('south'); await step('west');
     await page.getByRole('button', { name: 'Collect key', exact: true }).click();
     await page.getByRole('button', { name: 'Key collected', exact: true }).waitFor();
@@ -91,6 +109,15 @@ try {
     await page.getByRole('button', { name: 'Buy', exact: true }).click();
     await page.getByRole('button', { name: 'Owned', exact: true }).waitFor();
     assert.equal(view.gold, 200); assert.equal(view.inventory.length, 2);
+    await page.getByRole('button', { name: 'Equipment', exact: true }).click();
+    const armor = page.getByLabel('Adventure Chest', { exact: true });
+    assert.ok((await armor.locator('option').allTextContents()).some(text => text.includes("Fighter's Cuirass")));
+    assert.equal((await page.getByLabel('Adventure Weapon', { exact: true }).locator('option').allTextContents()).some(text => text.includes('Staff')), false);
+    await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), armor.selectOption('t1_fighter_armor')]);
+    await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor();
+    assert.equal(loadout.armor, 't1_fighter_armor');
+    await page.screenshot({ path: `${output}/${viewport.width}-campaign-equipment.png`, fullPage: true });
+
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     view.progress = { ...view.progress, zone: 'dungeon', position: layout.objective };
     await page.reload(); await page.getByRole('button', { name: 'Challenge guardian' }).waitFor();
