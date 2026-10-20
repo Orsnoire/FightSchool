@@ -1,6 +1,6 @@
 # One-dungeon campaign pilot
 
-**IN DEVELOPMENT — owner authorized October 20, 2026.** Branch:
+**IMPLEMENTED / VERIFIED / UNSHIPPED — owner authorized October 20, 2026.** Branch:
 `feature/campaign-pilot`. This is a separately requested campaign pilot; C12
 continues on its own branch. No production merge, migration, or deployment is
 included in this development request.
@@ -73,6 +73,14 @@ three named key keepers, normal cave entry/exit and guardian, wild encounters,
 server-saved HP/MP/charges, field healing, inn rest/job changes and both shops.
 See [active work](ACTIVE_WORK.md) and the live PR for the exact tested head and CI.
 No production migration, merge, deployment or live acceptance has occurred.
+
+Runtime `e9e241329c860cc45b3394b38cf3bef972f8397e` passes all 329 automated
+tests, TypeScript and both builds in [CI](https://github.com/Orsnoire/FightSchool/actions/runs/39450683377).
+The [browser acceptance job](https://github.com/Orsnoire/FightSchool/actions/runs/39450683813/job/118724352599)
+passes campaign setup, gates, recovery, inn, shops and resume at 1366×900 and
+390×844. Server integration uses a disposable migrated PostgreSQL instance;
+browser interaction uses API fixtures. Production load and live campaign
+acceptance are not established by those tests.
 
 ## Test walkthrough
 

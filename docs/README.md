@@ -6,8 +6,9 @@ Cleanup Phases 1–2 are complete. **C01 and C02 are COMPLETE: merged, deployed 
 cleanup exit gates. The separately authorized [swarm, previous-tier gear and host controls](combat/swarm-scaling.md) are deployed and accepted in PR #61.
 The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. It adds teacher reports, question editing, combat placeholders/completion and recoloring while retaining selection clocks.
 Read [active work](ACTIVE_WORK.md) before editing.
-The separately authorized [one-dungeon campaign pilot](CAMPAIGN_PILOT.md) is in
-development in PR #81; it adds exploration, persistent resources and town services.
+The separately authorized [one-dungeon campaign pilot](CAMPAIGN_PILOT.md) is
+implemented and verified in PR #81, awaiting review/release; it adds exploration,
+persistent resources and town services. It is not deployed.
 
 ## Start here
 

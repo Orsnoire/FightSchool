@@ -1,11 +1,12 @@
-# Campaign pilot — active October 20, 2026
+# Campaign pilot — implemented and verified; unshipped October 20, 2026
 
 - Owner authorized the one-dungeon campaign pilot and town services; [draft PR #81](https://github.com/Orsnoire/FightSchool/pull/81), branch `feature/campaign-pilot`.
 - Scope: [pilot specification](CAMPAIGN_PILOT.md). Persistent campaign HP, healing/consumables, inn job changes, weapon/armor shops, unlock quest givers. C12 remains separate.
-- Foundation published at `d752ea9e471a7733e52c824aa47b7a2ebe90a5a2`; this checkpoint adds authenticated routes, atomic town actions, combat resource handoff/settlement, teacher setup and student map/menu UI. The live PR carries the exact newer pushed SHA.
-- Verification: TypeScript, both production builds and the full 328-test suite pass locally. Added defeat/inn recovery and Durable Object eviction/reconnect cases also pass (four focused campaign tests; full suite now 329). Migration history/catalog/no-op checks pass. Browser acceptance is registered for desktop and phone; local Chromium download was unavailable, so CI is the pending browser gate. No production migration, merge or deployment.
-- CI at `759f77dde0c934c56e3d7f91ba0ed3bcb5baed68` passed the full verify job and three browser jobs. The new campaign browser case exposed ambiguous native select labels; this checkpoint adds explicit accessible names and waits for action responses. Also preserves shield charges at inn rest and projects campaign-list summaries without loading question banks/maps.
-- Next: verify the corrected campaign browser case and current-head checks. Full party exploration and 3–8-player boss matchmaking remain roadmap work; this pilot is solo.
+- Runtime head **`e9e241329c860cc45b3394b38cf3bef972f8397e`** implements authenticated routes, atomic town actions, combat resource handoff/settlement, teacher setup and student map/menu UI. Subsequent checkpoint edits are documentation only; the live PR carries the exact latest head.
+- **Verified:** [CI 39450683377](https://github.com/Orsnoire/FightSchool/actions/runs/39450683377) passes all **329 tests**, TypeScript and both production builds. Focused coverage includes map reachability, permissions, field healing/costs, duplicate purchases, gate closure, frozen resources, defeat/inn recovery, retry-safe settlement and Durable Object eviction/reconnect. Migration history/catalog/no-op checks pass.
+- **Browser verified:** [browser job 118724352599](https://github.com/Orsnoire/FightSchool/actions/runs/39450683813/job/118724352599) passes the new campaign setup/gates/exploration menu/inn/both-shops/resume cases at 1366×900 and 390×844, plus existing combat/host/shop cases. Current-head authoring/lobby and initial-loading jobs also pass. These use browser fixtures; no physical-device or live-backend campaign acceptance is claimed. The earlier native-select label failure is fixed.
+- **Release state:** implemented and tested; NOT merged, migrated to production, deployed or live accepted. Migration 0018 remains unshipped. Main's discovery pointer still identifies this branch/PR; C12 stays independent.
+- **Next:** review the pilot design and PR; use the documented teacher/student walkthrough after an authorized release. Full party exploration and 3–8-player boss matchmaking remain CAM-05/06 work. Do not mark the full CAM roadmap complete.
 
 # Battlefield labels and adaptive encounter scaling — released October 20, 2026
 
