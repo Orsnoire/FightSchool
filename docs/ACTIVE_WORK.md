@@ -1,3 +1,10 @@
+# Campaign pilot playtest — October 20, 2026
+
+- Owner requested testing and a playable preview of PR #81. Continue this lane on `feature/campaign-pilot`; no merge or classroom production deployment is authorized by this request.
+- Preparing an independent campaign preview Worker, fresh empty Neon project and dedicated R2 bucket. Existing C12 rehearsal and classroom resources are out of scope.
+- Runtime reviewed at `e9e241329c860cc45b3394b38cf3bef972f8397e`; documentation head `b390cebb13ca2065f0154b1050e3f6cab3e9388a`. Local staged tree matches GitHub `dcc925ca81f5a90dbc4331a83cd90400ca24a68b` before this checkpoint.
+- Next: build pinned source, apply migrations to the empty preview database, deploy isolated bindings, create synthetic playtest fixtures, verify the real HTTP/WebSocket campaign loop and publish access instructions. No live acceptance or preview readiness is claimed yet.
+
 # Campaign pilot — implemented and verified; unshipped October 20, 2026
 
 - Owner authorized the one-dungeon campaign pilot and town services; [draft PR #81](https://github.com/Orsnoire/FightSchool/pull/81), branch `feature/campaign-pilot`.
