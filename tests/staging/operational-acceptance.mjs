@@ -7,6 +7,7 @@ const suffix = Date.now().toString(36) + randomUUID().slice(0, 6);
 const password = `Acceptance-${randomUUID()}!`;
 const sockets = [], fights = [], checks = [];
 let teacher;
+let nextActorId = 0, tearingDown = false;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
   const response = await fetch(origin + path, {
@@ -25,23 +26,34 @@ async function check(name, fn) {
 class Actor {
   constructor(cookie, room) {
     this.messages = [];
+    this.actorId = ++nextActorId;
+    this.room = room;
+    this.createdAt = Date.now();
     this.socket = new WebSocket(origin.replace(/^http/, "ws") + `/ws?sessionId=${room}`, { headers: { Cookie: cookie }, origin });
     sockets.push(this.socket);
-    this.socket.on("message", data => this.messages.push(JSON.parse(data.toString())));
+    this.socket.on("message", data => { this.lastMessageAt = Date.now(); this.messages.push(JSON.parse(data.toString())); });
     this.socket.on("error", error => { this.error = error.message; });
+    this.socket.on("close", (code, reason) => {
+      this.closed = { code, reason: reason.toString(), ageMs: Date.now() - this.createdAt };
+      if (!tearingDown) console.log("Socket closed:", JSON.stringify(this.connection()));
+    });
   }
+  connection() { return { actor: this.actorId, room: this.room, socketState: this.socket.readyState,
+    ageMs: Date.now() - this.createdAt, lastMessageAgeMs: this.lastMessageAt ? Date.now() - this.lastMessageAt : null,
+    closed: this.closed, last: this.messages.at(-1)?.type, phase: this.messages.at(-1)?.state?.currentPhase }; }
   open() { return new Promise((resolve, reject) => { this.socket.once("open", resolve); this.socket.once("error", reject); }); }
-  send(type, fields = {}) { const commandId = randomUUID(); this.socket.send(JSON.stringify({ type, commandId, ...fields })); return commandId; }
+  send(type, fields = {}) { assert.equal(this.socket.readyState, WebSocket.OPEN, `${type}: ${JSON.stringify(this.connection())}`); const commandId = randomUUID(); this.socket.send(JSON.stringify({ type, commandId, ...fields })); return commandId; }
   async wait(predicate, timeout = 45000) {
     const deadline = Date.now() + timeout;
     while (Date.now() < deadline) {
       const found = this.messages.find(predicate);
       if (found) return found;
       if (this.error) throw new Error(this.error);
+      if (this.closed) throw new Error(`Socket closed: ${JSON.stringify(this.connection())}`);
       await sleep(50);
     }
     const recent = this.messages.slice(-5).map(m => ({ type: m.type, error: m.error, phase: m.state?.currentPhase, round: m.state?.round }));
-    throw new Error(`Timed out; recent protocol state: ${JSON.stringify(recent)}`);
+    throw new Error(`Timed out; connection: ${JSON.stringify(this.connection())}; recent protocol state: ${JSON.stringify(recent)}`);
   }
   state(phase) { return this.wait(m => m.type === "combat_state" && m.state.currentPhase === phase).catch(error => { throw new Error(`Waiting for ${phase}: ${error.message}`); }); }
   async ack(type, fields = {}) {
@@ -115,6 +127,7 @@ try {
     assert.equal(reused.payload.sessionId, main.room);
   });
   await check("30 simultaneous answers and reconnect preserve shared state", async () => {
+    console.log("Classroom connections before start:", JSON.stringify([main.host, ...players].map(actor => actor.connection())));
     await main.host.ack("start_fight"); const opened = await players[0].state("question");
     await sleep(Math.max(0, opened.state.questionStartTime - Date.now()) + 100);
     const times = await Promise.all(players.map(player => player.ack("answer", { round: 1, questionId: "q1", answer: "4" })));
@@ -230,6 +243,7 @@ try {
   if (checks.some(x => !x.passed)) process.exitCode = 1;
 } catch (error) { console.error(error); process.exitCode = 1; }
 finally {
+  tearingDown = true;
   for (const socket of sockets) socket.terminate();
   if (teacher) for (const id of fights) {
     try { await api(`/api/fights/${id}`, { method: "DELETE", cookie: teacher.cookie }); }
