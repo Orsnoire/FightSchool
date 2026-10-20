@@ -1,9 +1,12 @@
 # One-dungeon campaign pilot
 
-**IMPLEMENTED / VERIFIED / UNSHIPPED — owner authorized October 20, 2026.** Branch:
+**IMPLEMENTED / ISOLATED PREVIEW DEPLOYED — owner authorized October 20, 2026.** Branch:
 `feature/campaign-pilot`. This is a separately requested campaign pilot; C12
 continues on its own branch. No production merge, migration, or deployment is
 included in this development request.
+
+Play the [isolated preview and follow the walkthrough](CAMPAIGN_PLAYTEST.md).
+The classroom site has not received this pilot.
 
 ## Owner requirements added after the roadmap
 
@@ -67,7 +70,7 @@ the full CAM-00 through CAM-09 roadmap complete after shipping this slice.
 
 ## Checkpoint
 
-Implemented in [draft PR #81](https://github.com/Orsnoire/FightSchool/pull/81):
+Implemented in [PR #81](https://github.com/Orsnoire/FightSchool/pull/81):
 teacher creation/access controls, saved maps, movement and discoveries, zero to
 three named key keepers, normal cave entry/exit and guardian, wild encounters,
 server-saved HP/MP/charges, field healing, inn rest/job changes and both shops.

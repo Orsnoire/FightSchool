@@ -82,3 +82,5 @@ dated; move remaining scope into the active plans instead of leaving competing
 [Source of Truth](Source_of_Truth.md).
 
 C05 [room-cost methods and measurements](cloudflare/room-costs.md) are complete and released; their documented measurement limits remain.
+
+- [Campaign pilot playtest](CAMPAIGN_PLAYTEST.md): preview access, student walkthrough, teacher gates and scope.

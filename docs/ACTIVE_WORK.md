@@ -1,9 +1,13 @@
-# Campaign pilot playtest — October 20, 2026
+# Campaign pilot — isolated preview ready for owner playtest (October 20, 2026)
 
-- Owner requested testing and a playable preview of PR #81. Continue this lane on `feature/campaign-pilot`; no merge or classroom production deployment is authorized by this request.
-- Preparing an independent campaign preview Worker, fresh empty Neon project and dedicated R2 bucket. Existing C12 rehearsal and classroom resources are out of scope.
-- Runtime reviewed at `e9e241329c860cc45b3394b38cf3bef972f8397e`; documentation head `b390cebb13ca2065f0154b1050e3f6cab3e9388a`. Local staged tree matches GitHub `dcc925ca81f5a90dbc4331a83cd90400ca24a68b` before this checkpoint.
-- Next: build pinned source, apply migrations to the empty preview database, deploy isolated bindings, create synthetic playtest fixtures, verify the real HTTP/WebSocket campaign loop and publish access instructions. No live acceptance or preview readiness is claimed yet.
+- Active branch `feature/campaign-pilot`, [PR #81](https://github.com/Orsnoire/FightSchool/pull/81), ready for review and **unmerged**. C12 stays on its own lane. Owner requested testing and access; classroom deployment remains out of scope.
+- Play: https://questacademy-campaign-preview.coxsonator.workers.dev/ . [Student/teacher walkthrough](CAMPAIGN_PLAYTEST.md). A fresh `CampaignTester` character has 500 gold, full HP and an unclaimed key; its teacher gate is open. Credentials were supplied privately in the owner conversation, never committed.
+- Deployed source `a688e8f18d2c539612cb87d0360f92fe8f5cbf18`. This checkpoint is documentation only. Dedicated Neon project/database, R2 bucket and local DO namespace are verified in [the test report](reviews/2026-10-20-campaign-playtest.md). All 19 migrations applied only to the fresh empty preview database.
+- Verification: [329 tests, TypeScript and both builds](https://github.com/Orsnoire/FightSchool/actions/runs/39456186245) pass; [all four browser jobs](https://github.com/Orsnoire/FightSchool/actions/runs/39456186313) pass. Updated desktop/phone screenshots were inspected; an unreadable light-theme heading was fixed.
+- Real HTTP/WebSocket checks pass for gates/key, question eligibility, exploration, both shops, inn jobs/rest, reduced persistent HP, field potion cost, reconnect, leaving encounters, guardian victory and saved clear state. [Structured results](reviews/2026-10-20-campaign-playtest-results.json). The owner character was not consumed by acceptance.
+- Open observations: first combat run had an unexplained answer-feedback delay; later fights progressed. A driver assumption about empty animation phases was corrected without changing gameplay. The level-one herbalist's guardian fight was long (28 rounds including test interruption); solo balance is not approved.
+- Exact next action: owner plays the preview and reports usability, combat timing and balance observations. Fix reproducible pilot issues on this branch; do not mark the full campaign roadmap complete. Cooperative exploration, role-constrained 3–8-player bosses, transport gates, other biomes and assigned loot chests remain future work.
+- Boundary: **PREVIEW DEPLOYED / CORE LOOP ACCEPTED / OWNER PLAYTEST PENDING**. No merge, classroom migration/deployment, C12 overwrite or automatic resource cleanup occurred.
 
 # Campaign pilot — implemented and verified; unshipped October 20, 2026
 
