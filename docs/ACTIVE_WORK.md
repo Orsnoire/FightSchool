@@ -1,3 +1,12 @@
+# PR #79 live acceptance diagnosis — active October 20, 2026
+
+- Claim: `fix/pr79-acceptance-diagnostics`, [draft PR #80](https://github.com/Orsnoire/FightSchool/pull/80).
+- Production runtime remains `989c9ec63453d06804900d0458d89664391bf849`, Worker `6b254de6-e7d8-46f7-9daf-bc878c8351bd`. Canonical attempts 1 and 2 in run 39438588938 failed classroom connection gates; release is not accepted.
+- Scope: socket state/close diagnostics in the existing operational acceptance fixture, then investigate and correct the reproduced release gate. Preserve every timeout, assertion and concurrency threshold; no C12/rehearsal changes.
+- A temporary diagnostic run from the release environment passed all eight operational checks, p50 755 ms / p95 1406 ms / max 1457 ms, with no unexpected closures. The GitHub runner remains the failing environment to diagnose.
+- Diagnostics implemented: socket actor/room IDs, ready state, close code/reason, connection/message ages; closed sockets fail explicitly. No credentials or answer content logged. All existing assertions, 30-player count, 15-second burst gate and timeouts are unchanged. `node --check` and `git diff --check` pass.
+- Next: dispatch canonical acceptance on this diagnostic head, investigate the connection evidence and resolve the gate. No production runtime change is proposed.
+
 # Battlefield labels and adaptive encounter scaling — released October 20, 2026
 
 - Owner authorized review, merge, production deployment and canonical live acceptance. [PR #79](https://github.com/Orsnoire/FightSchool/pull/79) merged at **`989c9ec63453d06804900d0458d89664391bf849`**, with an identical tree to reviewed head `be6916406e6c9990d1a01273817966545214d9e7`.
