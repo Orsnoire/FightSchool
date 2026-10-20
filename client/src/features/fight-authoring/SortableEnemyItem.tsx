@@ -54,7 +54,7 @@ export function SortableEnemyItem({ enemy, index, onEdit, onDelete }: SortableEn
         <RecoloredSprite src={enemyImage(enemy)} palette={enemy.palette} alt={enemy.name} className="w-12 h-12 object-cover rounded" />
         <div>
           <p className="font-medium">{enemy.name} × {enemy.quantity || 1} · Wave {enemy.wave || index + 1}</p>
-          {enemy.swarm && <p className="text-xs text-muted-foreground">Swarm: +{enemy.swarm.enemiesPerFourPlayers} at 8 players and every 4 after</p>}
+          {enemy.swarm && <p className="text-xs text-muted-foreground">Swarm: base × tier; +{enemy.swarm.enemiesPerFourPlayers} at 8 players and every 4 after</p>}
           <p className="text-sm text-muted-foreground">
             {enemy.role ? ENEMY_ROLE_LABELS[enemy.role] : `Legacy difficulty ${enemy.difficultyMultiplier}`}
           </p>

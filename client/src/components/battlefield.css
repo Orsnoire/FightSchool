@@ -21,7 +21,7 @@
 .is-queued .battle-paperdoll { opacity:.55; }
 .battle-enemy { position:absolute; width:var(--enemy-size); transform:translate(-50%,-85%); z-index:50; text-align:center; }
 .battle-enemy :is(img,canvas) { width:100%; height:var(--enemy-size); object-fit:contain; filter:drop-shadow(0 8px 3px #203b2930); }.battle-enemy .battle-health { width:75%; height:9px; }.battle-enemy .battle-health>span { background:#e49869; }
-.battle-enemy-name { color:#18372c; font-weight:800; font-size:16px; margin-bottom:5px; text-shadow:0 1px #e4edca80; }.battle-enemy-hp { font-size:10px; font-weight:700; color:#27483c; }
+.battle-enemy-name { color:#18372c; font-weight:800; font-size:12px; overflow-wrap:anywhere; }.battle-enemy-hp { font-size:11px; font-weight:600; color:#27483c; }
 .battle-roster { position:absolute; z-index:110; left:20px; top:52px; color:#f6f5df; font-size:12px; }.battle-roster summary { cursor:pointer; background:#254b41c9; padding:8px 12px; border:1px solid #edebc343; border-radius:8px; }.battle-roster-list { display:grid; max-height:280px; overflow:auto; padding:5px; margin-top:5px; min-width:200px; background:#193a32f5; border-radius:8px; }.battle-roster-list button { display:flex; gap:16px; justify-content:space-between; padding:8px; text-align:left; }.battle-roster-list button:hover { background:#ffffff15; }.battle-roster-list span { font-size:10px; opacity:.8; }
 .battle-legend { position:absolute; bottom:18px; right:24px; display:flex; align-items:center; gap:6px; font-size:10px; font-weight:700; color:#e7ecd3; }.battle-legend svg:nth-of-type(2) { margin-left:9px; }
 .battle-empty { position:absolute; top:42%; left:8%; font-family:Georgia,serif; font-size:25px; color:#2c4f3b; }.battle-empty span { display:block; margin-top:6px; font:12px sans-serif; }
@@ -62,14 +62,25 @@
 .battle-self-bars .self-cp progress::-moz-progress-bar { background:#edc56d; }
 
 /* A bounded formation: additional enemies crowd the same half-field, never extend it. */
-.battle-enemy-field { position:absolute; left:53%; top:27%; width:44%; height:61%; container-type:size; }
+.battlefield { --enemy-list-top:16px; --enemy-field-top:27%; }
+.battle-student .battlefield { --enemy-list-top:72px; }
+.battle-scene-label { right:50%; }
+.battle-enemy-field { position:absolute; left:53%; top:var(--enemy-field-top); width:44%; height:61%; container-type:size; }
 .battle-enemy-field .battle-enemy { transform:translate(-50%,-50%); min-width:0; padding:0; border:0; background:none; }
 .battle-enemy-field .battle-enemy :is(img,canvas) { width:100%;height:100%;object-fit:contain; image-rendering:pixelated; }
 .battle-enemy-info { position:absolute; left:0;right:0;top:0; transform:translateY(-70%); pointer-events:none; }
-.battle-enemy-field .battle-enemy-name {font-size:clamp(9px,1vw,15px);margin:0;}
 .battle-enemy-field .battle-enemy:hover,.battle-enemy-field .battle-enemy:focus-within {z-index:99!important;outline:2px solid #fff2ac;border-radius:20%;}
 .battle-enemy .battle-enemy-remove {top:0;right:0;z-index:1;}
 .battle-enemy-field.is-swarm .battle-enemy-info {display:none;}
-.battle-enemy-field.is-swarm .battle-enemy:hover .battle-enemy-info,.battle-enemy-field.is-swarm .battle-enemy:focus-within .battle-enemy-info {display:block;background:#f7f2ddee;border-radius:5px;min-width:90px;}
-.battle-enemy-summary {position:absolute;top:19%;left:53%;width:44%;max-height:7%;overflow:auto;text-align:center;font-size:12px;color:#203d30;font-weight:600;}
-@media(max-width:600px){.battle-enemy-field{left:51%;width:47%;top:30%;height:52%;}.battle-enemy-summary{left:51%;width:47%;top:23%;font-size:10px;}}
+.battle-enemy-field.is-swarm .battle-enemy:hover .battle-enemy-info,.battle-enemy-field.is-swarm .battle-enemy:focus-within .battle-enemy-info {display:block;}
+.battle-enemy-summary { position:absolute; top:var(--enemy-list-top); bottom:calc(100% - var(--enemy-field-top) + 14px); left:53%; width:44%; z-index:100; display:flex; flex-direction:column; gap:5px; color:#203d30; font-size:12px; }
+.battle-enemy-heading { margin:0; flex:none; font-size:12px; line-height:16px; font-weight:800; }
+.battle-enemy-list { margin:0; padding:6px 8px; list-style:none; min-height:0; overflow:auto; flex:1; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); align-content:start; gap:6px 12px; border:1px solid #dbe5ca; border-radius:7px; background:#f7f5e9f2; }
+.battle-enemy-list:focus-visible { outline:2px solid #274b43; outline-offset:2px; }
+.battle-enemy-list li { min-width:0; display:flex; flex-direction:column; line-height:1.35; }
+.battle-enemy-status { color:#684213; font-size:11px; overflow-wrap:anywhere; }
+@media(max-width:600px){.battlefield{--enemy-field-top:30%;}.battle-enemy-field{left:51%;width:47%;height:52%;}.battle-enemy-summary{left:51%;width:47%;}}
+/* Nonmodal student status stays in the party lane, clear of the enemy list. */
+.battle-student .battle-wait { left:20px; top:156px; transform:none; max-width:min(360px,calc(48% - 32px)); flex-wrap:wrap; }
+.battle-student .battle-roster { top:102px; }
+@media(max-width:760px){.battle-student .battle-wait{left:12px;max-width:calc(49% - 24px);}}

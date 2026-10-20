@@ -48,7 +48,6 @@ export const CombatBoard = memo(function CombatBoard({ state: sourceState, selfI
   const columns=Math.max(1,Math.ceil(Math.sqrt(shownEnemies.length*1.15)));
   const rows=Math.max(1,Math.ceil(shownEnemies.length/columns));
   const spanX=1+(columns-1)*.78,spanY=1+(rows-1)*.7;
-  const groups=Object.entries(shownEnemies.reduce((a,e)=>{const name=e.templateId?e.name.replace(/ \d+$/,''):e.name;a[name]=(a[name]||0)+1;return a;},{} as Record<string,number>));
   const renderPlayer = (p: CombatPlayer, x: number, y: number, size: number, isSelf = false) => {
     const queued = !!state.pendingPlayers?.[p.studentId];
     const canRevive = !!onResurrect && p.isDead && !queued;
@@ -72,18 +71,27 @@ export const CombatBoard = memo(function CombatBoard({ state: sourceState, selfI
   return <section ref={board} aria-label="Battlefield" className={`battlefield ${all.length > 12 ? "is-crowded" : ""}`} data-testid="battlefield">
     <BattleScenery />
     <div className="combat-effects-layer" aria-hidden="true">{active.map(cue=><BattleEffect key={cue.event.id} cue={cue} board={board} onComplete={completeCue}/>)}</div>
-    <div className="battle-scene-label"><span>THE PARTY</span><span>{state.currentPhase === "waiting" ? "GATHER YOUR PARTY" : `ROUND ${state.round}`}</span><span>THE ENEMY</span></div>
+    <div className="battle-scene-label"><span>THE PARTY</span><span>{state.currentPhase === "waiting" ? "GATHER YOUR PARTY" : `ROUND ${state.round}`}</span></div>
+    <section className="battle-enemy-summary" aria-label="Enemy overview">
+      <h2 className="battle-enemy-heading">{state.encounterRules === 2 && state.enemyDisplayMode === "consecutive" && <strong>Wave {state.activeWave} · </strong>}Enemies · {shownEnemies.length}{state.encounterTier && <span className="battle-tier"> · Tier {state.encounterTier}{waiting ? " (estimate)" : ""}</span>}</h2>
+      <ul className="battle-enemy-list" aria-label="Enemy list" tabIndex={0}>
+        {shownEnemies.map(e => <li key={e.id} data-enemy-list-id={e.id}>
+          <span className="battle-enemy-name">{e.name}</span>
+          <span className="battle-enemy-hp">{enemyHP(e)}</span>
+          {Object.values(state.players).some(p => !p.isDead && p.statuses?.some(x => isHypnosis(x) && x.sourceId === e.id)) && <span className="battle-enemy-status">Maintaining hypnosis · cannot act</span>}
+          {e.aiState?.buffs.filter(b => b.type !== "flatten" && b.throughRound >= state.round).map((b, index) => <span className="battle-enemy-status" key={`${b.type}:${index}`}>{b.type === "attack" ? "Soul inflamed · +100% ATK" : b.type === "defense" ? "+50% DEF" : "Faded · immune"}</span>)}
+        </li>)}
+        {!shownEnemies.length && <li>No enemies remaining.</li>}
+      </ul>
+    </section>
     {others.map((p, i) => renderPlayer(p, slots[i].x, slots[i].y, slots[i].size))}
     {self && renderPlayer(self, 32, 89, 180, true)}
     {!all.length && <p className="battle-empty">The field is ready.<br/><span>Share the join code to gather your party.</span></p>}
-    <div className="battle-enemy-summary">{state.encounterRules===2&&state.enemyDisplayMode==='consecutive'&&<strong>Wave {state.activeWave} · </strong>}{groups.map(([name,n])=>`${name} × ${n}`).join(' · ')}</div>
     <div className={`battle-enemy-field ${shownEnemies.length>8?'is-swarm':''}`} aria-label="Enemy formation">
       {shownEnemies.map((e,i)=><div role="group" tabIndex={0} key={e.id} data-enemy-id={e.id} className="battle-enemy" aria-label={`${e.name}, ${enemyHP(e)}`} title={`${e.name} · ${enemyHP(e)}`}
         style={{left:`${(.5+(i%columns)*.78)/spanX*100}%`,top:`${(.5+Math.floor(i/columns)*.7)/spanY*100}%`,width:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,height:`min(${100/spanX}cqw, ${100/spanY}cqh, 290px)`,zIndex:Math.floor(i/columns)+1} as CSSProperties}>
         <RecoloredSprite src={enemyImage(e)} palette={e.palette} alt={e.name}/>
-        <div className="battle-enemy-info">      {Object.values(state.players).some(p => !p.isDead && p.statuses?.some(x => isHypnosis(x) && x.sourceId === e.id)) && <span className="rounded bg-black/80 px-2 text-xs text-amber-200">Maintaining hypnosis · cannot act</span>}
-      {e.aiState?.buffs.filter(b => b.type !== "flatten" && b.throughRound >= state.round).map((b, index) => <span className="rounded bg-black/80 px-1 text-xs text-amber-200" key={`${b.type}:${index}`}>{b.type === "attack" ? "Soul inflamed · +100% ATK" : b.type === "defense" ? "+50% DEF" : "Faded · immune"}</span>)}
-<div className="battle-enemy-name">{e.name}</div>{!awaitingPlayers && <Bar current={e.health} max={e.maxHealth} label={`${e.name} ${waiting ? "Estimated HP" : "HP"}`}/>}<span className="battle-enemy-hp">{waiting ? enemyHP(e) : `${hpLabel(e.health)} / ${hpLabel(e.maxHealth)}`}</span></div>
+        <div className="battle-enemy-info">{!awaitingPlayers && <Bar current={e.health} max={e.maxHealth} label={`${e.name} ${waiting ? "Estimated HP" : "HP"}`}/>}</div>
         {onEliminate && !["waiting", "game_over"].includes(state.currentPhase) && <button type="button" className="battle-remove battle-enemy-remove" aria-label={`Eliminate ${e.name} from fight`} onClick={event => { event.stopPropagation(); onEliminate(e.id); }}><XCircle size={23}/></button>}
       </div>)}
     </div>

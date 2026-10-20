@@ -5,6 +5,7 @@ import { started, student, fight } from '../phase4/fixtures.ts';
 import { initialAppearance } from '../../shared/avatar/appearance.ts';
 import { ENEMY_CATALOG } from '../../shared/combat/enemy-catalog.ts';
 import { verifyEnemyAuthoring } from './enemy-ai.mjs';
+import { verifyEnemyOverview } from './enemy-overview.mjs';
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
 const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
@@ -171,6 +172,7 @@ try {
         return [...field.querySelectorAll('.battle-enemy')].every(el => {const r=el.getBoundingClientRect();return r.left>=box.left-1 && r.right<=box.right+1 && r.top>=box.top-1 && r.bottom<=box.bottom+1;});
       });
       assert.ok(contained, `${count} goblins fit their fixed field`);
+      await verifyEnemyOverview(page, count, 1);
       await page.screenshot({path:`${output}/${viewport.width}-goblin-swarm-${count}.png`});
     }
     state.enemies.push({...templateEnemy,id:'next-wave-enemy',wave:2,health:20,maxHealth:20});

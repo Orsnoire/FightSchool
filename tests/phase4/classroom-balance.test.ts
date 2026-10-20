@@ -5,12 +5,12 @@ import { addStudent, initialCombatState, scaleEncounter, startQuestion, applyAns
 import { availableAbilities } from "../../shared/combat/abilities.ts";
 import { fight, student, started } from "./fixtures.ts";
 
-test("legacy classroom HP follows additive role-weighted attendance and half the reference party output", () => {
+test("legacy classroom HP follows additive role-weighted attendance and the full reference party output", () => {
   for (const count of [1, 20, 30]) {
     const quiz = { ...fight, questions: Array.from({ length: 10 }, () => fight.questions[0]), enemies: [{ ...fight.enemies[0], difficultyMultiplier: 5 }] };
     let s = initialCombatState("BALANCE", quiz);
     for (let i = 0; i < count; i++) s = addStudent(s, student(i % 2 ? "wizard" : "warrior", `p${i}`));
-    const pool = Math.floor(Math.ceil(count / 2) * 0.33 + Math.floor(count / 2) + 171 / 2);
+    const pool = Math.floor(Math.ceil(count / 2) * 0.33 + Math.floor(count / 2) + 171);
     const scaled = scaleEncounter(s, quiz);
     assert.ok(Math.abs(scaled.enemies[0].health - pool) < 1e-9);
     assert.equal(s.enemies[0].health, 50, "scaling is pure");

@@ -27,8 +27,8 @@ test("non-goblin swarms share their HP budget without multiplying it again and i
   const fixed = scaleEncounter(waiting(8, fixedTemplate), fixedTemplate);
   assert.equal(grown.enemies.length, 3);
   assert.ok(grown.enemies.every(e => e.attackPower === 1 && e.defense === 1 && e.ai && e.aiState));
-  assert.equal(grown.enemies.reduce((sum, e) => sum + e.maxHealth, 0), 3);
-  assert.equal(fixed.enemies[0].maxHealth, 5);
+  assert.equal(grown.enemies.reduce((sum, e) => sum + e.maxHealth, 0), 6);
+  assert.equal(fixed.enemies[0].maxHealth, 8);
   assert.equal(grown.enemyRoundBudget, fixed.enemyRoundBudget);
   assert.equal(grown.encounterXpFraction, fixed.encounterXpFraction);
   const solo = scaleEncounter(waiting(1, scaledTemplate), scaledTemplate, true);
