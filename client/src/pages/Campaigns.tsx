@@ -52,14 +52,14 @@ function CampaignList({ teacher }: { teacher: boolean }) {
     {teacher && <form className="campaign-panel campaign-create" onSubmit={create}>
       <h2>Create a test campaign</h2><p>One saved overworld, one normal cave, and a snapshot of your selected quiz. Tier 1 encounters; job levels capped at 4. No students or questions are created automatically.</p>
       <div className="campaign-form-grid">
-        <label>Campaign name<input required maxLength={100} value={name} onChange={e => setName(e.target.value)} /></label>
-        <label>Dungeon name<input required maxLength={100} value={dungeonName} onChange={e => setDungeonName(e.target.value)} /></label>
-        <label>Campaign guild<select required value={guildId} onChange={e => setGuildId(e.target.value)}><option value="">Choose a guild</option>{options.data?.guilds.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
-        <label>Filter quizzes by guild<select value={guildFilter} onChange={e => { setGuildFilter(e.target.value); setFightId(''); }}><option value="">All owned quizzes</option>{options.data?.guilds.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
-        <label>Search quiz names<input value={search} onChange={e => { setSearch(e.target.value); setFightId(''); }} placeholder="Search your authored quizzes" /></label>
-        <label>Dungeon quiz<select required value={fightId} onChange={e => setFightId(e.target.value)}><option value="">Choose a quiz</option>{quizzes.filter(q => q.questionCount > 0).map(q => <option key={q.id} value={q.id}>{q.title} · {q.questionCount} questions</option>)}</select></label>
+        <label>Campaign name<input aria-label="Campaign name" required maxLength={100} value={name} onChange={e => setName(e.target.value)} /></label>
+        <label>Dungeon name<input aria-label="Dungeon name" required maxLength={100} value={dungeonName} onChange={e => setDungeonName(e.target.value)} /></label>
+        <label>Campaign guild<select aria-label="Campaign guild" required value={guildId} onChange={e => setGuildId(e.target.value)}><option value="">Choose a guild</option>{options.data?.guilds.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
+        <label>Filter quizzes by guild<select aria-label="Filter quizzes by guild" value={guildFilter} onChange={e => { setGuildFilter(e.target.value); setFightId(''); }}><option value="">All owned quizzes</option>{options.data?.guilds.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
+        <label>Search quiz names<input aria-label="Search quiz names" value={search} onChange={e => { setSearch(e.target.value); setFightId(''); }} placeholder="Search your authored quizzes" /></label>
+        <label>Dungeon quiz<select aria-label="Dungeon quiz" required value={fightId} onChange={e => setFightId(e.target.value)}><option value="">Choose a quiz</option>{quizzes.filter(q => q.questionCount > 0).map(q => <option key={q.id} value={q.id}>{q.title} · {q.questionCount} questions</option>)}</select></label>
       </div>
-      <label>Required keys — one per line, up to three<textarea value={keys} onChange={e => setKeys(e.target.value)} rows={3} placeholder="Leave blank for an open dungeon" /></label>
+      <label>Required keys — one per line, up to three<textarea aria-label="Required keys" value={keys} onChange={e => setKeys(e.target.value)} rows={3} placeholder="Leave blank for an open dungeon" /></label>
       <p className="campaign-note">Each key has a quest giver. Open its gate below when the class is ready; students then collect the key in town. Clearing a dungeon is not required to include its unlocked questions in overworld encounters.</p>
       <Button disabled={busy || !options.data?.guilds.length}>{busy ? 'Saving…' : 'Generate campaign'}</Button>
     </form>}

@@ -66,7 +66,7 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
     }
     case 'heal':
       try { next = fieldHeal(next, player, action.ability); } catch (e) { throw new GameError((e as Error).message); } break;
-    case 'rest': service('inn'); next = { ...next, health: next.maxHealth, mp: next.maxMp, healingPotions: 5, shieldPotions: 0 }; break;
+    case 'rest': service('inn'); next = { ...next, health: next.maxHealth, mp: next.maxMp, healingPotions: 5 }; break;
     case 'job': {
       service('inn');
       if (!unlockedJobs.includes(action.job)) throw new GameError('This job is not unlocked.');

@@ -18,7 +18,6 @@ export type CampaignRecord = typeof s.campaigns.$inferSelect;
 export async function campaignPlayer(db: GameDatabase, campaign: CampaignRecord, student: s.StudentRecord, job: CharacterClass) {
   const jobs = await db.select().from(s.studentJobLevels).where(eq(s.studentJobLevels.studentId, student.id));
   const earned = Object.fromEntries(jobs.map(j => [j.jobClass, j.level]));
-  const [guild] = await db.select().from(s.guilds).where(eq(s.guilds.id, campaign.guildId));
   const levels = effectiveLevels(earned, 1);
   const saved = job === student.characterClass ? student : student.jobLoadouts[job];
   const ids = EQUIPMENT_SLOTS.map(slot => saved?.[slot]).filter((id): id is string => !!id && !EQUIPMENT_ITEMS[id]);

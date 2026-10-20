@@ -12,6 +12,23 @@ Read [Source of Truth](Source_of_Truth.md), [active work](ACTIVE_WORK.md), and t
 [expansion plan](EXPANSION_PLAN.md) before implementation. Preserve the existing
 cleanup/release claims. Campaign package IDs below are separate from C01-C12.
 
+**Later October 20 authorization:** the owner requested a one-dungeon test
+campaign with unlocks, exploration and town services. The separately scoped
+[campaign pilot](CAMPAIGN_PILOT.md) implements parts of CAM-00–03 and the town
+requirements below in [PR #81](https://github.com/Orsnoire/FightSchool/pull/81).
+It does not complete any full roadmap package or the multiplayer boss system.
+
+### Persistent resources and town services — decided October 20
+
+- Current HP carries across campaign encounters; the next fight does not heal
+  the student automatically.
+- An exploration menu offers the current job's healing and consumable use.
+- An inn permits job changes; town has separate weapon and armor shops.
+- Generate a quest giver for each required unlock in the campaign.
+- Rest pricing, consumable replenishment, defeat recovery and automatic academic
+  unlock objectives remain open for the full campaign. The pilot documents its
+  free-rest, teacher-opened-key defaults separately.
+
 ## 1. How to use this roadmap
 
 - **DECIDED** means explicitly requested by the owner in this conversation.
@@ -407,6 +424,7 @@ This is a future release checklist, not a claim that checks have already run.
 | 2026-10-20 | Boss groups capped at eight; encounter caps 4/8/12/15; random authored gear uses encounter tier, superseding the earlier player-tier reward idea; owned gear converts to gold. |
 | 2026-10-20 | Minimum viable boss party clarified as three players: tank, healer, DPS. Students can adventure together with the leader controlling overworld group movement. |
 | 2026-10-20 | Owner requested this shared Markdown development map in GitHub /docs. Planning document published; no campaign implementation claimed. |
+| 2026-10-20 (later) | Owner authorized a one-dungeon test campaign with unlocks and exploration; persistent HP, field healing/consumables, an inn for job changes, separate weapon/armor shops, and generated quest givers per unlock. Scoped pilot in PR #81; full CAM packages remain incomplete. |
 
 For subsequent handoffs, record the CAM package, branch/PR, exact head, decisions
 resolved, acceptance evidence, unfinished work, and next action through

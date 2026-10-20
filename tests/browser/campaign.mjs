@@ -14,7 +14,7 @@ const errors = [];
 try {
   for (const viewport of [{ width: 1366, height: 900 }, { width: 390, height: 844 }]) {
     const page = await browser.newPage({ viewport });
-    page.on('pageerror', e => errors.push(e.message));
+    page.on('pageerror', e => { errors.push(e.message); console.error('Campaign page error:', e.message); });
     const id = '00000000-0000-4000-8000-000000000010', guildId = '00000000-0000-4000-8000-000000000011';
     const gate = { id: '00000000-0000-4000-8000-000000000012', name: 'Cave Key', open: false };
     const layout = generateCampaignLayout('browser-pilot', [gate]);
@@ -66,21 +66,21 @@ try {
     await page.screenshot({ path: `${output}/${viewport.width}-campaign-teacher.png`, fullPage: true });
     await page.goto(`${origin}/student/campaign/${id}`);
     await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
-    await page.getByRole('button', { name: /Healing Potion/ }).click();
+    await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: /Healing Potion/ }).click()]);
     assert.equal(view.progress.healingPotions, 4); assert.ok(view.progress.health > 1);
     const healedHP = view.progress.health;
     await page.reload(); await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
     assert.equal(view.progress.health, healedHP);
-    const step = async direction => { const previous = view.progressRevision; await page.getByRole('button', { name: `Move ${direction}`, exact: true }).click(); await page.waitForFunction(() => !document.querySelector('button[aria-label="Move north"]').disabled); assert.equal(view.progressRevision, previous + 1); };
+    const step = async direction => { const previous = view.progressRevision; await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: `Move ${direction}`, exact: true }).click()]); await page.waitForFunction(() => !document.querySelector('button[aria-label="Move north"]').disabled); assert.equal(view.progressRevision, previous + 1); };
     await step('south'); await step('west');
     await page.getByRole('button', { name: 'Collect key', exact: true }).click();
     await page.getByRole('button', { name: 'Key collected', exact: true }).waitFor();
     await step('north'); await step('north');
-    await page.getByLabel('Campaign job', { exact: true }).selectOption('warrior');
+    await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByLabel('Campaign job', { exact: true }).selectOption('warrior')]);
     await page.getByRole('button', { name: 'Rest at the inn' }).waitFor({ state: 'visible' });
     await page.waitForFunction(() => !document.querySelector('select').disabled);
     assert.equal(view.progress.health, healedHP, 'job switch must not refill HP');
-    await page.getByRole('button', { name: 'Rest at the inn' }).click();
+    await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: 'Rest at the inn' }).click()]);
     await page.waitForFunction(() => !document.querySelector('select').disabled);
     assert.equal(view.progress.health, view.progress.maxHealth);
     await page.screenshot({ path: `${output}/${viewport.width}-campaign-town.png`, fullPage: true });

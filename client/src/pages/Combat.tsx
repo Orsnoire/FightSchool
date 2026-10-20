@@ -58,7 +58,9 @@ export default function Combat() {
     navigate(returnCampaign ? `/student/campaign/${returnCampaign}` : "/student");
   };
   const requestLeave = () => {
-    const message = state?.currentPhase === "game_over"
+    const message = returnCampaign
+      ? "Return to your adventure? Your remaining HP, MP and consumables will be saved. Leaving an unfinished encounter ends this attempt."
+      : state?.currentPhase === "game_over"
       ? "Leave this fight and return to your dashboard? Your completed results are kept."
       : "Leave this fight and return to your dashboard? You can rejoin with the fight code while it is active. Your resources and earlier participation will be kept; you must return before completion to receive rewards.";
     if (window.confirm(message)) leave();

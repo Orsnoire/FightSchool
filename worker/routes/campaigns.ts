@@ -22,10 +22,12 @@ export async function handleCampaigns(ctx: GameRouteContext): Promise<Response |
   }
   if (url.pathname === '/api/campaigns') {
     if (request.method === 'GET') {
+      const summary = { id: s.campaigns.id, name: s.campaigns.name, guildId: s.campaigns.guildId, guildName: s.guilds.name,
+        dungeonName: s.campaigns.dungeonName, theme: s.campaigns.theme, gates: s.campaigns.gates, revision: s.campaigns.revision };
       const rows = teacher
-        ? await db.select({ campaign: s.campaigns, guildName: s.guilds.name }).from(s.campaigns).innerJoin(s.guilds, eq(s.guilds.id, s.campaigns.guildId)).where(and(eq(s.campaigns.teacherId, actor.actorId), eq(s.guilds.isArchived, false)))
-        : await db.select({ campaign: s.campaigns, guildName: s.guilds.name }).from(s.campaigns).innerJoin(s.guilds, eq(s.guilds.id, s.campaigns.guildId)).innerJoin(s.guildMemberships, eq(s.guildMemberships.guildId, s.guilds.id)).where(and(eq(s.guildMemberships.studentId, actor.actorId), eq(s.guilds.isArchived, false)));
-      return json(rows.map(({ campaign: c, guildName }) => ({ id: c.id, name: c.name, guildId: c.guildId, guildName, dungeonName: c.dungeonName, theme: c.theme, gates: c.gates, revision: c.revision })));
+        ? await db.select(summary).from(s.campaigns).innerJoin(s.guilds, eq(s.guilds.id, s.campaigns.guildId)).where(and(eq(s.campaigns.teacherId, actor.actorId), eq(s.guilds.isArchived, false)))
+        : await db.select(summary).from(s.campaigns).innerJoin(s.guilds, eq(s.guilds.id, s.campaigns.guildId)).innerJoin(s.guildMemberships, eq(s.guildMemberships.guildId, s.guilds.id)).where(and(eq(s.guildMemberships.studentId, actor.actorId), eq(s.guilds.isArchived, false)));
+      return json(rows);
     }
     if (request.method === 'POST') {
       ctx.requireTeacher();

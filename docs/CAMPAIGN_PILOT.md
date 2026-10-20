@@ -67,5 +67,52 @@ the full CAM-00 through CAM-09 roadmap complete after shipping this slice.
 
 ## Checkpoint
 
-Domain contracts, seeded map generation and additive persistence are in development.
-Next: authenticated services, combat integration, exploration UI and verification.
+Implemented in [draft PR #81](https://github.com/Orsnoire/FightSchool/pull/81):
+teacher creation/access controls, saved maps, movement and discoveries, zero to
+three named key keepers, normal cave entry/exit and guardian, wild encounters,
+server-saved HP/MP/charges, field healing, inn rest/job changes and both shops.
+See [active work](ACTIVE_WORK.md) and the live PR for the exact tested head and CI.
+No production migration, merge, deployment or live acceptance has occurred.
+
+## Test walkthrough
+
+1. As a teacher, open **Campaigns** from the dashboard. Choose an active guild
+   and an owned quiz with questions; use the guild/name filters if needed.
+2. Generate the campaign. Required key names each create a keeper; blank keys
+   create an open dungeon. Initial gates are closed. Open them when ready.
+3. As a student in that guild, open **Campaigns** from the lobby and enter the
+   adventure. Use arrow buttons/WASD or click an adjacent tile. The layout and
+   explored tiles survive refreshes.
+4. Walk beside a `!` keeper and collect its key after the teacher opens the gate.
+   A closed gate excludes the cave's quiz from future overworld encounters;
+   opening the gate and collecting keys includes it before the cave is cleared.
+5. Visit `I` to change to an unlocked campaign job or rest. Weapon (`W`) and armor
+   (`A`) shops use existing tier-1 inventory and prices. Purchased gear joins the
+   student's inventory; the existing equipment screen manages saved loadouts.
+6. Leave town and enter `D`. Wild encounters sample up to two quiz questions;
+   the cave guardian samples up to five. The existing engine repeats the sample
+   until the encounter ends. All pilot encounters are tier 1, capped at level 4.
+7. Finish or leave an encounter, then return to the adventure. Remaining HP,
+   MP and consumable charges carry over. Defeat returns to town at zero HP;
+   walk to the inn and rest. Refresh/reconnect resumes an active encounter.
+
+## Explicit pilot limits and extension points
+
+- Single-player exploration and a solo guardian exercise the loop. This is not
+  the planned matchmade boss: the decided minimum tank/healer/DPS party and cap
+  of eight remain CAM-05/06 work.
+- One normal-cave theme with code-rendered map tiles and the existing combat
+  scene. Dedicated biome tilesets/backgrounds, transport gates, larger campaigns,
+  assigned loot chests and encounter-tier authored gear rolls remain roadmap work.
+- Existing XP/gold result rules apply; no random classroom fallback loot is
+  injected. Key givers represent teacher-controlled unlocks, not automatic
+  academic quest completion. More elaborate quest objectives remain open.
+- Campaigns freeze quiz content at creation. Existing encounters keep their
+  snapshot if a teacher closes a gate mid-fight; future encounters use current
+  access. Updating a campaign's content/version is a later authoring feature.
+- Campaign jobs/resources are isolated from classroom entry resources. Healing
+  shows only supported, unlocked current-job/cross-class actions; crafting,
+  revival and combat cooldown actions do not become free menu actions.
+- Migration `0018_campaign_pilot.sql` adds three tables and two Worker-owned SQL
+  functions. Apply it through the normal reviewed release workflow. No fixture
+  users, campaigns or authored questions are seeded into production.

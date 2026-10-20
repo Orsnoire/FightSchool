@@ -4,7 +4,8 @@
 - Scope: [pilot specification](CAMPAIGN_PILOT.md). Persistent campaign HP, healing/consumables, inn job changes, weapon/armor shops, unlock quest givers. C12 remains separate.
 - Foundation published at `d752ea9e471a7733e52c824aa47b7a2ebe90a5a2`; this checkpoint adds authenticated routes, atomic town actions, combat resource handoff/settlement, teacher setup and student map/menu UI. The live PR carries the exact newer pushed SHA.
 - Verification: TypeScript, both production builds and the full 328-test suite pass locally. Added defeat/inn recovery and Durable Object eviction/reconnect cases also pass (four focused campaign tests; full suite now 329). Migration history/catalog/no-op checks pass. Browser acceptance is registered for desktop and phone; local Chromium download was unavailable, so CI is the pending browser gate. No production migration, merge or deployment.
-- Next: inspect current-head CI/browser checks and resolve any failures; update this checkpoint with results. Full party exploration and 3–8-player boss matchmaking remain roadmap work; this pilot is solo.
+- CI at `759f77dde0c934c56e3d7f91ba0ed3bcb5baed68` passed the full verify job and three browser jobs. The new campaign browser case exposed ambiguous native select labels; this checkpoint adds explicit accessible names and waits for action responses. Also preserves shield charges at inn rest and projects campaign-list summaries without loading question banks/maps.
+- Next: verify the corrected campaign browser case and current-head checks. Full party exploration and 3–8-player boss matchmaking remain roadmap work; this pilot is solo.
 
 # Battlefield labels and adaptive encounter scaling — released October 20, 2026
 
