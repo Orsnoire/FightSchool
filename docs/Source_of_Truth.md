@@ -117,8 +117,9 @@ The later [PR #79 follow-up](combat/adaptive-encounter-tier.md) removes the `/2`
 coefficient, multiplies starting Swarm-enabled counts by tier, and raises the
 effective tier at average combat job levels 2/6/10 (authored tier is the minimum).
 Tier and counts lock at Start Fight. It also moves individual enemy text and the
-wave heading to the top of the battlefield. It is merged and deployed at `989c9ec`;
-canonical acceptance is pending after a failed concurrency attempt. The
+wave heading to the top of the battlefield. It is merged, deployed and accepted at `989c9ec`; original-fixture canonical
+acceptance passed in run 39438588938 attempt 3. Initial connection timeouts remain
+documented with an unconfirmed cause. The
 [release record](releases/2026-10-20-pr79.md) controls verification status.
 Existing active rooms retain their rules.
 
