@@ -48,10 +48,6 @@ not changed by this repair.
   are attached to PR #83; inspect those results before merging.
   Documentation-only checkpoints do not change the verified runtime.
 
-State: implemented and locally verified, with the math browser scenario verified.
-Not merged, deployed or live accepted. No migration, gameplay, student-data or
-provider changes. Campaign, domain routing and C12 work remain separate.
+State: **merged, deployed and accepted** as `2ca741ff28a81d75c75de59c51d784415c7e418a` on October 21. Production deployment 39695583585 and canonical acceptance 39695893872 attempt 2 pass. All 48 questions / 264 equations pass against the deployed renderer; live save/reload and correct/distractor grading pass. The first canonical attempt's abilities-phase timeout is retained with an unconfirmed cause. See [release evidence and limits](../releases/2026-10-21-pr83.md).
 
-Next: require green exact-current-head CI/browser gates, then review PR #83 for
-merge and deployment. Release authorization and live acceptance are separate
-from the implementation and browser fixture checks.
+No migration, gameplay, student-data or provider-configuration change. Campaign and C12 remain separate with their own outstanding gates.

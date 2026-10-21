@@ -1,11 +1,12 @@
-# Math display repair — active October 21, 2026
+# Math display repair — released October 21, 2026
 
-- Owner requested correct display of typed/imported math such as x^2, including exponents, subscripts and fractions.
-- Branch: fix/math-text-rendering; [draft PR #83](https://github.com/Orsnoire/FightSchool/pull/83). [Scope and checkpoint](https://github.com/Orsnoire/FightSchool/blob/fix/math-text-rendering/docs/reviews/2026-10-21-math-rendering.md).
-- Implemented: shared display recognizes raw powers/subscripts/LaTeX and explicit delimiters. Existing math, prose, prices, addresses, code, SVG and stored answer values are preserved. The active textarea editor preserves source; the unused rich-text component is unchanged.
-- Verified runtime 9de50aa9f5d2b7ed008e1a815dac99504858477f: all 334 tests, TypeScript and both builds pass locally and in CI 39637229319. Both quiz files pass the actual importer/renderer (48 questions, 264 equations). CI authoring/lobby passes the desktop/phone import/edit/save/reload scenario; both math screenshots were inspected. See the branch report for evidence.
-- Next: require green exact-current-head CI/browser gates attached to PR #83, then review for merge/deployment. Documentation-only checkpoints preserve the verified runtime. Not merged, deployed or live accepted.
-- Separate campaign, domain routing and C12 work remain unchanged. No gameplay, grading or migration change; no release yet.
+- Owner-authorized review, merge and production deployment: [PR #83](https://github.com/Orsnoire/FightSchool/pull/83), merge `2ca741ff28a81d75c75de59c51d784415c7e418a`, identical tree to reviewed head `684b4c8d3174e07bbb92b24b6be2b41b37da7e72`.
+- Exact-head CI 39637847126 and all four Chromium jobs 39637847160 pass (334 tests, TypeScript and both builds); merged-main CI 39695413818 passes.
+- **Deployment passed:** [39695583585](https://github.com/Orsnoire/FightSchool/actions/runs/39695583585), exact merge commit. Fresh provider read: Worker `3e87099c-a7b6-4c18-b023-75262acd44ac` serves 100%; canonical domain targets the historical staging-named production Worker.
+- **Math acceptance passed:** original 48 questions / 264 equations verified against the deployed renderer; canonical save/reload preserves every question, option, key and timer. Live correct/distractor answers in both quizzes grade correctly; feedback retains the original mathematical answer. Only synthetic fixtures were used.
+- **Canonical acceptance passed:** [39695893872, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/39695893872/attempts/2), with unchanged tests. Combat/progression and all eight operational checks pass; 30-answer p50/p95/max 1857/3564/3664 ms. Attempt 1 timed out awaiting the abilities phase; its cause remains unconfirmed.
+- No migration, stored-question rewrite, grading/gameplay rule change or student-data reset. [Release evidence and precise limits](releases/2026-10-21-pr83.md).
+- Campaign #81 and C12 #75 remain separate, open and conflicted with unfinished acceptance gates. Their isolated deployments were not changed. Next: continue each registered branch checkpoint separately; do not infer production readiness from an open PR.
 
 # Campaign pilot — active October 20, 2026
 
