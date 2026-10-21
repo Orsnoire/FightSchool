@@ -30,7 +30,8 @@ not changed by this repair.
 
 ## Verification
 
-- 16 rich-content tests and TypeScript pass.
+- All 334 tests pass, including 16 rich-content tests. TypeScript and both
+  production builds pass. Verified runtime: 9de50aa9f5d2b7ed008e1a815dac99504858477f.
 - Both requested quiz CSVs pass the real importer and shared renderer:
   48 questions and 264 equations, with keys/timers/math metadata preserved.
 - New regressions cover powers, subscripts, fractions, all four delimiter styles,
@@ -38,12 +39,19 @@ not changed by this repair.
   tightly spaced inequalities and exact source-character preservation.
 - The existing Chromium authoring/lobby fixture now checks CSV import, editing,
   save/reload, answer identity and rendered MathML at desktop/phone sizes. Browser
-  execution is pending CI; local Chromium downloads returned invalid archives.
-- Full regression tests and production builds are in progress.
+  [Authoring/lobby Chromium job](https://github.com/Orsnoire/FightSchool/actions/runs/39637229852/job/119350950820)
+  passes at that runtime, and both math screenshots were visually inspected.
+  Local Chromium downloads returned invalid archives, so browser evidence
+  comes from CI. The existing initial-loading job also passes.
+- [CI 39637229319](https://github.com/Orsnoire/FightSchool/actions/runs/39637229319)
+  passes at that runtime. Exact-current-head CI and all browser gate results
+  are attached to PR #83; inspect those results before merging.
+  Documentation-only checkpoints do not change the verified runtime.
 
-State: implemented and focused checks passed; full CI/browser review pending.
+State: implemented and locally verified, with the math browser scenario verified.
 Not merged, deployed or live accepted. No migration, gameplay, student-data or
 provider changes. Campaign, domain routing and C12 work remain separate.
 
-Next: finish the full gates, inspect exact-current-head CI/browser results,
-resolve any failures and present the verified change for release.
+Next: require green exact-current-head CI/browser gates, then review PR #83 for
+merge and deployment. Release authorization and live acceptance are separate
+from the implementation and browser fixture checks.
