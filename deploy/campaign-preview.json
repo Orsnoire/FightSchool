@@ -1,6 +1,7 @@
 {
   "mode": "deploy",
-  "sourceSha": "248167a712be1d7fd0d38cd24962b2e2a7fe154a",
-  "expectedPreviousSha": "905c56260141fb03b0a84cf7cec9b66fed5e83d4",
-  "migration0020Applied": true
+  "sourceSha": "7cb58951570c5290ead3a4b2c171a86720130992",
+  "expectedPreviousSha": "248167a712be1d7fd0d38cd24962b2e2a7fe154a",
+  "migration0020Applied": true,
+  "migration0021Applied": true
 }
