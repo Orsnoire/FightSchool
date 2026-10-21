@@ -226,9 +226,11 @@ try {
       return route.fulfill({json:{}});
     });
     state.currentPhase='game_over';state.victory=true;
-    await page.evaluate(({state,id})=>window.combatTest.sockets.filter(s=>s.url.includes('sessionId=ABC234')).at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,results:[{id:'comparison-result',studentId:id,xpEarned:10,goldReward:10,staminaRestored:0.2,lootTable:[{itemId:'t1_fighter_claymore'}]}]})}),{state,id});
+    // Check the pilot's no-loot boss result before the separate hover comparison scenario.
+    await page.evaluate(({state,id})=>window.combatTest.sockets.filter(s=>s.url.includes('sessionId=ABC234')).at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,results:[{id:'boss-stamina-result',studentId:id,xpEarned:10,goldReward:10,staminaRestored:0.2,lootTable:[]}]})}),{state,id});
     await page.getByText('Campaign boss reward: +20% stamina restored.', { exact: true }).waitFor();
     await screenshot('boss-stamina-reward');
+    await page.evaluate(({state,id})=>window.combatTest.sockets.filter(s=>s.url.includes('sessionId=ABC234')).at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,results:[{id:'comparison-result',studentId:id,xpEarned:10,goldReward:10,staminaRestored:0.2,lootTable:[{itemId:'t1_fighter_claymore'}]}]})}),{state,id});
     const compare=page.getByRole('button',{name:"Compare Fighter's Claymore",exact:true});
     await compare.waitFor();
     if(viewport.width>600)await page.getByRole('article',{name:"Fighter's Claymore",exact:true}).hover();
