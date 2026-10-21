@@ -1,6 +1,6 @@
 {
-  "mode": "preflight",
+  "mode": "deploy",
   "sourceSha": "ccb003f797e94b01f39329a477af8a009b7d7e98",
   "expectedPreviousSha": "df6c850931f08a58499b27c34522cffc57b84f23",
-  "migration0020Applied": false
+  "migration0020Applied": true
 }

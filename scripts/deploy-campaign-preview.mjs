@@ -133,8 +133,10 @@ export async function run({ request, accountId, token, runtimeDir, fetcher = fet
   const after = validateSettings(deployed, request);
   requireThat(after.RELEASE_SHA.text === request.sourceSha, 'Deployed source verification failed');
   requireThat(after.COMBAT_SESSIONS.namespace_id === bindings.COMBAT_SESSIONS.namespace_id, 'Combat namespace identity changed');
-  const response = await fetcher(`${ORIGIN}/api/health`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
+  const response = await fetcher(`${ORIGIN}/api/health/live`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
   requireThat(response.ok, `Preview health check failed (HTTP ${response.status})`);
+  const health = await response.json();
+  requireThat(health.status === 'ok' && health.environment === 'campaign-preview', 'Preview health response is incorrect');
   log(`Deployed campaign preview source ${request.sourceSha}. ${ORIGIN}`);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

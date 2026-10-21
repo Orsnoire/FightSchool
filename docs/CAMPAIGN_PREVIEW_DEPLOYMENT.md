@@ -44,7 +44,9 @@ release source differ from the request, inspect the newer state before retrying.
 ## Current release
 
 - Tested runtime: `ccb003f797e94b01f39329a477af8a009b7d7e98`.
-- Request currently performs read-only preflight. Migration 0020 and live deployment
-  remain pending until that check succeeds.
+- [Read-only preflight](https://github.com/Orsnoire/FightSchool/actions/runs/39643804398) passed.
+- Migration 0020 is applied only to the preview: 21 ledger entries, one item shop,
+  unchanged map geometry and player progress digests.
+- Request now explicitly deploys the tested runtime; live verification is pending.
 - Four deployment boundary tests pass locally (read-only preflight, wrong-target
   rejection, explicit migration/source gates, resource/secret preservation).
