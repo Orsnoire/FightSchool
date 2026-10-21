@@ -171,7 +171,8 @@ try {
     await resetTrigger.click();
     await page.waitForFunction(() => { const button = document.querySelector('[role="alertdialog"] button:last-child'); return button && !button.disabled; });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    await page.screenshot({ path: `${output}/${viewport.width}-campaign-reset.png`, fullPage: true });
+    await page.screenshot({ path: `${output}/${viewport.width}-campaign-reset.png`, fullPage: true, animations: 'disabled' });
+    assert.equal(await dialog.evaluate(e => getComputedStyle(e).opacity), '1', 'confirmation is fully visible');
     rejectReset = true;
     await dialog.getByRole('button', { name: 'Reset campaign', exact: true }).click();
     await dialog.getByRole('alert').filter({ hasText: 'Adventure changed' }).waitFor();
