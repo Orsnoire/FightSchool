@@ -65,3 +65,8 @@ jobs:
         env:
           STAGING_ORIGIN: https://questacademy.bookwyrminteractive.studio
           STAGING_AUTH_TOKEN: ${{ env.STAGING_AUTH_TOKEN }}
+      - name: Verify additional domain
+        run: node tests/phase2/staging-smoke.mjs
+        env:
+          STAGING_ORIGIN: https://questacademy.link
+          STAGING_AUTH_TOKEN: ${{ env.STAGING_AUTH_TOKEN }}
