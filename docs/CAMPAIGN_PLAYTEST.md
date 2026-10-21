@@ -84,7 +84,7 @@ Movement and equipment follow-up: [verification and remaining limits](reviews/20
 
 The item shop, consumable menus and combat publication update are deployed.
 [Deployment](https://github.com/Orsnoire/FightSchool/actions/runs/39644095594) and
-authenticated QA checks pass; owner feedback is the next gate.
+authenticated QA checks pass; the owner subsequently reported the preview working.
 See [active work](ACTIVE_WORK.md) for the exact runtime and verification status.
 
 Refresh the page and walk east within town to **S**. Buy a Potion, then
@@ -94,9 +94,9 @@ turns. Combat Items are available during questions and before Ready; status cure
 can be used while disabled. Bought items never refill at the inn. See
 [all eight effects and prototype defaults](CAMPAIGN_CONSUMABLES.md).
 
-## Resetting your adventure — follow-up awaiting deployment
+## Resetting your adventure — live on the preview
 
-In the student campaign lobby, **Reset campaign** appears beside **Enter adventure**.
+Refresh the student campaign lobby. **Reset campaign** appears beside **Enter adventure**.
 Open it to review the confirmation; **Cancel** leaves the adventure untouched.
 Confirming restarts only your progress in that campaign: explored locations,
 collected campaign keys and dungeon completion clear; you return to town with
@@ -106,4 +106,5 @@ Your current job, levels, XP, gold, equipment and purchased consumables remain.
 The saved map, teacher gates, academic records and other students are unaffected.
 Finish or leave an active encounter before resetting. This is an explicit personal
 restart, not procedural map regeneration; refreshing or deploying does not reset
-anyone. Check [active work](ACTIVE_WORK.md) for release status.
+anyone. [Deployment and verification](reviews/2026-10-21-campaign-reset.md) pass;
+owner acceptance is pending. Check [active work](ACTIVE_WORK.md) for the runtime.

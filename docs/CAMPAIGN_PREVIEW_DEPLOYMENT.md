@@ -22,14 +22,18 @@ Do not use `Deploy Cloudflare Staging` to release this campaign branch.
    configured in GitHub, remains required.
 4. Apply any required forward-only migration to the isolated preview database
    through the authorized database tooling. Verify its migration ledger and saved
-   campaign upgrade. For this release, migration 0020 is required. Do not migrate
+   campaign upgrade. Migration 0020 is already applied to the preview; the reset
+   release needs no additional migration. Do not migrate
    the classroom database. The workflow intentionally has no database credential.
 5. Record `migration0020Applied: true` and `mode: deploy` in the request, then commit.
    The workflow checks out the exact requested source, runs its checks/tests/build,
-   uploads that build, retains preview resources/secrets, and verifies the release
+   verifies the built campaign UI at desktop/phone sizes, uploads that build,
+   retains preview resources/secrets, and verifies the release
    marker and public health endpoint.
-6. Run authenticated item purchase/use/carryover and combat timing checks with the
-   dedicated QA account, update the review evidence, then invite the owner to test.
+6. Perform focused post-deploy checks appropriate to the change with the dedicated
+   QA account where needed. Record precisely what was verified live versus in
+   integration/browser fixtures, update review evidence, then invite the owner to test.
+   Never reset the owner's playtester merely to verify a personal reset control.
 
 A manual workflow dispatch can rerun the checked-in request once GitHub exposes
 this workflow on the default branch. Until then, committing a request on the
@@ -41,7 +45,7 @@ and repair the existing GitHub environment credential through its normal setting
 Do not expose tokens in issues, logs, repository files, or chat. If bindings or
 release source differ from the request, inspect the newer state before retrying.
 
-## Current release
+## Earlier consumables release
 
 - Tested runtime: `ccb003f797e94b01f39329a477af8a009b7d7e98`.
 - [Read-only preflight](https://github.com/Orsnoire/FightSchool/actions/runs/39643804398) passed.
@@ -51,8 +55,22 @@ release source differ from the request, inspect the newer state before retrying.
   passed and deployed the tested runtime. The source marker and existing combat
   namespace identity were verified, and public liveness/readiness return 200.
 - Live purchases, field/combat item use, protection countdown, settlement/reload
-  carryover and timing checks pass. Owner retest is pending.
+  carryover and timing checks pass. The owner subsequently reported the preview working.
 - Future agents should use this GitHub path for preview deployment; another
   Cloudflare dashboard/MCP login is not needed while the stored credential works.
 - Four deployment boundary tests pass locally (read-only preflight, wrong-target
   rejection, explicit migration/source gates, resource/secret preservation).
+
+## Current personal reset release
+
+Runtime source `248167a712be1d7fd0d38cd24962b2e2a7fe154a` has the same application
+code as the initial reset release `905c56260141fb03b0a84cf7cec9b66fed5e83d4`; the
+follow-up only improves screenshot capture after the dialog opening animation.
+No new migration was required. [Run 39666392515](https://github.com/Orsnoire/FightSchool/actions/runs/39666392515)
+passed 339 tests, TypeScript, both builds and desktop/phone campaign browser checks,
+then deployed the requested source. Release-source, combat-namespace identity and
+public-liveness verification passed. Fully opened reset screenshots were inspected.
+The request expected the initial reset runtime as its previous source; update both
+source fields for a future release rather than replaying that completed request.
+See [reset evidence and live limits](reviews/2026-10-21-campaign-reset.md)
+and [active work](ACTIVE_WORK.md). Owner acceptance of the reset remains pending.
