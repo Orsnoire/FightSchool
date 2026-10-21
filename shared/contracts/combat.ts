@@ -32,7 +32,7 @@ export type PublicCombatSnapshot = Pick<CombatSnapshot,typeof snapshotFields[num
 
 export interface EarnedResult {
   id:string;studentId:string;xpEarned:number;baseXp?:number;xpMultiplier?:number;
-  staminaFightNumber?:number|null;goldReward:number;lootTable:Array<{itemId:string}>;
+  staminaFightNumber?:number|null;staminaRestored?:number;goldReward:number;lootTable:Array<{itemId:string}>;
 }
 export type CombatServerMessage =
   | {type:'combat_state';state:PublicCombatSnapshot;question:import('../combat/model').PublicQuestion|null;serverTime:number;results?:EarnedResult[];rejoinRequests?:Array<{studentId:string;nickname:string}>}

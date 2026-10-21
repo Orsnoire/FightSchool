@@ -262,7 +262,18 @@ to that tier and use it consistently for combat and rewards. This must be
 reconciled with existing adaptive classroom tiers; it is not permission to change
 all classroom fights.
 
-### C-R11 — Matchmaking rewards
+### C-R11 — Boss and matchmaking rewards
+
+**DECIDED October 21:** every campaign boss victory restores 20% of the player's
+maximum stamina, including first clears, repeat victories and direct/random
+matchmaking. This adds 20 percentage points to the post-fight XP stamina rate,
+capped at 100%; it is not 20% of the remaining stamina. Apply the fight's ordinary
+XP/stamina cost first, then restore stamina for future fights. Retain the actual
+fight count and the midnight Mountain refresh. Save the award once per eligible
+participant/session with the combat result; retries, reconnects, reset and old
+result replays cannot award it twice. The pilot uses existing participation
+eligibility (including knocked-out winners), with no reward for losses,
+nonparticipants or intentional departures. Full matchmaking remains future work.
 
 Random matchmaking provides EXP/quest reward incentives, including gold and
 random authored gear. **Gear is drawn from the encounter's tier**, not the
@@ -369,7 +380,7 @@ smaller coherent changes.
 | CAM-04 — Assigned treasure | CAM-03; chest-policy decisions | One chest per assigned loot entry; placement, claims, and saved state under the approved policy | Exact chest count; durable/retry-safe awards; independent-player and repeat-visit cases match the chosen policy |
 | CAM-05 — Cooperative adventures | CAM-03; party-policy decisions | Form/join/leave parties; leader-controlled overworld movement; shared encounter transitions; gate enforcement; disconnect/leadership recovery | Nonleader movement rejected; eligible members remain synchronized; reconnect/leave cannot duplicate movement, rewards, or transport access |
 | CAM-06 — Boss queues and level synchronization | CAM-05; matchmaking/sync decisions | Direct/random eligible queues; boss unlocks; 3-8 players with tank/healer/DPS; entry minima; caps 4/8/12/15; admission and recovery | Boundary tests for sizes/roles, queue access, level/gear/ability policy, same-content matching, departures, and reconnection |
-| CAM-07 — Boss rewards and first complete pilot | CAM-04 and CAM-06 | Encounter-tier authored gear, owned-item gold conversion, EXP/quest integration; one complete campaign segment with town, dungeon, boss, treasure, and onward access | End-to-end teacher/student acceptance, atomic reward tests, replay/reconnect tests, and a documented release with known limits |
+| CAM-07 — Boss rewards and first complete pilot | CAM-04 and CAM-06 | Encounter-tier authored gear, owned-item gold conversion, 20% boss stamina restoration, EXP/quest integration; one complete campaign segment with town, dungeon, boss, treasure, and onward access | End-to-end teacher/student acceptance, atomic reward tests, replay/reconnect tests, and a documented release with known limits |
 | CAM-08 — Campaign breadth, authored content and polish | Accepted pilot | Remaining theme catalogue; dedicated bestiaries of 3–5 unique enemies per biome/environment, including overworld tile types; environment-based encounter selection; transportation/region breadth, generated campaign usability, authored ACT standards divisions and question content | All 13 themes have tilesets/backgrounds; every environment has its required bestiary; terrain/dungeon pool checks below pass; generated campaigns honor varied gate arrangements; content review and classroom usability acceptance |
 | CAM-09 — Premium map variation | Stable core and explicit premium decisions | Post-generation rerolls and/or per-run variation, versioned layouts, entitlements, progress/reward preservation | Premium boundary enforced; active parties share a layout; generation changes do not lose progression or reset rewards unless explicitly designed to |
 
@@ -427,7 +438,7 @@ does not need to settle every gameplay choice.
 | O-09 | Role assignment | Define each job's eligible queue role, hybrid/support classification, validation at the synced level, and job/loadout changes while queued or admitted. |
 | O-10 | Entry minima versus effective caps | Keep separate tables. Tier 2 minimum 4 is the stated example; other minima and the level source require decisions. Caps 4/8/12/15 are DECIDED. |
 | O-11 | Level/power synchronization and classroom compatibility | Decide job level, equipment stats, abilities, cross-class powers, AA, guild caps, and fixed versus adaptive encounter-tier handling. Preserve permanent progression. |
-| O-12 | Reward eligibility and amounts | Define authored catalogue scope/permissions, empty tier pools, weights, gold conversion, EXP/stamina/AA, quest credit, participation, and direct versus random-queue incentives. |
+| O-12 | Reward eligibility and amounts | Define authored catalogue scope/permissions, empty tier pools, weights, gold conversion, EXP/AA, quest credit, participation beyond the pilot rule, and direct versus random-queue incentives. |
 | O-13 | Layout size, exploration behavior, and assets | Choose map/dungeon sizes, movement interface, encounter frequency, theme asset contract, chest density limits, and initial art review. |
 | O-14 | Premium variation | Post-generation procedural variation is the intended premium boundary. Define payer/entitlement scope, reroll versus per-run behavior, active-session policy, and preservation of unlocks/claims before implementation. |
 
@@ -471,6 +482,7 @@ This is a future release checklist, not a claim that checks have already run.
 | 2026-10-20 | Maps fixed at campaign generation; later procedural variation intended as premium. |
 | 2026-10-20 | Teacher-assigned dungeon loot: one chest per assigned loot entry. Personal/once-only claims remain proposed. |
 | 2026-10-20 | Boss groups capped at eight; encounter caps 4/8/12/15; random authored gear uses encounter tier, superseding the earlier player-tier reward idea; owned gear converts to gold. |
+| 2026-10-21 | Every campaign boss victory restores 20 percentage points of post-fight stamina, capped at 100%, including first clears, repeat wins and matchmaking; idempotent per-player reward. |
 | 2026-10-20 | Minimum viable boss party clarified as three players: tank, healer, DPS. Students can adventure together with the leader controlling overworld group movement. |
 | 2026-10-20 | Owner requested this shared Markdown development map in GitHub /docs. Planning document published; no campaign implementation claimed. |
 | 2026-10-20 (later) | Owner authorized a one-dungeon test campaign with unlocks and exploration; persistent HP, field healing/consumables, an inn for job changes, separate weapon/armor shops, and generated quest givers per unlock. Scoped pilot in PR #81; full CAM packages remain incomplete. |

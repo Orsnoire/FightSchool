@@ -28,9 +28,10 @@ export async function handleStudentProgression(context: GameRouteContext): Promi
         .where(and(eq(s.guildMemberships.studentId, id), eq(s.guilds.isArchived, false)))).map((r) => r.guild));
     if (tail === "stamina" && method(request, "GET")) {
       const now = Date.now();
-      const completedCombats = student.staminaDay === mountainDay(now) ? student.dailyCombats : 0;
+      const currentDay = student.staminaDay === mountainDay(now);
+      const completedCombats = currentDay ? student.dailyCombats : 0;
       return json({
-        completedCombats, xpMultiplier: xpMultiplier(completedCombats),
+        completedCombats, xpMultiplier: xpMultiplier(completedCombats, currentDay ? student.staminaRecovery : 0),
         resetsAt: nextMountainMidnight(now), timeZone: STAMINA_TIME_ZONE
       });
     }

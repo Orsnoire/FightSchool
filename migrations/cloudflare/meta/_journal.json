@@ -148,6 +148,13 @@
       "when": 1792596588481,
       "tag": "0020_campaign_consumables",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792614215635,
+      "tag": "0021_campaign_boss_stamina",
+      "breakpoints": true
     }
   ]
 }

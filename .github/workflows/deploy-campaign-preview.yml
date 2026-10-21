@@ -63,6 +63,7 @@ jobs:
             sleep 1
           done
           node --import tsx tests/browser/campaign.mjs
+          node --import tsx tests/browser/combat-ui.mjs
       - name: Preserve campaign UI evidence
         if: always() && steps.request.outputs.mode == 'deploy'
         uses: actions/upload-artifact@v6

@@ -1,10 +1,12 @@
-// n is the number of completed combats today, across every job and play mode.
+// Stamina follows an effective combat position; boss recovery moves it back without
+// changing the actual completed-combat count. Shared across every job and play mode.
 // Full first reward, 90% second reward, 1.1% after ten completions, asymptote 1%.
 export const STAMINA_TIME_ZONE = "America/Denver";
 const RATE = -Math.log(0.89 / 0.99);
 const POWER = Math.log(Math.log(990) / RATE) / Math.log(10);
-export function xpMultiplier(completedCombats: number): number {
-  const n = Math.max(0, Math.floor(completedCombats));
+export const CAMPAIGN_BOSS_STAMINA_RESTORE = 0.2;
+export function xpMultiplier(completedCombats: number, recovery = 0): number {
+  const n = Math.max(0, completedCombats - recovery);
   return 0.01 + 0.99 * Math.exp(-RATE * n ** POWER);
 }
 export function mountainDay(now: number | Date): string {

@@ -6,7 +6,7 @@ import type { StoredRoom } from "./room-state";
 export function publicResults(room: StoredRoom) {
   return room.results?.map((r:any)=>({
     studentId:r.studentId,id:r.id,xpEarned:r.xpEarned,baseXp:r.baseXp,xpMultiplier:r.xpMultiplier,
-    staminaFightNumber:r.staminaFightNumber,goldReward:r.goldReward,
+    staminaFightNumber:r.staminaFightNumber,staminaRestored:r.staminaRestored,goldReward:r.goldReward,
     lootTable:r.lootTable?.map((item:{itemId:string})=>({itemId:item.itemId}))||[],
   }));
 }

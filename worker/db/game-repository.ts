@@ -147,6 +147,7 @@ export async function persistCombatResults(
       survived: !p.isDead, is_solo_mode: !!live?.soloStudentId, totals: p.totals,
       base_xp: xp, gold_reward: gold, loot_table: eligibleLoot,
       reward_claim: !eligibleLoot.length ? "automatic" : null,
+      campaign_boss: fight.campaignContext?.objective === true,
       participated: participation > 0, level_cap:p.limitTier ? limitLevel(p.limitTier):null, eligible_progression:p.questGuildId===undefined || !!earnedGuildId });
   }
   // The database serializes each student's daily counter and result/reward receipt

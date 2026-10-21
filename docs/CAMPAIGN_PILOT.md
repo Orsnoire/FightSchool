@@ -189,3 +189,17 @@ map and teacher gates are unchanged. Reset is unavailable during an active
 encounter and uses existing atomic revision/command guards. This does not grant
 map regeneration or authorize a class-wide reset. No automatic reset is performed
 at deployment. See [active work](ACTIVE_WORK.md) for verification and release.
+
+## Boss stamina reward — October 21
+
+Each qualifying guardian victory restores 20 percentage points of post-fight
+XP stamina, capped at full. It is a repeatable per-victory reward, not a once-only
+campaign completion prize. The winning fight keeps its ordinary XP rate; recovery
+benefits the next fight in any mode. Defeat, wild encounters, nonparticipation and
+intentional departure do not award it. Knocked-out participating winners qualify.
+The result and recovery commit atomically, so retries and campaign resets cannot
+repeat an old award. The victory screen shows the actual amount restored.
+
+The current pilot remains solo. The same per-participant result rule is required
+for future direct/random matchmaking. [Daily stamina specification](combat/classroom-balance-and-stamina.md)
+and [active work](ACTIVE_WORK.md) record the behavior and current release status.

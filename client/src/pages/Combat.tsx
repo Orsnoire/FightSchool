@@ -318,6 +318,7 @@ export default function Combat() {
                   : "awarded"}
               </p>
               {result.xpMultiplier !== undefined && <p className="text-sm text-muted-foreground">{Math.round(result.xpMultiplier * 1000) / 10}% XP rate applied to {Math.round((result.baseXp || 0) * 100) / 100} XP before stamina. Fractional XP carries forward.</p>}
+              {!!result.staminaRestored && <p className="font-semibold text-emerald-700">Campaign boss reward: +{Math.round(result.staminaRestored * 1000) / 10}% stamina restored.</p>}
               {result.lootTable.length > 0 && !claimed && (
                 <LootRewardChoices studentId={studentId} key={result.id} lootTable={result.lootTable} goldReward={result.goldReward} claiming={claiming} onClaim={claim} />
               )}

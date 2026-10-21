@@ -10,6 +10,26 @@ and progression rules. This release was deployed on October 1, 2026, including
 the additive migration and Worker rollout. See the release record in
 [Worker migration and combat recovery](../cloudflare/full-migration.md).
 
+## October 21 campaign boss recovery
+
+Campaign boss victories restore **20 percentage points** of the player's XP
+stamina rate after the fight's ordinary award/cost, capped at 100%. This includes
+first and repeat victories and will apply to direct/random matchmaking. Boss
+recovery benefits subsequent fights in all modes/jobs. It neither changes the
+winning fight's already-priced XP nor subtracts from the actual daily fight count.
+The existing curve resumes from the equivalent recovered position; midnight
+Mountain time clears both the count and recovery. Defeat, ordinary encounters,
+nonparticipation and intentional departure do not grant recovery.
+
+Migration `0021_campaign_boss_stamina.sql` adds a daily curve-position recovery
+and a result audit amount. Both default to zero; existing progression/results are
+preserved. The existing sorted-lock result transaction awards recovery exactly
+once per participant/session. The server supplies boss eligibility from the frozen
+campaign context. The browser cannot choose the award. The UI reports the actual
+restored amount (which may be below 20% when close to full). See
+[active work](../ACTIVE_WORK.md) for release status. Matchmaking itself remains
+future work.
+
 ## Daily XP stamina
 
 Stamina changes combat XP only. It does not prevent play or reduce combat stats,
