@@ -75,3 +75,13 @@ required procedural/data SQL in the reviewed new migration, then run all gates.
 If the catalog comparison differs, fix the new declarations/migration rather
 than changing shipped SQL or weakening the comparison. PGlite provides offline
 PostgreSQL catalog evidence; it does not claim to inspect the live Neon catalog.
+
+### Campaign consumables (0020)
+
+Forward-only migration 0020 extends the existing Worker-owned
+`apply_campaign_action(jsonb)` and `settle_campaign_encounter(jsonb)` routines.
+Purchases debit gold atomically with bag quantity/revision changes; settlement
+copies remaining quantities and protection turns exactly once. It adds an item
+shop to existing version-one campaign layouts without regenerating any tiles.
+No new table or production seed is introduced. Applied status is tracked in
+[active work](../ACTIVE_WORK.md).

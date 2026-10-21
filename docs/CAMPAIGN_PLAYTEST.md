@@ -79,3 +79,16 @@ Verification and preview scope are recorded in
 [the October 20 playtest report](reviews/2026-10-20-campaign-playtest.md).
 
 Movement and equipment follow-up: [verification and remaining limits](reviews/2026-10-20-campaign-movement-equipment.md). Refresh the page to load the updated controls. The FF/DQ visual workshop is specified in [campaign art direction](CAMPAIGN_ART_DIRECTION.md).
+
+## October 21 item shop follow-up — awaiting preview deployment
+
+The branch has an item shop and consumable menus; the current preview has not yet
+been updated because its hosting connector is unavailable. Check
+[active work](ACTIVE_WORK.md) for the deployment checkpoint before testing these.
+
+After deployment, refresh and walk east within town to **S**. Buy a Potion, then
+open **Items** in the adventure menu to see its quantity and bag weight. Use it
+when injured. Try a protection item before a battle and check the remaining
+turns. Combat Items are available during questions and before Ready; status cures
+can be used while disabled. Bought items never refill at the inn. See
+[all eight effects and prototype defaults](CAMPAIGN_CONSUMABLES.md).

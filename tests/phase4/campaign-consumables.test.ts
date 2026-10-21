@@ -73,7 +73,9 @@ test('item commands are campaign-only, phase-limited and exposed through the pub
   assert.throws(() => applyStudentCommand(state, fight, actorId, cmd, 10000), /Campaign items/);
   const authored = { ...fight, campaignContext: { campaignId: 'c', studentId: actorId, objective: false, fixedTier: 1 } };
   const result = applyStudentCommand(state, authored, actorId, cmd, 10000);
+  (result.players[actorId].consumables as any).internalSecret = 'hidden';
   assert.equal(publicSnapshot(result).players[actorId].consumables?.potion, 1);
+  assert.equal(JSON.stringify(publicSnapshot(result)).includes('hidden'), false);
   assert.equal(result.players[actorId].hasAnswered, false);
   for (const phase of ['answer_feedback', 'question_resolution', 'enemy_ai', 'game_over'] as const)
     assert.throws(() => useCombatItem({ ...state, currentPhase: phase }, actorId, 'potion'), /before confirming/);
