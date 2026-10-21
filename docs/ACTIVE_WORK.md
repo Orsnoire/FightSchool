@@ -1,3 +1,10 @@
+# Math display repair — active October 21, 2026
+
+- Owner requested correct display of typed/imported math such as `x^2`, including exponents, subscripts and fractions.
+- Branch: `fix/math-text-rendering`; [draft PR #83](https://github.com/Orsnoire/FightSchool/pull/83). [Scope and checkpoint](https://github.com/Orsnoire/FightSchool/blob/fix/math-text-rendering/docs/reviews/2026-10-21-math-rendering.md).
+- Claim `a114412113dc297035ab6cdff5cde7dca47f7dd6`; implementation and verification pending. Next: reproduce raw text/editor round-trip failures, repair rendering, and verify the scoped change.
+- Separate campaign, domain routing and C12 work remain unchanged. No gameplay, grading or migration change; no release yet.
+
 # Campaign pilot — active October 20, 2026
 
 - Owner authorized development of a one-dungeon test campaign with unlocks, exploration, persistent campaign HP, a healing/consumable menu, an inn for job changes, separate weapon/armor shops, and generated unlock quest givers.
