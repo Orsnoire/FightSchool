@@ -47,6 +47,12 @@ release source differ from the request, inspect the newer state before retrying.
 - [Read-only preflight](https://github.com/Orsnoire/FightSchool/actions/runs/39643804398) passed.
 - Migration 0020 is applied only to the preview: 21 ledger entries, one item shop,
   unchanged map geometry and player progress digests.
-- Request now explicitly deploys the tested runtime; live verification is pending.
+- [Deployment run 39644095594](https://github.com/Orsnoire/FightSchool/actions/runs/39644095594)
+  passed and deployed the tested runtime. The source marker and existing combat
+  namespace identity were verified, and public liveness/readiness return 200.
+- Live purchases, field/combat item use, protection countdown, settlement/reload
+  carryover and timing checks pass. Owner retest is pending.
+- Future agents should use this GitHub path for preview deployment; another
+  Cloudflare dashboard/MCP login is not needed while the stored credential works.
 - Four deployment boundary tests pass locally (read-only preflight, wrong-target
   rejection, explicit migration/source gates, resource/secret preservation).

@@ -56,11 +56,58 @@ screen took about **10 seconds**. The driver acknowledged animation batches afte
 identifies reporting/result work on the observed path, not every possible lag.
 
 The publication change overlaps display with reporting; SQL still serializes room
-commands. No post-change live latency improvement is claimed yet. Authentication,
-question correctness, HP, item counts, gold and rewards remain server-owned.
+commands. Authentication, question correctness, HP, item counts, gold and rewards
+remain server-owned.
 
-**Not deployed:** Cloudflare connector search/execution repeatedly returned an
-internal error, including a no-op execution. No alternate authenticated deployment
-client was available. Migration 0020 has not been applied to the preview; its
-existing runtime remains unchanged. The owner's playtester was not used or reset.
-The branch is open/unmerged, and classroom deployment is outside this task.
+### Preview release and live follow-up
+
+The connector remained unavailable, so a dedicated GitHub Actions preview path
+was added with a fixed destination and preservation of existing secrets/storage.
+[Read-only preflight](https://github.com/Orsnoire/FightSchool/actions/runs/39643804398)
+passed using the existing deployment credential. Migration 0020 was applied only
+to the isolated preview in a transaction, followed by its migration ledger entry:
+21 entries, exactly one item-shop NPC, unchanged map-geometry and player-progress
+digests. No map regeneration or player reset was performed.
+
+[Deployment](https://github.com/Orsnoire/FightSchool/actions/runs/39644095594) rebuilt
+exact runtime `ccb003f797e94b01f39329a477af8a009b7d7e98`, passing TypeScript, all
+339 tests and both builds. Four deployment boundary tests also pass. Upload
+completed at 17:31 UTC on October 21; the runtime marker and unchanged combat
+namespace identity were checked. Public liveness and database/combat readiness
+both return 200. See [deployment procedure](../CAMPAIGN_PREVIEW_DEPLOYMENT.md).
+
+Dedicated CampaignQA live checks passed:
+
+- All eight items appear with weight 1. Buying two Potions deducts 20 gold once;
+  retrying the identical command does not charge or grant twice.
+- A Potion heals 5 HP up to maximum and consumes one. Sticky Shoes applies five
+  enemy-turn protection. Quantity/protection survives a fresh campaign request.
+- The inn restores health without refilling purchased items.
+- Combat inherits the saved bag. Psychic Crown consumes one and grants protection;
+  a second item during the same round is rejected without consuming it.
+- Trip/hypnosis protection counts down from five to four after one enemy turn,
+  then continues across the three-round encounter. Remaining HP, quantities and
+  protection persist back into adventure and survive reload.
+
+A three-round post-deployment sample used the same 750-ms playback acknowledgment
+rule as the previous probe:
+
+| Observed interval | Previous preview | Updated preview |
+| --- | --- | --- |
+| Support phase/Ready to visible resolution | 998–1159 ms | 104–120 ms |
+| Final playback completion command to completion state | about 9.9 s | about 196 ms |
+| Completion state to saved rewards | not separately captured | about 2.3 s |
+
+The final-playback estimate subtracts the driver's scheduled 750-ms playback wait;
+it does not measure actual browser animation timing. The before/after encounters
+lasted two and three rounds respectively. Ordinary acknowledgment samples were
+79–353 ms after deployment; a late playback acknowledgment queued after combat
+completion took 1.64 s. The improvement is visible-state publication, not removal
+of all database/queue waits. These are small API/WebSocket samples, not a repeated
+or loaded browser benchmark. Deliberate question lead-in and answer-feedback
+intervals remain unchanged.
+
+The owner's CampaignTester account was not used or reset. Owner acceptance of
+this follow-up remains pending. PR #81 is open/unmerged; classroom deployment is
+outside this task. The short-domain classroom redirect is a separate accepted
+change and was not modified by this release.

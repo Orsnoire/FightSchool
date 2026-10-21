@@ -80,13 +80,14 @@ Verification and preview scope are recorded in
 
 Movement and equipment follow-up: [verification and remaining limits](reviews/2026-10-20-campaign-movement-equipment.md). Refresh the page to load the updated controls. The FF/DQ visual workshop is specified in [campaign art direction](CAMPAIGN_ART_DIRECTION.md).
 
-## October 21 item shop follow-up — awaiting preview deployment
+## October 21 item shop follow-up — live on the preview
 
-The branch has an item shop and consumable menus; the current preview has not yet
-been updated because its hosting connector is unavailable. Check
-[active work](ACTIVE_WORK.md) for the deployment checkpoint before testing these.
+The item shop, consumable menus and combat publication update are deployed.
+[Deployment](https://github.com/Orsnoire/FightSchool/actions/runs/39644095594) and
+authenticated QA checks pass; owner feedback is the next gate.
+See [active work](ACTIVE_WORK.md) for the exact runtime and verification status.
 
-After deployment, refresh and walk east within town to **S**. Buy a Potion, then
+Refresh the page and walk east within town to **S**. Buy a Potion, then
 open **Items** in the adventure menu to see its quantity and bag weight. Use it
 when injured. Try a protection item before a battle and check the remaining
 turns. Combat Items are available during questions and before Ready; status cures
