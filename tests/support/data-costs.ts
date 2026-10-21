@@ -72,7 +72,12 @@ export async function dataCostFixture(
       code: "C06TWO",
     },
   ]);
-  await db.insert(schema.students).values(students);
+  // Explicit historical columns keep the pre-0017 migration fixture independent
+  // of columns added to today's ORM schema (such as campaign stamina recovery).
+  await pg.query(`INSERT INTO students(id,nickname,nickname_normalized,password_hash,character_class,gender,guild_id,inventory,gold,created_at)
+    SELECT x.id,x.nickname,x.nickname,x.password_hash,'warrior','A',x.guild_id,'[]'::jsonb,0,to_timestamp(0)
+    FROM jsonb_to_recordset($1::jsonb) AS x(id uuid,nickname text,password_hash text,guild_id uuid)`,
+    [JSON.stringify(students.map(s => ({ id: s.id, nickname: s.nickname, password_hash: s.passwordHash, guild_id: s.guildId })))]);
   await db.insert(schema.guildMemberships).values(
     students.flatMap((s) => [
       { guildId, studentId: s.id },

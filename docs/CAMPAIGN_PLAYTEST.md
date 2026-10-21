@@ -108,3 +108,15 @@ Finish or leave an active encounter before resetting. This is an explicit person
 restart, not procedural map regeneration; refreshing or deploying does not reset
 anyone. [Deployment and verification](reviews/2026-10-21-campaign-reset.md) pass;
 owner acceptance is pending. Check [active work](ACTIVE_WORK.md) for the runtime.
+
+## Boss stamina reward — release verification in progress
+
+After a guardian victory, the saved result shows the stamina restored. Each win
+adds 20 percentage points to post-fight stamina, capped at 100%; the visible
+amount can be smaller near full. The winning fight uses its ordinary XP rate;
+recovery benefits your next fight. Check the stamina bar in combat or the main
+lobby. Ordinary enemies and losses do not grant this bonus.
+
+This applies to repeat boss victories as well. The pilot remains solo: use Reset
+campaign for another complete run; direct/random boss matchmaking is future work.
+See [active work](ACTIVE_WORK.md) for release status.
