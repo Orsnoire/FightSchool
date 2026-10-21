@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CONSUMABLE_IDS } from '../campaign/consumables';
 import { ALL_CHARACTER_CLASSES, type CharacterClass } from '../schema';
 import { EQUIPMENT_SLOTS } from '../equipment-slots';
 import { MAX_CAMPAIGN_PATH } from '../campaign/movement';
@@ -16,6 +17,8 @@ export const campaignAction = z.object({
     z.object({ type: z.literal('equip'), slot: z.enum(EQUIPMENT_SLOTS), itemId: z.string().min(1).max(100).nullable() }).strict(),
     z.object({ type: z.literal('enter') }).strict(), z.object({ type: z.literal('exit') }).strict(),
     z.object({ type: z.literal('quest'), gateId: z.string().uuid() }).strict(),
+    z.object({ type: z.literal('use_item'), itemId: z.enum(CONSUMABLE_IDS) }).strict(),
+    z.object({ type: z.literal('buy_item'), itemId: z.enum(CONSUMABLE_IDS), quantity: z.number().int().min(1).max(20).default(1) }).strict(),
     z.object({ type: z.literal('heal'), ability: z.string().max(60) }).strict(),
     z.object({ type: z.literal('rest') }).strict(), z.object({ type: z.literal('return_to_town') }).strict(),
     z.object({ type: z.literal('job'), job: z.enum(ALL_CHARACTER_CLASSES as [CharacterClass, ...CharacterClass[]]) }).strict(),

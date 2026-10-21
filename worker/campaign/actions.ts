@@ -1,3 +1,4 @@
+import { CONSUMABLES, CONSUMABLE_IDS, consumeItem } from '../../shared/campaign/consumables';
 import { and, eq, sql } from 'drizzle-orm';
 import type { z } from 'zod';
 import { campaignAction } from '../../shared/contracts/campaigns';
@@ -16,10 +17,11 @@ import { campaignPlayer, campaignView, getCampaignProgress, type CampaignRecord 
 export async function campaignShop(db: GameDatabase, campaign: CampaignRecord) {
   const [guild] = await db.select().from(s.guilds).where(eq(s.guilds.id, campaign.guildId));
   const authored = await db.select().from(s.equipmentItems).where(and(eq(s.equipmentItems.teacherId, campaign.teacherId), eq(s.equipmentItems.isPurchasable, true)));
-  return [...builtinShopItems(), ...authored].filter(i => i.tier <= Math.min(1, guild.unlockedTier)).map(i => ({
+  const gear = [...builtinShopItems(), ...authored].filter(i => i.tier <= Math.min(1, guild.unlockedTier)).map(i => ({
     id: i.id, name: i.name, slot: i.slot, tier: i.tier, price: i.shopPrice || calculateTierPrice(i.tier, i.quality),
     shop: i.slot === 'weapon' || i.slot === 'offhand' ? 'weapons' : 'armor',
   }));
+  return [...gear, ...CONSUMABLE_IDS.map(id => ({ id, ...CONSUMABLES[id], slot: 'consumable', tier: 1, shop: 'items' }))];
 }
 
 export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRecord, student: s.StudentRecord, input: z.infer<typeof campaignAction>) {
@@ -39,6 +41,7 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
   let startEncounter = false, objective = false;
   let equipment: { job: string; loadout: JobLoadout } | undefined;
   let purchase: { id: string; price: number; tier: number } | undefined;
+  let itemPurchase: { id: string; price: number; quantity: number } | undefined;
   switch (action.type) {
     case 'move':
     case 'move_path': {
@@ -83,6 +86,19 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
       if (!gate?.open) throw new GameError('Your teacher has not opened this unlock yet.');
       next = { ...next, claimedUnlocks: [...new Set([...next.claimedUnlocks, gate.id])] }; break;
     }
+    case 'buy_item': {
+      service('items');
+      const item = CONSUMABLES[action.itemId];
+      itemPurchase = { id: action.itemId, price: item.price, quantity: action.quantity };
+      next = { ...next, consumables: { ...next.consumables, [action.itemId]: (next.consumables?.[action.itemId] || 0) + action.quantity } };
+      break;
+    }
+    case 'use_item': {
+      const fieldPlayer = { ...structuredClone(player), health: next.health, consumables: next.consumables, itemProtections: next.itemProtections };
+      try { consumeItem(fieldPlayer, action.itemId); } catch (e) { throw new GameError((e as Error).message); }
+      next = { ...next, health: fieldPlayer.health, consumables: fieldPlayer.consumables, itemProtections: fieldPlayer.itemProtections };
+      break;
+    }
     case 'heal':
       try { next = fieldHeal(next, player, action.ability); } catch (e) { throw new GameError((e as Error).message); } break;
     case 'rest': service('inn'); next = { ...next, health: next.maxHealth, mp: next.maxMp, healingPotions: 5 }; break;
@@ -119,13 +135,13 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
       enemies: [{ id: 'campaign-slime', name: objective ? 'Cave Guardian' : 'Wild Slime', image: '/enemies/slime-v2.png', enemyType: 'slime', quantity: 1, role: objective ? 'boss' : 'normal', difficultyMultiplier: objective ? 1.5 : 1 }],
       enemyDisplayMode: 'consecutive', lootTable: [],
       campaignContext: { campaignId: campaign.id, studentId: student.id, objective, fixedTier: 1 } };
-    Object.assign(player, { health: next.health, mp: next.mp, healingPotions: next.healingPotions, shieldPotions: next.shieldPotions, isDead: false });
+    Object.assign(player, { health: next.health, mp: next.mp, healingPotions: next.healingPotions, shieldPotions: next.shieldPotions, consumables: next.consumables, itemProtections: next.itemProtections, isDead: false });
     encounter = { id, fight, player };
     next = { ...next, activeSessionId: id };
   }
   const result = await db.execute(sql`SELECT apply_campaign_action(${JSON.stringify({ campaign: campaign.id, student: student.id,
     revision: input.revision, campaignRevision: campaign.revision, loadoutRevision: student.loadoutRevision,
-    command: input.commandId, state: next, ...(purchase ? { purchase } : {}), ...(equipment ? { equipment } : {}), ...(encounter ? { encounter } : {}) })}::jsonb) AS result`);
+    command: input.commandId, state: next, ...(purchase ? { purchase } : {}), ...(itemPurchase ? { itemPurchase } : {}), ...(equipment ? { equipment } : {}), ...(encounter ? { encounter } : {}) })}::jsonb) AS result`);
   const outcome = result.rows[0].result as { error?: string };
   if (outcome.error) throw new GameError(outcome.error, 409);
   const [fresh] = await db.select().from(s.students).where(eq(s.students.id, student.id));

@@ -45,6 +45,8 @@ export function grantControlRecovery(s: CombatSnapshot, p: CombatPlayer): void {
 }
 export function addStatus(s: CombatSnapshot, p: CombatPlayer, status: CombatStatus): boolean {
   if (p.isDead || p.buffs.immunity) return false;
+  const itemProtection = isHypnosis(status) ? 'hypnosis' : status.type === 'trip' || status.type === 'stun' ? status.type : undefined;
+  if (itemProtection && (p.itemProtections?.[itemProtection] || 0) > 0) return false;
   if (controlTypes.has(status.type) && (p.controlImmuneThroughRound || 0) >= s.round) return false;
   const statuses = p.statuses ||= [];
   if (isHypnosis(status) && statuses.some(isHypnosis)) return false;

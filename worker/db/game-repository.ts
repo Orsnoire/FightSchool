@@ -184,6 +184,7 @@ export async function persistCombatResults(
     const p = { ...state.departedPlayers, ...state.pendingPlayers, ...state.players }[fight.campaignContext.studentId];
     if (!p) throw new Error('Campaign result has no participant');
     await db.execute(sql`SELECT settle_campaign_encounter(${JSON.stringify({ session: state.sessionId,
+      consumables: p.consumables, itemProtections: p.itemProtections,
       health: Math.floor(p.health), mp: Math.floor(p.mp), healingPotions: p.healingPotions, shieldPotions: p.shieldPotions,
       victory: !!state.victory && !!state.players[p.studentId] })}::jsonb)`);
   }

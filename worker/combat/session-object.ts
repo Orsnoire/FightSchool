@@ -122,6 +122,7 @@ export class CombatSessionObject {
   private async save(room: StoredRoom, flushReporting = false) {
     return saveRoom(room, {
       repository: this.repository, checkpoint: room => this.checkpoint(room),
+      checkpointed: room.fight.campaignContext ? room => this.publish(room) : undefined,
       syncAlarm: room => this.syncAlarm(room), activeRenderers: room => this.activeRenderers(room),
     }, flushReporting);
   }

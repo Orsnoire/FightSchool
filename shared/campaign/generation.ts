@@ -28,6 +28,7 @@ export function generateCampaignLayout(seed: string, gates: CampaignGate[]): Cam
     npcs: [
       { id: 'inn', name: 'Hearthlight Inn', service: 'inn', x: 2, y: 4 },
       { id: 'weapons', name: 'Wayfarer Weapons', service: 'weapons', x: 5, y: 4 },
+      { id: 'items', name: 'Hearthlight Item Shop', service: 'items', x: 6, y: 6 },
       { id: 'armor', name: 'Ironleaf Armor', service: 'armor', x: 5, y: 8 },
       ...gates.map((gate, index) => ({ id: `quest:${gate.id}`, name: `${gate.name} Keeper`, service: 'quest' as const, gateId: gate.id, x: 2 + index * 2, y: 8 })),
     ],

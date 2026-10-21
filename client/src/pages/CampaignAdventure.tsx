@@ -7,7 +7,9 @@ import { campaignRequest } from './Campaigns';
 import { createCampaignController } from '@/features/campaign/movement';
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from '@shared/equipment-slots';
 import './campaign.css';
-type ShopItem = { id: string; name: string; slot: string; price: number; shop: string };
+import { ConsumableBag } from '@/components/ConsumableBag';
+import { bagWeight } from '@shared/campaign/consumables';
+type ShopItem = { id: string; name: string; slot: string; price: number; shop: string; description?: string; weight?: number };
 
 export default function CampaignAdventure() {
   const [, params] = useRoute('/student/campaign/:id');
@@ -52,7 +54,7 @@ export default function CampaignAdventure() {
   return <main className="campaign-shell">
     <Link href="/student/campaigns" className="campaign-back">← Campaigns</Link>
     <header className="campaign-heading"><span className="campaign-eyebrow">{view.guildName} · Solo adventure</span><h1>{view.name}</h1><p>{town ? 'Hearthlight & the wilds' : view.dungeonName} · {p.cleared ? 'Dungeon cleared' : open ? 'The cave is open' : 'Find the key keepers in town'}</p></header>
-    <div className="campaign-resources" aria-live="polite"><strong className="capitalize">{p.job}</strong><span>HP <b>{p.health}/{p.maxHealth}</b></span><span>MP <b>{p.mp}/{p.maxMp}</b></span><span>Potions <b>{p.healingPotions}/5</b></span><span>Gold <b>{view.gold}</b></span></div>
+    <div className="campaign-resources" aria-live="polite"><strong className="capitalize">{p.job}</strong><span>HP <b>{p.health}/{p.maxHealth}</b></span><span>MP <b>{p.mp}/{p.maxMp}</b></span><span>Healing charges <b>{p.healingPotions}/5</b></span><span>Bag weight <b>{bagWeight(p.consumables)}</b></span><span>Gold <b>{view.gold}</b></span></div>
     {(error || query.error) && <p role="alert" className="campaign-error">{error || query.error?.message}</p>}
     {p.activeSessionId && <div className="campaign-panel campaign-warning" role="status"><h2>Encounter in progress</h2><p>Finish or leave this encounter to resume exploring. Your saved HP will return with you.</p><Button onClick={() => resume(p.activeSessionId!)}>Resume encounter</Button><Button variant="outline" onClick={() => query.refetch()}>Refresh results</Button></div>}
     {p.health <= 0 && !p.activeSessionId && <p className="campaign-warning">You are exhausted. Walk to the inn (I) and rest before leaving town.</p>}
@@ -64,13 +66,13 @@ export default function CampaignAdventure() {
             const here = samePoint(pos, p.position), adjacent = near(pos, p.position) && !here && walkable(map, pos);
             const npc = town && view.layout.npcs.find(n => samePoint(n, pos));
             const entrance = town && samePoint(pos, view.layout.entrance), exit = !town && samePoint(pos, view.layout.dungeonExit), goal = !town && samePoint(pos, view.layout.objective);
-            const mark = here ? '●' : npc ? ({ inn: 'I', weapons: 'W', armor: 'A', quest: '!' }[npc.service]) : entrance ? 'D' : exit ? '↩' : goal ? p.cleared ? '✓' : '◆' : '';
+            const mark = here ? '●' : npc ? ({ inn: 'I', weapons: 'W', armor: 'A', items: 'S', quest: '!' }[npc.service]) : entrance ? 'D' : exit ? '↩' : goal ? p.cleared ? '✓' : '◆' : '';
             const label = here ? 'You' : npc ? npc.name : entrance ? view.dungeonName : exit ? 'Cave exit' : goal ? 'Cave guardian' : tile;
             return <button key={index} tabIndex={-1} title={label} aria-label={`${label}, ${pos.x}, ${pos.y}`} disabled={movementDisabled || !adjacent} onClick={() => move(pos.x - p.position.x, pos.y - p.position.y)} className={`campaign-tile tile-${tile} ${here ? 'tile-player' : ''} ${mark && !here ? 'tile-landmark' : ''} ${explored.has(pointKey(p.zone, pos)) ? 'tile-visited' : ''}`}>{mark}</button>;
           })}
         </div>
         <p className="campaign-note" role="status">{recovering ? 'Reconnecting…' : moving ? 'Saving your steps…' : 'Progress saved'}</p>
-        <p className="campaign-legend">● You · I Inn · W Weapons · A Armor · ! Key keeper · D Dungeon · ◆ Guardian</p>
+        <p className="campaign-legend">● You · I Inn · W Weapons · A Armor · S Items · ! Key keeper · D Dungeon · ◆ Guardian</p>
         <div className="campaign-controls" aria-label="Movement controls"><Button aria-label="Move north" disabled={movementDisabled} onClick={() => move(0, -1)}>↑</Button><div><Button aria-label="Move west" disabled={movementDisabled} onClick={() => move(-1, 0)}>←</Button><Button aria-label="Move south" disabled={movementDisabled} onClick={() => move(0, 1)}>↓</Button><Button aria-label="Move east" disabled={movementDisabled} onClick={() => move(1, 0)}>→</Button></div></div>
         <p className="campaign-note">Use the arrows or WASD. Step beside a landmark to interact. Town is safe; the wilds can trigger encounters.</p>
         <div className="campaign-actions">
@@ -81,6 +83,7 @@ export default function CampaignAdventure() {
         </div>
       </section>
       <aside className="campaign-sidebar">
+        <section className="campaign-panel"><ConsumableBag player={view.player} disabled={disabled} onUse={itemId => act({ type: 'use_item', itemId })} /></section>
         <section className="campaign-panel"><h2>Adventure menu</h2><p>HP, MP and consumables carry into your next encounter.</p>
           {view.healingActions.length ? view.healingActions.map(a => <Button className="campaign-heal" key={a.id} variant="outline" disabled={disabled || p.health <= 0 || p.health >= p.maxHealth || p.mp < a.mp || p.healingPotions < a.potions} onClick={() => act({ type: 'heal', ability: a.id })}>{a.name} · +{a.amount} HP{a.mp ? ` · ${a.mp} MP` : ''}{a.potions ? ` · ${a.potions} potion` : ''}</Button>) : <p className="campaign-note">This job has no field healing. Visit the inn to rest or change jobs.</p>}
           <p className="campaign-note">Only supported healing from your current job and equipped cross-class abilities appears here.</p>
@@ -99,8 +102,9 @@ export default function CampaignAdventure() {
         <section className="campaign-panel"><h2>Unlock quests</h2>{view.gates.length === 0 && <p>The cave needs no key.</p>}{view.gates.map(g => <p key={g.id}><strong>{g.name}</strong><br />{!g.open ? 'Waiting for your teacher' : p.claimedUnlocks.includes(g.id) ? 'Key collected' : 'Ready — visit its keeper (!)'}</p>)}<p className="campaign-note">Overworld pool: {view.eligibleQuestionCount} questions from unlocked dungeons.</p></section>
         {services.map(n => <section className="campaign-panel" key={n.id}>
           <h2>{n.name}</h2>
-          {n.service === 'inn' && <><p>Rest restores HP, MP and five healing charges. Rest is free in this test campaign.</p><Button disabled={disabled} onClick={() => act({ type: 'rest' })}>Rest at the inn</Button><label className="mt-4">Campaign job<select aria-label="Campaign job" disabled={disabled} value={p.job} onChange={e => act({ type: 'job', job: e.target.value })}>{view.unlockedJobs.map(j => <option key={j} value={j}>{j}</option>)}</select></label><p className="campaign-note">Changing jobs does not heal. This adventure uses that job’s saved equipment; your classroom job stays separate.</p><Button variant="outline" onClick={() => setEquipmentOpen(true)}>Open equipment</Button></>}
+          {n.service === 'inn' && <><p>Rest restores HP, MP and five healing charges. Bought items do not refill. Rest is free in this test campaign.</p><Button disabled={disabled} onClick={() => act({ type: 'rest' })}>Rest at the inn</Button><label className="mt-4">Campaign job<select aria-label="Campaign job" disabled={disabled} value={p.job} onChange={e => act({ type: 'job', job: e.target.value })}>{view.unlockedJobs.map(j => <option key={j} value={j}>{j}</option>)}</select></label><p className="campaign-note">Changing jobs does not heal. This adventure uses that job’s saved equipment; your classroom job stays separate.</p><Button variant="outline" onClick={() => setEquipmentOpen(true)}>Open equipment</Button></>}
           {n.service === 'quest' && <><p>“When your teacher opens this path, I will entrust you with the key.”</p><Button disabled={disabled || !view.gates.find(g => g.id === n.gateId)?.open || p.claimedUnlocks.includes(n.gateId!)} onClick={() => act({ type: 'quest', gateId: n.gateId })}>{p.claimedUnlocks.includes(n.gateId!) ? 'Key collected' : 'Collect key'}</Button></>}
+          {n.service === 'items' && <><p>Consumables · One-use items for any job.</p>{shop.error && <p role="alert">{shop.error.message}</p>}<div className="campaign-stock">{shop.data?.filter(i => i.shop === 'items').map(i => <div key={i.id}><span>{i.name}<small>{i.description}</small><small>{i.price} gold · Weight {i.weight} · In bag: {p.consumables?.[i.id as keyof typeof p.consumables] || 0}</small></span><Button size="sm" aria-label={`Buy ${i.name}`} disabled={disabled || view.gold < i.price} onClick={() => act({ type: 'buy_item', itemId: i.id, quantity: 1 })}>Buy</Button></div>)}</div></>}
           {(n.service === 'weapons' || n.service === 'armor') && <><p>Tier 1 stock · Purchases join your inventory.</p>{shop.error && <p role="alert">{shop.error.message}</p>}<div className="campaign-stock">{shop.data?.filter(i => i.shop === n.service).map(i => <div key={i.id}><span>{i.name}<small>{i.slot} · {i.price} gold</small></span><Button size="sm" disabled={disabled || view.gold < i.price || view.inventory.includes(i.id)} onClick={() => act({ type: 'buy', shop: n.service, itemId: i.id })}>{view.inventory.includes(i.id) ? 'Owned' : 'Buy'}</Button></div>)}</div></>}
         </section>)}
       </aside>

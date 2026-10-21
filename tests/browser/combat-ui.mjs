@@ -72,6 +72,20 @@ try {
     await emit();
     await page.locator('[data-testid="rich-content"] .katex').waitFor();
     await screenshot('question');
+    // Campaign self-cures remain usable while status effects block ordinary actions.
+    state.players[id].consumables = { ennervator: 1, potion: 2 };
+    state.players[id].statuses = [{ type: 'stun', sourceId: 'e1', appliedRound: 0 }];
+    await emit();
+    await page.getByTestId('consumable-bag').locator('summary').click();
+    await page.getByRole('button', { name: 'Use Ennervator', exact: true }).click();
+    assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).itemId), 'ennervator');
+    state.players[id].consumables = { potion: 2 }; state.players[id].itemUsedRound = state.round;
+    state.players[id].statuses = []; state.players[id].health = 1;
+    await emit();
+    assert.equal(await page.getByRole('button', { name: 'Use Potion', exact: true }).isDisabled(), true);
+    await page.screenshot({ path: `${output}/${viewport.width}-combat-items.png` });
+    delete state.players[id].consumables; delete state.players[id].itemUsedRound;
+    await emit();
     await page.getByRole('button', { name: 'x² + 4x + 4', exact: true }).click();
     await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
     assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).answer), 'x² + 4x + 4');

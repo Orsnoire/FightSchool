@@ -170,3 +170,10 @@ and equipment, healing, quests and services opened when needed. Review map scale
 movement feedback, service discoverability, keyboard/touch controls and desktop/
 phone layouts together. Biome artwork and the environment bestiaries remain in
 CAM-08; this proposal does not approve a final layout or asset style.
+
+## October 21 consumables and responsiveness follow-up
+
+The owner accepted movement responsiveness and requested a weighted item inventory,
+an item shop with eight consumables, and investigation of combat pauses. Read
+[consumable rules and prototype defaults](CAMPAIGN_CONSUMABLES.md) and
+[active work](ACTIVE_WORK.md) for implementation and verification status.

@@ -482,3 +482,10 @@ resolved, acceptance evidence, unfinished work, and next action through
 [ACTIVE_WORK.md](ACTIVE_WORK.md). Update this roadmap when requirements or
 package scope change. Read live repository state rather than treating this dated
 planning record as a release-status report.
+
+## October 21 consumables and responsiveness follow-up
+
+The owner accepted movement responsiveness and requested a weighted item inventory,
+an item shop with eight consumables, and investigation of combat pauses. Read
+[consumable rules and prototype defaults](CAMPAIGN_CONSUMABLES.md) and
+[active work](ACTIVE_WORK.md) for implementation and verification status.

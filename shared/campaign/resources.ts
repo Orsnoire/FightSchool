@@ -1,3 +1,4 @@
+import { normalizeBag, normalizeProtections } from './consumables';
 import type { CombatPlayer } from '../combat/model';
 import { abilityHealing } from '../combat/abilityValues';
 import { actionCost } from '../combat/abilities';
@@ -13,7 +14,7 @@ export function healingActions(player: CombatPlayer) {
   });
 }
 export function normalizeResources(progress: CampaignProgress, player: CombatPlayer): CampaignProgress {
-  return { ...progress, maxHealth: player.maxHealth, maxMp: player.maxMp,
+  return { ...progress, consumables: normalizeBag(progress.consumables), itemProtections: normalizeProtections(progress.itemProtections), maxHealth: player.maxHealth, maxMp: player.maxMp,
     health: Math.max(0, Math.min(progress.health, player.maxHealth)), mp: Math.max(0, Math.min(progress.mp, player.maxMp)),
     healingPotions: Math.max(0, Math.min(5, progress.healingPotions)), shieldPotions: Math.max(0, Math.min(3, progress.shieldPotions)) };
 }

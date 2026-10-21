@@ -43,7 +43,7 @@ export async function getCampaignProgress(db: GameDatabase, campaign: CampaignRe
     const { player } = await campaignPlayer(db, campaign, student, job);
     const state: CampaignProgress = { version: 1, zone: 'overworld', position: campaign.layout.overworld.spawn, job,
       health: player.maxHealth, maxHealth: player.maxHealth, mp: player.maxMp, maxMp: player.maxMp,
-      healingPotions: 5, shieldPotions: 0, steps: 0, claimedUnlocks: [], explored: [pointKey('overworld', campaign.layout.overworld.spawn)],
+      healingPotions: 5, shieldPotions: 0, consumables: {}, itemProtections: {}, steps: 0, claimedUnlocks: [], explored: [pointKey('overworld', campaign.layout.overworld.spawn)],
       cleared: false, activeSessionId: null, lastCommandId: null };
     await db.insert(s.campaignPlayers).values({ campaignId: campaign.id, studentId: student.id, state }).onConflictDoNothing();
     [record] = await db.select().from(s.campaignPlayers).where(and(eq(s.campaignPlayers.campaignId, campaign.id), eq(s.campaignPlayers.studentId, student.id)));
@@ -57,7 +57,7 @@ export async function campaignView(db: GameDatabase, campaign: CampaignRecord, s
     ? prepared : await campaignPlayer(db, campaign, student, record.state.job);
   const { player, unlockedJobs, loadout, catalog, owned, levels } = context;
   const progress = normalizeResources(record.state, player);
-  Object.assign(player, { health: progress.health, mp: progress.mp, healingPotions: progress.healingPotions, shieldPotions: progress.shieldPotions, isDead: progress.health <= 0 });
+  Object.assign(player, { health: progress.health, mp: progress.mp, healingPotions: progress.healingPotions, shieldPotions: progress.shieldPotions, consumables: progress.consumables, itemProtections: progress.itemProtections, isDead: progress.health <= 0 });
   const [guild] = await db.select().from(s.guilds).where(eq(s.guilds.id, campaign.guildId));
   return { id: campaign.id, name: campaign.name, dungeonName: campaign.dungeonName, theme: 'normal_cave', guildId: campaign.guildId, guildName: guild.name,
     gates: campaign.gates, revision: campaign.revision, layout: campaign.layout, progress, progressRevision: record.revision,

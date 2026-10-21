@@ -1,13 +1,12 @@
-# Campaign pilot — movement/equipment follow-up ready to play (October 20, 2026)
+# Campaign pilot — consumables and combat responsiveness (October 21, 2026)
 
-- Continue on `feature/campaign-pilot`, [PR #81](https://github.com/Orsnoire/FightSchool/pull/81), open and unmerged. The separate C12 work remains [PR #75](https://github.com/Orsnoire/FightSchool/pull/75); inspect its checkpoint before resuming it.
-- Owner feedback: movement feels slow; the placeholder UI needs a workshop; equipment should be accessible during exploration and show only currently usable owned gear.
-- Implemented follow-up: immediate local movement prediction, at most eight unconfirmed steps, server-validated queued paths that stop at encounters, stale-poll protection, connection recovery, and reuse of the validated combat profile within each action.
-- Equipment: current campaign job/effective-level/ownership/hand-pair filtering; server-validated saved loadout changes; combat lockout; HP/MP never refill. Forward-only migration 0019 extends the existing atomic action routine and is applied to the isolated owner playtest only.
-- Local verification: TypeScript, full test suite and both builds pass. Focused cases cover delayed movement, batching, correction/recovery, encounter stops, equipment eligibility/persistence, job separation and resource preservation. All four browser CI jobs pass; desktop/phone equipment screenshots were inspected. Authenticated live checks pass. [Follow-up evidence and limits](reviews/2026-10-20-campaign-movement-equipment.md).
-- The owner specified 16-bit-era FF/DQ visuals and supplied map/tileset references. [Art direction and workshop brief](CAMPAIGN_ART_DIRECTION.md) records them. A map-first screen and menus opened on demand are proposed; no final visual layout has been approved.
-- Future polish: [the roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md) requires 3–5 unique enemies per biome/environment, including overworld tile types, with environment-specific encounter pools. Academic questions still come from currently unlocked dungeons. This is not implemented in the pilot.
-- Next action: owner refreshes the playtest and retries movement and Equipment; use any further feedback to guide fixes and the overworld/town/menu visual workshop. The follow-up is deployed to the isolated playtest. Classroom deployment remains outside this task.
-- Earlier campaign acceptance and balance observations remain in [the playtest report](reviews/2026-10-20-campaign-playtest.md); access instructions are in [the play guide](CAMPAIGN_PLAYTEST.md). The long level-one herbalist guardian fight remains an open balance observation.
+- Continue on `feature/campaign-pilot`, [PR #81](https://github.com/Orsnoire/FightSchool/pull/81), open and unmerged. C12 remains separate in PR #75.
+- Owner accepted the movement improvement. Current scope: item shop, weighted consumable quantities, all eight requested item effects, and pauses between combat inputs.
+- Implemented locally: Items menus in exploration/combat, item shop added to new/saved maps, atomic gold/quantity purchases, carryover/retry-safe settlement, self-cures while disabled, and five enemy-turn protection. [Rules and explicit prototype defaults](CAMPAIGN_CONSUMABLES.md).
+- Responsiveness: a prior-preview QA probe found fast command acknowledgment but waits before resolution/completion display. Campaign snapshots now publish after durable checkpoint and before optional reporting; rewards remain gated on persisted results.
+- Verification in progress: focused deterministic and migrated HTTP tests pass. Full suite, builds and browser CI pending. No deployment of this follow-up yet; the hosting connector currently returns internal errors.
+- Next: finish tests and browser review, publish verified code, then apply forward-only migration 0020 and deploy to the isolated preview when its hosting connector recovers. The owner playtester has not been changed by QA.
+- Earlier [movement/equipment evidence](reviews/2026-10-20-campaign-movement-equipment.md), [play guide](CAMPAIGN_PLAYTEST.md), [art direction](CAMPAIGN_ART_DIRECTION.md) and [roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md) remain applicable. The UI workshop, biome bestiaries and long herbalist guardian balance review remain open.
+- Classroom deployment and merge remain outside this task.
 
-Earlier checkpoints are preserved in [Git history](https://github.com/Orsnoire/FightSchool/commits/feature/campaign-pilot/docs/ACTIVE_WORK.md). Main's checkpoint remains the discovery pointer for registered work.
+Earlier checkpoints are preserved in [Git history](https://github.com/Orsnoire/FightSchool/commits/feature/campaign-pilot/docs/ACTIVE_WORK.md).

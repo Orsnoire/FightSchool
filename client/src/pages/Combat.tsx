@@ -1,3 +1,4 @@
+import { ConsumableBag } from '@/components/ConsumableBag';
 import { CombatCountdown } from "@/components/CombatCountdown";
 import { useBeforeCombatDeadline } from "@/hooks/useCombatCountdown";
 import { activeEnemies, hpLabel } from "@shared/combat/encounters";
@@ -164,8 +165,9 @@ export default function Combat() {
       <CombatBoard state={state} selfId={studentId} onPlaybackComplete={playbackComplete}/>
       <FloatingCombatLog key={state.sessionId} events={state.events}/>
       {minimal && <div className="battle-wait" role="status" data-testid="battle-wait"><div><strong>{waitMessage}</strong>{status !== "connected" && <span>Reconnecting…</span>}{error && <p role="alert">{error}</p>}</div><CombatCountdown deadline={state.phaseDeadline} clockOffset={clockOffset} variant="waiting"/></div>}
-      {p && minimal && <aside className="battle-self-hud" aria-label="Your character"><h2>{p.nickname} · {p.characterClass}</h2><div className="battle-self-bars"><label>HP {p.health}/{p.maxHealth}<progress value={p.health} max={p.maxHealth}/></label>{p.maxMp > 0 && <label className="self-mp">MP {p.mp}/{p.maxMp}<progress value={p.mp} max={p.maxMp}/></label>}{p.maxComboPoints > 0 && <label className="self-cp">COMBO {p.comboPoints}/{p.maxComboPoints}<progress value={p.comboPoints} max={p.maxComboPoints}/></label>}</div><CombatResources player={p}/></aside>}
+      {p && minimal && <aside className="battle-self-hud" aria-label="Your character"><h2>{p.nickname} · {p.characterClass}</h2><div className="battle-self-bars"><label>HP {p.health}/{p.maxHealth}<progress value={p.health} max={p.maxHealth}/></label>{p.maxMp > 0 && <label className="self-mp">MP {p.mp}/{p.maxMp}<progress value={p.mp} max={p.maxMp}/></label>}{p.maxComboPoints > 0 && <label className="self-cp">COMBO {p.comboPoints}/{p.maxComboPoints}<progress value={p.comboPoints} max={p.maxComboPoints}/></label>}</div><CombatResources player={p}/>{p.consumables && ["question", "actions", "abilities"].includes(phase) && <ConsumableBag player={p} combat disabled={!canAct || !!p.ready || p.itemUsedRound === state.round} onUse={itemId => send("use_item", { itemId })} />}</aside>}
       {!minimal && <CombatOverlay onLeave={requestLeave} isLeaving={isLeaving} title={title} view={`${state.round}:${view}`} deadline={state.phaseDeadline} clockOffset={clockOffset} resources={p && <div className="space-y-3"><CombatResources player={p} /><StaminaBar studentId={studentId} refreshKey={result?.id} /></div>} status={status} error={error}>
+      {p?.consumables && ["question", "actions", "abilities"].includes(phase) && <ConsumableBag player={p} combat disabled={!canAct || !!p.ready || p.itemUsedRound === state.round} onUse={itemId => send("use_item", { itemId })} />}
       {phase === "answer_feedback" && <AnswerFeedback correctAnswer={question?.correctAnswer} outcome={p?.answerOutcome} />}
       {phase === "waiting" && <p>Your teacher will start the fight when everyone has joined.</p>}
       {intro && <p className="text-center py-8 text-lg">Get ready…</p>}

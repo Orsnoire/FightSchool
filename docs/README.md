@@ -85,3 +85,10 @@ C05 [room-cost methods and measurements](cloudflare/room-costs.md) are complete 
 
 - [Campaign pilot playtest](CAMPAIGN_PLAYTEST.md): preview access, student walkthrough, teacher gates and scope.
 - [Campaign art direction](CAMPAIGN_ART_DIRECTION.md): owner-supplied FF/DQ references and the exploration UI workshop brief.
+
+## October 21 consumables and responsiveness follow-up
+
+The owner accepted movement responsiveness and requested a weighted item inventory,
+an item shop with eight consumables, and investigation of combat pauses. Read
+[consumable rules and prototype defaults](CAMPAIGN_CONSUMABLES.md) and
+[active work](ACTIVE_WORK.md) for implementation and verification status.

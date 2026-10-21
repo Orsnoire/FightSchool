@@ -9,6 +9,7 @@ import type { StoredRoom } from "./room-state";
 export interface SaveEffects {
   repository: Pick<IdentityRepository, 'recordSessionReporting' | 'recordQuestEvidence'> | null;
   checkpoint(room: StoredRoom): Promise<void>;
+  checkpointed?(room: StoredRoom): Promise<void>;
   syncAlarm(room: StoredRoom): Promise<void>;
   activeRenderers(room: StoredRoom): string[];
 }
@@ -18,6 +19,9 @@ export async function saveRoom(room: StoredRoom, effects: SaveEffects, flushRepo
   if(!isResolution(room.snapshot.currentPhase)||!room.snapshot.playback)delete room.playbackGate;
   else if(room.playbackGate?.batchId!==room.snapshot.playback.id)room.playbackGate=createPlaybackGate(room.snapshot,effects.activeRenderers(room));
   await effects.checkpoint(room);
+  // Campaign UI can render the durable state while optional reporting catches up.
+  // This never exposes uncommitted choices or unpersisted rewards.
+  await effects.checkpointed?.(room);
   const reportKey = reportingSignature(room.snapshot);
   // Answers are durably checkpointed above. Drain their outbox when the question
   // closes, instead of repeating whole-roster SQL writes for every answer in a

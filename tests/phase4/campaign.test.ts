@@ -171,6 +171,29 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     assert.equal(view.progress.mp, 0); assert.ok(view.progress.health > 2);
     assert.equal((await action({ type: 'rest' })).status, 200);
     assert.equal(view.progress.health, view.progress.maxHealth);
+    // Shop quantities are real inventory, purchased atomically; failed/duplicate writes cannot charge twice.
+    assert.equal((await action({ type: 'buy_item', itemId: 'potion' })).status, 400, 'remote item shop rejected');
+    await db.update(s.campaignPlayers).set({ state: { ...view.progress, position: { x: 6, y: 6 }, health: 1 } }).where(eq(s.campaignPlayers.campaignId, created.body.id));
+    view = (await call(path)).body;
+    const itemGold = view.gold, itemRevision = view.progressRevision, itemCommand = crypto.randomUUID();
+    const buyItems = () => call(`${path}/actions`, 'POST', { revision: itemRevision, commandId: itemCommand, action: { type: 'buy_item', itemId: 'potion', quantity: 2 } });
+    const itemBuys = await Promise.all([buyItems(), buyItems()]); assert.ok(itemBuys.every(r => r.status === 200));
+    view = (await call(path)).body;
+    assert.equal(view.gold, itemGold - 20); assert.equal(view.progress.consumables.potion, 2);
+    assert.equal(view.inventory.includes('potion'), false, 'consumables are separate from permanent equipment');
+    assert.equal((await action({ type: 'buy_item', itemId: 'potion', quantity: 0 })).status, 400);
+    assert.equal((await action({ type: 'buy_item', itemId: 'forged', quantity: 1 })).status, 400);
+    assert.equal((await action({ type: 'use_item', itemId: 'potion' })).status, 200);
+    assert.equal(view.progress.health, 6); assert.equal(view.progress.consumables.potion, 1);
+    assert.equal((await action({ type: 'buy_item', itemId: 'sticky_shoes', quantity: 1 })).status, 200);
+    assert.equal((await action({ type: 'use_item', itemId: 'sticky_shoes' })).status, 200);
+    assert.equal(view.progress.itemProtections.trip, 5);
+    assert.equal((await action({ type: 'use_item', itemId: 'antivenom' })).status, 400);
+    const savedGold = view.gold;
+    await db.update(s.students).set({ gold: 0 }).where(eq(s.students.id, student().id));
+    assert.equal((await action({ type: 'buy_item', itemId: 'potion' })).status, 409);
+    assert.equal((await call(path)).body.progress.consumables.potion, 1);
+    await db.update(s.students).set({ gold: savedGold }).where(eq(s.students.id, student().id));
     // Start a guardian from server-prepared reachable progress; client cannot supply HP.
     const injured = { ...view.progress, zone: 'dungeon' as const, position: view.layout.objective, health: 3, mp: 1, healingPotions: 2 };
     await db.update(s.campaignPlayers).set({ state: injured }).where(eq(s.campaignPlayers.campaignId, created.body.id));
@@ -195,11 +218,15 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     assert.equal(encounter.fightSnapshot.questions.length, 1, 'authored edits cannot mutate active pool');
     // Exercise the actual result pipeline, twice. Settlement preserves reduced resources.
     state.currentPhase = 'game_over'; state.victory = true; state.completedRounds = 1;
+    assert.equal(state.players[actor.id].consumables?.potion, 1);
+    assert.equal(state.players[actor.id].itemProtections?.trip, 5);
+    state.players[actor.id].consumables = {}; state.players[actor.id].itemProtections = { trip: 3 };
     state.players[actor.id].health = 1; state.players[actor.id].mp = 0; state.players[actor.id].healingPotions = 1;
     state.players[actor.id].totals.questionsAnswered = 1; state.players[actor.id].totals.questionsCorrect = 1;
     state.players[actor.id].roundsParticipated = 1;
     await persistCombatResults(db as any, state, encounter.fightSnapshot);
     const settled = (await call(path)).body;
+    assert.deepEqual(settled.progress.consumables, {}); assert.equal(settled.progress.itemProtections.trip, 3);
     assert.equal(settled.progress.health, 1); assert.equal(settled.progress.healingPotions, 1);
     assert.equal(settled.progress.activeSessionId, null); assert.equal(settled.progress.cleared, true);
     await persistCombatResults(db as any, state, encounter.fightSnapshot);
@@ -223,9 +250,23 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     await move(-1, 0); await move(0, -1);
     assert.equal((await action({ type: 'rest' })).status, 200);
     assert.equal(view.progress.health, view.progress.maxHealth);
+    assert.deepEqual(view.progress.consumables, {}, 'inn cannot refill bought items');
     // Re-closing a gate removes its questions immediately, including after completion.
     assert.equal((await call(`${path}/gates`, 'PUT', { revision: 1, gates: [{ id: gateId, open: false }] }, teacherCookie)).status, 200);
     assert.equal((await call(path)).body.eligibleQuestionCount, 0);
+    // Existing saved maps gain only a shop; progress and all tiles survive migration.
+    const beforeUpgrade = (await call(path)).body;
+    const oldLayout = { ...beforeUpgrade.layout, npcs: beforeUpgrade.layout.npcs.filter((n: any) => n.service !== 'items') };
+    await db.update(s.campaigns).set({ layout: oldLayout }).where(eq(s.campaigns.id, created.body.id));
+    const upgrade = readFileSync(new URL('../../migrations/cloudflare/0020_campaign_consumables.sql', import.meta.url), 'utf8');
+    await pg.exec(upgrade);
+    const upgraded = (await call(path)).body;
+    assert.deepEqual(upgraded.progress, beforeUpgrade.progress);
+    assert.deepEqual(upgraded.layout.overworld, oldLayout.overworld);
+    assert.deepEqual(upgraded.layout.dungeon, oldLayout.dungeon);
+    assert.equal(upgraded.layout.npcs.filter((n: any) => n.service === 'items').length, 1);
+    await pg.exec(upgrade);
+    assert.equal((await call(path)).body.revision, upgraded.revision, 'upgrade is idempotent');
     await db.update(s.guilds).set({ isArchived: true }).where(eq(s.guilds.id, guild.id));
     assert.equal((await call(path)).status, 404);
   } finally { await pg.close(); }

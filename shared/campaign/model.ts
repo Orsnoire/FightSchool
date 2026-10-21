@@ -8,12 +8,14 @@ export type CampaignTile = 'grass' | 'water' | 'mountain' | 'path' | 'floor' | '
 export interface CampaignPoint { x: number; y: number }
 export interface CampaignMap { width: number; height: number; tiles: CampaignTile[]; spawn: CampaignPoint }
 export interface CampaignGate { id: string; name: string; open: boolean }
-export interface CampaignNpc extends CampaignPoint { id: string; name: string; service: 'inn' | 'weapons' | 'armor' | 'quest'; gateId?: string }
+export interface CampaignNpc extends CampaignPoint { id: string; name: string; service: 'inn' | 'weapons' | 'armor' | 'items' | 'quest'; gateId?: string }
 export interface CampaignLayout {
   version: 1; seed: string; overworld: CampaignMap; dungeon: CampaignMap;
   entrance: CampaignPoint; dungeonExit: CampaignPoint; objective: CampaignPoint; npcs: CampaignNpc[];
 }
 export interface CampaignProgress {
+  consumables?: import('./consumables').ConsumableBag;
+  itemProtections?: import('./consumables').ItemProtections;
   version: 1; zone: CampaignZone; position: CampaignPoint; job: CharacterClass;
   health: number; maxHealth: number; mp: number; maxMp: number;
   healingPotions: number; shieldPotions: number; steps: number;
