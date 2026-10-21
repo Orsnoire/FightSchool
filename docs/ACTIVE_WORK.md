@@ -1,3 +1,12 @@
+# Math display repair — active October 21, 2026
+
+- Owner requested correct display of typed/imported math such as x^2, including exponents, subscripts and fractions.
+- Branch: fix/math-text-rendering; [draft PR #83](https://github.com/Orsnoire/FightSchool/pull/83). [Scope and checkpoint](https://github.com/Orsnoire/FightSchool/blob/fix/math-text-rendering/docs/reviews/2026-10-21-math-rendering.md).
+- Implemented: shared display recognizes raw powers/subscripts/LaTeX and explicit delimiters. Existing math, prose, prices, addresses, code, SVG and stored answer values are preserved. The active textarea editor preserves source; the unused rich-text component is unchanged.
+- Verified locally: 16 rich-content tests, TypeScript, and both requested quiz files through the actual importer/renderer (48 questions, 264 equations). Full regression/build and exact-head CI/browser gates are pending. Desktop/phone import/edit/save/reload assertions are added to the existing authoring fixture.
+- Next: finish verification, inspect exact-current-head CI/browser results and resolve any failures before proposing release. See the branch report for current evidence.
+- Separate campaign, domain routing and C12 work remain unchanged. No gameplay, grading or migration change; no release yet.
+
 # Campaign pilot — active October 20, 2026
 
 - Owner authorized development of a one-dungeon test campaign with unlocks, exploration, persistent campaign HP, a healing/consumable menu, an inn for job changes, separate weapon/armor shops, and generated unlock quest givers.
