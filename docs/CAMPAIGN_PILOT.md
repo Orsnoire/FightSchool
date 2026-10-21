@@ -177,3 +177,15 @@ The owner accepted movement responsiveness and requested a weighted item invento
 an item shop with eight consumables, and investigation of combat pauses. Read
 [consumable rules and prototype defaults](CAMPAIGN_CONSUMABLES.md) and
 [active work](ACTIVE_WORK.md) for implementation and verification status.
+
+## October 21 personal reset follow-up
+
+Owner requested a reset control in the campaign lobby. The student confirms an
+individual campaign restart; exploration, collected keys, dungeon completion,
+step count and active item protections clear, and starting HP/MP/job charges are
+restored at the town spawn. Retain the current campaign job, purchased item bag,
+permanent progression/equipment/gold, and all academic/reward history. The saved
+map and teacher gates are unchanged. Reset is unavailable during an active
+encounter and uses existing atomic revision/command guards. This does not grant
+map regeneration or authorize a class-wide reset. No automatic reset is performed
+at deployment. See [active work](ACTIVE_WORK.md) for verification and release.

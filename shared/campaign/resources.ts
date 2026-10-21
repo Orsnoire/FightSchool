@@ -2,7 +2,7 @@ import { normalizeBag, normalizeProtections } from './consumables';
 import type { CombatPlayer } from '../combat/model';
 import { abilityHealing } from '../combat/abilityValues';
 import { actionCost } from '../combat/abilities';
-import type { CampaignProgress } from './model';
+import { pointKey, type CampaignLayout, type CampaignProgress } from './model';
 
 // Direct restorative actions whose complete outside-combat effect is defined.
 // Combat ultimates/cooldown actions are intentionally not reset by a menu visit.
@@ -25,4 +25,13 @@ export function fieldHeal(progress: CampaignProgress, player: CombatPlayer, abil
   if (progress.health >= progress.maxHealth) throw new Error('HP is already full.');
   if (progress.mp < action.mp || progress.healingPotions < action.potions) throw new Error('Not enough MP or healing potions.');
   return { ...progress, health: Math.min(progress.maxHealth, progress.health + action.amount), mp: progress.mp - action.mp, healingPotions: progress.healingPotions - action.potions };
+}
+
+/** Explicit personal restart. Purchased inventory and permanent reward history survive. */
+export function resetCampaignProgress(progress: CampaignProgress, layout: CampaignLayout): CampaignProgress {
+  if (progress.activeSessionId) throw new Error('Finish or leave the active encounter first.');
+  return { ...progress, zone: 'overworld', position: { ...layout.overworld.spawn },
+    health: progress.maxHealth, mp: progress.maxMp, healingPotions: 5, shieldPotions: 0,
+    itemProtections: {}, steps: 0, claimedUnlocks: [],
+    explored: [pointKey('overworld', layout.overworld.spawn)], cleared: false };
 }

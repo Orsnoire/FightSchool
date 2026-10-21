@@ -47,6 +47,30 @@ jobs:
           npm run check
           npm test
           npm run build:cloudflare
+      - name: Verify campaign UI before preview deployment
+        if: steps.request.outputs.mode == 'deploy'
+        working-directory: runtime
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/campaign-browser-tools" --no-save --package-lock=false playwright@1.62.1
+          ln -s "$RUNNER_TEMP/campaign-browser-tools/node_modules/playwright" node_modules/playwright
+          node "$RUNNER_TEMP/campaign-browser-tools/node_modules/playwright/cli.js" install chromium
+          npx vite preview --host 127.0.0.1 --port 4173 > "$RUNNER_TEMP/campaign-preview-vite.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node --import tsx tests/browser/campaign.mjs
+      - name: Preserve campaign UI evidence
+        if: always() && steps.request.outputs.mode == 'deploy'
+        uses: actions/upload-artifact@v6
+        with:
+          name: campaign-preview-browser
+          path: runtime/artifacts/combat-ui
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@v6
         if: steps.request.outputs.mode == 'deploy'
         with:

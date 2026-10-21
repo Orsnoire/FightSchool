@@ -24,5 +24,6 @@ export const campaignAction = z.object({
     z.object({ type: z.literal('job'), job: z.enum(ALL_CHARACTER_CLASSES as [CharacterClass, ...CharacterClass[]]) }).strict(),
     z.object({ type: z.literal('buy'), shop: z.enum(['weapons', 'armor']), itemId: z.string().min(1).max(100) }).strict(),
     z.object({ type: z.literal('encounter') }).strict(),
+    z.object({ type: z.literal('reset') }).strict(),
   ]),
 }).strict();

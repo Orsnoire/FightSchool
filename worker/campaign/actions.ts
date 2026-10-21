@@ -6,7 +6,7 @@ import { dungeonAccessible, near, pointKey } from '../../shared/campaign/model';
 import { campaignPath } from '../../shared/campaign/movement';
 import { equipmentUnavailable, handConflict } from '../../shared/equipment-rules';
 import type { JobLoadout } from '../../shared/job-loadouts';
-import { fieldHeal, normalizeResources } from '../../shared/campaign/resources';
+import { fieldHeal, normalizeResources, resetCampaignProgress } from '../../shared/campaign/resources';
 import { builtinShopItems } from '../../shared/equipment-shop';
 import { calculateTierPrice } from '../../shared/schema';
 import { GameError } from '../services/errors';
@@ -43,6 +43,7 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
   let purchase: { id: string; price: number; tier: number } | undefined;
   let itemPurchase: { id: string; price: number; quantity: number } | undefined;
   switch (action.type) {
+    case 'reset': next = resetCampaignProgress(next, campaign.layout); break;
     case 'move':
     case 'move_path': {
       try {

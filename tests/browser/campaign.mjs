@@ -7,7 +7,7 @@ import { ownedEquipment } from '../../shared/equipment-catalog.ts';
 import { equipmentUnavailable } from '../../shared/equipment-rules.ts';
 import { campaignPath } from '../../shared/campaign/movement.ts';
 import { generateCampaignLayout } from '../../shared/campaign/generation.ts';
-import { healingActions, fieldHeal, normalizeResources } from '../../shared/campaign/resources.ts';
+import { healingActions, fieldHeal, normalizeResources, resetCampaignProgress } from '../../shared/campaign/resources.ts';
 import { initialCombatState, addStudent } from '../../worker/combat/engine.ts';
 import { fight, student } from '../phase4/fixtures.ts';
 
@@ -30,7 +30,7 @@ try {
         healingPotions: 5, shieldPotions: 0, consumables: {}, itemProtections: {}, steps: 0, claimedUnlocks: [], explored: [], cleared: false, activeSessionId: null, lastCommandId: null } };
     let loadout = getStartingEquipment('herbalist');
     const equipment = () => ({ loadout, items: ownedEquipment(view.inventory).map(id => EQUIPMENT_ITEMS[id]).filter(i => i && !equipmentUnavailable(view.progress.job, i, 2, EQUIPMENT_ITEMS[loadout.weapon], EQUIPMENT_ITEMS[loadout.offhand])).map(i => ({ ...i, stats: i.stats || {} })) });
-    let moveDelay = 0;
+    let moveDelay = 0, rejectReset = false;
     const creations = [], commands = [];
     const stock = [{ id: 't1_fighter_sword', name: "Fighter's Sword", price: 150, shop: 'weapons', slot: 'weapon' }, { id: 't1_fighter_armor', name: "Fighter's Cuirass", price: 150, shop: 'armor', slot: 'armor' }];
     stock.push(...CONSUMABLE_IDS.map(id => ({ id, ...CONSUMABLES[id], shop: 'items', slot: 'consumable' })));
@@ -48,6 +48,8 @@ try {
       else if (path.endsWith('/actions')) {
         const input = request.postDataJSON(), a = input.action; commands.push(input);
         assert.equal(input.revision, view.progressRevision);
+        if (a.type === 'reset' && rejectReset) { rejectReset = false; await route.fulfill({ status: 409, json: { error: 'Adventure changed. Refresh and try again.' } }); return; }
+        if (a.type === 'reset') { view.progress = resetCampaignProgress(view.progress, view.layout); view.eligibleQuestionCount = 0; }
         if (a.type === 'move_path') { if (moveDelay) await new Promise(resolve => setTimeout(resolve, moveDelay)); view.progress = campaignPath(view, view.progress, a.steps).progress; }
         if (a.type === 'equip') loadout = { ...loadout, [a.slot]: a.itemId };
         if (a.type === 'move') view.progress.position = { x: view.progress.position.x + a.dx, y: view.progress.position.y + a.dy };
@@ -67,6 +69,7 @@ try {
     });
     await page.goto(`${origin}/teacher/campaigns`);
     await page.getByLabel('Campaign guild', { exact: true }).selectOption(guildId);
+    assert.equal(await page.getByRole('button', { name: 'Reset campaign', exact: true }).count(), 0, 'personal reset is student-only');
     await page.getByLabel('Filter quizzes by guild').selectOption(guildId);
     await page.getByLabel('Search quiz names').fill('fract');
     assert.equal(await page.getByLabel('Dungeon quiz', { exact: true }).locator('option').count(), 2);
@@ -148,6 +151,41 @@ try {
     await page.goto(`${origin}/student/campaign/${id}`);
     await page.getByRole('button', { name: 'Resume encounter' }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Move north' }).isDisabled(), true);
+    await page.goto(`${origin}/student/campaigns`);
+    const resetTrigger = page.getByRole('button', { name: 'Reset campaign', exact: true });
+    await resetTrigger.click();
+    let dialog = page.getByRole('alertdialog');
+    await dialog.getByText('Finish or leave your active encounter before resetting.', { exact: false }).waitFor();
+    assert.equal(await dialog.getByRole('button', { name: 'Reset campaign', exact: true }).isDisabled(), true);
+    assert.equal(commands.filter(c => c.action.type === 'reset').length, 0);
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    view.progress = { ...view.progress, activeSessionId: null, cleared: true, health: 1, healingPotions: 1, itemProtections: { trip: 2 } };
+    const preservedBag = structuredClone(view.progress.consumables), preservedGold = view.gold;
+    await resetTrigger.click();
+    await dialog.getByText(/You keep your current job, levels, XP, gold/).waitFor();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    assert.equal(view.progress.cleared, true); assert.equal(commands.filter(c => c.action.type === 'reset').length, 0);
+    assert.equal(await resetTrigger.evaluate(e => e === document.activeElement), true, 'cancel restores keyboard focus');
+    await resetTrigger.click();
+    await page.waitForFunction(() => { const button = document.querySelector('[role="alertdialog"] button:last-child'); return button && !button.disabled; });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: `${output}/${viewport.width}-campaign-reset.png`, fullPage: true });
+    rejectReset = true;
+    await dialog.getByRole('button', { name: 'Reset campaign', exact: true }).click();
+    await dialog.getByRole('alert').filter({ hasText: 'Adventure changed' }).waitFor();
+    assert.equal(view.progress.cleared, true, 'failure does not pretend a reset succeeded');
+    await dialog.getByRole('button', { name: 'Reset campaign', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Campaign reset. Enter the adventure to start again.' }).waitFor();
+    const resetCommands = commands.filter(c => c.action.type === 'reset');
+    assert.equal(resetCommands.length, 2); assert.equal(resetCommands[0].commandId, resetCommands[1].commandId, 'retry retains its command identity');
+    assert.equal(view.progress.cleared, false); assert.equal(view.progress.health, view.progress.maxHealth);
+    assert.equal(view.gold, preservedGold); assert.deepEqual(view.progress.consumables, preservedBag);
+    await page.getByRole('button', { name: 'Enter adventure' }).click();
+    await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
+    await page.getByText('Ready — visit its keeper (!)', { exact: false }).waitFor();
+    assert.deepEqual(view.progress.position, layout.overworld.spawn); assert.deepEqual(view.progress.claimedUnlocks, []);
     assert.ok(commands.every(c => c.commandId && !('health' in c.action)));
     await page.close();
   }

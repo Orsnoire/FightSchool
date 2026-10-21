@@ -93,3 +93,17 @@ when injured. Try a protection item before a battle and check the remaining
 turns. Combat Items are available during questions and before Ready; status cures
 can be used while disabled. Bought items never refill at the inn. See
 [all eight effects and prototype defaults](CAMPAIGN_CONSUMABLES.md).
+
+## Resetting your adventure — follow-up awaiting deployment
+
+In the student campaign lobby, **Reset campaign** appears beside **Enter adventure**.
+Open it to review the confirmation; **Cancel** leaves the adventure untouched.
+Confirming restarts only your progress in that campaign: explored locations,
+collected campaign keys and dungeon completion clear; you return to town with
+full HP/MP and starting job charges. Active item protections end.
+
+Your current job, levels, XP, gold, equipment and purchased consumables remain.
+The saved map, teacher gates, academic records and other students are unaffected.
+Finish or leave an active encounter before resetting. This is an explicit personal
+restart, not procedural map regeneration; refreshing or deploying does not reset
+anyone. Check [active work](ACTIVE_WORK.md) for release status.

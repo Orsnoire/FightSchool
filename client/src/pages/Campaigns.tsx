@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useTeacherAuth } from '@/hooks/useTeacherAuth';
-import type { CampaignSummary } from '@shared/campaign/model';
+import type { CampaignSummary, CampaignView } from '@shared/campaign/model';
 import './campaign.css';
 
 export async function campaignRequest<T>(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
@@ -69,8 +70,65 @@ function CampaignList({ teacher }: { teacher: boolean }) {
       {query.data?.map(c => <article className="campaign-panel" key={c.id}>
         <span className="campaign-eyebrow">{c.guildName}</span><h2>{c.name}</h2><p>{c.dungeonName} · Normal cave</p>
         {c.gates.length ? <ul className="campaign-gate-list">{c.gates.map(g => <li key={g.id}><span>{g.name} · {g.open ? 'Available' : 'Teacher locked'}</span>{teacher && <Button variant="outline" disabled={busy} onClick={() => toggle(c, g.id)}>{g.open ? 'Close gate' : 'Open gate'}</Button>}</li>)}</ul> : <p>No keys required.</p>}
-        {!teacher && <Link href={`/student/campaign/${c.id}`}><Button>Enter adventure</Button></Link>}
+        {!teacher && <div className="campaign-actions"><Link href={`/student/campaign/${c.id}`}><Button>Enter adventure</Button></Link><ResetCampaign campaign={c} /></div>}
       </article>)}
     </section>
   </main>;
+}
+
+function ResetCampaign({ campaign }: { campaign: CampaignSummary }) {
+  const client = useQueryClient(), path = `/api/campaigns/${campaign.id}`;
+  const [open, setOpen] = useState(false), [busy, setBusy] = useState(false);
+  const [error, setError] = useState(''), [done, setDone] = useState(false);
+  // Retain the same command when retrying an uncertain response. A later action
+  // makes its old revision stale, so a retry cannot silently reset newer progress.
+  const request = useRef<{ commandId: string; revision: number; action: { type: 'reset' } }>();
+  const submitting = useRef(false);
+  const query = useQuery({ queryKey: [path, 'reset-preview'],
+    queryFn: ({ signal }) => campaignRequest<CampaignView>(path, 'GET', undefined, signal),
+    enabled: open, staleTime: 0, retry: false, refetchOnWindowFocus: false });
+  function changeOpen(next: boolean) {
+    if (submitting.current) return;
+    if (next) { request.current = undefined; setError(''); setDone(false); }
+    setOpen(next);
+  }
+  async function reset() {
+    if (!query.data || query.isFetching || query.error || query.data.progress.activeSessionId || submitting.current) return;
+    submitting.current = true; setBusy(true); setError('');
+    request.current ??= { commandId: crypto.randomUUID(), revision: query.data.progressRevision, action: { type: 'reset' } };
+    try {
+      const updated = await campaignRequest<CampaignView>(`${path}/actions`, 'POST', request.current, AbortSignal.timeout(15000));
+      await client.cancelQueries({ queryKey: [path], exact: true });
+      client.setQueryData([path], updated);
+      client.setQueryData([path, 'reset-preview'], updated);
+      setOpen(false); setDone(true);
+    } catch (e) { setError((e as Error).message); }
+    finally { submitting.current = false; setBusy(false); }
+  }
+  return <>
+    <AlertDialog open={open} onOpenChange={changeOpen}>
+      <AlertDialogTrigger asChild><Button variant="outline">Reset campaign</Button></AlertDialogTrigger>
+      <AlertDialogContent className="max-w-[min(32rem,calc(100%-2rem))] max-h-[90dvh] overflow-y-auto">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Reset your campaign?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Restart your adventure in {campaign.name}. This clears your explored locations, collected dungeon keys, and dungeon completion, and returns you to town with full HP, MP, and healing charges. Active item protections end.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <p className="text-sm">You keep your current job, levels, XP, gold, equipment, and purchased items. The map and teacher-controlled gates stay the same. Other players are unaffected.</p>
+        <p className="text-sm font-medium">Your previous adventure progress cannot be restored.</p>
+        {query.isFetching && <p role="status">Checking your saved adventure…</p>}
+        {query.data?.progress.activeSessionId && <p role="alert">Finish or leave your active encounter before resetting. Enter the adventure to resume it.</p>}
+        {(error || query.error) && <p role="alert" className="text-sm text-destructive">{error || query.error?.message}</p>}
+        {query.error && <Button variant="outline" onClick={() => query.refetch()} disabled={query.isFetching}>Refresh campaign status</Button>}
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+          <AlertDialogAction className={buttonVariants({ variant: 'destructive' })}
+            disabled={busy || query.isFetching || !query.data || !!query.error || !!query.data.progress.activeSessionId}
+            onClick={e => { e.preventDefault(); void reset(); }}>{busy ? 'Resetting…' : 'Reset campaign'}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    {done && <p role="status" className="campaign-note w-full">Campaign reset. Enter the adventure to start again.</p>}
+  </>;
 }

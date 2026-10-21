@@ -1,3 +1,12 @@
+# Campaign lobby reset — active October 21, 2026
+
+- Owner reports the consumables preview is working and requests a **Reset campaign** button in the campaign lobby. Continue on `feature/campaign-pilot`, PR #81.
+- Implemented: student-only reset beside Enter adventure, explicit accessible confirmation, active-encounter block, success/error recovery, and server-authoritative restart through the existing atomic campaign action. No migration required.
+- Reset clears personal exploration, collected campaign keys, dungeon completion, active item protections and step count; returns to town and restores HP/MP and initial job charges. Keeps current job, purchased consumables, permanent levels/XP/gold/equipment, results/evidence, map and teacher gates. No other player's progress changes.
+- Local TypeScript/builds and expanded migrated campaign tests pass: duplicate reset, reset/movement race, stale retry, old settlement replay, membership/teacher restrictions, forged fields and other-player/campaign isolation. Browser confirmation/cancellation/error/active-fight tests are added; the preview workflow now runs the desktop/phone campaign browser gate on the exact built runtime before upload. Local Chromium download failed; GitHub browser verification and deployment are pending.
+- Next: finish desktop/phone browser checks, publish the reviewed runtime, deploy through the existing preview workflow, verify public readiness and the released reset UI. No owner's campaign has been reset by the agent.
+- Previous preview runtime remains `ccb003f797e94b01f39329a477af8a009b7d7e98`. Classroom deployment and merge remain outside this task.
+
 # Campaign pilot — consumables and combat responsiveness (October 21, 2026)
 
 - Continue on `feature/campaign-pilot`, [PR #81](https://github.com/Orsnoire/FightSchool/pull/81), open and unmerged. C12 remains separate in PR #75.

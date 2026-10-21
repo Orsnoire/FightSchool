@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import * as s from '../../worker/db/schema';
 import { generateCampaignLayout, validateCampaignLayout } from '../../shared/campaign/generation';
 import { fieldHeal, normalizeResources } from '../../shared/campaign/resources';
@@ -202,6 +202,7 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     const sessionId = view.progress.activeSessionId; assert.ok(sessionId);
     assert.equal((await action({ type: 'return_to_town' })).status, 409);
     assert.equal((await action({ type: 'rest' })).status, 409);
+    assert.equal((await action({ type: 'reset' })).status, 409, 'reset cannot bypass an active encounter');
     assert.equal((await action({ type: 'equip', slot: 'armor', itemId: null })).status, 409, 'equipment frozen during encounter');
     const [encounter] = await db.select().from(s.campaignEncounters).where(eq(s.campaignEncounters.sessionId, sessionId));
     const [actor] = await db.select().from(s.students).where(eq(s.students.id, student().id));
@@ -267,6 +268,65 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     assert.equal(upgraded.layout.npcs.filter((n: any) => n.service === 'items').length, 1);
     await pg.exec(upgrade);
     assert.equal((await call(path)).body.revision, upgraded.revision, 'upgrade is idempotent');
+    // Personal reset keeps global progression/history and other students/campaigns.
+    const peer = student('wizard', crypto.randomUUID());
+    await db.insert(s.students).values(peer);
+    await db.insert(s.guildMemberships).values({ guildId: guild.id, studentId: peer.id });
+    const peerCookie = (await issueSession(repository, config, 'student', peer.id)).split(';')[0];
+    const peerBefore = (await call(path, 'GET', undefined, peerCookie)).body;
+    const [campaignBefore] = await db.select().from(s.campaigns).where(eq(s.campaigns.id, created.body.id));
+    const otherCampaignId = crypto.randomUUID();
+    await db.insert(s.campaigns).values({ ...campaignBefore, id: otherCampaignId, name: 'Other adventure' });
+    const otherBefore = (await call(`/api/campaigns/${otherCampaignId}`)).body;
+    const progressFilter = and(eq(s.campaignPlayers.campaignId, created.body.id), eq(s.campaignPlayers.studentId, actor.id));
+    await db.update(s.campaignPlayers).set({ state: { ...upgraded.progress, zone: 'dungeon', position: upgraded.layout.objective,
+      cleared: true, health: 0, mp: 0, healingPotions: 1, shieldPotions: 2, consumables: { potion: 3 }, itemProtections: { trip: 2 },
+      claimedUnlocks: [gateId], explored: ['overworld:3:6', 'dungeon:16:6'], steps: 97 } }).where(progressFilter);
+    view = (await call(path)).body;
+    const resetRevision = view.progressRevision, resetCommand = crypto.randomUUID(), resetAction = { type: 'reset' };
+    const permanentBefore = await db.select().from(s.students).where(eq(s.students.id, actor.id));
+    const jobsBefore = await db.select().from(s.studentJobLevels);
+    const resultsBefore = await db.select().from(s.combatResults);
+    const evidenceBefore = await db.select().from(s.questFightEvidence);
+    const encountersBefore = await db.select().from(s.campaignEncounters);
+    const resetBody = { action: resetAction, revision: resetRevision, commandId: resetCommand };
+    assert.equal((await call(`${path}/actions`, 'POST', resetBody, teacherCookie)).status, 403);
+    const nonmemberCookie = (await issueSession(repository, config, 'student', crypto.randomUUID())).split(';')[0];
+    assert.equal((await call(`${path}/actions`, 'POST', resetBody, nonmemberCookie)).status, 403);
+    assert.equal((await action({ type: 'reset', studentId: peer.id })).status, 400, 'cannot nominate another student');
+    assert.equal((await action({ type: 'reset', health: 999 })).status, 400, 'reset state is server owned');
+    const resets = await Promise.all([call(`${path}/actions`, 'POST', resetBody), call(`${path}/actions`, 'POST', resetBody)]);
+    assert.ok(resets.every(r => r.status === 200), JSON.stringify(resets));
+    view = (await call(path)).body;
+    assert.equal(view.progressRevision, resetRevision + 1, 'duplicate reset commits once');
+    assert.equal(view.progress.zone, 'overworld'); assert.deepEqual(view.progress.position, view.layout.overworld.spawn);
+    assert.equal(view.progress.health, view.progress.maxHealth); assert.equal(view.progress.mp, view.progress.maxMp);
+    assert.equal(view.progress.healingPotions, 5); assert.equal(view.progress.shieldPotions, 0);
+    assert.equal(view.progress.job, upgraded.progress.job); assert.equal(view.progress.steps, 0);
+    assert.equal(view.progress.cleared, false); assert.deepEqual(view.progress.claimedUnlocks, []);
+    assert.deepEqual(view.progress.explored, [`overworld:${view.layout.overworld.spawn.x}:${view.layout.overworld.spawn.y}`]);
+    assert.deepEqual(view.progress.consumables, { potion: 3 }); assert.deepEqual(view.progress.itemProtections, {});
+    assert.equal(view.eligibleQuestionCount, 0); assert.equal(view.progress.activeSessionId, null);
+    assert.deepEqual((await db.select().from(s.campaigns).where(eq(s.campaigns.id, created.body.id)))[0], campaignBefore);
+    assert.deepEqual(await db.select().from(s.students).where(eq(s.students.id, actor.id)), permanentBefore);
+    assert.deepEqual(await db.select().from(s.studentJobLevels), jobsBefore);
+    assert.deepEqual(await db.select().from(s.combatResults), resultsBefore);
+    assert.deepEqual(await db.select().from(s.questFightEvidence), evidenceBefore);
+    assert.deepEqual(await db.select().from(s.campaignEncounters), encountersBefore);
+    assert.deepEqual((await call(path, 'GET', undefined, peerCookie)).body, peerBefore);
+    assert.deepEqual((await call(`/api/campaigns/${otherCampaignId}`)).body, otherBefore);
+    const resetProgress = structuredClone(view.progress);
+    await persistCombatResults(db as any, state, encounter.fightSnapshot);
+    assert.deepEqual((await call(path)).body.progress, resetProgress, 'old settlement cannot undo a reset');
+    await move(1, 0);
+    assert.equal((await call(`${path}/actions`, 'POST', resetBody)).status, 409, 'old retry cannot erase newer exploration');
+    assert.equal((await call(path)).body.progress.steps, 1);
+    const competingRevision = view.progressRevision;
+    const competing = await Promise.all([
+      call(`${path}/actions`, 'POST', { revision: competingRevision, commandId: crypto.randomUUID(), action: { type: 'reset' } }),
+      call(`${path}/actions`, 'POST', { revision: competingRevision, commandId: crypto.randomUUID(), action: { type: 'move', dx: -1, dy: 0 } }),
+    ]);
+    assert.deepEqual(competing.map(r => r.status).sort(), [200, 409], 'reset and movement serialize by revision');
     await db.update(s.guilds).set({ isArchived: true }).where(eq(s.guilds.id, guild.id));
     assert.equal((await call(path)).status, 404);
   } finally { await pg.close(); }
