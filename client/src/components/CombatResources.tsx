@@ -10,7 +10,7 @@ export function CombatResources({ player: p }: { player: CombatPlayer }) {
       {p.maxMp > 0 && <span className="inline-flex items-center gap-1"><Sparkles aria-hidden size={16} /> MP {p.mp}/{p.maxMp}</span>}
       {p.maxComboPoints > 0 && <span className="inline-flex items-center gap-1"><Zap aria-hidden size={16} /> Combo {p.comboPoints}/{p.maxComboPoints}</span>}
       {p.availableAbilities.includes("headshot") && <span>Correct streak {p.consecutiveCorrectAnswers || 0}</span>}
-      {potions && <span className="inline-flex flex-wrap items-center gap-1"><span>Healing potions {p.healingPotions}/5</span><span className="inline-flex" aria-hidden>{Array.from({ length: 5 }, (_, i) => <FlaskConical key={i} size={20} className={i < p.healingPotions ? "text-rose-500 fill-rose-200 dark:fill-rose-900" : "text-muted-foreground opacity-30"} />)}</span></span>}
+      {potions && <span className="inline-flex flex-wrap items-center gap-1"><span>{p.consumables ? 'Herbalist charges' : 'Healing potions'} {p.healingPotions}/5</span><span className="inline-flex" aria-hidden>{Array.from({ length: 5 }, (_, i) => <FlaskConical key={i} size={20} className={i < p.healingPotions ? "text-rose-500 fill-rose-200 dark:fill-rose-900" : "text-muted-foreground opacity-30"} />)}</span></span>}
       {p.availableAbilities.some((id) => id.includes("shield_potion")) && <span className="inline-flex items-center gap-1"><Shield aria-hidden size={16} /> Shield potions {p.shieldPotions}/3</span>}
       {statusSummary(p).length > 0 && <div className="w-full flex flex-wrap gap-2" aria-label="Your status effects" role="status">
         {statusSummary(p).map(label => <span key={label} className="rounded border border-amber-500/50 bg-amber-500/10 px-2 py-1 text-xs">{label}</span>)}

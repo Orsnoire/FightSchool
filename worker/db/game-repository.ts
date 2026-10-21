@@ -43,6 +43,11 @@ export async function combatProfile(
     context={...membership,limitTier:room.guildLimitTier||membership.limitTier};
    }
    levels=effectiveLevels(levels,context?.limitTier||1);
+   const [campaign]=await db.select().from(s.campaignEncounters).where(eq(s.campaignEncounters.sessionId,sessionId));
+   if(campaign){
+    if(campaign.studentId!==student.id || campaign.settled)throw new Error('Campaign encounter unavailable.');
+    return {levels:campaign.playerSnapshot.jobLevels,campaignPlayer:campaign.playerSnapshot};
+   }
   }
   let equipped={...student};
   const ids = EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id);
@@ -175,6 +180,14 @@ export async function persistCombatResults(
   });
   // Earned job levels are character-wide; academic evidence remains hosting-guild scoped.
   await evaluateStudentLevels(db, studentIds);
+  if (fight.campaignContext) {
+    const p = { ...state.departedPlayers, ...state.pendingPlayers, ...state.players }[fight.campaignContext.studentId];
+    if (!p) throw new Error('Campaign result has no participant');
+    await db.execute(sql`SELECT settle_campaign_encounter(${JSON.stringify({ session: state.sessionId,
+      consumables: p.consumables, itemProtections: p.itemProtections,
+      health: Math.floor(p.health), mp: Math.floor(p.mp), healingPotions: p.healingPotions, shieldPotions: p.shieldPotions,
+      victory: !!state.victory && !!state.players[p.studentId] })}::jsonb)`);
+  }
   return results;
 }
 /** Persist progress after resolved questions, including departed players; no answer text leaves the server. */

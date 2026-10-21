@@ -90,6 +90,7 @@ export default function Lobby() {
             Battle Lobby
           </h1>
           <div className="flex gap-2">
+            <Link href="/student/campaigns"><Button variant="outline">Campaigns</Button></Link>
             <Link href="/student/guilds">
               <Button variant="outline" data-testid="button-my-guilds">
                 <Users className="mr-2 h-4 w-4" />

@@ -45,6 +45,9 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  consumables?: import('../campaign/consumables').ConsumableBag;
+  itemProtections?: import('../campaign/consumables').ItemProtections;
+  itemUsedRound?: number;
   /** Server-only marker: answer recovery is prepared once before choices. */
   statusPreparedRound?: number;
   statuses?: CombatStatus[];

@@ -1,3 +1,4 @@
+import { normalizeBag, normalizeProtections } from '../../shared/campaign/consumables';
 import { equipmentVisualSchema, paletteSchema } from "../../shared/avatar/visuals";
 import { answersRevealed, answerOutcome } from "../../shared/combat/answer-feedback";
 import { playerFields, snapshotFields, enemyFields, type PublicCombatSnapshot, type PublicCombatPlayer } from '../../shared/contracts/combat';
@@ -14,6 +15,8 @@ const action=(a:CombatAction)=>pick(a,['ability','targetId']);
 function player(p:CombatPlayer, reveal:boolean):PublicCombatPlayer {
   return {
     ...pick(p,playerFields), currentAnswer:null,
+    consumables: p.consumables ? normalizeBag(p.consumables) : undefined,
+    itemProtections: p.itemProtections ? normalizeProtections(p.itemProtections) : undefined,
     lastAnswerCorrect:reveal?p.lastAnswerCorrect:undefined,
     answerOutcome:reveal?answerOutcome(p):undefined,
     statuses:p.statuses?.map(s=>({...pick(s,['type','sourceId','appliedRound','throughRound','amount','carry','chance','correctAnswers']),actionFailure:s.actionFailure?pick(s.actionFailure,['round','skip']):undefined})),

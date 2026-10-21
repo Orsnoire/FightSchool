@@ -127,6 +127,27 @@
       "when": 1792274362502,
       "tag": "0017_c06_data_cost_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792509048751,
+      "tag": "0018_campaign_pilot",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792516168947,
+      "tag": "0019_campaign_equipment",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792596588481,
+      "tag": "0020_campaign_consumables",
+      "breakpoints": true
     }
   ]
 }

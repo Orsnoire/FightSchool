@@ -19,6 +19,7 @@ import { activeEnemies, performance, encounterEntry, encounterBudgetFromEntries,
 import { makePlayback } from "../../shared/combat/presentation";
 import { resolveEnemyTurn } from "./enemy-turn";
 import { abilityDamage } from "../../shared/combat/abilityValues.ts";
+import { tickItemProtections } from '../../shared/campaign/consumables';
 import { ENCOUNTER_TIERS } from "../../shared/encounter-tiers";
 
 export function advancePhase(
@@ -222,6 +223,7 @@ export function advancePhase(
     });
     leader(s);
     s.phaseDeadline = null;
+    for (const p of Object.values(s.players)) tickItemProtections(p);
     s.playback = makePlayback(state,s);
     return s;
   }

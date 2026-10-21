@@ -122,6 +122,7 @@ export class CombatSessionObject {
   private async save(room: StoredRoom, flushReporting = false) {
     return saveRoom(room, {
       repository: this.repository, checkpoint: room => this.checkpoint(room),
+      checkpointed: room.fight.campaignContext ? room => this.publish(room) : undefined,
       syncAlarm: room => this.syncAlarm(room), activeRenderers: room => this.activeRenderers(room),
     }, flushReporting);
   }
@@ -356,9 +357,9 @@ export class CombatSessionObject {
             throw new CombatRuleError("Session unavailable");
           if (!room && live.status === "completed") throw new CombatRuleError("Fight has ended");
           if (!room) {
-            const fight = await this.repository.findFightById(live.fightId);
+            const fight = this.repository.findCombatFight ? await this.repository.findCombatFight(actor.sessionId, live.fightId) : await this.repository.findFightById(live.fightId);
             if (!fight) throw new CombatRuleError("Fight unavailable");
-            fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
+            if (!fight.campaignContext) fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
             if (fight.randomizeQuestions)
               fight.questions = deterministicShuffle(
                 fight.questions,
@@ -386,9 +387,9 @@ export class CombatSessionObject {
             actor.sessionId,
           );
           if (live?.soloStudentId === actor.actorId) {
-            const fight = await this.repository.findFightById(live.fightId);
+            const fight = this.repository.findCombatFight ? await this.repository.findCombatFight(actor.sessionId, live.fightId) : await this.repository.findFightById(live.fightId);
             if (fight) {
-              fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
+              if (!fight.campaignContext) fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
               if(fight.randomizeQuestions)fight.questions=deterministicShuffle(fight.questions,actor.sessionId);
               room = {
                 fight,

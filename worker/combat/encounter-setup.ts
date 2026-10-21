@@ -68,7 +68,7 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
   }]));
   const players = Object.values(normalizedPlayers);
   const questions = Math.max(1, fight.questions.length);
-  const encounterTier = encounterTierForLevels(players.map(p => p.jobLevels[p.characterClass] || 1), fight.encounterTier || 1);
+  const encounterTier = fight.campaignContext?.fixedTier ?? encounterTierForLevels(players.map(p => p.jobLevels[p.characterClass] || 1), fight.encounterTier || 1);
   const tieredFight = { ...fight, encounterTier };
   if (state.encounterRules === 2) {
     const entryPerformance = Object.fromEntries(players.map(p => [p.studentId, encounterEntry(p, questions)]));

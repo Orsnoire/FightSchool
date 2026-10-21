@@ -18,6 +18,8 @@ const TeacherGuildDetail = deferred(() => import("@/pages/TeacherGuildDetail"), 
 const CharacterSelect = deferred(() => import("@/pages/CharacterSelect"), "character selection", true);
 const Lobby = deferred(() => import("@/pages/Lobby"), "the lobby", true);
 const Combat = deferred(() => import("@/pages/Combat"), "combat", true);
+const Campaigns = deferred(() => import("@/pages/Campaigns"), "campaigns", true);
+const CampaignAdventure = deferred(() => import("@/pages/CampaignAdventure"), "your adventure", true);
 const StudentStats = deferred(() => import("@/pages/StudentStats"), "your statistics", true);
 const StudentEquipment = deferred(() => import("@/pages/StudentEquipment"), "equipment", true);
 const StudentGuilds = deferred(() => import("@/pages/StudentGuilds"), "your guilds", true);
@@ -35,6 +37,7 @@ function Router() {
       <Route path="/teacher/login" component={Login} />
       <Route path="/teacher/signup" component={TeacherSignup} />
       <Route path="/teacher" component={TeacherDashboard} />
+      <Route path="/teacher/campaigns" component={Campaigns} />
       <Route path="/teacher/stats" component={TeacherStats} />
       <Route path="/teacher/items" component={ItemManagement} />
       <Route path="/teacher/guilds" component={TeacherGuilds} />
@@ -50,6 +53,8 @@ function Router() {
       <Route path="/student/equipment" component={StudentEquipment} />
       <Route path="/student/shop" component={GuildShop} />
       <Route path="/student/lobby" component={Lobby} />
+      <Route path="/student/campaigns" component={Campaigns} />
+      <Route path="/student/campaign/:id" component={CampaignAdventure} />
       <Route path="/student/guilds" component={StudentGuilds} />
       <Route path="/student/guild/:id" component={StudentGuildDetail} />
       <Route path="/student/guild-lobby/:id" component={StudentGuildLobby} />
