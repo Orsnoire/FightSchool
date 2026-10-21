@@ -38,16 +38,32 @@ fixture and the preview workflow's pre-upload gate.
 A full local regression pass found two historical migration fixtures that assumed
 the old student schema. Their corrections explicitly assert the zero default and
 seed historical columns without depending on the current ORM; both targeted reruns
-pass. Full GitHub regression/browser evidence is pending.
+pass. [Run 39671380534](https://github.com/Orsnoire/FightSchool/actions/runs/39671380534)
+passes all 340 tests, TypeScript, both builds and desktop/phone campaign checks.
+The combat reward message rendered, but the new screenshot step also matched an
+open loot-comparison popup. The fixture now tests the no-loot pilot boss reward
+before its existing loot-comparison scenario; runtime code is unchanged. That
+initial run stopped before deployment. The corrected source
+`6de42632f4953e408b566bf60978cfe482a11f10` passes all 340 tests, TypeScript,
+both builds and campaign/combat browser gates at desktop/phone sizes in
+[run 39671999772](https://github.com/Orsnoire/FightSchool/actions/runs/39671999772).
+Reward screenshots were inspected at 1366×768 and 390×844; text and controls fit.
 
 ## Database and release
 
 The generated migration was tested on a temporary branch of the isolated campaign
 preview. Existing student/result/campaign-progress digests stayed identical. A
 synthetic SQL award probe verified restoration, duplicate safety and next-day/full
-cap behavior. Migration 0021 is then applied only to the preview: 22 ledger entries,
+cap behavior. The temporary validation branch is retained with synthetic probe
+records for reproduction; it is separate from the playable preview. Migration
+0021 was then applied only to the preview: 22 ledger entries,
 with those same existing-data digests preserved. No classroom schema/data changed.
 
-Preview runtime deployment and screenshot inspection are pending. The owner
-playtester has not been modified. Public health and authenticated live boss
-acceptance must be distinguished from these integration/browser fixtures.
+The final run deployed the exact tested source at 20:41 UTC on October 21.
+The release script verified its source marker, retained combat namespace and
+public liveness. The owner playtester has not been modified. No authenticated
+live boss victory was performed this turn; the real HTTP tests use disposable
+Postgres, the browser uses fixtures, and the Neon SQL probe uses the separate
+validation branch. A separate workspace HTTP probe was rejected by Cloudflare
+with 403/code 1010; it does not establish browser availability or readiness.
+GitHub's release liveness check passed. Owner acceptance remains pending.

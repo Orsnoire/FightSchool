@@ -22,12 +22,13 @@ Do not use `Deploy Cloudflare Staging` to release this campaign branch.
    configured in GitHub, remains required.
 4. Apply any required forward-only migration to the isolated preview database
    through the authorized database tooling. Verify its migration ledger and saved
-   campaign upgrade. Migration 0020 is already applied to the preview; the reset
-   release needs no additional migration. Do not migrate
-   the classroom database. The workflow intentionally has no database credential.
-5. Record `migration0020Applied: true` and `mode: deploy` in the request, then commit.
+   campaign upgrade. Migrations 0020 and 0021 are applied to the preview (22 ledger
+   entries); the boss-stamina migration preserves existing progress and rewards.
+   Do not migrate the classroom database. The workflow intentionally has no database credential.
+5. Record `migration0020Applied: true`, `migration0021Applied: true` and
+   `mode: deploy` in the request, then commit.
    The workflow checks out the exact requested source, runs its checks/tests/build,
-   verifies the built campaign UI at desktop/phone sizes, uploads that build,
+   verifies campaign and combat UI at desktop/phone sizes, uploads that build,
    retains preview resources/secrets, and verifies the release
    marker and public health endpoint.
 6. Perform focused post-deploy checks appropriate to the change with the dedicated
@@ -61,7 +62,7 @@ release source differ from the request, inspect the newer state before retrying.
 - Four deployment boundary tests pass locally (read-only preflight, wrong-target
   rejection, explicit migration/source gates, resource/secret preservation).
 
-## Current personal reset release
+## Earlier personal reset release
 
 Runtime source `248167a712be1d7fd0d38cd24962b2e2a7fe154a` has the same application
 code as the initial reset release `905c56260141fb03b0a84cf7cec9b66fed5e83d4`; the
@@ -74,3 +75,16 @@ The request expected the initial reset runtime as its previous source; update bo
 source fields for a future release rather than replaying that completed request.
 See [reset evidence and live limits](reviews/2026-10-21-campaign-reset.md)
 and [active work](ACTIVE_WORK.md). Owner acceptance of the reset remains pending.
+
+## Current boss stamina release
+
+Deployed runtime: `6de42632f4953e408b566bf60978cfe482a11f10`.
+[Run 39671999772](https://github.com/Orsnoire/FightSchool/actions/runs/39671999772)
+passed all 340 tests, TypeScript, builds and desktop/phone campaign/combat checks,
+then deployed at 20:41 UTC. Release-source, retained combat namespace and public
+liveness verification passed. Reward screenshots were inspected at both sizes. Migration
+0021 is verified on an isolated copy and applied only to the preview; existing
+student, result and campaign-progress digests are unchanged. The request expects
+reset runtime `248167a712be1d7fd0d38cd24962b2e2a7fe154a` as the previous release.
+See [boss stamina evidence](reviews/2026-10-21-campaign-boss-stamina.md) and
+[active work](ACTIVE_WORK.md) for final status.
