@@ -127,6 +127,38 @@ try {
     await page.getByTestId('button-edit-question-0').click();
     assert.equal(await page.getByTestId('input-correct-answer').inputValue(), '16');
     await page.screenshot({ path: `${output}/${viewport.width}-c11-authoring.png` });
+    if (process.env.C11_BASELINE !== '1') {
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      const mathQuestion = {
+        question: 'Differentiate x^2. Compare x_1 and \\(\\frac{x^{2}}{2}\\).',
+        answers: ['2x', 'x^2', '\\frac{x^2}{2}', '<span class="math-inline" data-latex="x_{1}"></span>'],
+      };
+      const csv = [
+        ['Question Text', 'Question Type', 'Timer', 'Answer1', 'Answer2', 'Answer3', 'Answer4'],
+        [mathQuestion.question, 'MC', '90', ...mathQuestion.answers],
+      ].map(row => row.map(value => '"' + value.replaceAll('"', '""') + '"').join(',')).join('\n');
+      await page.getByTestId('input-csv-upload').setInputFiles({ name: 'math.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+      const imported = page.getByTestId('question-item-4');
+      await imported.waitFor();
+      assert.equal(await imported.locator('.katex').count(), 6);
+      assert.equal(await imported.locator('math msup').count(), 4);
+      assert.equal(await imported.locator('math mfrac').count(), 2);
+      assert.equal(await imported.locator('math msub').count(), 2);
+      assert.equal(await imported.locator('.katex-error').count(), 0);
+      await page.getByTestId('button-edit-question-4').click();
+      assert.equal(await page.getByTestId('textarea-question').inputValue(), mathQuestion.question);
+      await page.getByTestId('textarea-question').fill(mathQuestion.question + ' Use the power rule.');
+      await page.getByTestId('button-save-question').click();
+      await page.getByTestId('button-create-fight-submit').click();
+      await page.waitForURL('**/teacher');
+      assert.deepEqual(saved.questions[4].options, mathQuestion.answers);
+      assert.equal(saved.questions[4].correctAnswer, '2x');
+      await page.goto(origin + '/teacher/edit/' + fight.id);
+      await page.getByTestId('question-item-4').waitFor();
+      assert.equal(await page.getByTestId('question-item-4').locator('.katex').count(), 6);
+      await page.getByTestId('question-item-4').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: output + '/' + viewport.width + '-math-roundtrip.png' });
+    }
     await page.close();
 
     const lobby = await browser.newPage({ viewport });
