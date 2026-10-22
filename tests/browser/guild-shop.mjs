@@ -13,6 +13,7 @@ const guild = { id: "00000000-0000-4000-8000-000000000008", teacherId: fight.tea
 const errors = [];
 try {
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
+    guild.unlockedTier = 1;
     const page = await browser.newPage({ viewport });
     page.on("pageerror", error => errors.push(error.message));
     let savedStudent = { ...student(), guildId: guild.id, gold: 500, inventory: [] };
@@ -31,7 +32,8 @@ try {
       else if (path.endsWith("/job-levels")) json = [{ jobClass: "warrior", level: 2 }];
       else if (path.endsWith("/purchase-item")) {
         purchases.push(route.request().postDataJSON());
-        savedStudent = { ...savedStudent, gold: 400, inventory: ["t1_fighter_armor"] };
+        const item = builtinShopItems().find(item => item.id === purchases.at(-1).itemId);
+        savedStudent = { ...savedStudent, gold: savedStudent.gold - item.shopPrice, inventory: [...savedStudent.inventory,item.id] };
         json = savedStudent;
       }
       return route.fulfill({ json });
@@ -66,6 +68,17 @@ try {
     await page.waitForFunction(() => document.querySelector('[data-testid="text-gold-balance"]')?.textContent === "400");
     assert.equal(purchases.length, 1);
     assert.equal(purchases[0].itemId, "t1_fighter_armor");
+    guild.unlockedTier = 2;
+    savedStudent = {...savedStudent,gold:1400};
+    await page.goto(`${origin}/student/shop`);
+    await page.getByTestId("card-item-t2_soldier_armor").waitFor();
+    assert.equal(await page.locator('[data-testid^="card-item-"]').count(), 61);
+    await page.getByTestId("tab-armor").click();
+    assert.equal(await page.locator('[data-testid^="card-item-"]').count(), 8);
+    await page.getByTestId("button-purchase-t2_soldier_armor").click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="text-gold-balance"]')?.textContent === "400");
+    assert.equal(purchases.at(-1).itemId, "t2_soldier_armor");
+    await page.screenshot({path:`${output}/${viewport.width}-tier-two-shop.png`});
     await page.close();
   }
   assert.deepEqual(errors, []);

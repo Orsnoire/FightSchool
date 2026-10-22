@@ -55,13 +55,13 @@ test('production renderer changes individual slots without repainting identity, 
   const pixels=(c:HTMLCanvasElement,y:number,h:number)=>Buffer.from(c.getContext('2d')!.getImageData(0,y,1200,h).data);
   assert.deepEqual(pixels(original,0,1200),pixels(gloves,0,1200),'gloves must not change head, hair, skin palette or chest');
   assert.notDeepEqual(pixels(original,1250,400),pixels(gloves,1250,400),'equipped glove color must appear');
+  assert.strictEqual(await composeStaticAvatar(urls,appearance,'wizard',gear),original,'identical loadouts reuse the cached canvas');
   const tierTwoGloves=await composeStaticAvatar(urls,appearance,'wizard',{...gear,hands:'t2_acolyte_hands'});
   assert.deepEqual(pixels(original,0,1200),pixels(tierTwoGloves,0,1200),'Tier 2 gloves preserve identity and other slots');
   assert.notDeepEqual(pixels(gloves,1250,400),pixels(tierTwoGloves,1250,400),'Tier 2 palette renders distinctly from Tier 1');
   const hatless=await composeStaticAvatar(urls,appearance,'wizard',{...gear,headgear:null});
   assert.notDeepEqual(pixels(original,0,1050),pixels(hatless,0,1050));
   assert.deepEqual(pixels(original,1200,700),pixels(hatless,1200,700),'headgear must not replace the body or held gear');
-  assert.strictEqual(await composeStaticAvatar(urls,appearance,'wizard',gear),original,'identical loadouts reuse the cached canvas');
  }
  // Source originals remain immutable; the package adds separate revisioned candidates.
  const manifest=JSON.parse(readFileSync(new URL('../../attached_assets/characters/human/equipment-static-v1/manifest.json',import.meta.url),'utf8'));

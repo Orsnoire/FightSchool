@@ -184,6 +184,10 @@ The [October 13 default shop correction](guild-quests-and-tiers.md#october-13-de
 requires every defined progression tier's equipment in guild shops by default,
 while preserving shop unlocks and teacher custom stock. The correction in [PR #68](https://github.com/Orsnoire/FightSchool/pull/68) is merged and deployed in runtime `d18d1b5`; see current status for verified CI/deployment evidence.
 
+The [October 22 Tier 2 specification](combat/tier-two-equipment.md) adds the
+owner-approved Soldier's, Ranger's, Acolyte's and Ascetic's armor sets and revises
+common shop prices to 100 / 1,000 / 5,000 / 10,000 gold for tiers 1–4.
+
 The [October 7 Tier 1 specification](combat/tier-one-equipment.md) records the
 owner's level-2 equipment collection, revised tank VIT damage weighting and
 fallback instance loot rules. It supersedes older conflicting equipment level

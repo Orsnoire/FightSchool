@@ -1,3 +1,4 @@
+import { studentCanAccessSession } from "../services/combat-access";
 import { readJson, bodyErrorResponse } from "../http/json";
 import { gameDatabase } from "../db/database.ts";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
@@ -191,6 +192,8 @@ export async function handleCombatSessions(
     if (!room || !["waiting", "active"].includes(room.status)) {
       return json({ error: "Session not found or has ended" }, 404);
     }
+    if (!(await studentCanAccessSession(repository, room, actor.actorId)))
+      return json({ error: "Join the hosting guild before entering this fight." }, 403);
     return json({
       sessionId: room.sessionId,
       fightId: room.fightId,

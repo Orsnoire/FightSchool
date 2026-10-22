@@ -45,7 +45,7 @@ to the historical Cloudflare migration phase numbers.
 | --- | --- | --- |
 | Combat rules and presentation | [Balance and stamina](combat/classroom-balance-and-stamina.md), [student overlays](combat/student-overlays.md), [battlefield direction](combat-facelift.md) | Released static battlefield and current rules; later dated approvals supersede early proposals |
 | Enemies | [Enemy AI and recovery](combat/enemy-ai.md), [individual enemies and waves](combat/enemy-waves-and-goblins.md) | Seven defined species, goblin minimum five, optional swarms and previous-tier gear |
-| Equipment | [Starter wardrobe](starter-wardrobe.md), [Tier 1](combat/tier-one-equipment.md), [comparisons](combat/equipment-comparisons.md), [equipped artwork](avatar-equipment-visuals.md) | Released; F01 claim correction deployed and accepted in C01 / PR #53 |
+| Equipment | [Starter wardrobe](starter-wardrobe.md), [Tier 1](combat/tier-one-equipment.md), [Tier 2](combat/tier-two-equipment.md), [comparisons](combat/equipment-comparisons.md), [equipped artwork](avatar-equipment-visuals.md) | Released; F01 claim correction deployed and accepted in C01 / PR #53 |
 | Progression | [Guild quests and tiers](guild-quests-and-tiers.md) | Released; classroom tuning open, AA purchases future |
 | Hosting and team race | [Host sessions and team-race feasibility](combat/host-sessions-and-team-race.md) | Explicit Join / End / Launch, Next wave and enemy elimination released; team race future |
 | Avatars | [Database foundation](avatar-database.md), [art and animation direction](avatar-art-direction.md) | Static avatars released; full animation gate remains open |
