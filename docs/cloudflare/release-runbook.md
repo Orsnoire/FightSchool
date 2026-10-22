@@ -160,13 +160,35 @@ live aliases, arbitrary domains and alternate ports are rejected. Fixture HTTP
 requests refuse redirects after the health check. This does not detect a Worker
 that proxies requests or has incorrect provider bindings; inventory remains a gate.
 
-It runs five fresh 30-player and five 60-player functional fixtures, serially,
-records every answer percentile/fixture manifest, and refuses live targets.
-It is **not the complete performance exit fixture**: it does not seed 100-result
-history/guild quests or exercise four-job abilities and browser rendering in the
-same provider session. Add that representative workload before calibrating the
-release threshold. The local populated-guild/room/browser comparisons remain
-separate evidence, as specified in the [C12 review](../reviews/2026-10-18-c12-release-review.md).
+That older driver remains a functional baseline. The representative driver adds
+four starter jobs at level four, distinct avatars, guild/quests, 100 prior results
+per learner (half with mastery evidence), a scaled goblin swarm and two rounds so
+Scouts can earn and spend combo points. It retains the eight operational checks,
+reconnect and exactly-once completion. Its SQL seed is test tooling, never an
+application endpoint. Exact IDs are journaled before the transaction; failed or
+ambiguous writes block cleanup until reconciled. Ownership checks reject changed
+identities, foreign guilds/members and existing learner history.
+
+After the credential/inventory gates are satisfied, additionally provide
+`ISOLATED_TARGET_FILE`, `ISOLATED_DATABASE_URL` and `PRODUCTION_DATABASE_HOSTS`
+(a JSON array of all independently verified production endpoint hostnames) through
+the private operator environment. Then run:
+
+```sh
+ACCEPTANCE_REPETITIONS=5 node scripts/release/repeat-performance.mjs
+```
+
+The driver runs fresh 30- and 60-player cohorts serially, limits repetitions to
+3–10 and each suite to 15 minutes, stops on functional failure and retains partial
+journals. It requires the same observed release and target throughout. Reports
+include each answer p50/p95/max, guild-quest reads, both rounds' class selections,
+reconnect and completion. Worst 30-player per-run p95 must be below the proposed
+1000 ms target; the report never declares C12 signoff. A threshold miss exits
+nonzero. Provider queue/DB/query/byte diagnostics and browser render/memory evidence
+must still be correlated separately; HTTP/WebSocket client timing cannot supply
+those measurements. The candidate has local coverage but is not yet verified by
+running this new profile against the isolated provider. See the
+[October 22 checkpoint](../reviews/2026-10-22-c12-resumption.md).
 
 ## Fixture retention and cleanup
 
@@ -240,8 +262,9 @@ restore a production database merely to undo a Worker release. Treat data repair
 as its own reviewed operation with backups and idempotent reconciliation.
 
 C11 Worker `86111493-688d-41c2-9462-b050044b3d10` / runtime
-`a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad` is the current accepted production
-baseline, **not a rehearsed C12 rollback target**. C12 adds only release identity
+`a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad` was the October 19 accepted production
+baseline, **not a rehearsed C12 rollback target**. Current production is PR #84;
+neither historical production ID is an isolated rollback target. C12 adds only release identity
 to the application; no schema/reward/saved-room change. An older version without
 identity metadata needs provider-version verification and its original acceptance
 harness during the isolated drill; do not weaken the new guard to claim it passed.

@@ -72,6 +72,33 @@ export function fixtureJournal({ suite, target, release, directory = 'artifacts/
     else if (path === '/api/objects/upload') add('objects', payload.objectPath?.replace(/^\/objects\//, ''));
     manifest.pending = manifest.pending.filter(p => p.id !== requestId);
     persist();
+  }, beginHistory(sessionIds) {
+    assert.equal(manifest.mode, 'isolated', 'History writes require isolated fixtures');
+    assert.equal(manifest.pending.length, 0, 'Reconcile earlier writes before seeding history');
+    assert.ok(sessionIds.length > 0 && sessionIds.length <= 100);
+    assert.equal(new Set(sessionIds).size, sessionIds.length);
+    for (const id of sessionIds) {
+      assert.match(id, /^[0-9a-f-]{36}$/);
+      assert.ok(!manifest.sessions.includes(id));
+    }
+    const id = randomUUID();
+    // Persist all exact IDs BEFORE the transaction. A lost COMMIT response must
+    // leave both the scope and an unresolved intent for independent reconciliation.
+    manifest.sessions.push(...sessionIds);
+    manifest.pending.push({ id, path: 'seed-history', sessions: sessionIds });
+    persist();
+    return id;
+  }, finishHistory(id, counts) {
+    assert.ok(manifest.pending.some(p => p.id === id && p.path === 'seed-history'));
+    manifest.history = counts;
+    manifest.pending = manifest.pending.filter(p => p.id !== id);
+    persist();
+  }, recordMetric(name, times) {
+    assert.ok(['guildQuests', 'classActions', 'classSupport', 'openingActions', 'openingSupport', 'followupAnswers', 'reconnect', 'completion'].includes(name));
+    assert.ok(times.length > 0 && times.every(n => Number.isFinite(n) && n >= 0));
+    const sorted = [...times].sort((a,b)=>a-b);
+    (manifest.metrics ??= {})[name] = { count:sorted.length, p50:sorted[Math.ceil(sorted.length*.5)-1], p95:sorted[Math.ceil(sorted.length*.95)-1], max:sorted.at(-1) };
+    persist();
   }, recordAnswerTimes(times) {
     assert.ok(times.length > 0 && times.every(n => Number.isFinite(n) && n >= 0));
     const sorted = [...times].sort((a,b)=>a-b);
@@ -82,5 +109,5 @@ export function fixtureJournal({ suite, target, release, directory = 'artifacts/
 export async function startFixtureRun(suite, env = process.env) {
   const target = acceptanceTarget(env);
   const release = await observeRelease({ origin: target.origin, sha: env.RELEASE_SHA, workerVersion: env.WORKER_VERSION });
-  return fixtureJournal({ suite, target, release });
+  return fixtureJournal({ suite, target, release, ...(env.FIXTURE_DIRECTORY ? {directory:env.FIXTURE_DIRECTORY} : {}) });
 }
