@@ -1,3 +1,11 @@
+# PR #84 scope extension — October 22, 2026
+
+- Owner requested the following additions in the same PR: basic/common guild-shop gear costs T1 100g, T2 1,000g, T3 5,000g, T4 10,000g; expose the previously workshopped Tier 2 armor; repair joining student-hosted solo battles with visible join controls and a current-session list.
+- Resume branch `fix/vampiric-bite-drain`, [PR #84](https://github.com/Orsnoire/FightSchool/pull/84), from verified vampire implementation `72c65aa`. Main and branch checkpoints/remote heads rechecked; no tracked local changes were discarded.
+- Investigation: solo rooms are filtered to their creator in guild listings and denied to all other students at WebSocket entry. Current active-session UI uses a full combat-state type for a summary response and displays a fabricated zero player count. Replace it with a small shared summary contract and visible guild-session controls, preserving authenticated guild membership and teacher authoring restrictions.
+- Tier 2 definition remains unresolved: current main contains only the 37-item Tier 1 collection. Personal context and saved-file searches have not recovered a Tier 2 workshop specification. Do not invent names/stats/art. Complete independently specified prices and solo access while resolving this dependency.
+- This claim extends the existing PR; no additional PR, gameplay merge or deployment. New implementation and verification are pending. Vampire verification below applies to the preceding head only.
+
 # Vampiric Bite healing correction — verified locally October 22, 2026
 
 - Owner requested a fix for excessive Vampire healing. Implemented rule: heal one HP per actual player HP removed by Vampiric Bite, capped at the vampire's missing HP. This supersedes the October 8 proportional-max-HP formula.
