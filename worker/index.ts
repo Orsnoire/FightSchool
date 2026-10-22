@@ -19,6 +19,8 @@ interface Env {
   ASSETS: Fetcher;
   COMBAT_SESSIONS: DurableObjectNamespace;
   ENVIRONMENT: string;
+  RELEASE_SHA?: string;
+  CF_VERSION_METADATA?: { id: string };
   PUBLIC_ORIGIN: string;
   ADDITIONAL_PUBLIC_ORIGINS?: string;
   DATABASE_URL: string;
@@ -163,7 +165,10 @@ async function dispatch(request: Request, env: Env, currentRequestId:string):Pro
 
     if (url.pathname === "/api/health/live") {
       return json(
-        { status: "ok", environment: env.ENVIRONMENT },
+        { status: "ok", environment: env.ENVIRONMENT, release: {
+          commit: /^[a-f0-9]{40}$/.test(env.RELEASE_SHA || "") ? env.RELEASE_SHA : null,
+          workerVersion: env.CF_VERSION_METADATA?.id ?? null,
+        } },
         200,
         currentRequestId,
       );

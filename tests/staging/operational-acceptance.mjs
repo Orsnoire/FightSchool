@@ -1,22 +1,29 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import WebSocket from "ws";
+import { startFixtureRun, acceptancePlayers, fixtureFetch as fetch } from "./fixture-run.mjs";
 
-const origin = (process.env.STAGING_ORIGIN || "https://questacademy.bookwyrminteractive.studio").replace(/\/$/, "");
-const suffix = Date.now().toString(36) + randomUUID().slice(0, 6);
+const fixtures = await startFixtureRun("operations");
+const origin = fixtures.manifest.origin;
+const participantCount = acceptancePlayers(process.env, fixtures.manifest);
+assert.ok(!process.env.ACCEPTANCE_PROFILE || process.env.ACCEPTANCE_PROFILE === 'representative', 'Unknown acceptance profile');
+const profile = process.env.ACCEPTANCE_PROFILE ? await import('./representative-profile.mjs') : null;
+const suffix = fixtures.suffix;
 const password = `Acceptance-${randomUUID()}!`;
 const sockets = [], fights = [], checks = [];
-let teacher;
+let teacher, representative, performanceGuild;
 let nextActorId = 0, tearingDown = false;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
+  const requestId = fixtures.begin(path, method, body);
   const response = await fetch(origin + path, {
     method, signal: AbortSignal.timeout(30000),
     headers: { Origin: origin, Accept: "application/json", ...(cookie ? { Cookie: cookie } : {}), ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await response.json();
-  assert.ok([status].flat().includes(response.status), `${method} ${path}: ${response.status} ${JSON.stringify(payload)}`);
+  fixtures.record(path, method, body, payload, response.status, requestId);
+  assert.ok([status].flat().includes(response.status), `${method} ${path}: ${response.status} unexpected response`);
   return { payload, cookie: response.headers.get("set-cookie")?.split(";")[0] };
 }
 async function check(name, fn) {
@@ -63,20 +70,25 @@ class Actor {
     return Date.now() - start;
   }
 }
-async function fight(title, questionCount = 1) {
+async function fight(title, questionCount = 1, representativeRoom = false) {
   const created = await api("/api/fights", { method: "POST", cookie: teacher.cookie, status: 201, body: {
     teacherId: teacher.payload.id, title: `${title} ${suffix}`, baseXP: 10, baseEnemyDamage: 1,
     questions: Array.from({length:questionCount}, (_,i) => ({ id: `q${i+1}`, type: "short_answer", question: "What is 2+2?", correctAnswer: "4", timeLimit: 120 })),
-    enemies: [{ id: "e1", name: "Acceptance slime", image: "/enemies/slime-v2.png", enemyType: "slime", ai: { mode: "basic" }, difficultyMultiplier: 1 }],
-    enemyDisplayMode: "consecutive", lootTable: [], randomizeQuestions: false, shuffleOptions: false,
+    enemies: representativeRoom
+      ? [{id:'goblins',name:'Acceptance goblins',image:'/enemies/goblin-v1.png',enemyType:'goblin',ai:{mode:'basic'},difficultyMultiplier:1,quantity:5,swarm:{enemiesPerFourPlayers:2}}]
+      : [{ id: "e1", name: "Acceptance slime", image: "/enemies/slime-v2.png", enemyType: "slime", ai: { mode: "basic" }, difficultyMultiplier: 1 }],
+    enemyDisplayMode: representativeRoom ? 'simultaneous' : "consecutive", lootTable: [], randomizeQuestions: false, shuffleOptions: false,
   } });
   fights.push(created.payload.id);
+  if (representativeRoom) await api(`/api/guilds/${performanceGuild.payload.id}/fights`, { method:'POST',cookie:teacher.cookie,body:{fightId:created.payload.id},status:[200,201] });
   const room = await api(`/api/fights/${created.payload.id}/sessions`, { method: "POST", cookie: teacher.cookie, status: 201 });
   const host = new Actor(teacher.cookie, room.payload.sessionId);
   await host.open(); host.send("host"); await host.wait(m => m.type === "session_created");
   return { fight: created.payload, room: room.payload.sessionId, host };
 }
 try {
+  // Check the DB target and connection before creating any accounts.
+  if (profile) representative = await profile.prepareRepresentative(fixtures);
   teacher = await api("/api/teacher/signup", { method: "POST", status: 201, body: {
     firstName: "Acceptance", lastName: "Operations", email: `qa-ops-${suffix}@example.invalid`, password,
     billingAddress: "Acceptance fixture", schoolDistrict: "Acceptance", school: "Acceptance", subject: "Math", gradeLevel: "5",
@@ -105,63 +117,110 @@ try {
     assert.equal(head.status, 200); assert.equal(Number(head.headers.get("content-length")), png.length);
   });
   const students = [];
-  for (let i = 0; i < 31; i++) {
+  for (let i = 0; i < participantCount + 1; i++) {
     const student = await api("/api/student/login", { method: "POST", body: { nickname: `qa-ops-${suffix}-${i}`, password } });
-    await api(`/api/student/${student.payload.id}/character`, { method: "PATCH", cookie: student.cookie, body: { characterClass: "warrior", gender: "A" } });
+    const character = profile?.classroomCharacter(i);
+    await api(`/api/student/${student.payload.id}/character`, { method: "PATCH", cookie: student.cookie, body: { characterClass: character?.job || "warrior", gender: character?.appearance.modelId === 'human-female-v1' ? 'B' : 'A' } });
+    if (character) await api(`/api/student/${student.payload.id}/avatar`, {method:'POST',cookie:student.cookie,body:character.appearance});
     students.push(student);
   }
-  const main = await fight("Acceptance 30-player room"), isolated = await fight("Acceptance isolated room");
+  if (profile) {
+    performanceGuild = await api('/api/guilds', {method:'POST',cookie:teacher.cookie,status:201,body:{name:`Performance ${suffix}`}});
+    for (const student of students.slice(0,participantCount)) await api(`/api/guilds/${performanceGuild.payload.id}/members`, {method:'POST',cookie:student.cookie,body:{studentId:student.payload.id}});
+  }
+  const main = await fight(`Acceptance ${participantCount}-player room`, profile ? 20 : 1, !!profile), isolated = await fight("Acceptance isolated room");
+  if (profile) {
+    await representative.seed({teacher,students:students.slice(0,participantCount),fight:main.fight,guild:performanceGuild});
+    const times = await Promise.all(students.slice(0,participantCount).map(async student => {
+      const start = performance.now();
+      const response = await api(`/api/guilds/${performanceGuild.payload.id}/quests`, {cookie:student.cookie});
+      assert.ok(Array.isArray(response.payload) && response.payload.length > 0, 'Seeded quests must be visible');
+      return performance.now()-start;
+    }));
+    fixtures.recordMetric('guildQuests', times);
+  }
   const players = [];
-  for (const student of students.slice(0, 30)) {
+  for (const student of students.slice(0, participantCount)) {
     const player = new Actor(student.cookie, main.room); await player.open(); player.send("join");
     await player.wait(m => m.type === "combat_state" && !!m.state.players[student.payload.id]); players.push(player);
   }
-  const separate = new Actor(students[30].cookie, isolated.room);
+  const separate = new Actor(students[participantCount].cookie, isolated.room);
   await separate.open(); separate.send("join"); await separate.state("waiting");
-  await check("30 participants, host refresh reuses room, and concurrent room isolation", async () => {
-    const state = await main.host.wait(m => m.type === "combat_state" && Object.keys(m.state.players).length === 30);
-    assert.equal(state.state.players[students[30].payload.id], undefined);
+  await check(`${participantCount} participants, host refresh reuses room, and concurrent room isolation`, async () => {
+    const state = await main.host.wait(m => m.type === "combat_state" && Object.keys(m.state.players).length === participantCount);
+    assert.equal(state.state.players[students[participantCount].payload.id], undefined);
     const other = await separate.state("waiting");
-    assert.deepEqual(Object.keys(other.state.players), [students[30].payload.id]);
+    assert.deepEqual(Object.keys(other.state.players), [students[participantCount].payload.id]);
     const reused = await api(`/api/fights/${main.fight.id}/sessions`, { method: "POST", cookie: teacher.cookie });
     assert.equal(reused.payload.sessionId, main.room);
   });
-  await check("30 simultaneous answers and reconnect preserve shared state", async () => {
+  await check(`${participantCount} simultaneous answers and reconnect preserve shared state`, async () => {
     console.log("Classroom connections before start:", JSON.stringify([main.host, ...players].map(actor => actor.connection())));
     await main.host.ack("start_fight"); const opened = await players[0].state("question");
     await sleep(Math.max(0, opened.state.questionStartTime - Date.now()) + 100);
     const times = await Promise.all(players.map(player => player.ack("answer", { round: 1, questionId: "q1", answer: "4" })));
     times.sort((a, b) => a - b);
-    console.log(`Answer acknowledgement ms: p50=${times[14]}, p95=${times[28]}, max=${times[29]}`);
-    assert.ok(times[29] < 15000, "Classroom answer burst should finish within 15 seconds");
+    fixtures.recordAnswerTimes(times);
+    console.log(`Answer acknowledgement ms: ${JSON.stringify(fixtures.manifest.answerAckMs)}`);
+    assert.ok(times.at(-1) < 15000, "Classroom answer burst should finish within 15 seconds");
     const actions = await players[0].state("actions");
     assert.notEqual(actions.state.phaseDeadline, opened.state.phaseDeadline, "Action selection must have its own deadline");
     assert.ok(actions.state.phaseDeadline > Date.now(), "Action selection must still be open after the answer burst");
+    const reconnectStart = performance.now();
     players[0].socket.close();
     const restored = new Actor(students[0].cookie, main.room); await restored.open(); restored.send("join");
     const state = await restored.state("actions");
     assert.equal(state.state.phaseDeadline, actions.state.phaseDeadline);
-    assert.equal(Object.keys(state.state.players).length, 30);
+    assert.equal(Object.keys(state.state.players).length, participantCount);
     players[0] = restored;
+    if (profile) fixtures.recordMetric('reconnect', [performance.now()-reconnectStart]);
     assert.equal(separate.messages.filter(m => m.type === "combat_state").at(-1).state.currentPhase, "waiting");
   });
-  await check("30-player completion persists results exactly once", async () => {
+  await check(`${participantCount}-player completion persists results exactly once`, async () => {
     // Answers enter the totals when the round resolves, not on receipt. Finish
     // both choice phases before the teacher ends this controlled load fixture.
-    await Promise.all(players.map(player => player.ack("ready", { round: 1 })));
-    await players[0].state("abilities");
-    await Promise.all(players.map(player => player.ack("ready", { round: 1 })));
-    const resolved = await players[0].state("question_resolution");
-    for (const student of students.slice(0, 30))
-      assert.equal(resolved.state.players[student.payload.id].totals.questionsAnswered, 1, "The classroom round must resolve before completion");
+    const rounds=profile?2:1;
+    const phase=(round,name)=>players[0].wait(m=>m.type==='combat_state' && m.state.round===round && m.state.currentPhase===name);
+    for(let round=1;round<=rounds;round++) {
+      if(round>1) {
+        const opened=await phase(round,'question');
+        await sleep(Math.max(0,opened.state.questionStartTime-Date.now())+100);
+        fixtures.recordMetric('followupAnswers',await Promise.all(players.map(player=>player.ack('answer',{round,questionId:`q${round}`,answer:'4'}))));
+      }
+      if (profile) await profile.exerciseClassActions(players,students,(await phase(round,'actions')).state,fixtures);
+      else await Promise.all(players.map(player => player.ack("ready", { round })));
+      await phase(round,"abilities");
+      if (profile) await profile.exerciseClassSupport(players,students,fixtures,round);
+      else await Promise.all(players.map(player => player.ack("ready", { round })));
+      const resolved=await phase(round,'question_resolution');
+      for (const student of students.slice(0, participantCount))
+        assert.equal(resolved.state.players[student.payload.id].totals.questionsAnswered, round, "The classroom round must resolve before completion");
+      if(round<rounds) {
+        const playback=async state=>{
+          assert.ok(state.playback?.id); assert.equal(state.phaseDeadline,null);
+          await Promise.all([main.host,...players].map(actor=>actor.ack('playback_complete',{round,batchId:state.playback.id})));
+        };
+        await playback(resolved.state);
+        await playback((await phase(round,'enemy_ai')).state);
+      }
+    }
+    const completionStart = performance.now();
     main.host.send("end_fight");
     const completed = await players[0].wait(m => m.type === "game_over", 60000);
-    assert.equal(completed.results.length, 30, "Completion must include all classroom results");
-    main.host.send("end_fight");
-    for (const student of students.slice(0, 30)) {
+    assert.equal(completed.results.length, participantCount, "Completion must include all classroom results");
+    if (profile) fixtures.recordMetric('completion', [performance.now()-completionStart]);
+    await main.host.ack("end_fight");
+    for (const student of students.slice(0, participantCount)) {
       const stats = await api(`/api/combat-stats/student/${student.payload.id}`, { cookie: student.cookie });
-      assert.equal(stats.payload.length, 1, "Each student must have exactly one result");
-      assert.equal(stats.payload[0].questionsAnswered, 1, "The saved result must contain the resolved answer");
+      const expected = (fixtures.manifest.history?.perStudent || 0) + 1;
+      assert.equal(stats.payload.length, Math.min(50,expected), 'History page stays bounded');
+      if (profile) {
+        const summary = await api(`/api/combat-stats/student/${student.payload.id}/summary`, {cookie:student.cookie});
+        assert.equal(summary.payload.totalFights, expected, 'Exactly one new result beyond seeded history');
+      }
+      const saved = stats.payload.filter(r => r.sessionId === main.room);
+      assert.equal(saved.length, 1, 'Exactly one result belongs to this room');
+      assert.equal(saved[0].questionsAnswered, rounds, "The saved result must contain every resolved answer");
     }
   });
   await check("dashboard discovery, explicit end, concurrent launch and stale end isolation", async () => {
@@ -236,7 +295,7 @@ try {
   });
   await check("logout revokes an already-open student socket", async () => {
     const closed = new Promise(resolve => separate.socket.once("close", code => resolve(code)));
-    await api("/api/student/logout", { method: "POST", cookie: students[30].cookie });
+    await api("/api/student/logout", { method: "POST", cookie: students[participantCount].cookie });
     separate.send("join");
     assert.equal(await Promise.race([closed, sleep(10000).then(() => "timeout")]), 1008);
   });
@@ -250,4 +309,6 @@ finally {
     catch { console.error(`Unable to archive acceptance fight ${id}`); process.exitCode = 1; }
   }
   console.log(JSON.stringify({ origin, checks }));
+  fixtures.finish(process.exitCode ? "failed" : "passed");
+  if (representative) await representative.close();
 }

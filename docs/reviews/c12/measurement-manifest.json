@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "measuredRuntimeSource": "96d4fe3911d028cee24daa45cbc6aa736c463e22",
+  "node": "22.23.3",
+  "npm": "10.9.9",
+  "environment": "disposable in-process room boundary and migrated PGlite; no provider traffic",
+  "harnessSha256": {
+    "tests/support/measure-release.ts": "00ea8e91a8db1ecbbe3f6289fa56be86ef54a905e75648c82d94caae53326a9d",
+    "tests/support/measure-data-costs.ts": "9e7c5474ff13819e12c172db4a82bc6d9aa5c620435bbb9fc56c94cd83f32e70",
+    "tests/support/data-costs.ts": "4d3dded8ad7e0ce113cd0fa9cf0f880ed11ba88dd1e14ddfe98802c1d2a1e473",
+    "tests/support/c06-baseline-evaluator.ts": "2756987dea96cbfd5e11b54c2f9ffe7a4c501b142761a4a38f286f2de6fd7f2f",
+    "tests/support/room-costs.ts": "57749492cf7a75e1418467138b803603a09387cc3569b578e3048faa039d0b38"
+  },
+  "commands": [
+    "node --import tsx tests/support/measure-release.ts docs/reviews/c12/room-bursts.json",
+    "node --import tsx tests/support/measure-data-costs.ts --baseline docs/reviews/c12/data-before.json",
+    "node --import tsx tests/support/measure-data-costs.ts docs/reviews/c12/data-after.json"
+  ],
+  "limitations": [
+    "Room commands use a repository stub; SQL/history and rendering are separate measurements, not one integrated provider session.",
+    "C06 full-reconciliation samples repeat three times per population; affected-event/read costs are single samples.",
+    "No production latency, total memory, provider recovery, rollback or physical device signoff is inferred."
+  ]
+}

@@ -228,6 +228,12 @@ try {
     await compare.focus();
     if(viewport.width>600) await compare.press("Enter");
     await comparison.waitFor();
+    // The compact dialog mounts before Radix's focus/dismissal effects run.
+    // Wait for actual modal focus before sending the next keyboard command.
+    if(viewport.width<=600) await page.waitForFunction(() => {
+      const dialog=[...document.querySelectorAll('[role="dialog"]')].find(el=>el.textContent.includes("Equipped: Fighter's Sword"));
+      return dialog?.contains(document.activeElement);
+    });
     await page.keyboard.press('Escape');
     await comparison.waitFor({state:'hidden'});
     // Cancellation is harmless; confirmation waits for the server before exiting.

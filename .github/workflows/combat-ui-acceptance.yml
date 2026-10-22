@@ -13,15 +13,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: '.node-version'
           cache: npm
       - run: npm ci
       # ubuntu-24.04 already supplies the Chromium runtime libraries. Avoid
       # reinstalling unrelated system fonts from an unreliable apt mirror.
       - name: Install isolated browser test tooling
-        run: npm install --no-save --package-lock=false playwright@1.62.1 && npx playwright install chromium
+        run: npx --no-install playwright install chromium
       - name: Exercise combat overlays at Chromebook and phone sizes
         shell: bash
         run: |
@@ -51,14 +53,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: '.node-version'
           cache: npm
       - run: npm ci
       - run: npm run build:client
       - name: Install isolated browser test tooling
-        run: npm install --no-save --package-lock=false playwright@1.62.1 && npx playwright install chromium
+        run: npx --no-install playwright install chromium
       - name: Verify production loading, polling and editor recovery
         shell: bash
         run: |
@@ -84,16 +88,16 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: '.node-version'
           cache: npm
       - run: npm ci
       - name: Install isolated browser test tooling
         run: |
-          npm install --prefix /tmp/c08-browser-tools --no-save --package-lock=false playwright@1.62.1
-          ln -s /tmp/c08-browser-tools/node_modules/playwright node_modules/playwright
-          node /tmp/c08-browser-tools/node_modules/playwright/cli.js install chromium
+          npx --no-install playwright install chromium
       - name: Compare C08 with the pinned C07 baseline
         shell: bash
         run: |
@@ -133,16 +137,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: '.node-version'
           cache: npm
       - run: npm ci
       - name: Install isolated browser test tooling
         run: |
-          npm install --prefix /tmp/c11-browser-tools --no-save --package-lock=false playwright@1.62.1
-          ln -s /tmp/c11-browser-tools/node_modules/playwright node_modules/playwright
-          node /tmp/c11-browser-tools/node_modules/playwright/cli.js install chromium
+          npx --no-install playwright install chromium
       - name: Verify authoring and lobby against the pinned C10 baseline
         shell: bash
         run: |

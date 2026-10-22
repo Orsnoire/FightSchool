@@ -3,39 +3,68 @@ name: Live Combat Staging Acceptance
 on:
   workflow_dispatch:
     inputs:
+      release_sha:
+        description: Exact deployed merge commit SHA
+        required: true
+      worker_version:
+        description: Immutable Worker version from the deployment evidence
+        required: true
       staging_origin:
-        description: Staging Worker origin
-        required: false
-        default: https://questacademy-staging.coxsonator.workers.dev
-  pull_request:
-    paths:
-      - ".github/workflows/live-combat-staging-acceptance.yml"
-      - "tests/staging/live-combat-acceptance.mjs"
+        description: Production hostname (both names serve the classroom app)
+        type: choice
+        options:
+          - https://questacademy.bookwyrminteractive.studio
+          - https://questacademy-staging.coxsonator.workers.dev
+        required: true
 
 permissions:
   contents: read
 
 concurrency:
-  group: live-combat-staging-acceptance
+  group: questacademy-production
   cancel-in-progress: false
 
 jobs:
   accept:
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'cloudflare-migration/live-combat-agentic-acceptance'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      WORKER_VERSION: ${{ inputs.worker_version }}
+      STAGING_ORIGIN: ${{ inputs.staging_origin }}
+      ACCEPTANCE_MODE: live
     steps:
+      - name: Validate immutable release input
+        run: '[[ "$RELEASE_SHA" =~ ^[a-f0-9]{40}$ ]]'
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release_sha }}
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: '.node-version'
           cache: npm
       - run: npm ci
-      - name: Exercise live teacher and student combat
+      - name: Verify running commit and Worker version before creating fixtures
         env:
-          STAGING_ORIGIN: ${{ inputs.staging_origin || 'https://questacademy-staging.coxsonator.workers.dev' }}
+          OBSERVATION_LABEL: before
+        run: node scripts/release/verify.mjs observe
+      - name: Exercise live teacher and student combat
         run: node tests/staging/live-combat-acceptance.mjs
       - name: Exercise storage and classroom concurrency
-        env:
-          STAGING_ORIGIN: ${{ inputs.staging_origin || 'https://questacademy-staging.coxsonator.workers.dev' }}
         run: node tests/staging/operational-acceptance.mjs
+      - name: Confirm the runtime did not change during acceptance
+        if: always()
+        env:
+          OBSERVATION_LABEL: after
+        run: node scripts/release/verify.mjs observe
+      - name: Preserve exact fixture ownership and release evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: acceptance-${{ inputs.release_sha }}-${{ github.run_id }}
+          path: |
+            artifacts/acceptance
+            artifacts/release
+          retention-days: 30
+          if-no-files-found: error

@@ -2,7 +2,7 @@
 
 **CURRENT — updated October 18, 2026 (UTC).** Cleanup is the next development priority.
 Cleanup Phases 1–2 are complete. **C01 and C02 are COMPLETE: merged, deployed and accepted.**
-**C03 schema baseline and C04 contracts/diagnostics are COMPLETE and released. C05 room costs is COMPLETE, deployed and accepted in PR #63. C06 is COMPLETE, deployed and accepted in PR #69; C07 is COMPLETE, deployed and accepted in PR #70; C08 is COMPLETE, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73. C11 is complete, merged, deployed and accepted in PR #74; C12 is next and unstarted.** New features wait for the
+**C03 schema baseline and C04 contracts/diagnostics are COMPLETE and released. C05 room costs is COMPLETE, deployed and accepted in PR #63. C06 is COMPLETE, deployed and accepted in PR #69; C07 is COMPLETE, deployed and accepted in PR #70; C08 is COMPLETE, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73. C11 is complete, merged, deployed and accepted in PR #74; C12 is active in draft PR #75; operational signoff remains open.** New features wait for the
 cleanup exit gates. The separately authorized [swarm, previous-tier gear and host controls](combat/swarm-scaling.md) are deployed and accepted in PR #61.
 The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. It adds teacher reports, question editing, combat placeholders/completion and recoloring while retaining selection clocks.
 Read [active work](ACTIVE_WORK.md) before editing.
@@ -13,7 +13,7 @@ Read [active work](ACTIVE_WORK.md) before editing.
 | --- | --- | --- |
 | [Active work / resume here](ACTIVE_WORK.md) | One package, branch/PR, checkpoint and next action | CURRENT COORDINATION |
 | [Current status](CURRENT_STATUS.md) | Shipped features, verified runtime, known defects and open acceptance | CURRENT |
-| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01/C02 COMPLETE; C03 COMPLETE; C04 COMPLETE, deployed and accepted; C05 COMPLETE, deployed and accepted; C06 COMPLETE, deployed and accepted; C07 COMPLETE, deployed and accepted; C08 COMPLETE, merged, deployed and accepted; C09 COMPLETE, merged, deployed and accepted; C10 COMPLETE, merged, deployed and accepted; C11 complete, merged, deployed and accepted; C12 unstarted |
+| [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01/C02 COMPLETE; C03 COMPLETE; C04 COMPLETE, deployed and accepted; C05 COMPLETE, deployed and accepted; C06 COMPLETE, deployed and accepted; C07 COMPLETE, deployed and accepted; C08 COMPLETE, merged, deployed and accepted; C09 COMPLETE, merged, deployed and accepted; C10 COMPLETE, merged, deployed and accepted; C11 complete, merged, deployed and accepted; C12 active in draft PR #75; operational signoff open |
 | [Campaign development roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md) | October 20 owner decisions: generated maps, quiz dungeons, gates, party exploration, 3–8-player bosses, tier sync and rewards; staged packages and open decisions | DESIGN RECORD / FUTURE IMPLEMENTATION |
 | [Expansion plan](EXPANSION_PLAN.md) | Deferred features, design dependencies and long-term direction | FUTURE — after cleanup |
 | [October 9 engineering review](reviews/2026-10-09-code-review.md) | Findings F01–F17 and measured baseline behind the cleanup plan | BASELINE RECORD |
@@ -49,9 +49,9 @@ to the historical Cloudflare migration phase numbers.
 | Progression | [Guild quests and tiers](guild-quests-and-tiers.md) | Released; classroom tuning open, AA purchases future |
 | Hosting and team race | [Host sessions and team-race feasibility](combat/host-sessions-and-team-race.md) | Explicit Join / End / Launch, Next wave and enemy elimination released; team race future |
 | Avatars | [Database foundation](avatar-database.md), [art and animation direction](avatar-art-direction.md) | Static avatars released; full animation gate remains open |
-| Contracts and diagnostics | [Boundary ownership and CI policy](cloudflare/contracts-and-diagnostics.md) | C04 COMPLETE, deployed and accepted; C05 COMPLETE, deployed and accepted; C06 COMPLETE, deployed and accepted; C07 COMPLETE, deployed and accepted; C08 COMPLETE, merged, deployed and accepted; C09 COMPLETE, merged, deployed and accepted; C10 COMPLETE, merged, deployed and accepted; C11 complete, merged, deployed and accepted; C12 unstarted |
+| Contracts and diagnostics | [Boundary ownership and CI policy](cloudflare/contracts-and-diagnostics.md) | C04 COMPLETE, deployed and accepted; C05 COMPLETE, deployed and accepted; C06 COMPLETE, deployed and accepted; C07 COMPLETE, deployed and accepted; C08 COMPLETE, merged, deployed and accepted; C09 COMPLETE, merged, deployed and accepted; C10 COMPLETE, merged, deployed and accepted; C11 complete, merged, deployed and accepted; C12 active in draft PR #75; operational signoff open |
 | Database | [Schema baseline and ownership](cloudflare/schema-baseline.md) | C03 declaration/snapshot repair; shipped SQL remains immutable |
-| Operations | [Custom domain](cloudflare/custom-domain.md), [workshop routing](workshop-routing.md), [release and recovery record](cloudflare/full-migration.md) | Workshop and live application are separate; infrastructure drills remain open |
+| Operations | [Custom domain](cloudflare/custom-domain.md), [workshop routing](workshop-routing.md), [release and recovery record](cloudflare/full-migration.md), [pinned release runbook](cloudflare/release-runbook.md), [C12 evidence](reviews/2026-10-18-c12-release-review.md) | Workshop and live application are separate; infrastructure drills remain open |
 
 ## Completed and historical work
 

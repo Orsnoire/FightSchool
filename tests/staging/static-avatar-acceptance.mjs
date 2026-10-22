@@ -1,18 +1,23 @@
-// Explicit release acceptance against isolated student fixtures; never runs on app startup.
-// Run: STAGING_ORIGIN=https://questacademy.bookwyrminteractive.studio node --import tsx tests/staging/static-avatar-acceptance.mjs
+// Explicit release acceptance; use the same target/identity/manifest contract as
+// the other suites. A synthetic student does not make a live origin isolated.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { STARTER_ITEM_IDS, STARTER_LOADOUTS, EQUIPMENT_SLOTS } from '../../shared/equipment-catalog.ts';
-const origin=(process.env.STAGING_ORIGIN||'https://questacademy.bookwyrminteractive.studio').replace(/\/$/,'');
+import { startFixtureRun, fixtureFetch as fetch } from './fixture-run.mjs';
+const fixtures = await startFixtureRun('static-avatar');
+const origin = fixtures.manifest.origin;
 const sessions=[];
 async function api(path,{method='GET',cookie,body,status=200,requestOrigin=origin}={}) {
+ const requestId=fixtures.begin(path,method,body);
  const response=await fetch(origin+path,{method,headers:{Accept:'application/json',Origin:requestOrigin,...(cookie?{Cookie:cookie}:{}),...(body===undefined?{}:{'Content-Type':'application/json'})},body:body===undefined?undefined:JSON.stringify(body)});
+ const payload=await response.json();
+ fixtures.record(path,method,body,payload,response.status,requestId);
  assert.equal(response.status,status,`${method} ${path}: HTTP ${response.status}`);
- return {payload:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0]};
+ return {payload,cookie:response.headers.get('set-cookie')?.split(';')[0]};
 }
 try {
  for(const modelId of ['human-male-v1','human-female-v1']) {
-  const login={nickname:`qa-avatar-${randomUUID().slice(0,18)}`,password:`Acceptance-${randomUUID()}!`};
+  const login={nickname:`qa-avatar-${fixtures.suffix}-${sessions.length}`,password:`Acceptance-${randomUUID()}!`};
   const student=await api('/api/student/login',{method:'POST',body:login});sessions.push(student.cookie);
   const path=`/api/student/${student.payload.id}`,avatar=path+'/avatar';
   assert.equal((await api(avatar,{cookie:student.cookie})).payload,null);
@@ -46,6 +51,9 @@ try {
   if(sessions.length>2)await api(avatar,{cookie:sessions[0],status:403});
  }
  console.log(JSON.stringify({passed:true,origin,models:2,checks:['create and retry safety','saved color changes and relogin persistence','starter gear for all four base jobs','permanent starter inventory without duplicates','same-job equipment retention','armor exclusions','owner-only access and foreign-origin rejection','body immutability','progress unchanged']},null,2));
+ fixtures.finish('passed');
+} catch (error) {
+ fixtures.finish('failed'); throw error;
 } finally {
  for(const cookie of sessions)await api('/api/student/logout',{method:'POST',cookie}).catch(()=>{});
 }
