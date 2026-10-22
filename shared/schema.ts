@@ -576,10 +576,10 @@ export function calculateGoldReward(difficultySlider: number): number {
 export function calculateTierPrice(tier: number, quality: ItemQuality): number {
   // Base prices for each tier (common quality)
   const tierBasePrices: Record<number, number> = {
-    1: 150,
-    2: 500,
-    3: 1200,
-    4: 2000,
+    1: 100,
+    2: 1000,
+    3: 5000,
+    4: 10000,
     5: 3500,
     6: 5500,
     7: 8000,

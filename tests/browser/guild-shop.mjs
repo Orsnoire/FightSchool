@@ -26,12 +26,12 @@ try {
       const path = url.pathname;
       let json = [];
       if (path === `/api/guilds/${guild.id}`) json = guild;
-      else if (path === "/api/equipment-items/shop") json = builtinShopItems();
+      else if (path === "/api/equipment-items/shop") json = builtinShopItems().filter(item => item.tier <= guild.unlockedTier);
       else if (path === `/api/student/${savedStudent.id}` || path.endsWith("/check-session")) json = savedStudent;
       else if (path.endsWith("/job-levels")) json = [{ jobClass: "warrior", level: 2 }];
       else if (path.endsWith("/purchase-item")) {
         purchases.push(route.request().postDataJSON());
-        savedStudent = { ...savedStudent, gold: 350, inventory: ["t1_fighter_armor"] };
+        savedStudent = { ...savedStudent, gold: 400, inventory: ["t1_fighter_armor"] };
         json = savedStudent;
       }
       return route.fulfill({ json });
@@ -47,7 +47,8 @@ try {
     assert.equal(await page.getByText("Default equipment", { exact: true }).count(), 37);
     assert.equal(await page.getByRole("button", { name: "Edit item" }).count(), 0);
     await selectTier("2");
-    await page.getByText("No items defined at tier 2 yet.", { exact: false }).waitFor();
+    await page.getByText("Soldier's Cuirass", { exact: true }).waitFor();
+    assert.equal(await page.getByText("Default equipment", { exact: true }).count(), 24);
     assert.ok((await page.getByRole("link").filter({ hasText: "Create item" }).getAttribute("href")).includes("tier=2"));
     await selectTier("1");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -62,7 +63,7 @@ try {
     await page.screenshot({ path: `${output}/${viewport.width}-student-guild-shop.png` });
     await page.getByTestId("button-purchase-t1_fighter_armor").click();
     await page.getByText("Purchase Successful!", { exact: true }).waitFor();
-    await page.waitForFunction(() => document.querySelector('[data-testid="text-gold-balance"]')?.textContent === "350");
+    await page.waitForFunction(() => document.querySelector('[data-testid="text-gold-balance"]')?.textContent === "400");
     assert.equal(purchases.length, 1);
     assert.equal(purchases[0].itemId, "t1_fighter_armor");
     await page.close();

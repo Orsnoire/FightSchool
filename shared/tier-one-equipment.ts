@@ -1,3 +1,4 @@
+import { TIER_TWO_EQUIPMENT, TIER_TWO_HEALING_ITEMS } from './tier-two-equipment';
 import type { EquipmentItem, EquipmentSlot } from './schema';
 
 /** Palette briefs for the static equipment art; animation coverage is separate. */
@@ -49,10 +50,11 @@ export const TIER_ONE_LOOT_POOLS = Object.fromEntries(Object.keys(names).map(set
   Object.keys(TIER_ONE_EQUIPMENT).filter(id => id.startsWith(`t1_${set}_`) || (set === 'forester' && id === 't1_bard_lute')),
 ])) as Record<keyof typeof names,string[]>;
 export function equipmentEffects(loadout:Partial<Record<EquipmentSlot,string|null>>) {
-  return {healingBonus:loadout.weapon === 't1_healer_ankh' ? 1 : 0,
+  const armorHealing = Object.entries(loadout).filter(([slot,id]) => id && TIER_TWO_HEALING_ITEMS.has(id) && TIER_TWO_EQUIPMENT[id].slot === slot).length;
+  return {healingBonus:armorHealing + (loadout.weapon === 't1_healer_ankh' ? 1 : 0),
     potionAttackBonus:loadout.offhand === 't1_healer_potion' ? 1 : 0};
 }
 export function equipmentEffectText(id:string) {
-  return id === 't1_healer_ankh' ? '+1 HP to every heal, including First Aid.' :
+  return id === 't1_healer_ankh' || TIER_TWO_HEALING_ITEMS.has(id) ? '+1 HP to every heal, including First Aid.' :
     id === 't1_healer_potion' ? 'Healing potions grant +1 ATK for 3 rounds. Refreshes; does not stack.' : '';
 }
