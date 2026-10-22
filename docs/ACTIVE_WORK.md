@@ -1,3 +1,12 @@
+# Vampiric Bite healing correction — active October 22, 2026
+
+- Owner requested a fix for excessive Vampire healing. Chosen rule: heal one HP per actual player HP removed by Vampiric Bite, capped at the vampire's missing HP. This supersedes the October 8 proportional-max-HP formula.
+- Branch: `fix/vampiric-bite-drain`; [draft PR #84](https://github.com/Orsnoire/FightSchool/pull/84).
+- Baseline: current main `e071bac5a69f100d6367147cd906173f48317981`. Open campaign PR #81 and C12 PR #75 were inspected; neither implements this correction. Their branches, deployments and unfinished gates remain separate.
+- Scope: shared move description, enemy-turn healing, deterministic regression coverage and the enemy AI specification. Preserve mitigation, aggregate damage caps, five-round minimum cooldown, other moves and existing student data.
+- State: claim only; no gameplay changes or new verification yet. No merge or deployment performed.
+- Next: resume this branch and PR, implement the correction, verify actual damage/overkill/shields/HP caps and run repository checks. The branch checkpoint and live PR carry newer verification.
+
 # Math display repair — released October 21, 2026
 
 - Owner-authorized review, merge and production deployment: [PR #83](https://github.com/Orsnoire/FightSchool/pull/83), merge `2ca741ff28a81d75c75de59c51d784415c7e418a`, identical tree to reviewed head `684b4c8d3174e07bbb92b24b6be2b41b37da7e72`.
