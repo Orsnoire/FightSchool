@@ -1,3 +1,11 @@
+# C12 resumed — October 22, 2026
+
+- Owner requested performance and operational signoff. Resume the existing PR #75 and isolated rehearsal; do not create a competing cleanup branch.
+- Next: reconcile current main (including released PR #84), verify the retained rehearsal inventory, implement the missing representative 30/60-player workload, run bounded repeated measurements, and prepare/execute recovery and compatible rollback checks once their isolation prerequisites are established.
+- Preserve the existing acceptance assertions and record any failed gate. Physical classroom-device observation and an agreed monitoring window still require actual evidence; no signoff is claimed.
+- Production data resets, prefix-based fixture deletion and unreviewed permission changes are outside this work. Record concrete remaining blockers after completing all available preparation.
+- This is a documentation-only resumption claim on the existing C12 head. The previous checkpoints below are historical; production now includes PR #84, not only C11.
+
 # C12 rehearsal ready — bounded functional checks passed
 
 - Active branch: `cleanup/c12-release-review`; [PR #75](https://github.com/Orsnoire/FightSchool/pull/75) remains **draft and unmerged into main**. The owner authorized rehearsal-only initialization, fresh-secret installation, deployment and bounded functional checks. C12 is deployed only to the isolated rehearsal Worker; production remains C11.
