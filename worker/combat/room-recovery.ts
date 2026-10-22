@@ -1,3 +1,4 @@
+import { normalizeSnapshotHP } from "../../shared/combat/hp";
 import { upgradePriestActions } from "./choices";
 import { initialCombatState } from "./encounter-setup";
 import { addStudent } from "./participants";
@@ -12,7 +13,7 @@ interface RecoveryEffects {
 /** Retain both legacy phase-4 and version-2 Priest adapters without resetting progress. */
 export async function recoverRoom(room: StoredRoom, effects: RecoveryEffects): Promise<StoredRoom> {
   if (room.snapshot.schemaVersion === 2) {
-    const upgraded = upgradePriestActions(room.snapshot);
+    const upgraded = normalizeSnapshotHP(upgradePriestActions(room.snapshot));
     if (upgraded !== room.snapshot) {
       room.snapshot = upgraded;
       await effects.save(room);

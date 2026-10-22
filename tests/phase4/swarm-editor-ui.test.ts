@@ -63,12 +63,14 @@ test("fight editor enables, edits, saves, reloads and disables swarm settings", 
     assert.equal(writes.at(-1)?.method, "PATCH");
     assert.deepEqual(writes.at(-1).body.enemies[0].swarm, { enemiesPerFourPlayers: 3 });
 
+    persisted.encounterTier = 3;
     dom.reconfigure({ url: `https://qa.example/teacher/edit/${fight.id}` });
     cache.clear();
     await render();
     await click('[data-testid="button-edit-enemy-0"]');
     assert.equal((document.querySelector('[aria-label="Swarm"]') as HTMLInputElement).checked, true);
     assert.equal((document.querySelector('[aria-label="Extra swarm enemies"]') as HTMLInputElement).value, "3");
+    assert.match(document.querySelector('[aria-label="Swarm count examples"]')!.textContent!, /4 players: 15 enemies · 8 players: 18 enemies · 12 players: 21 enemies · 16 players: 24 enemies/);
     await click('[aria-label="Swarm"]');
     assert.equal(document.querySelector('[aria-label="Extra swarm enemies"]'), null);
     await click('[data-testid="button-update-enemy"]');

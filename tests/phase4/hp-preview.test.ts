@@ -19,6 +19,7 @@ test("waiting HP matches Start Fight for legacy fights and 25-goblin swarms with
     for (const count of [1, 2, 4, 30]) {
       let s = initialCombatState("ABC234", template);
       for (let i = 0; i < count; i++) s = addStudent(s, student(i % 2 ? "wizard" : "warrior", `p${i}`), { levels: { warrior: 2, wizard: 2 } });
+      s.enemies.forEach(e => { e.health = e.maxHealth = 9999; });
       const before = structuredClone(s);
       const preview = publicSnapshot(s, template);
       const started = startQuestion(scaleEncounter(s, template));
@@ -40,7 +41,7 @@ test("empty rooms and combat already in progress are not rescaled by public proj
   assert.deepEqual(hp(publicSnapshot(empty, swarm)), hp(empty));
   const s = startQuestion(scaleEncounter(addStudent(empty, student()), swarm));
   s.enemies[0].health = 0;
-  s.enemies[1].health /= 2;
+  s.enemies[1].health = Math.ceil(s.enemies[1].health / 2);
   const before = structuredClone(s);
   assert.deepEqual(hp(publicSnapshot(s, swarm)), hp(s));
   assert.deepEqual(s, before);
@@ -85,7 +86,8 @@ test("host/student broadcasts, departures and restored-host snapshots preview th
   }
   const four = hp(latest(host));
   await h.send(learners[3], "leave_fight");
-  assert.notDeepEqual(hp(latest(host)), four);
+  assert.deepEqual(hp(latest(host)), four, "the 1 HP floor can mask a small attendance change");
+  assert.equal(Object.keys(h.room().snapshot.players).length, 3);
   assert.deepEqual(hp(latest(host)), hp(scaleEncounter(h.room().snapshot, swarm)));
   h.restore();
   await h.send(host, "host");
@@ -105,16 +107,16 @@ test("swarm counts cross eight players in live room messages and survive host re
   const learners = Array.from({ length: 8 }, (_, i) => h.socket(`p${i}`));
   const latest = (ws: any) => ws.messages.filter((m: any) => m.type === "combat_state").at(-1).state as CombatSnapshot;
   for (const learner of learners) await h.send(learner, "join");
-  assert.equal(latest(host).enemies.length, 8);
+  assert.equal(latest(host).enemies.length, 13);
   assert.equal(h.room().snapshot.enemies.length, 5, "preview must leave stored base count intact");
   assert.deepEqual(hp(latest(learners[7])), hp(latest(host)));
   await h.send(learners[7], "leave_fight");
-  assert.equal(latest(host).enemies.length, 5);
+  assert.equal(latest(host).enemies.length, 10);
   await h.send(learners[7], "join");
   h.restore();
   await h.send(host, "host");
   const recovered = host.messages.filter((m: any) => m.type === "session_created").at(-1).state;
-  assert.equal(recovered.enemies.length, 8);
+  assert.equal(recovered.enemies.length, 13);
   const preview = hp(recovered);
   await h.send(host, "start_fight");
   assert.deepEqual(hp(h.room().snapshot), preview);

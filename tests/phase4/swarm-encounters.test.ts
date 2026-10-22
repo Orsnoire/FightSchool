@@ -43,13 +43,13 @@ function room(count = 4, f = quiz) {
     s = addStudent(s, student("warrior", "p" + i));
   return s;
 }
-test("quantities create unique individuals; role budgets remain separate across waves and fractional HP preserves small swarms", () => {
+test("quantities create unique individuals; role budgets remain separate across waves and integer HP keeps each enemy at least 1 HP", () => {
   const s = room();
   assert.equal(s.enemies.length, 30);
   assert.equal(new Set(s.enemies.map((e) => e.id)).size, 30);
   const hp = allocateHP(s.enemies, 100);
-  assert.ok(Math.abs(hp.reduce((n, e) => n + e.health, 0) - 11) < 0.02);
-  assert.ok(hp.every((e) => e.health < 1));
+  assert.ok(hp.reduce((n, e) => n + e.health, 0) === 30);
+  assert.ok(hp.every((e) => e.health === 1));
   const extra = [
     ...s.enemies,
     { ...s.enemies[0], id: "boss1", role: "boss" as const, wave: 2 },
@@ -63,19 +63,20 @@ test("quantities create unique individuals; role budgets remain separate across 
     "/enemies/goblin-v1.png",
   );
 });
-test("classroom reference scales n/4 independent of actual gear; solo setup changes the entry budget", () => {
+test("HP uses additive role counts independent of gear while pressure retains the classroom reference", () => {
   const party = referenceParty(1);
   const four = encounterBudget(party, 1, 10),
     eight = encounterBudget([...party, ...party], 1, 10);
-  assert.equal(eight.hp, four.hp * 2);
+  assert.equal(four.hp, 173);
+  assert.equal(eight.hp, 175, "doubling players must not double the question contribution");
   assert.equal(eight.rawPressure, four.rawPressure * 2);
   const enhanced = structuredClone(party);
   enhanced.forEach((p) => (p.stats.str += 100));
   assert.equal(encounterBudget(enhanced, 1, 10).hp, four.hp);
   assert.ok(
-    encounterBudget([enhanced[0]], 1, 10).hp >
-      encounterBudget([party[0]], 1, 10).hp,
+    performance(enhanced[0], 10).damage > performance(party[0], 10).damage,
   );
+  assert.equal(encounterBudget([enhanced[0]], 1, 10).hp, 171);
   const s = scaleEncounter(room(), quiz);
   assert.equal(s.encounterXpFraction, 0.1);
   s.currentPhase = "question";
@@ -172,7 +173,7 @@ test("goblin swarm bonus is per victim per three actual attacks, with armor and 
   s.players.p0.maxHealth = 10;
   s.players.p0.health = 10;
   const capped = advancePhase(s, quiz, 1000);
-  assert.equal(capped.players.p0.health, 6.5);
+  assert.equal(capped.players.p0.health, 7);
 });
 test("question bank cycles reshuffle deterministically, preserve mastery IDs and avoid immediate repeat", () => {
   let s = scaleEncounter(room(), quiz);
@@ -223,16 +224,17 @@ test("late entry grows remaining budgets without resurrecting defeated enemies",
   let s = scaleEncounter(room(), quiz);
   s.currentPhase = "enemy_ai";
   s.enemies[0].health = 0;
-  s.enemies[1].health = s.enemies[1].maxHealth / 2;
-  const oldMax = s.enemies[1].maxHealth;
+  s.enemies[1].health = Math.ceil(s.enemies[1].maxHealth / 2);
+  const oldPool = s.encounterHpPool!;
   s = addStudent(s, student("warrior", "late"));
   assert.ok(s.pendingPlayers?.late);
   const next = advancePhase(s, quiz, 1000);
   assert.equal(next.encounterAttendance, 5);
   assert.equal(next.enemies[0].health, 0);
-  assert.ok(Math.abs(next.enemies[1].maxHealth / oldMax - 1.25) < 0.01);
+  assert.equal(next.encounterHpPool! - oldPool, 0, "a 0.33 tank contribution does not cross the next integer here");
+  assert.equal(next.enemies[1].maxHealth, 1);
   assert.ok(
-    Math.abs(next.enemies[1].health / next.enemies[1].maxHealth - 0.5) < 0.001,
+    next.enemies[1].health === 1,
   );
   assert.ok(next.players.late);
 });

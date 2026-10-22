@@ -14,6 +14,7 @@ Read [active work](ACTIVE_WORK.md) before editing.
 | [Active work / resume here](ACTIVE_WORK.md) | One package, branch/PR, checkpoint and next action | CURRENT COORDINATION |
 | [Current status](CURRENT_STATUS.md) | Shipped features, verified runtime, known defects and open acceptance | CURRENT |
 | [Cleanup plan](CLEANUP_PLAN.md) | Six phases, twelve work packages, dependencies and completion gates | CURRENT PLAN — C01/C02 COMPLETE; C03 COMPLETE; C04 COMPLETE, deployed and accepted; C05 COMPLETE, deployed and accepted; C06 COMPLETE, deployed and accepted; C07 COMPLETE, deployed and accepted; C08 COMPLETE, merged, deployed and accepted; C09 COMPLETE, merged, deployed and accepted; C10 COMPLETE, merged, deployed and accepted; C11 complete, merged, deployed and accepted; C12 active in draft PR #75; operational signoff open |
+| [Campaign development roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md) | October 20 owner decisions: generated maps, quiz dungeons, gates, party exploration, 3–8-player bosses, tier sync and rewards; staged packages and open decisions | DESIGN RECORD / FUTURE IMPLEMENTATION |
 | [Expansion plan](EXPANSION_PLAN.md) | Deferred features, design dependencies and long-term direction | FUTURE — after cleanup |
 | [October 9 engineering review](reviews/2026-10-09-code-review.md) | Findings F01–F17 and measured baseline behind the cleanup plan | BASELINE RECORD |
 | [Source of Truth](Source_of_Truth.md) | Product authority, design rules and conflict resolution | CURRENT AUTHORITY |
@@ -44,7 +45,7 @@ to the historical Cloudflare migration phase numbers.
 | --- | --- | --- |
 | Combat rules and presentation | [Balance and stamina](combat/classroom-balance-and-stamina.md), [student overlays](combat/student-overlays.md), [battlefield direction](combat-facelift.md) | Released static battlefield and current rules; later dated approvals supersede early proposals |
 | Enemies | [Enemy AI and recovery](combat/enemy-ai.md), [individual enemies and waves](combat/enemy-waves-and-goblins.md) | Seven defined species, goblin minimum five, optional swarms and previous-tier gear |
-| Equipment | [Starter wardrobe](starter-wardrobe.md), [Tier 1](combat/tier-one-equipment.md), [comparisons](combat/equipment-comparisons.md), [equipped artwork](avatar-equipment-visuals.md) | Released; F01 claim correction deployed and accepted in C01 / PR #53 |
+| Equipment | [Starter wardrobe](starter-wardrobe.md), [Tier 1](combat/tier-one-equipment.md), [Tier 2](combat/tier-two-equipment.md), [comparisons](combat/equipment-comparisons.md), [equipped artwork](avatar-equipment-visuals.md) | Released; F01 claim correction deployed and accepted in C01 / PR #53 |
 | Progression | [Guild quests and tiers](guild-quests-and-tiers.md) | Released; classroom tuning open, AA purchases future |
 | Hosting and team race | [Host sessions and team-race feasibility](combat/host-sessions-and-team-race.md) | Explicit Join / End / Launch, Next wave and enemy elimination released; team race future |
 | Avatars | [Database foundation](avatar-database.md), [art and animation direction](avatar-art-direction.md) | Static avatars released; full animation gate remains open |

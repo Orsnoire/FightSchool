@@ -1,0 +1,52 @@
+{
+  "origin": "https://questacademy.bookwyrminteractive.studio",
+  "source": "2ca741ff28a81d75c75de59c51d784415c7e418a",
+  "rendererAsset": "/assets/RichContentRenderer-BrZ6rZ5U.js",
+  "startedAt": "2026-10-21T23:52:24.311Z",
+  "quizzes": [
+    {
+      "file": "QuestAcademy_Differentiation_Practice.csv",
+      "sha256": "83e99835a7869bddc00d16a7a68c70b951023621f458f71b3fa380c19f4222ef",
+      "questions": 24,
+      "equations": 144,
+      "superscripts": 112,
+      "subscripts": 1,
+      "fractions": 42,
+      "saveReload": "all 24 question sources, options, keys and timers identical",
+      "liveGrading": "original Answer1 correct; distractor incorrect; feedback key identical and renders",
+      "sessionEnded": true
+    },
+    {
+      "file": "QuestAcademy_Integration_Practice.csv",
+      "sha256": "7b01b6a17386d6c3c0ebd4933be83300e690108d59465e3f9089a69cd5775b7d",
+      "questions": 24,
+      "equations": 120,
+      "superscripts": 64,
+      "subscripts": 0,
+      "fractions": 47,
+      "saveReload": "all 24 question sources, options, keys and timers identical",
+      "liveGrading": "original Answer1 correct; distractor incorrect; feedback key identical and renders",
+      "sessionEnded": true
+    }
+  ],
+  "fixtures": {
+    "teachers": [
+      "a759f95b-40cf-4e43-b3cf-0e2f5941dbc2"
+    ],
+    "students": [
+      "d81fab21-1b5f-4cca-b383-0c0bbafe9728",
+      "d515469b-c87e-4321-922f-19fdf454729e"
+    ],
+    "fights": [
+      "aff47054-bf99-4e37-bafd-3e5cddb46daf",
+      "a88b7335-0926-44b7-a371-f34845f73484"
+    ],
+    "sessions": [
+      "CJ79ZK",
+      "A9QKQP"
+    ]
+  },
+  "render": "passed: exact deployed renderer in JSDOM; React import removed and renderer exported only; no renderer logic changed",
+  "status": "passed",
+  "finishedAt": "2026-10-21T23:53:21.997Z"
+}

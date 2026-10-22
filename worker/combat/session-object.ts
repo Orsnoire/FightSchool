@@ -1,3 +1,4 @@
+import { studentCanAccessSession } from "../services/combat-access";
 import type { StoredRoom } from "./room-state";
 import { recoverRoom } from "./room-recovery";
 import { saveRoom, completeRoom, roomAlarmAt } from "./room-persistence";
@@ -385,7 +386,7 @@ export class CombatSessionObject {
           const live = await this.repository.findLiveCombatSession(
             actor.sessionId,
           );
-          if (live?.soloStudentId === actor.actorId) {
+          if (live?.soloStudentId && ["waiting", "active"].includes(live.status) && await studentCanAccessSession(this.repository, live, actor.actorId)) {
             const fight = await this.repository.findFightById(live.fightId);
             if (fight) {
               fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
@@ -409,6 +410,9 @@ export class CombatSessionObject {
           if (actor.role !== "student")
             throw new CombatRuleError("Student role required");
           if (room.snapshot.currentPhase === "game_over" && !room.snapshot.players[actor.actorId] && !room.snapshot.pendingPlayers?.[actor.actorId]) throw new CombatRuleError("Fight has ended");
+          const live = await this.repository.findLiveCombatSession(actor.sessionId);
+          if (live && !(await studentCanAccessSession(this.repository, live, actor.actorId)))
+            throw new CombatRuleError("Join the hosting guild before entering this fight.");
           const removal = room.removals?.[actor.actorId];
           if (removal) {
             if (removal.blocked) {
@@ -440,14 +444,11 @@ export class CombatSessionObject {
             if (!student) throw new CombatRuleError("Student unavailable");
             room.snapshot = addStudent(room.snapshot, student, await this.repository.getCombatProfile?.(student,actor.sessionId));
           }
-          const live = await this.repository.findLiveCombatSession(
-            actor.sessionId,
-          );
-          if(established && live?.soloStudentId!==actor.actorId) {
+          if(established && !live?.soloStudentId) {
             this.send(ws,snapshotMessage(room,actor.role));return;
           }
           if (
-            live?.soloStudentId === actor.actorId &&
+            live?.soloStudentId &&
             room.snapshot.currentPhase === "waiting"
           ) {
             room.snapshot = startQuestion(

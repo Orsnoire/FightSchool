@@ -1,6 +1,6 @@
 # Worker migration and combat recovery
 
-> **RELEASE HISTORY + OPEN OPERATIONS — updated October 18, 2026 (UTC).**
+> **RELEASE HISTORY + OPEN OPERATIONS — updated October 19, 2026 (UTC).**
 > The application migration is deployed; full operational signoff remains open.
 > [Current status](../CURRENT_STATUS.md) names the latest runtime. Dated entries
 > below retain earlier evidence and historical blockers; they are not competing
@@ -8,10 +8,13 @@
 
 This replaces the incomplete Phase 4 slice described in `phase-4-live-combat.md`. The implementation follows `../Migration_Plan`, `../Source_of_Truth.md`, and the current **Combat Flow Refactor**, **Quest Academy Expanded Class List**, and **Core Guild Design** documents.
 
-> **C12 active in draft PR #75:** release/fixture safeguards and local verification are implemented. [C12 evidence](../reviews/2026-10-18-c12-release-review.md) and [current runbook](release-runbook.md) govern the remaining isolation, performance, recovery, rollback and classroom signoff. C12 has not been deployed; no operational gate is waived.
+> **C12 remains active in draft PR #75.** Its isolated rehearsal is deployed; performance and operational signoff remain open. See the [current checkpoint](../ACTIVE_WORK.md) for the October 22 resumption and [PR #84 release](../releases/2026-10-22-pr84.md) for current production. The earlier runtime records below are historical.
 
-**Latest verified runtime:** `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`, released October 18 with C11 / PR #74.
-[Deployment 39161062489](https://github.com/Orsnoire/FightSchool/actions/runs/39161062489) and [canonical acceptance 39161276964](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964) passed on that same revision. Immutable Worker: `86111493-688d-41c2-9462-b050044b3d10`. No new migration or production-data reset.
+**October 19 deployed and accepted runtime:** `5bb24b00377e511d118bc3ee4c61eb0cdcab235f`, released October 19 with fight balance / PR #77 (merge `c9f8280`, plus docs). [Deployment 39313909643](https://github.com/Orsnoire/FightSchool/actions/runs/39313909643) passed 320 tests, TypeScript/builds, R2, the existing additive migration gate and both hostname smoke checks. Immutable Worker **`aa86b4da-3c2f-497a-8f80-69c1f9412030`** was published at 19:50:08 UTC; canonical smoke passed at 19:50:11 UTC. No new migration or production-data reset.
+
+[Canonical live acceptance 39315198519](https://github.com/Orsnoire/FightSchool/actions/runs/39315198519) **passed** against `https://questacademy.bookwyrminteractive.studio`, using tests at `cd5bc746d24f21681be55bfade7f10c04a78054b`. Test-only `72e6775` corrects the stale Fireball cost to 2 MP and checks full starting MP/integer enemy HP; subsequent docs do not change the deployed runtime. Combat, durable XP/rewards, guilds/quests/shop/history, ownership, R2, 30-player concurrency/reconnect/completion, late entry/moderation and logout revocation pass. One 30-answer burst: p50 **908 ms**, p95 **1659 ms**, maximum **1710 ms**; functional acceptance only, not a repeated benchmark. Earlier attempt `39314985946` was cancelled; the passing run is the release evidence.
+
+**Preceding fully accepted runtime:** `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`, released October 18 with C11 / PR #74. [Deployment 39161062489](https://github.com/Orsnoire/FightSchool/actions/runs/39161062489) and [canonical acceptance 39161276964](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964) passed on that same revision. Immutable Worker: `86111493-688d-41c2-9462-b050044b3d10`.
 See the [current release record](../ACTIVE_WORK.md) and [current status](../CURRENT_STATUS.md).
 Earlier releases and R2 failures below are historical.
 Full infrastructure recovery/rollback signoff remains open.
@@ -26,7 +29,7 @@ Numeric policy: health, MP, damage, healing, rewards and XP are whole numbers. F
 
 ## Durable room and economy guarantees
 
-- Signed session identity is verified before WebSocket upgrade; the browser cannot choose the acting student. Room ownership and private solo-room ownership are checked.
+- Signed session identity is verified before WebSocket upgrade; the browser cannot choose the acting student. Room ownership is checked; student-created guild battles require active hosting-guild membership (October 22 owner update), while legacy solo rooms without a guild remain creator-only.
 - Commands carry IDs, round numbers and question IDs. The object serializes all command/alarm mutations. Accepted-command receipts and updated state are stored together, with bounded receipts. Invalid commands do not consume their IDs.
 - Reconnect restores state, deadline, current question and persisted results. The browser uses server time and does not restart phase clocks. A version-1 room is upgraded in place, retaining answers and remaining HP.
 - Alarms compare saved deadlines and resume transitions after hibernation. Unsaved final results remain pending and retry through alarms; successful completion is announced after persistence.

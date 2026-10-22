@@ -27,6 +27,14 @@ cases.push(['Mixed slots','warrior',{...cases[1][2],headgear:'t1_forester_headge
 cases.push(['Empty slots','warrior',Object.fromEntries(Object.keys(STARTER_LOADOUTS.warrior).map(s=>[s,null])) as EquipmentLoadout]);
 cases.push(['Bard lute','bard',{...STARTER_LOADOUTS.bard,weapon:'t1_bard_lute'}]);
 cases.push(['Claymore','blood_knight',{...STARTER_LOADOUTS.blood_knight,weapon:'t1_fighter_claymore'}]);
+if(process.argv[3]==='tier2') {
+ cases.length=0;
+ for(const [family,job] of [['soldier','warrior'],['ranger','scout'],['acolyte','wizard'],['ascetic','priest']] as const) {
+  const loadout={...STARTER_LOADOUTS[job]};
+  for(const slot of ['headgear','armor','arms','hands','legs','feet'] as const)loadout[slot]=`t2_${family}_${slot}`;
+  cases.push([`${family} T2`,job,loadout]);
+ }
+}
 if(process.argv[3]==='props') {
  cases.length=0;
  for(const [job,weapon,offhand] of [

@@ -6,7 +6,8 @@ import { abilityDamage, baseAbilityHealing } from "../../shared/combat/abilityVa
 import { event } from "./state-events";
 import { abilityEffect } from "../../shared/combat/presentation";
 import { activeEnemies, bounceTarget } from "../../shared/combat/encounters";
-import { heal, hit, integer, damagePlayer } from "./health";
+import { heal, hit as resolveHit, integer, damagePlayer, resolvedHP } from "./health";
+import { abilityDamageType } from "../../shared/combat/damage-types";
 import { rng } from "./random";
 import { getTotalMechanicUpgrades } from "../../shared/jobSystem.ts";
 import { type CharacterClass } from "../../shared/schema.ts";
@@ -39,6 +40,9 @@ function executeAbility(
   targetId: string,
 ) {
   const st = p.stats;
+  const damageType = abilityDamageType(p.characterClass, id);
+  const hit = (snapshot: CombatSnapshot, attacker: CombatPlayer, enemyId: string, raw: number, bonus = false) =>
+    resolveHit(snapshot, attacker, enemyId, raw, bonus, damageType);
   const { atk, mat, rtk, str, int, agi, mnd, vit } = st;
   const all = () => activeEnemies(s);
   if(s.encounterRules===2&&s.enemies.some(e=>e.id===targetId)){
@@ -343,11 +347,12 @@ function executeAbility(
       const n = Math.min(str, int, agi, mnd);
       for (const t of party()) {
         if (id === "inspire") {
-          t.maxHealth += n;
-          t.health += n;
+          const hpAmount = s.encounterHpPool === undefined ? n : Math.floor(n);
+          t.maxHealth += hpAmount;
+          t.health = s.encounterHpPool === undefined ? t.health + n : resolvedHP(s, t.health + n, t.maxHealth);
           t.maxMp += n;
           t.mp += n;
-          t.buffs.inspire = { rounds: 3, amount: n };
+          t.buffs.inspire = { rounds: 3, amount: n, ...(s.encounterHpPool !== undefined ? { hpAmount } : {}) };
         } else
           for (const stat of ["str", "int", "agi", "mnd"] as const) {
             t.stats[stat] += n;

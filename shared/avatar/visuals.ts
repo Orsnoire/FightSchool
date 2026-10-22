@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { STARTER_EQUIPMENT } from "../equipment-catalog";
 import { TIER_ONE_EQUIPMENT } from "../tier-one-equipment";
+import { TIER_TWO_EQUIPMENT } from "../tier-two-equipment";
 import type { EquipmentSlot } from "../equipment-slots";
-export const VISUAL_BASES = { ...STARTER_EQUIPMENT, ...TIER_ONE_EQUIPMENT };
+export const VISUAL_BASES = { ...STARTER_EQUIPMENT, ...TIER_ONE_EQUIPMENT, ...TIER_TWO_EQUIPMENT };
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 export const paletteSchema = z.object({
   primary: hex.optional(),

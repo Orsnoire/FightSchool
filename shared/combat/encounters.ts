@@ -7,6 +7,8 @@ import {
   calculateLoadoutEquipmentStats,
   getStartingEquipment,
   calculatePlayerBaseDamage,
+  TANK_CLASSES,
+  HEALER_CLASSES,
   type CharacterClass,
   type EquipmentStats,
 } from "../schema";
@@ -22,6 +24,7 @@ import {
 } from "./abilities";
 import { abilityDamage, abilityHealing } from "./abilityValues";
 import { swarmCounts, type EnemySwarm } from "./swarm";
+import { maximumHP } from "./hp";
 
 export const ROLE_SHARES: Record<EnemyRole, number> = {
   boss: 0.5,
@@ -75,11 +78,12 @@ export function expandEnemies(
   }>,
   consecutive: boolean,
   players = 0,
+  encounterTier = 1,
 ): CombatEnemy[] {
   const modern = enemies.some((e) => e.quantity !== undefined || e.swarm || resolveEnemyType(e) === "goblin");
   const counts = swarmCounts(enemies.map(e => ({ ...e,
     quantity: resolveEnemyType(e) === "goblin" ? Math.max(5, e.quantity || 5) : e.quantity || 1,
-  })), players);
+  })), players, encounterTier);
   return enemies.flatMap((e, i) =>
     Array.from({ length: counts[i] }, (_, j) => ({
       ...e,
@@ -98,15 +102,16 @@ export function expandEnemies(
         : {}),
       name: counts[i] > 1 ? `${e.name} ${j + 1}` : e.name,
       image: enemyImage(e),
-      health: Math.max(1, 10 * e.difficultyMultiplier),
-      maxHealth: Math.max(1, 10 * e.difficultyMultiplier),
+      health: Math.max(1, maximumHP(10 * e.difficultyMultiplier)),
+      maxHealth: Math.max(1, maximumHP(10 * e.difficultyMultiplier)),
       effects: [],
     })),
   );
 }
 /** One bounded, conservative rotation, not a search or a guarantee of success. */
-export function performance(player: CombatPlayer, questions: number) {
+export function performance(player: CombatPlayer, questions: number, historical = false) {
   const p = structuredClone(player);
+  const cost = (id: string) => historical && id === "fireball" ? 1 : COSTS[id] || 0;
   let damage = 0,
     healing = 0;
   for (let turn = 1; turn <= questions; turn++) {
@@ -115,7 +120,8 @@ export function performance(player: CombatPlayer, questions: number) {
       (id) =>
         !SUPPORT.has(id) &&
         !ULTIMATES.has(id) &&
-        (COSTS[id] || 0) <= p.mp &&
+        cost(id) <= p.mp &&
+        (historical || id !== "fireblast" || p.mp >= 1) &&
         (COMBOS[id] || 0) <= p.comboPoints &&
         !(p.cooldowns[id] > 0) &&
         !(id === "healing_potion" && p.healingPotions <= 0),
@@ -133,7 +139,10 @@ export function performance(player: CombatPlayer, questions: number) {
     if (choice) {
       if (healingTurn) healing += choice.value;
       else damage += choice.value;
-      p.mp -= COSTS[choice.id] || 0;
+      p.mp -= cost(choice.id);
+      // Fireblast spends all MP in combat; it must not repeat at full power in
+      // the reference rotation. Historical active-room budgets retain their rule.
+      if (!historical && choice.id === "fireblast") p.mp = 0;
       p.comboPoints -= COMBOS[choice.id] || 0;
       if (choice.id === "healing_potion") p.healingPotions--;
       if (choice.id === "headshot") p.comboPoints += 2;
@@ -154,7 +163,7 @@ export function performance(player: CombatPlayer, questions: number) {
 }
 /** Use the previous tier's full gear: real starters for tier 1, then tier 1 sets
  * extrapolated for unshipped tiers. Character levels remain at the encounter midpoint. */
-export function referenceParty(tier: number): CombatPlayer[] {
+export function referenceParty(tier: number, historical = false): CombatPlayer[] {
   const level = [2, 6, 9, 13][tier - 1] || 2;
   const gearTier = Math.max(0, tier - 1);
   return (["warrior", "priest", "wizard", "scout"] as CharacterClass[]).map(
@@ -207,7 +216,7 @@ export function referenceParty(tier: number): CombatPlayer[] {
         stats,
         jobLevels: levels,
         availableAbilities: availableAbilities(job, levels, []),
-        mp: job === "wizard" ? Math.floor(stats.maxMp / 2) : stats.maxMp,
+        mp: historical && job === "wizard" ? Math.floor(stats.maxMp / 2) : stats.maxMp,
         maxHealth: stats.maxHp,
         health: stats.maxHp,
         comboPoints: 0,
@@ -223,17 +232,57 @@ export function referenceParty(tier: number): CombatPlayer[] {
     },
   );
 }
-export function encounterBudget(
-  players: CombatPlayer[],
+/** Enemy HP contribution only; combat roles, damage and swarm attendance stay unchanged. */
+export function encounterHpWeight(job: CharacterClass): number {
+  if (job === "priest") return 0;
+  if (job === "blood_knight" || job === "dark_knight") return 1;
+  // Paladin belongs to both lists: its healer contribution takes precedence.
+  if (HEALER_CLASSES.includes(job)) return 0.25;
+  if (TANK_CLASSES.includes(job)) return 0.33;
+  return 1;
+}
+
+export function encounterEntry(player: CombatPlayer, questions: number) {
+  return { ...performance(player, questions), hpWeight: encounterHpWeight(player.characterClass) };
+}
+
+type EncounterEntry = NonNullable<CombatSnapshot["entryPerformance"]>[string];
+
+export function effectivePlayerCount(weights: number[]): number {
+  return weights.reduce((sum, weight) => sum + Math.round(weight * 100), 0) / 100;
+}
+
+/** Average raw output per question of the tier's idealized four-player party. */
+export function referenceOutput(tier: number, questions: number): number {
+  const q = Math.max(1, questions);
+  return referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0) / q;
+}
+
+/** The question coefficient is the full reference average output. Attendance is
+ * additive. Tier is already in the reference party; never multiply it again. */
+export function encounterHpPool(playerWeight: number, tier: number, questions: number, referenceFraction: 0.5 | 1 = 1): number {
+  const q = Math.max(1, questions);
+  // Sum whole rotation damage directly to avoid a divide/multiply round-trip
+  // turning an exact integer just below itself before the final floor.
+  const output = referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0);
+  return maximumHP(playerWeight + output * referenceFraction);
+}
+
+/** Missing weights retain the calculation for rooms started before role scaling. */
+export function encounterBudgetFromEntries(
+  entries: EncounterEntry[],
   tier: number,
   questions: number,
+  roleWeighted = entries.some(p => p.hpWeight !== undefined),
+  referenceFraction: 0.5 | 1 = 1,
 ) {
-  const q = Math.max(1, questions),
-    small = players.length <= 2;
-  const source = small ? players : referenceParty(tier),
-    factor = small ? 1 : players.length / 4;
-  const samples = source.map((p) => performance(p, q));
-  const damage = samples.reduce((n, p) => n + p.damage, 0) * factor;
+  const q = Math.max(1, questions);
+  const reference = entries.length > 2 ? referenceParty(tier, !roleWeighted).map(p => performance(p, q, !roleWeighted)) : [];
+  const damage = entries.length <= 2
+    ? entries.reduce((n, p) => n + p.damage, 0)
+    : reference.reduce((n, p) => n + p.damage, 0) * (entries.length / 4);
+  const samples = entries.length <= 2 ? entries : reference;
+  const factor = entries.length <= 2 ? 1 : entries.length / 4;
   const rawPressure =
     samples.reduce(
       (n, p) =>
@@ -243,9 +292,16 @@ export function encounterBudget(
         p.mitigation,
       0,
     ) * factor;
-  return { hp: Math.max(0.001, damage * 1.1), rawPressure, damage };
+  const hp = roleWeighted
+    ? encounterHpPool(effectivePlayerCount(entries.map(p => p.hpWeight ?? 1)), tier, q, referenceFraction)
+    : damage * 1.1;
+  return { hp: roleWeighted ? hp : Math.max(0.001, hp), rawPressure, damage };
 }
-export function allocateHP(enemies: CombatEnemy[], fullBudget: number) {
+
+export function encounterBudget(players: CombatPlayer[], tier: number, questions: number) {
+  return encounterBudgetFromEntries(players.map(p => encounterEntry(p, Math.max(1, questions))), tier, questions, true);
+}
+export function allocateHP(enemies: CombatEnemy[], fullBudget: number, historical = false) {
   const counts = Object.fromEntries(
     Object.keys(ROLE_SHARES).map((role) => [
       role,
@@ -257,6 +313,12 @@ export function allocateHP(enemies: CombatEnemy[], fullBudget: number) {
   ).length;
   return enemies.map((e) => {
     const role = e.role || "normal";
+    if (!historical) {
+      // One share per role across the WHOLE fight, irrespective of wave or
+      // population. The owner-approved 1 HP minimum is the only budget exception.
+      const health = Math.max(1, maximumHP(maximumHP(fullBudget * ROLE_SHARES[role]) / counts[role]));
+      return { ...e, health, maxHealth: health };
+    }
     const bonus =
       e.species === "goblin" && role === "trash"
         ? 1 + Math.floor(swarm / 3) * 0.01

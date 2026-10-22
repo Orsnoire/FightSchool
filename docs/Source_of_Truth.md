@@ -1,6 +1,6 @@
 # QuestAcademy — Source of Truth
 
-> **CURRENT AUTHORITY — October 18, 2026 (UTC).** Start with the [documentation index](README.md),
+> **CURRENT AUTHORITY — October 20, 2026 (UTC).** Start with the [documentation index](README.md),
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
 > [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
 > Phases 1–2 are complete with the [resume safeguard](ACTIVE_WORK.md). C01–C11
@@ -96,6 +96,38 @@ Guild progression is intended to support long-term classroom engagement across a
 
 ## Classroom balance and daily stamina
 
+The [October 19 additive, role-weighted HP decision](combat/role-weighted-hp.md)
+supersedes earlier encounter HP formulas. HP is the floor of weighted players
+plus question count times the tier-appropriate idealized four-player party's
+average raw output per question. Tier is already represented by that output.
+All waves share one allocation per role: **swarm/trash 10%, normal 15%, leader
+25%, boss 50%**. Missing-role shares and rounding remainders stay unused; the
+old goblin HP bonus is removed. Each enemy has **at least 1 HP**, explicitly
+allowed to exceed a role's budget when necessary. Maximum HP floors; current HP
+ceils and clamps. Tank/healer discounts and named exceptions are in the decision.
+Wizard starts at full `(INT + MND) * 3` MP; Fireball costs 2 MP. Monster MDF is
+`2 * (tier - 1)` (0/2/4/6), used separately from physical DEF. PR #77 is merged
+at `c9f8280` with CI/browser checks passing and deployed as `5bb24b0` (same runtime
+plus docs). [Deployment 39313909643](https://github.com/Orsnoire/FightSchool/actions/runs/39313909643)
+passed both hostname smoke checks on October 19. [Canonical live acceptance
+39315198519](https://github.com/Orsnoire/FightSchool/actions/runs/39315198519) passed
+with corrected tests at `cd5bc74`; the release is deployed and accepted.
+
+The later [PR #79 follow-up](combat/adaptive-encounter-tier.md) removes the `/2`
+coefficient, multiplies starting Swarm-enabled counts by tier, and raises the
+effective tier at average combat job levels 2/6/10 (authored tier is the minimum).
+Tier and counts lock at Start Fight. It also moves individual enemy text and the
+wave heading to the top of the battlefield. It is merged, deployed and accepted at `989c9ec`; original-fixture canonical
+acceptance passed in run 39438588938 attempt 3. Initial connection timeouts remain
+documented with an unconfirmed cause. The
+[release record](releases/2026-10-20-pr79.md) controls verification status.
+Existing active rooms retain their rules.
+
+The owner also requested future AoE coverage on October 19: every DPS by job
+level 4 and every tank by job level 8, by changing an existing ability's
+behavior. This is recorded in the [expansion backlog](EXPANSION_PLAN.md), not
+implemented in the HP balance release; per-job ability selections remain open.
+
 The [October 1 classroom balance rules](combat/classroom-balance-and-stamina.md)
 record the latest explicit changes to XP stamina, Block targeting and threat,
 potion replenishment, encounter HP, and the approved Wizard/Scout balance. They
@@ -124,11 +156,37 @@ October 8 with successful migration-gate evidence for 0012; see the same wardrob
 document for restoration and concurrency rules and the October 8 checkpoint below.
 
 
+## Campaign design direction — October 20, 2026
+
+The [campaign development roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md) records the
+owner's current campaign decisions and distinguishes them from proposed defaults
+and unresolved policies. Read it before campaign, map generation, cooperative
+exploration, boss matchmaking, or campaign-reward work.
+
+It specifies quiz/topic dungeons, unlocked-dungeon overworld question pools,
+class-controlled transportation and named-key gates, thirteen themes with tilesets
+and fight backgrounds, fixed maps at campaign generation with later procedural
+variation intended as premium, and one chest per assigned loot entry. Party
+leaders control overworld group movement. Matchmade bosses support **3–8 players**
+with at least one tank, healer, and DPS; encounter level caps are **4/8/12/15**.
+Random authored gear uses the **encounter tier**, with owned items converted to
+gold. The Tier 3 boss cap of 12 is explicit; interaction with existing guild caps
+and adaptive classroom tiers remains a scoped design decision.
+
+This is **FUTURE IMPLEMENTATION**, not a release or a change to current classroom
+behavior. The roadmap's CAM packages do not replace cleanup/release claims in
+[active work](ACTIVE_WORK.md). Its proposed chest-claim, fixed-boss-tier, and
+premium-regeneration policies must not be treated as separately approved details.
+
 ## Tier 1 gear and instance loot
 
 The [October 13 default shop correction](guild-quests-and-tiers.md#october-13-default-shop-inventory-correction)
 requires every defined progression tier's equipment in guild shops by default,
 while preserving shop unlocks and teacher custom stock. The correction in [PR #68](https://github.com/Orsnoire/FightSchool/pull/68) is merged and deployed in runtime `d18d1b5`; see current status for verified CI/deployment evidence.
+
+The [October 22 Tier 2 specification](combat/tier-two-equipment.md) adds the
+owner-approved Soldier's, Ranger's, Acolyte's and Ascetic's armor sets and revises
+common shop prices to 100 / 1,000 / 5,000 / 10,000 gold for tiers 1–4.
 
 The [October 7 Tier 1 specification](combat/tier-one-equipment.md) records the
 owner's level-2 equipment collection, revised tank VIT damage weighting and

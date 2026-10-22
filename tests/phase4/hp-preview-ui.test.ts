@@ -20,23 +20,27 @@ test("battlefield uses waiting/estimated/actual HP in visible text, tooltips and
     const { CombatBoard } = await import(pathToFileURL(outfile).href);
     const render = (state: ReturnType<typeof initialCombatState>) => JSDOM.fragment(renderToStaticMarkup(createElement(CombatBoard, { state })));
     const empty = initialCombatState("ABC234", fight);
-    const emptyEnemy = render(publicSnapshot(empty, fight)).querySelector(".battle-enemy")!;
-    assert.match(emptyEnemy.textContent!, /Waiting for players/);
+    const emptyBoard = render(publicSnapshot(empty, fight));
+    const emptyEnemy = emptyBoard.querySelector(".battle-enemy")!;
+    assert.match(emptyBoard.querySelector(".battle-enemy-list")!.textContent!, /Waiting for players/);
+    assert.equal(emptyEnemy.textContent, "");
     assert.match(emptyEnemy.getAttribute("title")!, /Waiting for players/);
     assert.match(emptyEnemy.getAttribute("aria-label")!, /Waiting for players/);
     assert.equal(emptyEnemy.querySelector('[role="meter"]'), null, "empty rooms must not expose placeholder HP in a meter");
 
     const waiting = addStudent(empty, student());
     const preview = publicSnapshot(waiting, fight);
-    const previewEnemy = render(preview).querySelector(".battle-enemy")!;
-    assert.equal(previewEnemy.querySelector(".battle-enemy-hp")!.textContent, `Estimated HP ${hpLabel(preview.enemies[0].maxHealth)}`);
+    const previewBoard = render(preview);
+    const previewEnemy = previewBoard.querySelector(".battle-enemy")!;
+    assert.equal(previewBoard.querySelector(".battle-enemy-list .battle-enemy-hp")!.textContent, `Estimated HP ${hpLabel(preview.enemies[0].maxHealth)}`);
     for (const attribute of ["title", "aria-label"]) assert.match(previewEnemy.getAttribute(attribute)!, /Estimated HP/);
     assert.match(previewEnemy.querySelector('[role="meter"]')!.getAttribute("aria-label")!, /Estimated HP/);
 
     const active = startQuestion(scaleEncounter(waiting, fight));
     active.enemies[0].health /= 2;
-    const activeEnemy = render(publicSnapshot(active, fight)).querySelector(".battle-enemy")!;
-    assert.equal(activeEnemy.querySelector(".battle-enemy-hp")!.textContent, `${hpLabel(active.enemies[0].health)} / ${hpLabel(active.enemies[0].maxHealth)}`);
+    const activeBoard = render(publicSnapshot(active, fight));
+    const activeEnemy = activeBoard.querySelector(".battle-enemy")!;
+    assert.equal(activeBoard.querySelector(".battle-enemy-list .battle-enemy-hp")!.textContent, `${hpLabel(active.enemies[0].health)}/${hpLabel(active.enemies[0].maxHealth)} HP`);
     assert.doesNotMatch(activeEnemy.outerHTML, /Estimated HP|Waiting for players/);
   } finally {
     await rm(dir, { recursive: true, force: true });

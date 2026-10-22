@@ -1,6 +1,6 @@
 # Expansion plan after cleanup
 
-**FUTURE — reconciled October 12, 2026. No further expansion implementation is started by this plan.**
+**FUTURE — updated October 20, 2026. No further expansion implementation is started by this plan.**
 
 New feature development follows the [cleanup exit gates](CLEANUP_PLAN.md#exit-gates-before-expansion-resumes).
 This is the current backlog of remaining product direction, not a claim that
@@ -15,8 +15,11 @@ is deployed; it does not start another cleanup or expansion package.
 
 | Item | Current state | Decisions / prerequisites before implementation |
 | --- | --- | --- |
+| Campaigns and cooperative exploration | October 20 owner design recorded in the [campaign development roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md); CAM packages not started | Quiz selection with guild/name filters; fixed generated maps; access gates and named keys; 13 themes; one chest per assigned loot entry; leader-controlled parties; 3–8-player boss queues with tank/healer/DPS; level caps 4/8/12/15 and encounter-tier gear with duplicate-to-gold. Resolve recorded policy questions and scope one complete pilot before implementation. |
 | Team race | Feasibility and design direction recorded; no race implementation | Persistent coordinator and assignments, one public join code with two private child rooms, shared immutable content/seed, synchronized controls and durable retries, split host view, scoring/ties, late-entry and recovery tests with 30–60 players |
 | Classroom balance refinements | Initial tier presets and enemy AI are released; classroom observation still needed | Gather evidence for tier scaling, large-party hypnosis, vampire healing, poison and enemy composition; approve individual rule changes separately from cleanup |
+| Early AoE access for DPS and tanks | Owner-requested future work, October 19; not implemented in the HP balance release | Every DPS must have an AoE available by job level 4; every tank by job level 8. Change the behavior of an existing ability. Audit job roles and unlock levels, select the ability for each uncovered job, and define target coverage, damage and resource behavior before implementation; verify every applicable job meets its threshold. |
+| Teacher create/edit fight HP estimate | Owner-requested future work, October 19; not implemented | Show a preview of estimated enemy HP per player in both the teacher create-fight and edit-fight panels, with a clear disclaimer that the values are estimates. Use the current fight-scaling rules and make any assumed player count/composition clear; final HP depends on the actual fight roster. |
 | AA upgrade purchases | Overflow XP banking exists; spending system does not | Define catalog, prices, caps, effects, progression pacing, UI and atomic spending rules; preserve earned AA balances |
 | Further static artwork | Front-facing Human gear/Tier 1 recolors are released | Define near-profile fitting and custom-item art coverage, fallbacks and owner visual review |
 | Animated avatars | Isolated rig prototype only; no approved full collection | Complete both models, segmentation, calibrated attachments, starter/signature gear, ability/weapon coverage and owner signoff under the existing animation gate |

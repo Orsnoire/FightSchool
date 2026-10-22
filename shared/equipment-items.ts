@@ -1,5 +1,6 @@
 import type { EquipmentItem } from "./schema";
 import { STARTER_EQUIPMENT } from "./equipment-catalog";
+import { TIER_TWO_EQUIPMENT } from "./tier-two-equipment";
 import { TIER_ONE_EQUIPMENT } from "./tier-one-equipment";
 
 // Equipment items database (single source of truth)
@@ -192,4 +193,4 @@ export const EQUIPMENT_ITEMS: Record<string, EquipmentItem> = {
 };
 
 // Universal ownership; each job selects a compatible starter loadout.
-Object.assign(EQUIPMENT_ITEMS, STARTER_EQUIPMENT, TIER_ONE_EQUIPMENT);
+Object.assign(EQUIPMENT_ITEMS, STARTER_EQUIPMENT, TIER_ONE_EQUIPMENT, TIER_TWO_EQUIPMENT);

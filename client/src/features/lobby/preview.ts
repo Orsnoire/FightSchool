@@ -13,7 +13,7 @@ export function createLobbyPreview(student: LobbyStudent, jobLevels: StudentJobL
   const previewPlayer: AbilityContext = {    
 equipmentEffects: equipmentEffects(student), characterClass: student.characterClass, stats: previewStats, jobLevels: previewLevels,
     health: previewStats.maxHp, maxHealth: previewStats.maxHp,
-    mp: student.characterClass === "wizard" ? Math.floor(previewStats.maxMp / 2) : previewStats.maxMp,
+    mp: previewStats.maxMp,
     healingPotions: 5, shieldPotions: 0, consecutiveCorrectAnswers: 0  
 };
   return { previewStats, previewPlayer };

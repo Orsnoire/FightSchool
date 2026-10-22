@@ -2,7 +2,9 @@
 
 C12 is in progress in PR #75. The two `questacademy-staging`/canonical hostnames
 both serve the live classroom application. Their names do not imply isolation.
-Current deployed/accepted baseline remains C11 `a580b30b6e9826fbaaca9f3e2cfc914a94e4c7ad`.
+Current deployed/accepted baseline is PR #84 `a6659482ea75b7eab8a83f96795d3001d8280ff7`;
+see [its release record](../releases/2026-10-22-pr84.md). October 19 C11 references
+below describe the earlier rehearsal checkpoint.
 
 ## Release boundary
 
@@ -28,7 +30,7 @@ Current deployed/accepted baseline remains C11 `a580b30b6e9826fbaaca9f3e2cfc914a
    fixtures within 24 hours; artifact expiry is not data cleanup.
 6. Record CI, deployment, migration gate, Worker ID, acceptance and the monitoring
    window separately in ACTIVE_WORK/CURRENT_STATUS. Documentation-only commits
-   do not change runtime. C12 has been deployed only to the isolated rehearsal Worker; production remains C11.
+   do not change runtime. C12 has been deployed only to the isolated rehearsal Worker; production remains the separately accepted PR #84 release.
 
 Deployment, migration and live acceptance share one non-cancelling production
 concurrency group. This serializes these workflows, not dashboard/API changes;

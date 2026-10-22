@@ -13,6 +13,15 @@ export const ENCOUNTER_TIERS = [
   { label: "Tier 3", level: 10, damage: 3, difficulty: 1.7, hp: 1.3 },
   { label: "Tier 4", level: 15, damage: 4, difficulty: 2.5, hp: 1.5 },
 ] as const;
+
+/** Average current-job levels after the existing combat profile caps. */
+export function encounterTierForLevels(levels: readonly number[], minimumTier = 1): number {
+  const minimum = Number.isInteger(minimumTier) ? Math.max(1, Math.min(4, minimumTier)) : 1;
+  const average = levels.length
+    ? levels.reduce((sum, level) => sum + (Number.isFinite(level) && level >= 1 ? level : 1), 0) / levels.length
+    : 1;
+  return Math.max(minimum, average >= 10 ? 4 : average >= 6 ? 3 : average >= 2 ? 2 : 1);
+}
 export const ROLE_SCALING: Record<
   EnemyRole,
   { difficulty: number; hp: number }

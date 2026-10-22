@@ -4,7 +4,7 @@ import {
   CombatSessionObject,
   publicSnapshot,
 } from "../../worker/combat/session-object.ts";
-import { applyAnswer } from "../../worker/combat/engine.ts";
+import { applyAnswer, addStudent, initialCombatState, startQuestion } from "../../worker/combat/engine.ts";
 import { started, fight, student } from "./fixtures.ts";
 function harness(initial?: unknown, observer = false) {
   const data = new Map<string, any>();
@@ -381,4 +381,50 @@ test("dashboard end reports unfinished persistence and retries saved results wit
   assert.equal(response.status,503);assert.ok(h.alarm());
   assert.equal(h.data.get("room").snapshot.currentPhase,"game_over");
   await h.object.alarm();assert.equal(writes,2);assert.equal(h.data.get("room").resultsPersisted,true);
+});
+
+test('guildmates can open and join solo rooms, recover without duplicates, and cannot gain host powers', async () => {
+  const h=harness();
+  const creator=crypto.randomUUID();
+  const peer=student().id;
+  const live:any={sessionId:'ABC234',fightId:fight.id,teacherId:fight.teacherId,soloStudentId:creator,guildId:crypto.randomUUID(),status:'waiting'};
+  let member=true;
+  const repo:any={
+    findActiveSession:async()=>({actorId:peer,actorType:'student',expiresAt:new Date(Date.now()+100000)}),
+    findStudentById:async()=>student(), findFightById:async()=>({...structuredClone(fight),enemies:fight.enemies.map(e=>({...e,quantity:1}))}),
+    findLiveCombatSession:async()=>live, isActiveGuildMember:async()=>member,
+    getCombatProfile:async()=>({levels:{warrior:2},questGuildId:live.guildId,limitTier:2}),
+    updateLiveCombatSessionStatus:async(_id:string,status:string)=>{live.status=status;},
+  };
+  h.object.setRepository(repo);
+  const join=()=>h.object.webSocketMessage(h.socket as any,JSON.stringify({type:'join',commandId:'guild-peer-join'}));
+  member=false; await join(); assert.equal(h.data.has('room'),false);
+  member=true; await join();
+  const original=h.data.get('room');
+  assert.equal(original.snapshot.currentPhase,'question');assert.equal(live.status,'active');
+  assert.equal(original.snapshot.players[peer].questGuildId,live.guildId);
+  assert.equal(original.snapshot.autoAdvanceWaves,true);
+  assert.equal(h.messages.filter(m=>m.type==='combat_state').at(-1).state.players[peer].studentId,peer);
+  await join(); assert.deepEqual(h.data.get('room'),original);
+  await h.object.webSocketMessage(h.socket as any,JSON.stringify({type:'end_fight',commandId:'guild-peer-host-denied'}));
+  assert.equal(h.messages.at(-1).type,'protocol_error');
+  assert.deepEqual(h.data.get('room'),original);
+  // Recovery and a revoked membership are checked even for an established participant.
+  const restored=harness(JSON.parse(JSON.stringify(original)));restored.object.setRepository(repo);
+  await restored.object.webSocketMessage(restored.socket as any,JSON.stringify({type:'join',commandId:'guild-peer-reconnect'}));
+  assert.deepEqual(restored.data.get('room'),JSON.parse(JSON.stringify(original)));
+  member=false;
+  await restored.object.webSocketMessage(restored.socket as any,JSON.stringify({type:'join',commandId:'guild-peer-revoked'}));
+  assert.match(restored.messages.at(-1).error,/hosting guild/);
+  assert.deepEqual(restored.data.get('room'),JSON.parse(JSON.stringify(original)));
+  // An existing active fight queues the guildmate for the next round, preserving its encounter.
+  member=true;
+  const active=startQuestion(addStudent(initialCombatState('ABC234',fight),student('warrior',creator)),Date.now(),30);
+  active.phaseDeadline=Date.now()+100000;
+  const late=harness({fight,snapshot:active,receipts:[]});late.object.setRepository(repo);
+  await late.object.webSocketMessage(late.socket as any,JSON.stringify({type:'join',commandId:'guild-peer-late-entry'}));
+  const lateRoom=late.data.get('room');
+  assert.ok(lateRoom.snapshot.pendingPlayers[peer]);
+  assert.equal(lateRoom.snapshot.players[peer],undefined);
+  assert.deepEqual(lateRoom.snapshot.enemies,active.enemies);
 });

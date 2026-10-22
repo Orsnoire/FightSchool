@@ -12,12 +12,14 @@ import { applyAbility } from "./ability-execution";
 import { abilityProblem, ULTIMATES } from "../../shared/combat/abilities.ts";
 import { questionKey } from "../progression/question-key";
 import { event, leader } from "./state-events";
-import { damagePlayer, hit, heal } from "./health";
+import { damagePlayer, hit, heal, resolvedHP } from "./health";
+import { currentHP } from "../../shared/combat/hp";
 import { baseDamage } from "./damage-values";
-import { activeEnemies, performance, encounterBudget, allocateHP, roundHP } from "../../shared/combat/encounters";
+import { activeEnemies, performance, encounterEntry, encounterBudgetFromEntries, allocateHP, roundHP } from "../../shared/combat/encounters";
 import { makePlayback } from "../../shared/combat/presentation";
 import { resolveEnemyTurn } from "./enemy-turn";
 import { abilityDamage } from "../../shared/combat/abilityValues.ts";
+import { ENCOUNTER_TIERS } from "../../shared/encounter-tiers";
 
 export function advancePhase(
   state: CombatSnapshot,
@@ -25,6 +27,11 @@ export function advancePhase(
   now = Date.now(),
 ): CombatSnapshot {
   const s = structuredClone(state);
+  // Use the saved tier for all later waves and admissions; never re-average an active fight.
+  if (s.encounterTier && s.encounterTier > (fight.encounterTier || 1)) {
+    fight = { ...fight, encounterTier: s.encounterTier,
+      baseEnemyDamage: Math.max(fight.baseEnemyDamage, ENCOUNTER_TIERS[s.encounterTier - 1]?.damage || 1) };
+  }
   s.revision++;
   s.phaseStartTime = now;
   delete s.playback;
@@ -130,7 +137,7 @@ export function advancePhase(
           const amount = baseDamage(p);
           activeEnemies(s)
             .filter((e) => e.health > 0 && e.id !== a.targetId)
-            .forEach((e) => hit(s, p, e.id, amount));
+            .forEach((e) => hit(s, p, e.id, amount, false, "magic"));
           heal(s, p, p.studentId, p.totals.damageDealt - before);
         }
       } else {
@@ -160,7 +167,8 @@ export function advancePhase(
     for (const e of activeEnemies(s))
       for (const effect of e.effects)
         if (effect.damage > 0 && s.players[effect.ownerId])
-          hit(s, s.players[effect.ownerId], e.id, effect.damage, true);
+          hit(s, s.players[effect.ownerId], e.id, effect.damage, true,
+            effect.type === "hex" ? "magic" : "physical");
     // Transfer once per blocker/target after this round's damage has generated threat.
     // Self-blocks never manufacture threat; Block + Shield Bash cannot transfer twice.
     for (const p of ordered.filter((p) => !p.isDead)) {
@@ -240,8 +248,8 @@ export function advancePhase(
         if (--b.rounds <= 0) {
           if (k.startsWith("stat:")) p.stats[k.slice(5) as "str"] -= b.amount;
           if (k === "inspire") {
-            p.maxHealth -= b.amount;
-            p.health = Math.min(p.health, p.maxHealth);
+            p.maxHealth -= b.hpAmount ?? b.amount;
+            p.health = s.encounterHpPool === undefined ? Math.min(p.health, p.maxHealth) : resolvedHP(s, Math.min(p.health, p.maxHealth), p.maxHealth);
             p.maxMp -= b.amount;
             p.mp = Math.min(p.mp, p.maxMp);
           }
@@ -257,16 +265,23 @@ export function advancePhase(
     if(s.encounterRules===2 && Object.keys(s.pendingPlayers||{}).length){
       const q=Math.max(1,fight.questions.length);
       s.entryPerformance||={};
-      for(const [id,p]of Object.entries(s.pendingPlayers||{}))s.entryPerformance[id] ||= performance(p,q);
+      const roleWeighted = Object.values(s.entryPerformance).some(p => p.hpWeight !== undefined);
+      for(const [id,p]of Object.entries(s.pendingPlayers||{}))s.entryPerformance[id] ||= roleWeighted ? encounterEntry(p,q) : performance(p,q);
       const count=Object.keys(s.entryPerformance).length;
       if(count>(s.encounterAttendance||0)){
         const entries=Object.values(s.entryPerformance);
-        const ref=encounterBudget(Array.from({length:Math.max(3,count)},()=>Object.values(s.players)[0]),fight.encounterTier||1,q);
-        const damage=count<=2?entries.reduce((n,p)=>n+p.damage,0):ref.damage;
-        const pressure=count<=2?entries.reduce((n,p)=>n+p.healing/q*.8+p.health/(q*1.1)*.55+p.mitigation,0):ref.rawPressure;
-        const nextAllocation=allocateHP(s.enemies,Math.max(.001,damage*1.1));
-        s.enemies=s.enemies.map((e,i)=>({...e,maxHealth:nextAllocation[i].maxHealth,health:e.health>0?Math.max(.001,roundHP(nextAllocation[i].maxHealth*e.health/e.maxHealth)):0}));
-        s.referenceDamage=damage;s.enemyRoundBudget=pressure;s.encounterAttendance=count;
+        const budget=encounterBudgetFromEntries(entries,s.encounterTier||fight.encounterTier||1,q,roleWeighted,s.encounterTier===undefined?0.5:1);
+        const hp=roleWeighted?Math.max(s.encounterHpPool||0,budget.hp):budget.hp;
+        if(!roleWeighted || hp!==s.encounterHpPool){
+          const nextAllocation=allocateHP(s.enemies,hp,!roleWeighted);
+          s.enemies=s.enemies.map((e,i)=>{
+            const maxHealth=nextAllocation[i].maxHealth;
+            const health=maxHealth*e.health/e.maxHealth;
+            return {...e,maxHealth,health:e.health>0?(roleWeighted?currentHP(health,maxHealth):Math.max(.001,roundHP(health))):0};
+          });
+        }
+        if(roleWeighted)s.encounterHpPool=hp;
+        s.referenceDamage=budget.damage;s.enemyRoundBudget=budget.rawPressure;s.encounterAttendance=count;
       }
     }
     for (const [id, player] of Object.entries(s.pendingPlayers || {})) s.players[id] = player;

@@ -60,6 +60,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
         return Response.json({ message: error.message, code: error.code }, { status: 400 });
       }
     };
+    const forwardedSockets: string[] = [];
     const combatObjects = new Map<string, CombatSession>();
     const objects = new Map<string, { bytes: Uint8Array; type: string }>();
     const env = {
@@ -76,6 +77,10 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
         idFromName: (name: string) => name,
         get: (name: string) => ({ fetch: async (input: Request | string, init?: RequestInit): Promise<Response> => {
           if (name.startsWith("rate:") || name === "__readiness__") return Response.json({status:"ready",allowed:true});
+          if (input instanceof Request && input.headers.get('upgrade') === 'websocket') {
+            forwardedSockets.push(input.headers.get('x-questacademy-actor-id')!);
+            return Response.json({forwarded:true});
+          }
           if (!combatObjects.has(name)) {
             const data = new Map();
             const state = {storage: {get: async (key: string) => structuredClone(data.get(key)),
@@ -350,6 +355,50 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal((await api("/api/fights/hosted-sessions", "GET", teacher.cookie)).payload.length, 1);
     await api(`/api/combat/SOLO23/end`, "POST", teacher.cookie, undefined, 403);
     await api(`${lookup}?sessionId=SOLO23`, "GET", teacher.cookie, undefined, 403);
+
+    // Student-created battles are discoverable and joinable by active guildmates.
+    const peer = await api('/api/student/login','POST',undefined,{nickname:'Guildmate',password});
+    const outsider = await api('/api/student/login','POST',undefined,{nickname:'Outsider',password});
+    await api(`/api/guilds/${guild.payload.id}/members`,'POST',peer.cookie,{studentId:peer.payload.id});
+    await api(`/api/guilds/${guild.payload.id}/fights/${fight.payload.id}/solo-mode`,'PATCH',teacher.cookie,{enabled:true});
+    const solo = await api(`/api/fights/${fight.payload.id}/solo-sessions`,'POST',student.cookie,{guildId:guild.payload.id},201);
+    const soloLookup = `/api/sessions/${solo.payload.sessionId}`;
+    await api(soloLookup,'GET',peer.cookie);
+    await api(soloLookup,'GET',outsider.cookie,undefined,403);
+    await api('/api/sessions/SOLO23','GET',peer.cookie,undefined,403); // legacy private room
+    await api('/api/sessions/SOLO23','GET',student.cookie);
+    const activePath = `/api/guilds/${guild.payload.id}/active-sessions`;
+    const active = (await api(activePath,'GET',peer.cookie)).payload;
+    const summary = active.find((r:any)=>r.sessionId === solo.payload.sessionId);
+    assert.ok(summary);
+    assert.equal(summary.hostNickname,'Test student');
+    assert.equal(summary.soloMode,true); assert.equal(summary.isHost,false);
+    assert.deepEqual(Object.keys(summary).sort(),['sessionId','fightId','title','status','soloMode','isHost','hostNickname','createdAt'].sort());
+    assert.ok(!active.some((r:any)=>r.sessionId === 'SOLO23'));
+    assert.equal((await api(activePath,'GET',student.cookie)).payload.find((r:any)=>r.sessionId===solo.payload.sessionId).isHost,true);
+    await api(activePath,'GET',outsider.cookie,undefined,403);
+    const socketEntry = async (cookie:string,expected:number) => {
+      subrequests=0;
+      const response=await worker.fetch(new Request(env.PUBLIC_ORIGIN+`/ws?sessionId=${solo.payload.sessionId}`,{
+        headers:{Origin:env.PUBLIC_ORIGIN,Cookie:cookie,Upgrade:'websocket'},
+      }),env as any);
+      assert.equal(response.status,expected);
+    };
+    await socketEntry(peer.cookie!,200);
+    assert.equal(forwardedSockets.at(-1),peer.payload.id);
+    await socketEntry(outsider.cookie!,403);
+    await socketEntry(other.cookie!,403);
+    await api(`/api/guilds/${guild.payload.id}/members/${peer.payload.id}`,'DELETE',peer.cookie);
+    await api(soloLookup,'GET',peer.cookie,undefined,403);
+    await socketEntry(peer.cookie!,403);
+    await pg.query('UPDATE guilds SET is_archived=true WHERE id=$1',[guild.payload.id]);
+    assert.deepEqual((await api(activePath,'GET',student.cookie)).payload,[]);
+    await api(soloLookup,'GET',student.cookie,undefined,403);
+    await socketEntry(student.cookie!,403);
+    await pg.query('UPDATE guilds SET is_archived=false WHERE id=$1',[guild.payload.id]);
+    await pg.query("UPDATE live_combat_sessions SET status='completed' WHERE session_id=$1",[solo.payload.sessionId]);
+    await api(soloLookup,'GET',student.cookie,undefined,404);
+    assert.ok(!(await api(activePath,'GET',student.cookie)).payload.some((r:any)=>r.sessionId===solo.payload.sessionId));
 
     await api(`/api/student/${student.payload.id}/award-xp`, "POST", student.cookie, { xp: 100000 }, 403);
     const stamina = await api(`/api/student/${student.payload.id}/stamina`, "GET", student.cookie);
