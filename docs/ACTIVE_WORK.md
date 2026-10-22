@@ -1,11 +1,13 @@
-# Vampiric Bite healing correction — active October 22, 2026
+# Vampiric Bite healing correction — verified locally October 22, 2026
 
-- Owner requested a fix for excessive Vampire healing. Chosen rule: heal one HP per actual player HP removed by Vampiric Bite, capped at the vampire's missing HP. This supersedes the October 8 proportional-max-HP formula.
-- Branch: `fix/vampiric-bite-drain`; draft PR registration follows this claim.
-- Baseline: current main `e071bac5a69f100d6367147cd906173f48317981`. Open campaign PR #81 and C12 PR #75 were inspected; neither implements this correction. Their branches, deployments and unfinished gates remain separate.
-- Scope: shared move description, enemy-turn healing, deterministic regression coverage and the enemy AI specification. Preserve mitigation, aggregate damage caps, five-round minimum cooldown, other moves and existing student data.
-- State: claim only; no gameplay changes or new verification yet. No merge or deployment performed.
-- Next: publish the draft PR and main discovery pointer, implement the correction, verify actual damage/overkill/shields/HP caps and run repository checks.
+- Owner requested a fix for excessive Vampire healing. Implemented rule: heal one HP per actual player HP removed by Vampiric Bite, capped at the vampire's missing HP. This supersedes the October 8 proportional-max-HP formula.
+- Branch: `fix/vampiric-bite-drain`; [PR #84](https://github.com/Orsnoire/FightSchool/pull/84). Main retains the discovery pointer; the live PR records the exact published head and CI results.
+- Baseline: main `e071bac5a69f100d6367147cd906173f48317981`, plus documentation-only registration `a60827a`. Open campaign PR #81 and C12 PR #75 were inspected; neither implements this correction. Their branches, deployments and unfinished gates remain separate.
+- Completed: enemy-turn calculation, shared move description, deterministic regression coverage and enemy AI specification. Mitigation, aggregate damage caps, five-round minimum cooldown and other moves are preserved. No migration or student-data changes.
+- Reproduction: the two new/updated bite checks fail against the original runtime. A 12-HP bite from a 10,000-max-HP vampire against a 100-max-HP player previously healed 1,200 HP; it now heals 12.
+- Verification: 29 focused AI/HP tests pass, including 21 current/legacy-room scenarios covering armor/VIT, partial/full shields, guard, immunity, overkill, solo/concentration caps, missing/full vampire HP, event amounts and JSON recovery. Full suite: **335 tests pass** (5 phase 2, 7 phase 3, 307 phase 4, 16 rich-content); TypeScript and client/Worker builds pass locally on Node 24.19.0. Diff whitespace checks pass.
+- State: implemented and locally verified; remote exact-head CI/browser checks pending at publication. No gameplay merge or deployment performed.
+- Next: inspect exact-head CI/browser results, review PR #84, then release through the established deployment workflow. Live behavior is unchanged until deployment. Existing saved rooms need no format migration; future bite resolutions use the correction once the runtime is deployed.
 
 # Math display repair — released October 21, 2026
 
