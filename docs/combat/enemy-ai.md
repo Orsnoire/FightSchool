@@ -111,8 +111,12 @@ reapplication by swarms. New hypnosis cannot replace an existing source's effect
   poison hooks in saved rooms continue to work.
 - Webbing rolls 75% once per distinct selected target: threat leader, total-damage
   leader and highest-threat healer. Overlapping roles never produce extra rolls.
-- Vampiric Bite heals `actual HP removed / player max HP * vampire max HP`,
-  rounded down and capped by missing HP. Its minimum cooldown is five rounds.
+- Vampiric Bite heals **one HP per actual player HP removed**, rounded down and
+  capped by missing vampire HP. Armor, VIT, guards, shields, immunity, aggregate
+  damage caps and the target's remaining HP all apply before healing is calculated.
+  Prevented damage and overkill grant no healing. Its minimum cooldown remains
+  five full rounds. This October 22 owner correction supersedes the earlier
+  proportional-max-HP formula; vampire maximum HP no longer amplifies the heal.
 - Corrosion removes 10% of base DEF per stack for five rounds, each independently
   expiring, capped at 100% reduction. Incoming damage rounds up after defense;
   saved equipment/stat values never change.
@@ -152,7 +156,7 @@ The new deterministic tests cover the move families, source/channel behavior,
 nonconsecutive recovery, stacking, solo caps, secrecy and persistence. API and
 React DOM tests cover authoring validation, save/reload and visible recovery.
 Classroom balance still needs observation: especially large-party hypnosis,
-percentage vampire healing, poison duration and enemy compositions.
+damage-based vampire healing, poison duration and enemy compositions.
 
 ## October 13 correction — implementation in PR #66, not yet deployed
 

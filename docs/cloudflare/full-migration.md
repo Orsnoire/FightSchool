@@ -27,7 +27,7 @@ Numeric policy: health, MP, damage, healing, rewards and XP are whole numbers. F
 
 ## Durable room and economy guarantees
 
-- Signed session identity is verified before WebSocket upgrade; the browser cannot choose the acting student. Room ownership and private solo-room ownership are checked.
+- Signed session identity is verified before WebSocket upgrade; the browser cannot choose the acting student. Room ownership is checked; student-created guild battles require active hosting-guild membership (October 22 owner update), while legacy solo rooms without a guild remain creator-only.
 - Commands carry IDs, round numbers and question IDs. The object serializes all command/alarm mutations. Accepted-command receipts and updated state are stored together, with bounded receipts. Invalid commands do not consume their IDs.
 - Reconnect restores state, deadline, current question and persisted results. The browser uses server time and does not restart phase clocks. A version-1 room is upgraded in place, retaining answers and remaining HP.
 - Alarms compare saved deadlines and resume transitions after hibernation. Unsaved final results remain pending and retry through alarms; successful completion is announced after persistence.

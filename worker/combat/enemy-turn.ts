@@ -130,7 +130,8 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
       case "hypnotic_stare": status("stare", 1); break;
       case "vampiric_bite": {
         const actual = strike();
-        if (target) healEnemy(actual / target.maxHealth * enemy.maxHealth);
+        // Lifesteal uses HP actually removed after mitigation, caps and overkill.
+        if (target) healEnemy(actual);
         break;
       }
       case "wolf_charge": if (strike() > 0) status("stun", 0.3, 1); break;

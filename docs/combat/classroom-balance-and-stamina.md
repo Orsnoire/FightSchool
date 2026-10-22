@@ -206,12 +206,23 @@ enemy HP remains one; an all-healer party still needs an offensive loadout.
 
 Before creating a solo room, the Fight Library warns when the loaded job and
 validated cross-class unlocks contain no offensive ability. Students can change
-equipment, join a teacher-hosted group, or explicitly continue solo anyway.
-Solo rooms remain private. Group entry reuses the existing student lobby's real
-six-character session-code flow and the October 7 join/rejoin behavior: students
-can join waiting or active teacher-hosted rooms, enter at a question boundary,
-and receive participation-based rewards. Intentionally removed students still
-need host approval. No second room type or duplicate join implementation is added.
+equipment, join a current guild battle, or explicitly continue solo anyway.
+
+**October 22 owner update:** student-created solo battles with a hosting guild
+admit active members of that guild. The guild lobby and Fight Library expose a
+polling **Current battles** list, with Join/Rejoin buttons, waiting/in-progress
+status, creator nickname, explicit refresh/retry and a useful empty state.
+Lookup and WebSocket entry verify active membership; archived guilds and removed
+members cannot join or reconnect. Legacy solo rooms without a guild remain
+creator-only. Teacher ownership and moderation rights are unchanged.
+
+The first authorized student to enter a waiting solo room starts it, including
+when its creator has not connected yet. Later entrants use the existing
+next-question admission, frozen entry profile and participation-based rewards.
+Reconnects do not add a second participant or restart the encounter. Finished
+rooms leave the discovery list; stale joins fail without changing the stored
+session. Existing session-code entry remains available. Discovery summaries do
+not contain questions, answers or combat player state.
 
 ## October 7 classroom corrections
 

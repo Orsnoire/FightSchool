@@ -1,3 +1,4 @@
+import { GuildSessionList } from "@/features/lobby/GuildSessionList";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -141,6 +142,7 @@ export default function StudentGuildDetail() {
           </TabsList>
 
           <TabsContent value="fights" className="space-y-4">
+            <GuildSessionList guildId={guildId!} />
             <Card>
               <CardHeader>
                 <CardTitle>Guild Fights</CardTitle>
