@@ -119,18 +119,18 @@ export default function StudentGuildLobby() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-orange-950 dark:via-amber-950 dark:to-orange-900 flex flex-col">
       <header className="sticky top-0 z-50 border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
             <Link href="/student/lobby">
               <Button variant="ghost" size="icon" data-testid="button-back">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <div>
-              <h1 className="text-2xl font-serif font-bold text-primary" data-testid="text-guild-name">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-serif font-bold text-primary break-words" data-testid="text-guild-name">
                 {guild.name}
               </h1>
-              <Badge variant="outline" className="flex items-center gap-1 w-fit mt-1">
+              <Badge variant="outline" className="flex items-center gap-1 w-fit max-w-full whitespace-normal mt-1">
                 <Trophy className="h-3 w-3" />
                 Guild level {guild.level} · Limit tier {guild.limitTier} (Lv {limitLevel(guild.limitTier)})
               </Badge>
@@ -140,6 +140,7 @@ export default function StudentGuildLobby() {
           <Button 
             variant="outline" 
             onClick={() => setShowClassModal(true)} 
+            className="w-full shrink-0 sm:w-auto"
             data-testid="button-change-job"
           >
             Change Job

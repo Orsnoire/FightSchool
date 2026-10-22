@@ -39,8 +39,10 @@ try {
     assert.equal(await page.getByTestId('button-join-ABC234').textContent(),'Join battle');
     assert.equal(await page.getByTestId('button-join-DEF234').textContent(),'Rejoin battle');
     assert.ok((await page.getByTestId('current-battles').boundingBox()).y < viewport.height);
-    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await page.screenshot({path:`artifacts/combat-ui/${viewport.width}-${path.includes('guild-lobby')?'guild-lobby':'fight-library'}-sessions.png`});
+    const overflow=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,
+      elements:[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).slice(0,8).map(e=>({tag:e.tagName,cls:e.className,text:e.textContent?.slice(0,60)}))}));
+    assert.ok(overflow.scroll<=viewport.width,JSON.stringify({path,viewport,overflow}));
   }
   await page.getByTestId('button-join-ABC234').click();
   await page.waitForURL('**/student/combat');
