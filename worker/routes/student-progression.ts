@@ -7,6 +7,7 @@ import { GameError as ApiError } from "../services/errors";
 import { handleStudentEquipment } from "./equipment";
 import type { GameRouteContext } from "./game-context";
 import { handleStudentRewards } from "./rewards";
+import { handleAdvancement } from './advancement';
 export async function handleStudentProgression(context: GameRouteContext): Promise<Response | null> {
   const { request, url, db, ownStudent } = context;
   const path = url.pathname;
@@ -20,6 +21,8 @@ export async function handleStudentProgression(context: GameRouteContext): Promi
       .where(eq(s.students.id, id));
     if (!student)
       throw new ApiError("Student not found", 404);
+    const advancement = await handleAdvancement(context, student, tail);
+    if (advancement) return advancement;
     if (tail === "guilds")
       return json((await db
         .select({ guild: s.guilds })

@@ -72,7 +72,9 @@ export async function dataCostFixture(
       code: "C06TWO",
     },
   ]);
-  await db.insert(schema.students).values(students);
+  // Historical migration fixtures must not use today's expanded Drizzle INSERT columns.
+  for (const student of students) await pg.query(`INSERT INTO students(id,nickname,nickname_normalized,password_hash,character_class,gender,guild_id)
+    VALUES($1,$2,$3,$4,$5,$6,$7)`, [student.id, student.nickname, student.nicknameNormalized, student.passwordHash, student.characterClass, student.gender, student.guildId]);
   await db.insert(schema.guildMemberships).values(
     students.flatMap((s) => [
       { guildId, studentId: s.id },

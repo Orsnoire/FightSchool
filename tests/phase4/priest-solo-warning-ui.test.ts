@@ -32,7 +32,7 @@ test("Fight Library loads the real loadout, warns pure healers before creating a
   }}}});
   const root = createRoot(document.getElementById("root")!);
   localStorage.setItem("studentId", student().id);
-  cache.setQueryData([`/api/guilds/${guildId}`], {id: guildId, name: "Test guild"});
+  cache.setQueryData([`/api/guilds/${guildId}`], {id: guildId, name: "Test guild", limitTier: 2});
   cache.setQueryData([`/api/guilds/${guildId}/active-sessions`], []);
   dom.window.HTMLElement.prototype.scrollIntoView = () => {};
   cache.setQueryData([`/api/guilds/${guildId}/fights`], [{...fight, soloModeEnabled: true}]);

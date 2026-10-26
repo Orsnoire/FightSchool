@@ -97,6 +97,7 @@ test('all migrations match the declared catalog and explicitly owned SQL routine
       WHERE n.nspname='public' ORDER BY signature`)).rows;
     assert.deepEqual(routines.map(row => row.signature), [
       'award_combat_results_with_stamina(jsonb)', 'award_quest_batch(uuid,jsonb)',
+      'purchase_aa(uuid,uuid,text,integer,integer,integer,integer,jsonb)', 'sync_cross_class_abilities()', 'sync_initial_avatar_gender()',
     ], 'SQL-owned routines must have explicit ownership; update docs with intentional changes');
   } finally {
     await migrated.close();

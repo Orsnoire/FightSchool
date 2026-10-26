@@ -457,7 +457,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "soul_echo",
           name: "Soul Echo",
-          description: "Cross-class unlock. (passive) Adds (Hex tick damage × Hex duration) / 2 to the initial Hex hit, before MDF.",
+          description: "Passive: adds (Hex tick damage × Hex duration) / 2 to the initial Hex hit, before MDF. Other classes must equip both Hex and Soul Echo. It is not an action.",
           isCrossClass: true,
         }]
       },
@@ -753,7 +753,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "fortify",
           name: "Fortify",
-          description: "Stance (toggle during question phase). Uses tank threat calculation while active. Grants 2*VIT HP while active. Generates 1 combo point per round when taking damage.",
+          description: "Support action. Doubles VIT for this fight. Repeated uses do not stack.",
           isCrossClass: false,
         }]
       },
@@ -774,7 +774,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "fortify_crossclass",
           name: "Fortify",
-          description: "Cross-class unlock. Stance (toggle during question phase). Uses tank threat calculation while active. Grants 2*VIT HP while active.",
+          description: "Cross-class unlock. Support action. Doubles VIT for this fight. Repeated uses do not stack.",
           isCrossClass: true,
         }]
       },

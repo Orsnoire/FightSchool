@@ -13,9 +13,12 @@ preserved. Migrations through 0017 are now shipped and immutable.
 
 | Structure | Source and maintenance rule |
 | --- | --- |
-| All 27 relational tables, 246 columns, defaults, checks, keys and indexes | `worker/db/schema.ts`; includes `quest_fight_evidence` and `personal_quest_receipts`. Match the shipped constraint names and delete actions. |
+| All relational tables, columns, defaults, checks, keys and indexes | `worker/db/schema.ts`; includes `quest_fight_evidence` and `personal_quest_receipts`. Match the shipped constraint names and delete actions. |
 | `award_combat_results_with_stamina(jsonb)` | Handwritten PL/pgSQL; introduced in 0008, replaced in 0010 and 0014. Latest definition is in 0014. |
 | `award_quest_batch(uuid,jsonb)` | Handwritten PL/pgSQL in 0014. Owns atomic quest rewards and receipt checks. |
+| `purchase_aa(uuid,uuid,text,integer,integer,integer,integer,jsonb)` | Handwritten in 0018. Shared catalog supplies trusted price; one student lock owns debit, ranks/appearance and idempotent receipt. Shares the reward lock. |
+| `sync_cross_class_abilities()` | 0018 trigger keeps ordered selections and legacy two-slot writers coherent without erasing extra selections. |
+| `sync_initial_avatar_gender()` | 0018 insert trigger synchronizes the initial body model and legacy gender atomically; retries do not reset paid appearance changes. |
 | Avatar catalog seeds and recolor metadata | Handwritten data SQL in 0006/0007. These are product assets, not disposable test fixtures. |
 | Historical data backfills/default transitions | Handwritten SQL: 0008 base XP backfill; 0010 fractional base XP conversion; 0014 legacy guild ceiling and personal receipt backfill. Preserve their order. |
 | Applied migration order and SQL | `migrations/cloudflare/meta/_journal.json` and sibling SQL files. Append future migrations; never edit deployed entries or SQL. |

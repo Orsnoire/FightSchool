@@ -10,12 +10,15 @@ import { useAvatarAppearance } from '@/hooks/useAvatarAppearance';
 import { initialAppearance, JOB_PRESENTATION, STARTER_JOBS, type StarterJob } from '@shared/avatar/appearance';
 import { CLASS_STATS } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
+import { useStudentLoadout } from '@/hooks/useStudentLoadout';
 
 export default function CharacterSelect() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const studentId = localStorage.getItem('studentId');
   const saved = useAvatarAppearance(studentId);
+  const { student } = useStudentLoadout(studentId);
+  useEffect(() => { if (student?.characterClass && student.gender) navigate('/student/lobby'); }, [student, navigate]);
   const [job, setJob] = useState<StarterJob>('warrior');
   const [appearance, setAppearance] = useState(() => initialAppearance());
   const [saving, setSaving] = useState(false);
@@ -26,7 +29,7 @@ export default function CharacterSelect() {
     if (!studentId || saved.isLoading || saved.isError || saving) return;
     setSaving(true);
     try {
-      const persisted = await saved.save(appearance);
+      const persisted = saved.data || await saved.save(appearance);
       await saveStudentLoadout(client, studentId!, 'character', {characterClass:job,gender:persisted.modelId === 'human-female-v1' ? 'B' : 'A'});
       navigate('/student/lobby');
     } catch {
@@ -45,7 +48,7 @@ export default function CharacterSelect() {
           <label className="block text-sm">Job<select aria-label="Job" value={job} onChange={e => setJob(e.target.value as StarterJob)} className="block w-full rounded border bg-background p-2 mt-1">
             {STARTER_JOBS.map(j => <option key={j} value={j}>{JOB_PRESENTATION[j].name}</option>)}
           </select></label>
-          <AvatarAppearanceEditor value={appearance} onChange={setAppearance} modelLocked={!!saved.data} />
+          {saved.data ? <p className="text-sm text-muted-foreground">Your initial appearance is saved. Choose a starting job to finish; later appearance changes are available in Advancement.</p> : <AvatarAppearanceEditor value={appearance} onChange={setAppearance} />}
           <div className="text-sm space-y-2"><p>{JOB_PRESENTATION[job].clothing}</p><p>{JOB_PRESENTATION[job].head}</p>
             <p>Right hand: {JOB_PRESENTATION[job].right} · Left hand: {JOB_PRESENTATION[job].left}</p>
           </div>

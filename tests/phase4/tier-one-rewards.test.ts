@@ -16,9 +16,10 @@ test('fallback equipment is persisted per result, claimable exactly once, and ne
   for(const {tag} of journal.entries)await pg.exec(readFileSync(new URL(`../../migrations/cloudflare/${tag}.sql`,import.meta.url),'utf8'));
   await db.insert(s.teachers).values({id:fight.teacherId,firstName:'Test',lastName:'Teacher',email:'tier@example.invalid',emailNormalized:'tier@example.invalid',passwordHash:'unused',guildCode:'TIER01',billingAddress:'Test',schoolDistrict:'Test',school:'Test',subject:'Test',gradeLevel:'5'});
   await db.insert(s.fights).values(fight);
-  const [record]=await db.insert(s.students).values({...student('priest'),weapon:'t1_healer_ankh',offhand:'t1_healer_potion'}).returning();
+  const [record]=await db.insert(s.students).values({...student('priest'),weapon:'t1_healer_ankh',offhand:null}).returning();
+  await db.insert(s.studentJobLevels).values({studentId:record.id,jobClass:"priest",level:2,experience:0});
   const profile=await combatProfile(db as any,record);
-  assert.deepEqual(profile.equipmentEffects,{healingBonus:1,potionAttackBonus:1});
+  assert.deepEqual(profile.equipmentEffects,{healingBonus:1,potionAttackBonus:0});
   for(const victory of [true,false]){
    const sessionId= victory?'WIN001':'LOSE01';
    await db.insert(s.liveCombatSessions).values({sessionId,fightId:fight.id,teacherId:fight.teacherId});

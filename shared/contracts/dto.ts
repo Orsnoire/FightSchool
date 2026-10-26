@@ -19,6 +19,11 @@ export type Student = {
   guildCode: string | null;
   grantedJobs: CharacterClass[];
   aaExperience: number;
+  aaPointsSpent?: number;
+  aaRanks?: import('../aa').AARanks;
+  aaRevision?: number;
+  characterName?: string | null;
+  crossClassAbilities?: (string | null)[] | null;
   staminaDay: string | null;
   dailyCombats: number;
   xpRemainder: number;

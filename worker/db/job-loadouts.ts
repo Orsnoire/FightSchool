@@ -24,10 +24,10 @@ export async function switchStudentJob(db: Pick<GameDatabase, 'select' | 'update
     const custom = customIds.length ? await db.select().from(s.equipmentItems).where(inArray(s.equipmentItems.id, customIds)) : [];
     loadout = restoreLoadout(job, saved, [...previous.inventory,
       ...EQUIPMENT_SLOTS.map(slot => previous[slot]).filter((value): value is string => !!value)],
-      levels, Object.fromEntries(custom.map(item => [item.id, item])));
+      levels, Object.fromEntries(custom.map(item => [item.id, item])), previous.aaRanks);
   }
   const [updated] = await db.update(s.students).set({
-    ...loadout, characterClass: job, gender, jobLoadouts: remembered,
+    ...loadout, characterClass: job, gender: previous.characterClass ? previous.gender : gender, jobLoadouts: remembered,
     loadoutRevision: sql`${s.students.loadoutRevision} + 1`,
     inventory: sql`(SELECT COALESCE(jsonb_agg(DISTINCT value), '[]'::jsonb) FROM jsonb_array_elements(${s.students.inventory} || ${JSON.stringify(EQUIPMENT_SLOTS.map(slot => previous[slot]).filter(Boolean))}::jsonb))`,
   }).where(and(eq(s.students.id, id), eq(s.students.loadoutRevision, previous.loadoutRevision))).returning();

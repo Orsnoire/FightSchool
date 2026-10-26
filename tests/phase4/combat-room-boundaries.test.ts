@@ -1,3 +1,4 @@
+import { resolveAAEffects } from '../../shared/aa';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { build } from 'esbuild';
@@ -114,10 +115,11 @@ test('legacy room adapter preserves answers, resources and clocks; completed leg
     Object.assign(snapshot.players[student().id], { health: 3, mp: 2, hasAnswered: true, currentAnswer: '4', lastAnswerCorrect: true, threat: 8 });
     const room = { fight, snapshot, receipts: [] } as StoredRoom;
     const order: string[] = [];
-    const result = await recoverRoom(room, { repository: { findStudentById: async () => student('wizard') } as any,
+    const result = await recoverRoom(room, { repository: { findStudentById: async () => student('wizard'), getCombatProfile:async()=>({levels:{wizard:1},advancement:resolveAAEffects({'stat:int':10,health:3,'cross-class-slots':3},4),crossClass:['a','b','c','d','e']}) } as any,
       save: async () => { order.push('save'); }, syncAlarm: async () => { order.push('alarm'); } });
     const p = result.snapshot.players[student().id];
     assert.equal(result.snapshot.schemaVersion, 2);
+    assert.equal(p.advancement,undefined,'legacy migration must not grant new AA mid-encounter');
     assert.deepEqual([p.health, p.mp, p.currentAnswer, p.lastAnswerCorrect, p.threat], [3, 2, '4', true, 8]);
     assert.equal(result.snapshot.questionStartTime, snapshot.questionStartTime);
     assert.equal(result.snapshot.phaseStartTime, snapshot.phaseStartTime);

@@ -3,221 +3,87 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { ABILITY_DISPLAYS } from "@shared/abilityUI";
 import { getCrossClassAbilities, type Ability } from "@shared/jobSystem";
-import { ALL_CHARACTER_CLASSES, type CharacterClass, type StudentJobLevel } from "@shared/schema";
-import { Filter, Lock, Sparkles } from "lucide-react";
+import { aaRankTier, resolveAAEffects } from '@shared/aa';
+import { crossClassSelections } from '@shared/job-loadouts';
+import { effectiveLevels } from '@shared/quests';
+import type { CharacterClass, StudentJobLevel } from "@shared/schema";
+import { Sparkles } from "lucide-react";
 import { useState } from "react";
-
+import { Link } from 'wouter';
 import { AbilityIcon, AbilitySlot, DraggableAbility } from "./AbilityDragItems";
 import type { LobbyStudent } from "./types";
 
-export function CrossClassPanel({ student, jobLevels, updateCrossClassAbility }: {
-  student: LobbyStudent; jobLevels: StudentJobLevel[];
-  updateCrossClassAbility: (slot: 1 | 2, abilityId: string | null) => Promise<void>;
+export function CrossClassPanel({ student, jobLevels, updateCrossClassAbility, tier: initialTier = 4 }: {
+  student: LobbyStudent; jobLevels: StudentJobLevel[]; tier?: number;
+  updateCrossClassAbility: (slot: number, abilityId: string | null) => Promise<void>;
 }) {
+  const [tier, setTier] = useState(initialTier);
   const [draggedAbility, setDraggedAbility] = useState<Ability | null>(null);
-  const [abilityFilter, setAbilityFilter] = useState<"all" | "healing" | "spell" | "physical" | "ultimate">("all");
-  // Drag-and-drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    })
-  );
-
-  // Drag-and-drop handlers
-  const handleDragStart = (event: DragStartEvent) => {
-    const ability = event.active.data.current?.ability as Ability;
-    setDraggedAbility(ability);
+  const [abilityFilter, setAbilityFilter] = useState('all');
+  const [saving, setSaving] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }));
+  const levels = Object.fromEntries(jobLevels.map(row => [row.jobClass, row.level])) as Record<CharacterClass, number>;
+  const available = getCrossClassAbilities(student.characterClass, levels);
+  const active = getCrossClassAbilities(student.characterClass, effectiveLevels(levels, tier) as Record<CharacterClass, number>);
+  const ownedCapacity = 2 + resolveAAEffects(student.aaRanks, 4).extraSlots;
+  const activeCapacity = 2 + resolveAAEffects(student.aaRanks, tier).extraSlots;
+  const selected = crossClassSelections(student);
+  const filtered = abilityFilter === 'all' ? available : available.filter(ability => ABILITY_DISPLAYS[ability.id]?.abilityClass?.includes(abilityFilter as any));
+  const save = async (slot: number, id: string | null) => {
+    if (saving || slot > ownedCapacity || slot > activeCapacity) return;
+    setSaving(true);
+    try { await updateCrossClassAbility(slot, id); } finally { setSaving(false); }
   };
-
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
     setDraggedAbility(null);
-
-    if (!over) return;
-
-    const ability = active.data.current?.ability as Ability;
-    const slotId = over.id as string;
-
-    if (slotId === "slot-1") {
-      updateCrossClassAbility(1, ability.id);
-    } else if (slotId === "slot-2") {
-      updateCrossClassAbility(2, ability.id);
-    }
+    const slot = Number(String(event.over?.id || '').replace('slot-', ''));
+    const ability = event.active.data.current?.ability as Ability | undefined;
+    if (Number.isInteger(slot) && slot >= 1 && slot <= 5 && ability && active.some(a => a.id === ability.id)) void save(slot, ability.id);
   };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Cross-Class Abilities
-        </CardTitle>
-        <p className="text-xs text-muted-foreground mt-2">
-          Equip up to 2 abilities from other classes you've leveled up
-        </p>
-      </CardHeader>
-      <CardContent>
-        {(() => {
-          // Create job level map
-          const jobLevelMap: Record<CharacterClass, number> = Object.fromEntries(ALL_CHARACTER_CLASSES.map(job => [job, 0])) as Record<CharacterClass, number>;
-          jobLevels.forEach(jl => {
-            jobLevelMap[jl.jobClass] = jl.level;
-          });
-
-          const availableAbilities = student?.characterClass
-            ? getCrossClassAbilities(student.characterClass, jobLevelMap)
-            : [];
-
-          if (availableAbilities.length === 0) {
-            return (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No cross-class abilities unlocked yet</p>
-                <p className="text-xs mt-2">Level other jobs to unlock abilities!</p>
-              </div>
-            );
-          }
-
-          const equippedAbility1 = availableAbilities.find(a => a.id === student?.crossClassAbility1);
-          const equippedAbility2 = availableAbilities.find(a => a.id === student?.crossClassAbility2);
-
-          // Slot 2 is locked until level 30
-          const currentLevel = jobLevels.find(jl => jl.jobClass === student?.characterClass)?.level || 0;
-          const slot2Locked = currentLevel < 30;
-
-          // Filter abilities based on selected filter
-          const filteredAbilities = abilityFilter === "all"
-            ? availableAbilities
-            : availableAbilities.filter(ability => {
-              const display = ABILITY_DISPLAYS[ability.id];
-              if (!display || !display.abilityClass) return false;
-              // Check if the ability has the selected filter in its abilityClass array
-              return display.abilityClass.includes(abilityFilter);
-            });
-
-          return (
-            <DndContext
-              sensors={sensors}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <div className="space-y-4">
-                {/* Equipment Slots */}
-                <div className="flex gap-3">
-                  <AbilitySlot
-                    slotNumber={1}
-                    equippedAbility={equippedAbility1}
-                    isLocked={false}
-                    onRemove={() => updateCrossClassAbility(1, null)}
-                  />
-                  <AbilitySlot
-                    slotNumber={2}
-                    equippedAbility={equippedAbility2}
-                    isLocked={slot2Locked}
-                    onRemove={() => updateCrossClassAbility(2, null)}
-                  />
-                </div>
-
-                {/* Filter */}
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant={abilityFilter === "all" ? "default" : "outline"}
-                      onClick={() => setAbilityFilter("all")}
-                      data-testid="filter-all"
-                    >
-                      All
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={abilityFilter === "healing" ? "default" : "outline"}
-                      onClick={() => setAbilityFilter("healing")}
-                      data-testid="filter-healing"
-                    >
-                      Healing
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={abilityFilter === "spell" ? "default" : "outline"}
-                      onClick={() => setAbilityFilter("spell")}
-                      data-testid="filter-spell"
-                    >
-                      Spell
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={abilityFilter === "physical" ? "default" : "outline"}
-                      onClick={() => setAbilityFilter("physical")}
-                      data-testid="filter-physical"
-                    >
-                      Physical
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={abilityFilter === "ultimate" ? "default" : "outline"}
-                      onClick={() => setAbilityFilter("ultimate")}
-                      data-testid="filter-ultimate"
-                    >
-                      Ultimate
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Ability Grid */}
-                <div className="border-2 border-border rounded-md p-4 bg-muted/20 min-h-[200px]">
-                  {filteredAbilities.length === 0 ? (
-                    <div className="flex items-center justify-center h-[150px] text-muted-foreground">
-                      <p className="text-sm">No abilities in this category</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
-                      {filteredAbilities.map((ability) => (
-                        <DraggableAbility key={ability.id} ability={ability} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Instructions */}
-                <div className="text-xs text-muted-foreground space-y-1 p-3 bg-muted/20 rounded-md">
-                  <p className="flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    <strong>Drag & Drop:</strong> Drag ability icons to equipment slots
-                  </p>
-                  <p className="flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    <strong>Hover:</strong> See ability name on hover
-                  </p>
-                  <p className="flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    <strong>Right-click/Long-press:</strong> View full ability description
-                  </p>
-                  {slot2Locked && (
-                    <p className="flex items-center gap-1 text-primary">
-                      <Lock className="h-3 w-3" />
-                      <strong>Slot 2 unlocks at level 30</strong>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Drag Overlay */}
-              <DragOverlay>
-                {draggedAbility && <AbilityIcon ability={draggedAbility} isDragging={true} />}
-              </DragOverlay>
-            </DndContext>
-          );
-        })()}
-      </CardContent>
-    </Card>
-  );
+  return <Card data-testid="card-cross-class-abilities">
+    <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />Cross-Class Abilities</CardTitle>
+      <p className="text-sm text-muted-foreground">{ownedCapacity} owned slots · {activeCapacity} active at Tier {tier}. Two base slots plus up to three AA slots.</p>
+      <label className="block text-sm">Ability power preview
+        <select aria-label="Ability power preview" value={tier} onChange={e => setTier(Number(e.target.value))} className="ml-2 rounded border bg-background p-2">
+          <option value={4}>Full loadout · Tier 4</option>{[1,2,3].map(value=><option key={value} value={value}>Preview Tier {value}</option>)}
+        </select>
+      </label>
+      <p className="text-xs text-muted-foreground">Abilities still require their other class's level. Lower-tier fights preserve your saved assignments.</p>
+      <Link href="/student/advancement" className="text-sm underline">Unlock more slots with AA</Link>
+    </CardHeader>
+    <CardContent>
+      <DndContext sensors={sensors} onDragStart={(event: DragStartEvent) => setDraggedAbility(event.active.data.current?.ability || null)} onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {Array.from({ length: 5 }, (_, index) => {
+            const slot = index + 1, unlocked = slot <= ownedCapacity, enabled = slot <= activeCapacity;
+            const equipped = available.find(a => a.id === selected[index]);
+            const eligible = !!equipped && active.some(a => a.id === equipped.id);
+            return <div key={slot} className="min-w-0 space-y-2">
+              <p className="text-sm font-medium">Ability Slot {slot}{slot > 2 ? ` · AA rank ${slot - 2} · Tier ${aaRankTier(slot - 2)}` : ' · Base'}</p>
+              <AbilitySlot slotNumber={slot} equippedAbility={equipped} isLocked={!unlocked || !enabled} onRemove={() => { void save(slot, null); }} />
+              {!unlocked ? <p className="text-xs text-muted-foreground">Purchase Cross-class slots rank {slot - 2}.</p>
+                : !enabled ? <p className="text-xs text-muted-foreground">Inactive at Tier {tier}{equipped ? ` · Saved: ${equipped.name}` : ''}</p>
+                : <label className="block text-xs">Choose slot {slot} ability
+                  <select aria-label={`Ability Slot ${slot}`} data-testid={`select-ability-${slot}`} className="mt-1 w-full rounded border bg-background p-2 text-sm"
+                    disabled={saving} value={selected[index] || ''} onChange={event => { void save(slot, event.target.value || null); }}>
+                    <option value="">None</option>
+                    {available.filter(a => a.id === selected[index] || !selected.includes(a.id)).map(a => <option key={a.id} value={a.id} disabled={!active.some(x => x.id === a.id)}>{a.name}{!active.some(x => x.id === a.id) ? ' · Tier restricted' : ''}</option>)}
+                  </select>
+                </label>}
+              {equipped && enabled && !eligible && <p className="text-xs text-muted-foreground">Saved ability is inactive at this tier.</p>}
+            </div>;
+          })}
+        </div>
+        {!available.length && <p className="py-4 text-sm text-muted-foreground">No cross-class abilities unlocked yet. Level other jobs to their cross-class milestones.</p>}
+        <div className="flex flex-wrap gap-2 mt-4" aria-label="Ability filters">
+          {['all', 'healing', 'spell', 'physical', 'ultimate'].map(filter => <Button key={filter} size="sm" variant={abilityFilter === filter ? 'default' : 'outline'}
+            data-testid={`filter-${filter}`} onClick={() => setAbilityFilter(filter)}>{filter[0].toUpperCase() + filter.slice(1)}</Button>)}
+        </div>
+        <div className="grid grid-cols-5 sm:grid-cols-8 gap-2 mt-3">{filtered.map(ability => <DraggableAbility key={ability.id} ability={ability} />)}</div>
+        <p className="text-xs text-muted-foreground mt-3">Drag an ability to a slot, or use its selection menu. Right-click or long-press an icon for details.</p>
+        <DragOverlay>{draggedAbility && <AbilityIcon ability={draggedAbility} isDragging />}</DragOverlay>
+      </DndContext>
+    </CardContent>
+  </Card>;
 }

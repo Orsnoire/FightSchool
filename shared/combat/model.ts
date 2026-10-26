@@ -45,6 +45,10 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  /** Frozen effective ranks and effects; missing means a historical room with no AA. */
+  advancement?: import('../aa').AAEffects;
+  /** Persisted one-round roll; does not cure the underlying control effect. */
+  agilityAttack?: { round: number; allowed: boolean };
   /** Server-only marker: answer recovery is prepared once before choices. */
   statusPreparedRound?: number;
   statuses?: CombatStatus[];

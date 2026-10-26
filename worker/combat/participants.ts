@@ -8,6 +8,7 @@ import { availableAbilities } from "../../shared/combat/abilities.ts";
 import { leader } from "./state-events";
 
 export interface CombatProfile {
+  advancement?: CombatPlayer['advancement'];
   questGuildId?: string | null;
   limitTier?: number;
   equipmentLoadout?: CombatPlayer["equipmentLoadout"];
@@ -39,8 +40,10 @@ export function addStudent(
       calculateLoadoutEquipmentStats(starting),
     getTotalPassiveBonuses(levels as Record<CharacterClass, number>),
     getTotalMechanicUpgrades(levels as Record<CharacterClass, number>),
+    profile.advancement,
   );
   const p: CombatPlayer = {
+    ...(profile.advancement ? { advancement: structuredClone(profile.advancement) } : {}),
     ...(profile.questGuildId!==undefined?{questGuildId:profile.questGuildId}:{}),
     ...(profile.limitTier!==undefined?{limitTier:profile.limitTier}:{}), correctQuestionKeys: [],
     ...(profile.equipmentLoadout ? {equipmentLoadout:{...profile.equipmentLoadout}} : {}),
@@ -50,7 +53,7 @@ export function addStudent(
     roundsParticipated: 0,
     joinOrder: Object.values({...state.departedPlayers,...state.pendingPlayers,...state.players}).reduce((n,p)=>Math.max(n,p.joinOrder??-1),-1)+1,
     studentId: student.id,
-    nickname: student.nickname,
+    nickname: student.characterName || student.nickname,
     characterClass: job,
     gender: student.gender === "B" ? "B" : "A",
     appearance: profile.appearance ? { ...profile.appearance } : null,
