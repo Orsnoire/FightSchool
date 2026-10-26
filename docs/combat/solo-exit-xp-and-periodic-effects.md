@@ -92,3 +92,9 @@ published implementation `f9f10203e07d55f404456709ee00dd88ffe9fa06` with Git tre
 The live PR description and checks carry the latest published SHA and exact-head
 GitHub CI/browser results. Review, merge, deployment and canonical acceptance
 remain pending; no live acceptance is claimed.
+
+The implementation passed all 347 tests and all four Chromium jobs in GitHub.
+A repeat run after the documentation checkpoint exposed a one-millisecond
+wall-clock difference in the new recovery test. The test now supplies an explicit
+clock for phase advancement and deliberately varies `Date.now` during the full
+restored-snapshot comparison. The assertion and runtime behavior are unchanged.

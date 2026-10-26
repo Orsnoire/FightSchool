@@ -19,13 +19,16 @@ function room() {
 function resolve(s:ReturnType<typeof room>, ability:string|null=null) {
   s.currentPhase="abilities"; const p=s.players[id];p.hasAnswered=true;p.lastAnswerCorrect=true;
   p.questionAction=ability?{ability,targetId:"e1"}:null;p.supportActions=[];
-  return advancePhase(s,{...fight,baseEnemyDamage:0});
+  return step(s);
+}
+function step(s:ReturnType<typeof room>) {
+  return advancePhase(s,{...fight,baseEnemyDamage:0},s.phaseStartTime+1000);
 }
 function next(s:ReturnType<typeof room>) {
-  return advancePhase(advancePhase(s,{...fight,baseEnemyDamage:0}),{...fight,baseEnemyDamage:0});
+  return step(step(s));
 }
 
-test("Hex initial hit and full subsequent duration share MAT-based values, use MDF and credit actual tick damage",()=>{
+test("Hex initial hit and full subsequent duration share MAT-based values, use MDF and credit actual tick damage",(t)=>{
   let s=room();const p=s.players[id];
   assert.equal(abilityDamage(p,"hex"),9);assert.deepEqual(abilityDot(p,"hex"),{damage:8,rounds:2});
   assert.equal(abilityPreview(p,"hex"),"Base damage: 9 initially; 8 base damage per subsequent round × 2; reduced by MDF");
@@ -33,6 +36,8 @@ test("Hex initial hit and full subsequent duration share MAT-based values, use M
   assert.equal(s.enemies[0].effects[0].rounds,2);
   s=next(s);assert.equal(s.enemies[0].effects[0].rounds,2);
   const recovered=JSON.parse(JSON.stringify(s));
+  // Recovery must be deterministic even if the two executions cross a clock tick.
+  let wallClock=1_000_000;t.mock.method(Date,"now",()=>wallClock++);
   assert.deepEqual(resolve(structuredClone(s)),resolve(recovered));
   s=resolve(s);assert.equal(s.players[id].totals.damageDealt,13);
   assert.ok(s.events.some(e=>e.abilityId==="hex"&&e.effect==="curse"&&e.message.startsWith("Hex tick:")));
