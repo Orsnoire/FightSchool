@@ -13,10 +13,11 @@ import { Link } from 'wouter';
 import { AbilityIcon, AbilitySlot, DraggableAbility } from "./AbilityDragItems";
 import type { LobbyStudent } from "./types";
 
-export function CrossClassPanel({ student, jobLevels, updateCrossClassAbility, tier = 4 }: {
+export function CrossClassPanel({ student, jobLevels, updateCrossClassAbility, tier: initialTier = 4 }: {
   student: LobbyStudent; jobLevels: StudentJobLevel[]; tier?: number;
   updateCrossClassAbility: (slot: number, abilityId: string | null) => Promise<void>;
 }) {
+  const [tier, setTier] = useState(initialTier);
   const [draggedAbility, setDraggedAbility] = useState<Ability | null>(null);
   const [abilityFilter, setAbilityFilter] = useState('all');
   const [saving, setSaving] = useState(false);
@@ -43,6 +44,11 @@ export function CrossClassPanel({ student, jobLevels, updateCrossClassAbility, t
   return <Card data-testid="card-cross-class-abilities">
     <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />Cross-Class Abilities</CardTitle>
       <p className="text-sm text-muted-foreground">{ownedCapacity} owned slots · {activeCapacity} active at Tier {tier}. Two base slots plus up to three AA slots.</p>
+      <label className="block text-sm">Ability power preview
+        <select aria-label="Ability power preview" value={tier} onChange={e => setTier(Number(e.target.value))} className="ml-2 rounded border bg-background p-2">
+          <option value={4}>Full loadout · Tier 4</option>{[1,2,3].map(value=><option key={value} value={value}>Preview Tier {value}</option>)}
+        </select>
+      </label>
       <p className="text-xs text-muted-foreground">Abilities still require their other class's level. Lower-tier fights preserve your saved assignments.</p>
       <Link href="/student/advancement" className="text-sm underline">Unlock more slots with AA</Link>
     </CardHeader>

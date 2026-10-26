@@ -182,7 +182,7 @@ try {
       } else if (path.endsWith('/equipment')) {
         const data = route.request().postDataJSON(); writes.push({ kind: 'equipment', data });
         if (failEquipment) { failEquipment = false; return route.fulfill({ status: 503, json: { error: 'Gear retry' } }); }
-        current = { ...current, ...data, ...(data.crossClassAbilities ? {crossClassAbility1:data.crossClassAbilities[0] ?? null,crossClassAbility2:data.crossClassAbilities[1] ?? null} : {}) }; savedJobs[current.characterClass] = { ...savedJobs[current.characterClass], ...data }; json = current;
+        current = { ...current, ...data, ...(data.crossClassAbilities ? {crossClassAbility1:data.crossClassAbilities[0] ?? null,crossClassAbility2:data.crossClassAbilities[1] ?? null} : {}) }; savedJobs[current.characterClass] = { ...savedJobs[current.characterClass], ...data, crossClassAbility1:current.crossClassAbility1, crossClassAbility2:current.crossClassAbility2 }; json = current;
       } else if (path.endsWith('/character')) {
         const data = route.request().postDataJSON(); writes.push({ kind: 'character', data });
         if (failClass) { failClass = false; return route.fulfill({ status: 503, json: { error: 'Class retry' } }); }

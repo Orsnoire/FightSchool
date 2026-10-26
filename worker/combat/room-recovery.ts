@@ -32,10 +32,13 @@ export async function recoverRoom(room: StoredRoom, effects: RecoveryEffects): P
       previous.studentId,
     );
     if (!student) continue;
+    const profile = await effects.repository?.getCombatProfile?.(student, old.sessionId);
+    // An old room must not acquire newly bought AA or additional slots while migrating.
+    const legacyProfile = profile ? {...profile, advancement:undefined, crossClass:profile.crossClass?.slice(0,2)} : undefined;
     upgraded = addStudent(
       upgraded,
       student,
-      await effects.repository?.getCombatProfile?.(student, old.sessionId),
+      legacyProfile,
     );
     const player = upgraded.players[student.id];
     Object.assign(player, {

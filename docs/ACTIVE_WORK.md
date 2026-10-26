@@ -10,7 +10,8 @@
 - Deterministic coverage: all 12 classes × four tiers match previews, each chance threshold is tested, JSON recovery does not reroll, historical rooms stay compatible, concurrent awards/spends do not lose XP or double-charge. [Balance report](reviews/2026-10-26-alternate-advancement.md) has 48 projections, 400,000 damage rolls, 80,000 potion inventories and earnings sensitivity.
 - Verification: **363 tests**, TypeScript, and both production builds pass locally. Focused AA checks also cover the public payload and five-slot class restoration. Exact-head GitHub CI and Chromium acceptance remain pending for this checkpoint.
 - State: **IMPLEMENTED / ACCEPTANCE PENDING**. Not merged or deployed. C12 #75 and Campaign #81 remain separate. No live database writes. Campaign adapter/migration-number reconciliation is documented for that separate branch.
-- Exact next action: verify final regression/build and PR CI; run the new desktop/phone AA flow including choosing slots in both screens and executing slot 3/5 combat commands. Address failures before marking ready.
+- Latest review: implementation `898d26d` passed CI 40363691106. Chromium found two fixture mismatches (duplicate accessible toast text and missing legacy-slot synchronization in mocked job saves); both are corrected. Added explicit loadout tier previews and a legacy migration guard against mid-fight AA grants; 23 focused AA/recovery checks and TypeScript pass.
+- Exact next action: rerun exact-head CI/Chromium including both loadout screens and slot 3/5 combat commands. Address failures before marking ready.
 
 # Solo exit EXP and periodic effects — released October 26, 2026
 

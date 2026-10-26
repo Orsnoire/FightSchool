@@ -65,7 +65,7 @@ try {
   await page.getByLabel('Search advancements',{exact:true}).fill('Maximum HP');
   assert.equal(await page.locator('[data-testid^="aa-"]').count(),1);
   await page.getByRole('button',{name:'Buy rank 1 — 2 AA',exact:true}).click();
-  await page.getByText('Temporary purchase failure',{exact:false}).waitFor();
+  await page.getByText('503: {"error":"Temporary purchase failure"}',{exact:true}).waitFor();
   await page.getByRole('button',{name:'Buy rank 1 — 2 AA',exact:true}).click();
   await page.getByRole('button',{name:'Buy rank 2 — 3 AA',exact:true}).waitFor();
   assert.equal(writes.length,2);assert.deepEqual(writes[0].body,writes[1].body,'retry reuses the receipt key');assert.equal(current.aaPointsSpent,68);
@@ -107,6 +107,12 @@ try {
    await page.getByTestId(`select-ability-${i+1}`).selectOption(slots[i]);
    await page.getByTestId(`button-remove-ability-${i+1}`).waitFor();
   }
+  const beforePreviewWrites=writes.length;
+  await page.getByLabel('Ability power preview',{exact:true}).selectOption('2');
+  assert.match(await page.getByTestId('ability-slot-5').textContent(),/Locked/);
+  assert.equal(await page.getByTestId('select-ability-5').count(),0);
+  assert.equal(current.crossClassAbilities[4],slots[4]);assert.equal(writes.length,beforePreviewWrites,'tier preview never rewrites saved selections');
+  await page.getByLabel('Ability power preview',{exact:true}).selectOption('4');
   await page.goto(`${origin}/student/lobby`);
   for(let i=0;i<5;i++)assert.equal(await page.getByTestId(`select-ability-${i+1}`).inputValue(),slots[i]);
   const levels=Object.fromEntries(ALL_CHARACTER_CLASSES.map(job=>[job,15]));
@@ -141,4 +147,7 @@ try {
  }
  assert.deepEqual(errors,[]);
  console.log('AA desktop/phone: wallet, ranks, tier preview, filters, keyboard details, retry receipts, paid edit/cancel and five-slot save/reload and selected slot 3/5 combat execution pass.');
+} catch(error) {
+ for(const page of browser.contexts().flatMap(context=>context.pages()))await page.screenshot({path:'artifacts/combat-ui/aa-failure.png',fullPage:true}).catch(()=>{});
+ throw error;
 } finally {await browser.close();}
