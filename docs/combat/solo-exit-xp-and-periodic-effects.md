@@ -1,7 +1,8 @@
 # Solo exit EXP and periodic effects — October 26, 2026
 
-Owner-requested behavior, implemented locally on `fix/solo-exit-xp`. Not published,
-merged or deployed. This decision supersedes the earlier no-reward rule for the
+Owner-requested behavior, published on `fix/solo-exit-xp` in
+[draft PR #85](https://github.com/Orsnoire/FightSchool/pull/85). Not merged or
+deployed. This decision supersedes the earlier no-reward rule for the
 student who hosts a solo fight and the older INT-only Hex description.
 
 ## One completion and EXP calculation
@@ -84,6 +85,10 @@ exception, with independent numeric and complete JSON replay coverage.
 The unrestricted default test fan-out stopped without completing in this local
 runtime; Phase 4 was verified in bounded-concurrency batches (319/319 named test results, no failures). Browser confirmation
 coverage is added to the existing Chromebook/phone suite, but local Chromium
-installation failed with a truncated download. No real-browser pass, CI pass or
-live acceptance is claimed. Publication, GitHub CI/browser checks, review, merge,
-deployment and canonical acceptance remain pending.
+installation failed with a truncated download. This is not a local real-browser
+pass. The owner subsequently authorized publication; the authenticated GitHub app
+published implementation `f9f10203e07d55f404456709ee00dd88ffe9fa06` with Git tree
+`357a84877c3158df9f7f2cf46a836b0db8ed7b57`, identical to the locally verified work.
+The live PR description and checks carry the latest published SHA and exact-head
+GitHub CI/browser results. Review, merge, deployment and canonical acceptance
+remain pending; no live acceptance is claimed.
