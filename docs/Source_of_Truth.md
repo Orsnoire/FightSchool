@@ -159,7 +159,7 @@ questions clear all combo points. Combo Preservation keeps up to active rank
 1/2/3 of points already held; it does not create points or preserve the correct
 streak. Wrong-answer damage and retaliation do not refill those points.
 
-Implementation is in PR #86; [active work](ACTIVE_WORK.md) and the
+PR #86 is merged, deployed and accepted at `207b7bb`; [active work](ACTIVE_WORK.md) and the
 [balance report](reviews/2026-10-26-alternate-advancement.md) record verification
 and release status. Campaign's stricter power-context adapter remains a separate
 integration task; this does not release the campaign pilot.

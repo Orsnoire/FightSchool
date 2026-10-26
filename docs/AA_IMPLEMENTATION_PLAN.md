@@ -1,6 +1,6 @@
 # Alternate Advancement: design review and implementation plan
 
-**Implementation authorized — October 26, 2026.** Baseline: `7d31da3f044e93042b3c2a4a55163b55ecf1d431` on `main`. See [active work](ACTIVE_WORK.md) for implementation and verification state. Campaign PR #81 and cleanup C12 PR #75 remain separate.
+**Implemented, deployed and accepted — October 26, 2026.** [Release evidence](releases/2026-10-26-pr86.md). Baseline: `7d31da3f044e93042b3c2a4a55163b55ecf1d431` on `main`. See [active work](ACTIVE_WORK.md) for implementation and verification state. Campaign PR #81 and cleanup C12 PR #75 remain separate.
 
 ### Owner-approved implementation decisions
 
