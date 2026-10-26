@@ -229,7 +229,7 @@ try {
     const done = await late.wait(m => m.type === "game_over" && m.results?.length, 60000);
     const result = done.results.find(r => r.studentId === lateId), totals = second.players[lateId].totals;
     const progress = 1 - second.enemies.reduce((sum,e) => sum+e.health,0) / second.enemies.reduce((sum,e) => sum+e.maxHealth,0);
-    const expected = Math.max(0, 10*progress*.5 + totals.questionsCorrect + totals.damageBlocked + totals.healingDone + totals.bonusDamage - totals.questionsIncorrect);
+    const expected = Math.max(0, 10*progress*.5 + totals.questionsCorrect + totals.damageBlocked + totals.healingDone + totals.damageDealt - totals.questionsIncorrect);
     assert.ok(Math.abs(result.baseXp-expected) < 1e-8);
     assert.equal(result.goldReward,0);
     assert.equal(done.results.some(r => r.studentId === bId),false);
