@@ -72,6 +72,18 @@ try {
     await emit();
     await page.locator('[data-testid="rich-content"] .katex').waitFor();
     await screenshot('question');
+    // Solo-host exit describes earned EXP before confirmation, and cancellation is harmless.
+    state.soloHostId = id;
+    await emit();
+    let soloPrompt = '';
+    page.once('dialog', async dialog => { soloPrompt = dialog.message(); await dialog.dismiss(); });
+    await page.getByRole('button', { name: 'Leave fight', exact: true }).click();
+    assert.match(soloPrompt, /earned EXP will be saved/);
+    assert.match(soloPrompt, /no victory gold or loot/);
+    assert.equal(await page.evaluate(() => window.combatTest.sent.some(m => m.type === 'leave_fight')), false);
+    delete state.soloHostId;
+    await emit();
+
     await page.getByRole('button', { name: 'x² + 4x + 4', exact: true }).click();
     await page.getByRole('button', { name: 'Submit answer', exact: true }).click();
     assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).answer), 'x² + 4x + 4');

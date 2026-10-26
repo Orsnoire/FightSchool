@@ -140,6 +140,11 @@ The [October 7 host panel and departure rules](combat/student-overlays.md#octobe
 record the consolidated host controls, attendance, temporary log placement,
 and explicit student Leave fight behavior.
 
+The [October 26 solo-exit and periodic-effects decision](combat/solo-exit-xp-and-periodic-effects.md)
+shares teacher/solo-host completion EXP, counts total actual damage alongside
+correct answers, blocking and healing, and corrects Hex's MAT-based initial hit
+and later ticks plus Hemorrhage duration. It is implemented locally, not released.
+
 ## Current implementation and release queue
 
 The [cleanup plan](CLEANUP_PLAN.md) is the current ordered implementation queue.

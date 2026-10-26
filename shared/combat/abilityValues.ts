@@ -6,9 +6,19 @@ import type { CombatPlayer } from "./model";
 export type AbilityContext = Pick<CombatPlayer, "stats" | "characterClass" | "jobLevels" | "mp" | "health" | "maxHealth" | "healingPotions" | "shieldPotions" | "consecutiveCorrectAnswers" | "equipmentEffects">;
 const whole = (n: number) => Math.max(0, Math.floor(n));
 
+/** Raw DoT values shared by execution and previews; defenses apply per hit/tick. */
+export function abilityDot(p: AbilityContext, ability: string) {
+  switch (canonicalAbility(ability)) {
+    case "hex": return { damage: Math.max(0, p.stats.mat + p.stats.int - 1),
+      rounds: 2 + (getTotalMechanicUpgrades(p.jobLevels as Record<CharacterClass, number>).hexDuration || 0) };
+    case "hemorrhage": return { damage: p.stats.atk / 2, rounds: 2 };
+    default: return undefined;
+  }
+}
+
 /** Raw magnitudes before hit/heal rounding, target modifiers and missing-HP caps. */
 export function abilityDamage(p: AbilityContext, ability: string, streak = p.consecutiveCorrectAnswers || 0): number | undefined {
-  const { atk, rtk, str, int, agi, mnd, vit } = p.stats;
+  const { atk, mat, rtk, str, int, agi, mnd, vit } = p.stats;
   switch (canonicalAbility(ability)) {
     case "attack": return calculatePlayerBaseDamage(p.stats, p.characterClass);
     case "crushing_blow": return atk + str;
@@ -19,6 +29,10 @@ export function abilityDamage(p: AbilityContext, ability: string, streak = p.con
     case "headshot": return Math.floor(2 * (rtk + agi) + 0.5 * streak);
     case "aim": return (rtk + agi) * 2;
     case "killshot": return rtk * agi * 2;
+    case "hex": {
+      const dot = abilityDot(p, "hex")!;
+      return mat + int + ((p.jobLevels.warlock || 0) >= 15 ? dot.damage * dot.rounds / 2 : 0);
+    }
     case "hemorrhage": return atk;
     case "sacred_strike": return atk * (str + mnd + vit / 2);
     case "holy_judgment": return (str + vit / 2 + mnd) / 3;
@@ -98,10 +112,8 @@ export function abilityPreview(p: AbilityContext, ability: string, upcomingAnswe
     }
     case "craft_shield_potion": return `Creates ${p.shieldPotions < 3 ? 1 : 0} shield potion; inventory ${p.shieldPotions} → ${Math.min(3, p.shieldPotions + 1)}/3`;
     case "hex": case "hemorrhage": {
-      const rounds = 2 + (getTotalMechanicUpgrades(p.jobLevels as Record<CharacterClass, number>).hexDuration || 0);
-      const dot = id === "hex" ? Math.max(0, int - 1) : atk / 2;
-      const immediate = id === "hemorrhage" ? base : (p.jobLevels.warlock || 0) >= 15 ? `Base damage: ${whole(dot * rounds / 2)}` : "";
-      return `${immediate ? immediate + "; " : ""}${whole(dot)} base damage per round × ${rounds}`;
+      const dot = abilityDot(p, id)!;
+      return `${base} initially; ${whole(dot.damage)} base damage per subsequent round × ${dot.rounds}; reduced by ${id === "hex" ? "MDF" : "DEF"}`;
     }
     case "purify": return "Removes poison and paralysis from one ally";
     case "bless": return `+${whole(mnd / 3)} STR, INT and AGI for ${Math.max(1, whole(mnd / 2))} rounds`;

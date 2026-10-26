@@ -115,6 +115,8 @@ export interface CombatEnemy {
     type: string;
     rounds: number;
     damage: number;
+    /** New DoTs tick on subsequent rounds; absent in historical saved effects. */
+    appliedRound?: number;
   }>;
 }
 export interface CombatEvent {
@@ -169,6 +171,7 @@ export interface CombatSnapshot {
   completedRounds?: number;
   damageLeaderId?: string | null;
   endedByHost?: boolean;
+  soloHostId?: string;
   enemies: CombatEnemy[];
   questionStartTime: number | null;
   phaseStartTime: number;

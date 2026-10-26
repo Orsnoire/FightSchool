@@ -7,7 +7,11 @@ const historicalScaling = JSON.parse(readFileSync(new URL('./data/pre-role-weigh
 // The owner explicitly changed Fireball's cost from 1 to 2 MP. Its resource
 // delta is covered directly in combat-resources; every unaffected C10 trace
 // must retain its original hash. Do not regenerate the historical baseline.
-const unaffected = <T extends { scenario: string }>(traces: T[]) => traces.filter(t => t.scenario !== 'wizard:fireball');
+// October 26 explicitly changes Hex magnitudes/timing and corrects Hemorrhage's
+// duration/timing. Exact arithmetic, tick counts, recasts and recovery are asserted
+// independently in periodic-effects.test.ts; all other historical traces stay pinned.
+const changed = new Set(['wizard:fireball', 'warlock:hex', 'blood_knight:hemorrhage']);
+const unaffected = <T extends { scenario: string }>(traces: T[]) => traces.filter(t => !changed.has(t.scenario));
 
 test('already-started pre-balance rooms preserve C10 seeded outcomes, resources, events and public projections', () => {
   assert.deepEqual(unaffected(combatReplayTraces(false, historicalScaling)), unaffected(baseline.traces));
