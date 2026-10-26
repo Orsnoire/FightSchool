@@ -457,7 +457,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "soul_echo",
           name: "Soul Echo",
-          description: "Cross-class unlock. (passive) Adds (Hex tick damage × Hex duration) / 2 to the initial Hex hit, before MDF.",
+          description: "Passive: adds (Hex tick damage × Hex duration) / 2 to the initial Hex hit, before MDF. Other classes must equip both Hex and Soul Echo. It is not an action.",
           isCrossClass: true,
         }]
       },

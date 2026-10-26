@@ -96,7 +96,7 @@ export default function Advancement() {
           <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Next AA point</p><p className="mt-1 text-lg font-semibold">{data.wallet.xpTowardNext} / {data.wallet.xpPerPoint} XP</p>
             <progress aria-label="EXP toward next AA point" value={data.wallet.xpTowardNext} max={data.wallet.xpPerPoint} className="mt-2 h-2 w-full accent-primary" /></div>
         </div>
-        <p className="mt-4 text-xs text-muted-foreground">Every 60 eligible EXP above your encounter's class cap earns 1 AA. Points and purchased ranks stay with your character across classes. Higher ranks become inactive in lower-tier fights.</p>
+        <p className="mt-4 text-xs text-muted-foreground">Every {data.wallet.xpPerPoint} eligible EXP above your encounter's class cap earns 1 AA. Points and purchased ranks stay with your character across classes. Higher ranks become inactive in lower-tier fights.</p>
       </section>
       <section className="rounded-lg border bg-card p-4 space-y-4" aria-label="Advancement filters">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">

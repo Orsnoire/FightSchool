@@ -1,3 +1,4 @@
+import { PASSIVE_ABILITIES } from '@shared/combat/abilities';
 import { CombatCountdown } from "@/components/CombatCountdown";
 import { useBeforeCombatDeadline } from "@/hooks/useCombatCountdown";
 import { activeEnemies, hpLabel } from "@shared/combat/encounters";
@@ -98,7 +99,7 @@ export default function Combat() {
   const canAct = status === "connected" && !isLeaving && !queued && !!p && !p.isDead;
   const available =
     p?.availableAbilities.filter(
-      (id) => SUPPORT.has(id) === (phase === "abilities") &&
+      (id) => !PASSIVE_ABILITIES.has(id) && SUPPORT.has(id) === (phase === "abilities") &&
         !(id === "healing_potion" && p.healingPotions === 0),
     ) || [];
   const guard = ["warrior_block", "shield_bash", "healing_guard", "aegis", "deflect"].includes(ability);

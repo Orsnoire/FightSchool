@@ -1,3 +1,4 @@
+import { activeEnemies } from './encounters';
 import type { CombatPlayer, CombatSnapshot, CombatStatus, StatusType } from "./model";
 
 export const STATUS_LABELS: Record<StatusType, string> = {
@@ -149,8 +150,9 @@ export function prepareStatusActions(s: CombatSnapshot, random: () => number): v
     if (!prepared && (p.advancement?.agilityChance || 0) > 0 && naturalAgilityEligible(p, s.round))
       p.agilityAttack = { round: s.round, allowed: random() < p.advancement!.agilityChance };
     if (naturalAgilityAttack(p, s.round)) {
-      const previous = s.enemies.find(e => e.id === p.questionAction?.targetId && e.health > 0);
-      p.questionAction = { ability: 'attack', targetId: previous?.id || s.enemies.find(e => e.health > 0)?.id || '' };
+      const targets = activeEnemies(s);
+      const previous = targets.find(e => e.id === p.questionAction?.targetId);
+      p.questionAction = { ability: 'attack', targetId: previous?.id || targets[0]?.id || '' };
     }
   }
 }

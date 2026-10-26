@@ -38,7 +38,7 @@ export function ClassAppearanceDialog({ student, jobLevels, equippedVisuals, con
             </select></label>
             {!savedAppearance.data && <AvatarAppearanceEditor value={appearanceDraft} onChange={setAppearanceDraft} modelLocked />}
             <p className="text-sm text-muted-foreground">{previewJob === student.characterClass ? "Previewing your equipped gear." : "Starter gear preview. Returning jobs restore their saved loadout."}</p>
-            {savedAppearance.data ? <Link href="/student/advancement?customize=1"><Button variant="outline">Recustomize character · 5 AA</Button></Link>
+            {savedAppearance.data ? <Link href="/student/advancement?customize=1"><Button variant="outline">Recustomize character with AA</Button></Link>
               : <Button disabled={savedAppearance.isLoading || savedAppearance.isError || savedAppearance.saving} onClick={() => student.characterClass && handleClassChange(student.characterClass)}>Save initial appearance · Free</Button>}
             {savedAppearance.isError && <p role="alert">Your saved appearance could not load. <button className="underline" onClick={() => savedAppearance.refetch()}>Try again</button></p>}
           </div>

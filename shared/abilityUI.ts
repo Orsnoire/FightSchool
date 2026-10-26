@@ -126,7 +126,7 @@ export const ABILITY_DISPLAYS: Record<string, AbilityDisplay> = {
   "manabomb": { id: "manabomb", icon: "Bomb", name: "Manabomb", description: "Ultimate spell - massive explosion dealing devastating damage", abilityClass: ["spell", "ultimate"] },
   "killshot": { id: "killshot", icon: "Crosshair", name: "Killshot", description: "Ultimate precision - guaranteed critical hit with massive damage", abilityClass: ["physical", "ultimate"] },
   "life_potion": { id: "life_potion", icon: "Heart", name: "Life Potion", description: "Ultimate healing - fully restore an ally's health", abilityClass: ["healing", "consumable", "ultimate"] },
-  "soul_echo": { id: "soul_echo", icon: "Ghost", name: "Soul Echo", description: "Ultimate curse - enemies take damage over time", abilityClass: ["spell", "support", "ultimate"], isPassive: true },
+  "soul_echo": { id: "soul_echo", icon: "Ghost", name: "Soul Echo", description: "Passive Hex bonus. Other classes equip both Hex and Soul Echo; no separate combat action.", abilityClass: ["spell", "support", "ultimate"], isPassive: true },
   "divine_grace": { id: "divine_grace", icon: "Star", name: "Divine Grace", description: "Ultimate blessing - restore all allies to full health", abilityClass: ["healing", "spell", "ultimate"] },
   "holy_judgment": { id: "holy_judgment", icon: "Sword", name: "Holy Judgment", description: "Ultimate holy strike - massive damage that heals the party", abilityClass: ["physical", "spell", "healing", "ultimate"] },
   "shadow_requiem": { id: "shadow_requiem", icon: "Cloud", name: "Shadow Requiem", description: "Ultimate darkness - drain life from all enemies", abilityClass: ["spell", "healing", "ultimate"] },

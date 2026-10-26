@@ -18,6 +18,12 @@ The owner authorized the proposed changes, delegated unresolved details to conse
 - Permanent ranks may be purchased above the preview's tier, with clear inactive labels; effects are frozen per encounter and apply to later encounters. No free resource refill or respec.
 - Retain the released shared EXP formula and stamina; do not invent a second AA formula or silently cap existing contribution rewards. Measure the feedback loop.
 
+### Cross-class verification clarification
+
+New encounters treat Soul Echo as an equipped cross-class passive: other classes need both Hex and Soul Echo; native Warlock 15 retains it automatically. It is never an action button. Historical saved rooms keep their original bonus until completion. This corrects a selectable no-op and an off-class bonus that previously ignored the passive slot. Existing multiclass primary-stat/mechanic bonuses are unchanged.
+
+See the [reproducible balance report](reviews/2026-10-26-alternate-advancement.md) and implementation checkpoint for verification. The review below is retained as the original proposal; approved decisions above supersede its open questions and proposed rates.
+
 ## 1. Goal and confirmed requirements
 
 Give students a useful progression path while their chosen class is capped, without requiring them to level alternate classes. AA purchases belong to the character and survive class changes and encounters with lower tier limits.
