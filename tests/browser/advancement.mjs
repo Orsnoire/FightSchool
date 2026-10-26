@@ -113,8 +113,14 @@ try {
   assert.equal(await page.getByTestId('select-ability-5').count(),0);
   assert.equal(current.crossClassAbilities[4],slots[4]);assert.equal(writes.length,beforePreviewWrites,'tier preview never rewrites saved selections');
   await page.getByLabel('Ability power preview',{exact:true}).selectOption('4');
+  assert.deepEqual(current.crossClassAbilities,slots,'all five selections reached authoritative storage');
   await page.goto(`${origin}/student/lobby`);
-  for(let i=0;i<5;i++)assert.equal(await page.getByTestId(`select-ability-${i+1}`).inputValue(),slots[i]);
+  for(let i=0;i<5;i++){
+   // The student and class-level requests resolve independently. An empty menu
+   // before its ability options load is not the saved selection.
+   await page.getByTestId(`button-remove-ability-${i+1}`).waitFor();
+   assert.equal(await page.getByTestId(`select-ability-${i+1}`).inputValue(),slots[i]);
+  }
   const levels=Object.fromEntries(ALL_CHARACTER_CLASSES.map(job=>[job,15]));
   const projection=projectCombatLoadout('warrior',current,15,current.aaRanks,4);
   let state=startQuestion(addStudent(initialCombatState('ABC234',fight,0),current,{levels,crossClass:slots,...projection}),100,30);

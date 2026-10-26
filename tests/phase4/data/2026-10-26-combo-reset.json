@@ -1,0 +1,51 @@
+{
+  "reason": "Owner decision 2026-10-26: wrong/unanswered questions clear all combo points; AA retains up to active rank. Original C10 baseline is unchanged.",
+  "sourceCommit": "72b3f7b1f67cc9a61cf3b17777612dc8ac967fa4",
+  "traces": [
+    {
+      "scenario": "C10-a:1",
+      "steps": 97,
+      "sha256": "6f038a813b6c98920b9e4ca04f5c4cc1aab72e9d4357f049515761eb96a1e288"
+    },
+    {
+      "scenario": "C10-b:1",
+      "steps": 97,
+      "sha256": "67a90948078ed382bc00266bf5d505131c2c103294f85c492317af4a1f38e630"
+    },
+    {
+      "scenario": "C10-c:1",
+      "steps": 97,
+      "sha256": "b359c9ba603b80fbc785eeea6db58d3e9a4bdccc6f07f52aeca6ccedf6b24afb"
+    },
+    {
+      "scenario": "C10-a:7",
+      "steps": 95,
+      "sha256": "d051a0e044369c950d9d736f44768d146237876377d8504e14f7843aefb298f4"
+    },
+    {
+      "scenario": "C10-b:7",
+      "steps": 95,
+      "sha256": "b921ffa09e78c06ca72d5c7b84426f6c05ef910e33c56d11b412a860bca5820a"
+    },
+    {
+      "scenario": "C10-c:7",
+      "steps": 95,
+      "sha256": "adf317a901cb3cd525c096277c1a28a136bff43ddd3e4a3638fb97b5b6e5cfd2"
+    },
+    {
+      "scenario": "C10-a:30",
+      "steps": 223,
+      "sha256": "d3f10fbfe993deadd97e536fd3a30fa9d18987ddd6909b847fb44e5f51e677aa"
+    },
+    {
+      "scenario": "C10-b:30",
+      "steps": 223,
+      "sha256": "4272da0817abb790718857074c86a52096147b7a0c89ec165845fd7b1f50267b"
+    },
+    {
+      "scenario": "C10-c:30",
+      "steps": 223,
+      "sha256": "8086efd58543a7e017afcc56321ee855bd46452acad87370d71abb601fbd74e9"
+    }
+  ]
+}
