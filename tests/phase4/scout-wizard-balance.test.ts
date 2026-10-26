@@ -48,19 +48,21 @@ test("starter Scout overtakes Wizard on question six and clears the 1.25x minimu
   assert.ok(totals.scout[9] >= 1.25 * totals.wizard[9]);
 });
 
-test("missed and unanswered Scout questions lose only one CP, reset the streak, and cannot refund Headshot", () => {
+test("missed and unanswered Scout questions clear CP, reset the streak, and cannot refund Headshot", () => {
   for (const answer of ["wrong", null]) {
     let s = durableFight("scout");
     s.players[id].comboPoints = 3;
     s.players[id].consecutiveCorrectAnswers = 8;
     s = round(s, "headshot", answer);
-    assert.equal(s.players[id].comboPoints, 2);
+    assert.equal(s.players[id].comboPoints, 0);
     assert.equal(s.players[id].consecutiveCorrectAnswers, 0);
     assert.equal(s.players[id].totals.damageDealt, 0);
-    s = round(next(s), "attack");
-    assert.equal(s.players[id].comboPoints, 3);
+    for (let correct = 1; correct <= 3; correct++) {
+      s = round(next(s), "attack");
+      assert.equal(s.players[id].comboPoints, correct);
+    }
     s = round(next(s), "headshot");
-    assert.equal(s.players[id].totals.damageDealt, 10, "recovery is a 3-damage attack followed by a 7-damage Headshot");
+    assert.equal(s.players[id].totals.damageDealt, 17, "recovery requires three basic hits before an 8-damage Headshot");
     assert.equal(s.players[id].comboPoints, 2);
   }
   const empty = round(durableFight("scout"), "attack", "wrong");
@@ -128,7 +130,7 @@ test("lobby and reference Wizards start at full MP and Fireblast spends its enti
   assert.deepEqual(p, before, "reference simulation does not spend actual player MP");
 });
 
-test("equipped cross-class Headshot shares its formula and miss penalty without changing other combo jobs", () => {
+test("equipped cross-class Headshot shares its formula; every class loses all unprotected CP on a miss", () => {
   let s = startQuestion(addStudent(initialCombatState("CROSS", fight), student("warrior"), {
     levels: { warrior: 1, scout: 8 }, crossClass: ["headshot_crossclass"],
   }));
@@ -142,8 +144,8 @@ test("equipped cross-class Headshot shares its formula and miss penalty without 
   const hit = round(s, "headshot");
   assert.equal(hit.players[id].totals.damageDealt, 12, "equipment scales the base; half-point totals round down");
   assert.equal(hit.players[id].comboPoints, 3);
-  assert.equal(round(s, "headshot", "wrong").players[id].comboPoints, 3);
+  assert.equal(round(s, "headshot", "wrong").players[id].comboPoints, 0);
   const ranger = started("ranger");
   ranger.players[id].comboPoints = 3;
-  assert.equal(round(ranger, "attack", "wrong").players[id].comboPoints, 3);
+  assert.equal(round(ranger, "attack", "wrong").players[id].comboPoints, 0);
 });

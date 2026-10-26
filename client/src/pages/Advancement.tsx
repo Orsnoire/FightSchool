@@ -158,7 +158,7 @@ export default function Advancement() {
           </div>}
         </>}
       </DialogContent></Dialog>
-      <RecustomizationDialog open={customize} onOpenChange={setCustomize} student={student} summary={data} onSave={saveCustomization} />
+      {customize && <RecustomizationDialog open={customize} onOpenChange={setCustomize} student={student} summary={data} onSave={saveCustomization} />}
     </div>
   </main>;
 }

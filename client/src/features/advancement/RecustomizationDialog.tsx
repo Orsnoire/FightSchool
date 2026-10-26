@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AvatarAppearanceEditor } from '@/components/AvatarAppearanceEditor';
@@ -12,18 +12,10 @@ export function RecustomizationDialog({ open, onOpenChange, student, summary, on
   onSave: (input: AACustomizationInput, initial: boolean) => Promise<void>;
 }) {
   const [name, setName] = useState(summary.characterName);
-  const [appearance, setAppearance] = useState(() => initialAppearance(summary.appearance));
+  const [appearance, setAppearance] = useState(() => initialAppearance(summary.appearance, student.gender === 'B' ? 'human-female-v1' : 'human-male-v1'));
   const [revision, setRevision] = useState(summary.revision);
   const [saving, setSaving] = useState(false), [error, setError] = useState('');
   const request = useRef({ key: '', id: '' });
-  const wasOpen = useRef(false);
-  useEffect(() => {
-    if (open && !wasOpen.current) {
-      setName(summary.characterName); setAppearance(initialAppearance(summary.appearance, student.gender === 'B' ? 'human-female-v1' : 'human-male-v1'));
-      setRevision(summary.revision); setError(''); request.current = { key: '', id: '' };
-    }
-    wasOpen.current = open;
-  }, [open, summary, student.gender]);
   const cost = summary.catalog.find(upgrade => upgrade.id === 'recustomization')!.costs[0];
   const initial = !summary.appearance;
   const changed = name.trim() !== summary.characterName || JSON.stringify(appearance) !== JSON.stringify(summary.appearance);
@@ -51,7 +43,7 @@ export function RecustomizationDialog({ open, onOpenChange, student, summary, on
           <fieldset disabled={saving}><AvatarAppearanceEditor value={appearance} onChange={setAppearance} /></fieldset>
           {!initial && <p className="text-sm">Available: <strong>{summary.wallet.available} AA</strong> · After saving: {Math.max(0, summary.wallet.available - cost)} AA</p>}
           {error && <div className="space-y-2"><p role="alert" className="text-sm text-destructive">{error}</p><Button variant="outline" disabled={saving} onClick={() => {
-            setName(summary.characterName); setAppearance(initialAppearance(summary.appearance)); setRevision(summary.revision); setError(''); request.current = {key:'',id:''};
+            setName(summary.characterName); setAppearance(initialAppearance(summary.appearance, student.gender === 'B' ? 'human-female-v1' : 'human-male-v1')); setRevision(summary.revision); setError(''); request.current = {key:'',id:''};
           }}>Discard draft and reload current character</Button></div>}
           {!initial && summary.wallet.available < cost && <p className="text-sm">You need {cost} available AA to save changes.</p>}
           <div className="flex flex-wrap gap-2"><Button onClick={submit} disabled={saving || !changed || !name.trim() || (!initial && summary.wallet.available < cost)}>

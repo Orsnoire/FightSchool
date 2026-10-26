@@ -30,9 +30,9 @@ test('AA catalog retains exact stat costs, lower chance curves, conversion and t
     const wallet = aaWallet(xp);
     assert.equal(wallet.total * 60 + wallet.xpTowardNext, xp);
   }
-  assert.equal(preserveCombo(0, 0, 3), 0);
-  assert.equal(preserveCombo(2, 1, 2), 2);
-  assert.equal(preserveCombo(3, 2, 2), 2);
+  assert.equal(preserveCombo(0, 3), 0);
+  assert.equal(preserveCombo(2, 2), 2);
+  assert.equal(preserveCombo(3, 2), 2);
 });
 
 test('AA stats feed shared class, ability and healing formulas once; licenses preserve other equipment rules', () => {
@@ -209,4 +209,24 @@ test('every active cross-class unlock has a real effect, while Soul Echo is pass
     assert.notEqual(after,before,`${equipped} must change combat, not just consume a cost`);
     assert.ok(!availableAbilities(job,{},[equipped]).includes(ability),`${equipped} cannot bypass its source class level`);
   }
+});
+
+test('wrong and unanswered questions clear every class combo; AA keeps only existing points at the encounter rank', async () => {
+  const { applyAnswer, advancePhase } = await import('../../worker/combat/engine');
+  const { fight, advanceTo } = await import('./fixtures');
+  for(const job of ALL_CHARACTER_CLASSES)for(const rank of [0,1,2,3])for(const tier of [1,2,3,4])for(const before of [0,1,2,7])for(const answer of ['wrong',null]){
+    let room=started(job),p=room.players[student().id];
+    p.health=p.maxHealth=1000; p.comboPoints=before; p.maxComboPoints=20; p.consecutiveCorrectAnswers=5;
+    p.advancement=resolveAAEffects({'combo-preservation':rank},tier);
+    const retained=Math.min(before,Math.min(rank,[0,1,2,4,10][tier]));
+    if(answer!==null)room=applyAnswer(room,p.studentId,answer,fight.questions[0]);
+    room=advanceTo(room,'question_resolution',fight,1000);
+    assert.equal(room.players[p.studentId].comboPoints,retained,`${job} rank ${rank} tier ${tier} before ${before} ${answer}`);
+    assert.equal(room.players[p.studentId].consecutiveCorrectAnswers,0);
+    assert.equal(room.players[p.studentId].totals.questionsIncorrect,1);
+  }
+  // The ordinary Monk monster-hit mechanic remains; misses and their retaliation do not manufacture CP.
+  const room=started('monk'),p=room.players[student().id];p.comboPoints=3;p.maxComboPoints=10;
+  damagePlayer(room,p.studentId,1,'e1',true,Infinity,false,'monster_attack');assert.equal(p.comboPoints,4);
+  damagePlayer(room,p.studentId,1,'wrong_answer',true);assert.equal(p.comboPoints,4);
 });

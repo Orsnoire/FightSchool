@@ -47,7 +47,7 @@ export const AA_CATALOG: readonly AAUpgrade[] = [
     costs: threeCosts, values: range(3, 10), unit: stat === 'maxHp' ? 'HP' : 'MP', kind: 'flat' as const, stat })),
   { id: 'cross-class-slots', name: 'Cross-class slots', category: 'Utility', description: 'Add slots to your two base slots. Abilities still require their class unlock and encounter tier.',
     costs: [10, 20, 30], values: [1, 2, 3], unit: 'extra slots', kind: 'slots' },
-  { id: 'combo-preservation', name: 'Combo preservation', category: 'Combat', description: 'A wrong answer cannot reduce existing combo points below this floor. Never creates points or protects the correct-answer streak.',
+  { id: 'combo-preservation', name: 'Combo preservation', category: 'Combat', description: 'A wrong or unanswered question clears all combo points. Retain up to this many existing points instead; never creates points or protects the correct-answer streak.',
     costs: threeCosts, values: [1, 2, 3], unit: 'protected CP', kind: 'combo' },
   { id: 'potion-preservation', name: 'Potion preservation', category: 'Combat', description: 'Chance to retain a charge when using a combat potion, including Herbalist potions. A charge is still required.',
     costs: threeCosts, values: [10, 25, 50], unit: '% chance', kind: 'potion' },
@@ -127,8 +127,8 @@ export function resolveAAEffects(ranks: AARanks | null | undefined, tier: number
   }
   return result;
 }
-export function preserveCombo(before: number, normalAfter: number, protectedPoints: number) {
-  return Math.max(normalAfter, Math.min(before, protectedPoints));
+export function preserveCombo(before: number, protectedPoints: number) {
+  return Math.min(before, protectedPoints);
 }
 /** Informational relevance only; never determines purchase or combat eligibility. */
 export function aaRelevant(upgrade: AAUpgrade, job: CharacterClass, weapon?: string | null): boolean {

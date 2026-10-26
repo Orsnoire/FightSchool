@@ -118,7 +118,7 @@ export function damagePlayer(
   p.health = resolvedHP(s, p.health - requested, p.maxHealth);
   const actual = s.encounterHpPool === undefined ? requested : before - p.health;
   p.totals.damageTaken += actual;
-  if (p.characterClass === "monk" && actual)
+  if (p.characterClass === "monk" && actual && cause !== "wrong_answer")
     p.comboPoints = Math.min(p.maxComboPoints, p.comboPoints + 1);
   if (p.buffs.deflect && actual)
     hit(s, p, activeEnemies(s)[0]?.id || "", actual);

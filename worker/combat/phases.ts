@@ -149,8 +149,7 @@ export function advancePhase(
       } else {
         p.totals.questionsIncorrect++;
         p.consecutiveCorrectAnswers = 0;
-        if (p.availableAbilities.includes("headshot"))
-          p.comboPoints = preserveCombo(p.comboPoints, Math.max(0, p.comboPoints - 1), p.advancement?.comboFloor || 0);
+        p.comboPoints = preserveCombo(p.comboPoints, p.advancement?.comboFloor || 0);
         const provoke = ordered.find((x) => !x.isDead && x.buffs.provoke);
         damagePlayer(
           s,
@@ -161,7 +160,7 @@ export function advancePhase(
       }
       const dealt = p.totals.damageDealt - before;
       if (dealt > 0) {
-        p.comboPoints = Math.min(p.maxComboPoints, p.comboPoints + 1);
+        if (p.lastAnswerCorrect) p.comboPoints = Math.min(p.maxComboPoints, p.comboPoints + 1);
         if (p.buffs.blood_sword) heal(s, p, p.studentId, dealt);
         if (
           p.characterClass === "blood_knight" &&

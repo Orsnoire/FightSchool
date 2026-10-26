@@ -161,9 +161,7 @@ minimum, not an exact target. The implemented rules are:
 - Count the current correct answer, so the first Headshot on question four deals
   8 damage with starting equipment.
 - Spend 3 CP and return 2 CP total on a damaging Headshot; basic damage returns 1 CP.
-- A wrong or unanswered question costs 1 CP (minimum zero) for Headshot users,
-  including equipped cross-class Headshot; it also resets the damage streak.
-  Other combo jobs retain their existing miss behavior.
+- **Superseded by the October 26 AA owner correction (PR #86):** a wrong or unanswered question clears all CP on every class. Combo Preservation retains at most 1/2/3 existing points according to active AA rank; the damage streak still resets. Wrong-answer damage/retaliation cannot refill those points. This replaces the earlier Headshot-only one-point loss.
 - Correct answers build the streak regardless of action; damaging Headshots return
   2 CP total, not 2 plus the regular 1. Failed attacks cannot earn the refund.
 - The streak persists across rounds, quiz cycles, and reconnects, and starts at

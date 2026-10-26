@@ -11,7 +11,9 @@
 - Verification: **363 tests**, TypeScript, and both production builds pass locally. Focused AA checks also cover the public payload and five-slot class restoration. Exact-head GitHub CI and Chromium acceptance remain pending for this checkpoint.
 - State: **IMPLEMENTED / ACCEPTANCE PENDING**. Not merged or deployed. C12 #75 and Campaign #81 remain separate. No live database writes. Campaign adapter/migration-number reconciliation is documented for that separate branch.
 - Latest review: implementation `898d26d` passed CI 40363691106. Chromium found two fixture mismatches (duplicate accessible toast text and missing legacy-slot synchronization in mocked job saves); both are corrected. Added explicit loadout tier previews and a legacy migration guard against mid-fight AA grants; 23 focused AA/recovery checks and TypeScript pass.
-- Exact next action: rerun exact-head CI/Chromium including both loadout screens and slot 3/5 combat commands. Address failures before marking ready.
+- Owner correction: **every wrong/unanswered question clears all combo points without AA; Combo Preservation retains only up to active rank 1/2/3 of points already held**. Wrong-answer damage/retaliation cannot refill them; ordinary Monk monster-hit gains remain. Added all-class/rank/tier/timeout coverage.
+- Browser review: both loadout screens' existing selection/drag/removal/class-change acceptance passes on `ae6fc67`; the new AA flow caught an immediate-cancel/reopen draft race. Paid dialog now remounts from saved state on every opening; save failures still retain the current draft.
+- Exact next action: rerun final combo regression/CI and the complete desktop/phone AA flow through slot 3/5 combat commands, then record verified status.
 
 # Solo exit EXP and periodic effects — released October 26, 2026
 

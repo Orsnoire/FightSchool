@@ -78,6 +78,7 @@ Higher damage may end fights earlier; actual damage is bounded by enemy HP, heal
 
 ## Interpretation and release limits
 
+- Owner correction: every wrong/unanswered question clears all CP; AA retains min(previous CP, active preservation rank). Wrong-answer damage and retaliation do not regenerate CP. Normal Monk monster-hit CP is unchanged.
 - Tier 1 breadth still gives a veteran more power than a new character. This is the owner-approved growth model; rank caps are not parity between students.
 - Primary-stat formulas multiply several abilities, so the high-rank action values grow sharply. Costs and tier limits are retained as explicitly requested; damage-to-MAT/RTK weapon specialization does not rewrite class attack formulas.
 - Migration 0018 is additive and unshipped. It keeps cumulative overflow/fractional XP and legacy assignments. Purchases and awards take the same student row lock; purchase receipts prevent retries charging twice.
