@@ -1,5 +1,7 @@
 import { effectiveLevels, limitLevel } from "../../shared/quests";
-import { equipmentRequiredLevel, handConflict } from "../../shared/equipment-rules";
+import { resolveAAEffects } from '../../shared/aa';
+import { crossClassSelections } from '../../shared/job-loadouts';
+import { equipmentRequiredLevel, handConflict, equipmentExclusion, weaponType } from "../../shared/equipment-rules";
 import { questionKey } from "../progression/question-key";
 import { snapshotEquipmentLoadout } from '../../shared/equipment-catalog';
 import { equipmentEffects } from "../../shared/tier-one-equipment";
@@ -45,6 +47,8 @@ export async function combatProfile(
    levels=effectiveLevels(levels,context?.limitTier||1);
   }
   let equipped={...student};
+  const aaLimit = sessionId ? context?.limitTier || 1 : 4;
+  const permittedRanks = resolveAAEffects(student.aaRanks, aaLimit).ranks;
   const ids = EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id);
   let equipment = calculateLoadoutEquipmentStats(equipped);
   const custom = await db
@@ -60,26 +64,28 @@ export async function combatProfile(
    const level=levels[student.characterClass||'warrior']||1;
    const catalog:Record<string,any>={...EQUIPMENT_ITEMS,...Object.fromEntries(custom.map(i=>[i.id,i]))};
    const starters=getStartingEquipment(student.characterClass||'warrior');
-   for(const slot of EQUIPMENT_SLOTS){const id=equipped[slot];if(id&&equipmentRequiredLevel(catalog[id]?.tier??99)>level)equipped[slot]=starters[slot]||null;}
+   for(const slot of EQUIPMENT_SLOTS){const id=equipped[slot];if(id&&(!catalog[id] || equipmentRequiredLevel(catalog[id].tier??99)>level || equipmentExclusion(student.characterClass||'warrior',catalog[id],permittedRanks)))equipped[slot]=starters[slot]||null;}
    if(handConflict(catalog[equipped.weapon||'']||null,catalog[equipped.offhand||'']||null))equipped.offhand=null;
    equipment=calculateLoadoutEquipmentStats(equipped);
   }
   for (const item of custom)if(EQUIPMENT_SLOTS.some(slot=>equipped[slot]===item.id))
     for (const [k, n] of Object.entries(item.stats)) equipment[k as keyof EquipmentStats] += n || 0;
   const avatar = await getStudentAvatar(db, student.id);
+  const weapon = custom.find(i=>i.id===equipped.weapon) || EQUIPMENT_ITEMS[equipped.weapon || ''];
+  const weaponKind = weapon ? weaponType(weapon) : null;
+  const advancement = resolveAAEffects(student.aaRanks, aaLimit, weaponKind);
   const appearance = avatar && { modelId: avatar.modelId, hairColorId: avatar.hairColorId, eyeColorId: avatar.eyeColorId, skinColorId: avatar.skinColorId };
   return {
+    advancement,
     ...(sessionId ? {questGuildId:context?.guildId||null,limitTier:context?.limitTier||1} : {}),
     appearance: validAppearance(appearance) ? appearance : null,
     levels,
     equipment,
     equipmentEffects: equipmentEffects(equipped),
     equipmentLoadout: snapshotEquipmentLoadout(equipped),
-    weaponKind: custom.find(i=>i.id===equipped.weapon)?.weaponType || EQUIPMENT_ITEMS[equipped.weapon||""]?.weaponType,
+    weaponKind: weaponKind || undefined,
     equipmentVisuals: Object.fromEntries(EQUIPMENT_SLOTS.flatMap(slot => {const item=custom.find(i=>i.id===equipped[slot]);return item?.visual ? [[slot,item.visual]] : [];})),
-    crossClass: [student.crossClassAbility1, student.crossClassAbility2].filter(
-      Boolean,
-    ) as string[],
+    crossClass: crossClassSelections(student).slice(0, 2 + advancement.extraSlots).filter((id): id is string => !!id),
   };
 }
 /** Activity XP is never prorated. Stamina is applied atomically by the database. */

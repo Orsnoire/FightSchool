@@ -1,6 +1,7 @@
 import { EQUIPMENT_ITEMS, WEAPON_RESTRICTIONS, type CharacterClass, type EquipmentSlot, type WeaponType } from './schema';
 import { SLOT_DEFINITIONS } from './equipment-slots';
 import { ARMOR_EXCLUSIONS, type ArmorCategory } from './equipment-catalog';
+import { AA_WEAPONS, armorProficiencyId, weaponProficiencyId, type AARanks } from './aa';
 export interface EquippableItem {
  id:string;slot:EquipmentSlot;weaponType?:string|null;armorCategory?:string|null;
  offhandType?:string|null;itemType?:string|null;classRestriction?:CharacterClass[];
@@ -13,11 +14,13 @@ export function armorCategory(item:EquippableItem):ArmorCategory|null {
  return null;
 }
 export function weaponType(item:EquippableItem):string|null {return item.weaponType || (item.slot==='weapon'?item.itemType:null) || null;}
-export function equipmentExclusion(job:CharacterClass,item:EquippableItem):string|null {
- if(item.classRestriction&&!item.classRestriction.includes(job))return 'This item is excluded for this job';
+export function equipmentExclusion(job:CharacterClass,item:EquippableItem,ranks: AARanks = {}):string|null {
  const category=armorCategory(item);
- if(category&&ARMOR_EXCLUSIONS[job].includes(category))return 'This armor category is excluded for this job';
- if(item.slot==='weapon'&&!WEAPON_RESTRICTIONS[job].includes(weaponType(item) as WeaponType))return 'This weapon is excluded for this job';
+ const licensed = item.slot === 'weapon' ? (ranks[weaponProficiencyId(weaponType(item) || '')] || 0) >= 1
+   : !!category && SLOT_DEFINITIONS[item.slot].armor && (ranks[armorProficiencyId(category, item.slot)] || 0) >= 1;
+ if(!licensed && item.classRestriction&&!item.classRestriction.includes(job))return 'This item is excluded for this job';
+ if(!licensed && category&&ARMOR_EXCLUSIONS[job].includes(category))return 'This armor category is excluded for this job';
+ if(!licensed && item.slot==='weapon'&&!WEAPON_RESTRICTIONS[job].includes(weaponType(item) as WeaponType))return 'This weapon is excluded for this job';
  if(item.slot==='offhand') {
   const kind=item.offhandType||item.itemType;
   if(kind==='shield'&&!['warrior','paladin','dark_knight','blood_knight'].includes(job))return 'This job cannot use a shield';
@@ -40,14 +43,14 @@ export function handConflict(weapon:EquippableItem|null,offhand:EquippableItem|n
 export const builtinItem=(id:string|null|undefined)=>id?EQUIPMENT_ITEMS[id]||null:null;
 
 export const ARMOR_LABELS:Record<ArmorCategory,string>={heavy_armor:'Heavy / plate',leather_armor:'Leather',light_armor:'Cloth / light'};
-export const WEAPON_LABELS:Record<WeaponType,string>={wand:'Wand',sword:'Sword',staff:'Staff',bow:'Bow',herbs:'Herbs','two-handed-sword':'Two-handed sword',fist:'Fist wraps',claws:'Claws',harp:'Harp',spoon:'Spoon'};
-export function equipmentPermissions(job:CharacterClass) {
+export const WEAPON_LABELS = Object.fromEntries(Object.entries(AA_WEAPONS).map(([type, value]) => [type, value.label])) as Record<WeaponType,string>;
+export function equipmentPermissions(job:CharacterClass, ranks: AARanks = {}) {
  return {
   offhands:['shield','quiver','potion','spellbook'].filter(kind=>{
    const item={id:kind,slot:'offhand' as const,offhandType:kind};
    return !equipmentExclusion(job,item) && WEAPON_RESTRICTIONS[job].some(type=>!handConflict({id:type,slot:'weapon',weaponType:type},item));
   }),
-  weapons:WEAPON_RESTRICTIONS[job].map(type=>WEAPON_LABELS[type]),
+  weapons:(Object.keys(WEAPON_LABELS) as WeaponType[]).filter(type=>!equipmentExclusion(job,{id:type,slot:'weapon',weaponType:type},ranks)).map(type=>WEAPON_LABELS[type]),
   armor:(Object.keys(ARMOR_LABELS) as ArmorCategory[]).filter(type=>!ARMOR_EXCLUSIONS[job].includes(type)).map(type=>ARMOR_LABELS[type]),
  };
 }
@@ -59,8 +62,8 @@ export function armorClassificationError(item:{slot:EquipmentSlot;armorCategory?
 }
 
 /** Display the same job, tier and hand-pair blockers that the equip API enforces. */
-export function equipmentUnavailable(job:CharacterClass,item:EquippableItem & {tier?:number},level:number,weapon:EquippableItem|null,offhand:EquippableItem|null):string|null {
- const exclusion=equipmentExclusion(job,item);
+export function equipmentUnavailable(job:CharacterClass,item:EquippableItem & {tier?:number},level:number,weapon:EquippableItem|null,offhand:EquippableItem|null,ranks: AARanks = {}):string|null {
+ const exclusion=equipmentExclusion(job,item,ranks);
  if(exclusion)return exclusion;
  const tier=item.tier ?? 1;
  const required=equipmentRequiredLevel(tier);

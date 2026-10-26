@@ -20,6 +20,7 @@ import { makePlayback, abilityEffect } from "../../shared/combat/presentation";
 import { resolveEnemyTurn } from "./enemy-turn";
 import { abilityDamage } from "../../shared/combat/abilityValues.ts";
 import { ENCOUNTER_TIERS } from "../../shared/encounter-tiers";
+import { preserveCombo } from '../../shared/aa';
 
 export function advancePhase(
   state: CombatSnapshot,
@@ -149,7 +150,7 @@ export function advancePhase(
         p.totals.questionsIncorrect++;
         p.consecutiveCorrectAnswers = 0;
         if (p.availableAbilities.includes("headshot"))
-          p.comboPoints = Math.max(0, p.comboPoints - 1);
+          p.comboPoints = preserveCombo(p.comboPoints, Math.max(0, p.comboPoints - 1), p.advancement?.comboFloor || 0);
         const provoke = ordered.find((x) => !x.isDead && x.buffs.provoke);
         damagePlayer(
           s,
@@ -208,7 +209,7 @@ export function advancePhase(
     leader(s);
     resolveEnemyTurn(s, fight, {
       random: () => rng(s),
-      damage: (id, raw, source, ignoreDefense, limit, fractional) => damagePlayer(s, id, raw, source, ignoreDefense, limit, fractional),
+      damage: (id, raw, source, ignoreDefense, limit, fractional, cause) => damagePlayer(s, id, raw, source, ignoreDefense, limit, fractional, cause),
       say: (actor, target, message, amount = 0, healing = false) => {
         const enemy=s.enemies.find(e=>e.id===target);
         event(s, healing?"heal":"ability", actor, target, amount, message,

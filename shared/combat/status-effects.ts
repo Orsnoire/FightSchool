@@ -6,6 +6,18 @@ export const STATUS_LABELS: Record<StatusType, string> = {
 };
 const controlTypes = new Set<StatusType>(["stun", "paralysis", "web", "hypnosis", "stare", "fear", "suffocate"]);
 export const isHypnosis = (x: CombatStatus) => x.type === "hypnosis" || x.type === "stare";
+/** Conservative exception: one automatic basic attack, never an unrestricted turn. */
+export function naturalAgilityEligible(p: CombatPlayer, round: number): boolean {
+  const statuses = (p.statuses || []).filter(x => x.throughRound === undefined || x.throughRound >= round);
+  return !p.isDead && p.characterClass !== 'priest' && p.lastAnswerCorrect === true &&
+    !!p.actionBlocked && p.actionBlocked.round === round && ['stun', 'hypnosis', 'stare'].includes(p.actionBlocked.reason) &&
+    statuses.some(x => x.type === 'stun' || isHypnosis(x)) &&
+    !statuses.some(x => ['web', 'suffocate', 'fear', 'trip'].includes(x.type) ||
+      (x.type === 'paralysis' && x.actionFailure?.round === round && x.actionFailure.skip));
+}
+export function naturalAgilityAttack(p: CombatPlayer, round: number): boolean {
+  return p.agilityAttack?.round === round && p.agilityAttack.allowed && naturalAgilityEligible(p, round);
+}
 /** Shared by selection validation, readiness and the student waiting view. */
 export function combatActionBlock(s: Pick<CombatSnapshot, "round" | "enemies">, p: CombatPlayer): CombatPlayer["actionBlocked"] {
   if (p.actionBlocked?.round === s.round) return p.actionBlocked;
@@ -134,6 +146,12 @@ export function prepareStatusActions(s: CombatSnapshot, random: () => number): v
     if (paralysis && paralysis.actionFailure?.round !== s.round)
       paralysis.actionFailure = { round: s.round, skip: random() < (paralysis.chance ?? 0.3) };
     refreshActionBlock(s, p, webEscape || !!web);
+    if (!prepared && (p.advancement?.agilityChance || 0) > 0 && naturalAgilityEligible(p, s.round))
+      p.agilityAttack = { round: s.round, allowed: random() < p.advancement!.agilityChance };
+    if (naturalAgilityAttack(p, s.round)) {
+      const previous = s.enemies.find(e => e.id === p.questionAction?.targetId && e.health > 0);
+      p.questionAction = { ability: 'attack', targetId: previous?.id || s.enemies.find(e => e.health > 0)?.id || '' };
+    }
   }
 }
 export function cleansePlayer(s: CombatSnapshot, p: CombatPlayer): void {

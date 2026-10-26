@@ -5,6 +5,8 @@ import { roundHP, activeEnemies } from "../../shared/combat/encounters";
 import { effectiveDefense, isHypnosis, releaseInvalidStatuses } from "../../shared/combat/status-effects";
 import type { DamageType } from "../../shared/combat/damage-types";
 import { currentHP } from "../../shared/combat/hp";
+import { rng } from './random';
+export type IncomingDamageCause = 'monster_attack' | 'periodic' | 'wrong_answer' | 'self';
 
 /** Saved pre-balance encounters keep fractional HP until that fight ends. */
 export const resolvedHP = (s: CombatSnapshot, value: number, maximum: number) =>
@@ -48,6 +50,7 @@ export function damagePlayer(
   ignoreDefense = false,
   limit = Infinity,
   fractional = false,
+  cause: IncomingDamageCause = source === 'wrong_answer' ? 'wrong_answer' : 'self',
 ) {
   const p = s.players[id];
   if (!p || p.isDead) return 0;
@@ -61,6 +64,11 @@ export function damagePlayer(
   if (p.buffs.immunity || (p.buffs.dodge && source === "wrong_answer")) {
     event(s, "block", id, id, damage, `${p.nickname} avoided ${damage}`);
     p.totals.damageBlocked += damage;
+    return 0;
+  }
+  if (damage > 0 && limit > 0 && (cause === 'monster_attack' || cause === 'wrong_answer') &&
+    (p.advancement?.dodgeChance || 0) > 0 && rng(s) < p.advancement!.dodgeChance) {
+    event(s, 'ability', id, id, 0, `${p.nickname} dodged the attack`, { abilityId: 'aa_dodge', effect: 'block' });
     return 0;
   }
   const guards = Object.values(s.players).filter(

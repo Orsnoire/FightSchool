@@ -1,11 +1,13 @@
 # Alternate Advancement — active October 26, 2026
 
-- Owner authorized implementation of the [AA plan](AA_IMPLEMENTATION_PLAN.md), with proposed lower-power changes and conservative defaults for remaining questions. Preserve the requested single-stat bonuses/costs and character growth; no total active-AA budget.
-- Branch: `feature/alternate-advancement`; draft PR publication is the next step before substantive code. Base `7d31da3`; planning commit `a5b99a0`.
+- Owner authorized implementation of the [AA plan](https://github.com/Orsnoire/FightSchool/blob/feature/alternate-advancement/docs/AA_IMPLEMENTATION_PLAN.md), with proposed lower-power changes and conservative defaults for remaining questions. Preserve the requested single-stat bonuses/costs and character growth; no total active-AA budget.
+- Branch: `feature/alternate-advancement`; [draft PR #86](https://github.com/Orsnoire/FightSchool/pull/86). Claim published at `ddb2eee`; base `7d31da3`.
 - Decisions: 60 overflow XP per AA; dodge 10/20/30/40%; potion preservation 10/25/50%; Natural Agility 25/50/75% for 2/3/8 AA; protected-floor combo preservation; separate HP/MP tracks; two baseline cross-class slots plus three purchased slots. Existing earned XP/ranks/loadouts must survive caps and migration.
 - Scope: shared catalog/effective effects, atomic wallet/purchases, tier-aware stats/proficiencies/loadouts, deterministic combat mechanics, paid recustomization, Advancement UI, meaningful database/combat/browser verification. Campaign integration uses a shared power-context contract; campaign runtime remains separate.
-- State: claim and approved decisions only. Implementation and verification pending. Not merged or deployed. C12 #75 (`348b034`) and Campaign #81 (`d7c4a83`) were inspected and remain separate; neither is an AA implementation.
-- Exact next action: publish this claim and draft PR, then implement catalog/wallet and preserve existing reward transactions.
+- Completed in the first implementation checkpoint: shared catalog/effective-rank projection; additive migration 0018 preserving AA XP and fractional carry; atomic receipt-backed purchases and customization service; ordered cross-class data with legacy-write synchronization; tier-aware stat/proficiency/slot effects; lower-power dodge/potion preservation and one automatic Natural Agility basic attack. Existing shared EXP formula is unchanged.
+- Verification so far: **11 targeted AA checks pass**, including migrated PostgreSQL, spend/retry/ownership, stat/tier boundaries and deterministic mechanics. TypeScript passed before the test addition; full regression/browser verification remains pending.
+- State: **INCOMPLETE**. Advancement screen, five-slot editing, paid appearance endpoint gating, more boundary/recovery coverage and full acceptance remain unfinished. Not merged or deployed. C12 #75 (`348b034`) and Campaign #81 (`d7c4a83`) remain separate.
+- Exact next action: complete the Advancement UI and all loadout/appearance integrations, then run regression, browser, migration and balance checks. Do not merge this checkpoint.
 
 # Solo exit EXP and periodic effects — released October 26, 2026
 

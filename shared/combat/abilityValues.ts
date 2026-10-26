@@ -3,7 +3,7 @@ import { getTotalMechanicUpgrades } from "../jobSystem";
 import { canonicalAbility, firstAidHealing } from "./abilities";
 import type { CombatPlayer } from "./model";
 
-export type AbilityContext = Pick<CombatPlayer, "stats" | "characterClass" | "jobLevels" | "mp" | "health" | "maxHealth" | "healingPotions" | "shieldPotions" | "consecutiveCorrectAnswers" | "equipmentEffects">;
+export type AbilityContext = Pick<CombatPlayer, "stats" | "characterClass" | "jobLevels" | "mp" | "health" | "maxHealth" | "healingPotions" | "shieldPotions" | "consecutiveCorrectAnswers" | "equipmentEffects" | "advancement">;
 const whole = (n: number) => Math.max(0, Math.floor(n));
 
 /** Raw DoT values shared by execution and previews; defenses apply per hit/tick. */
@@ -49,7 +49,7 @@ export function abilityDamage(p: AbilityContext, ability: string, streak = p.con
   }
 }
 
-export function baseAbilityHealing(p: AbilityContext, ability: string): number | undefined {
+function unmodifiedAbilityHealing(p: AbilityContext, ability: string): number | undefined {
   const { mnd, vit } = p.stats;
   switch (canonicalAbility(ability)) {
     case "first_aid": return firstAidHealing(mnd);
@@ -63,6 +63,12 @@ export function baseAbilityHealing(p: AbilityContext, ability: string): number |
     case "crescendo": return (p.jobLevels.bard || 1) / 2;
     default: return undefined;
   }
+}
+
+export function baseAbilityHealing(p: AbilityContext, ability: string): number | undefined {
+  const base = unmodifiedAbilityHealing(p, ability);
+  // Full heals and fixed revives do not grow; lifesteal never passes through here.
+  return base === undefined ? undefined : base + (canonicalAbility(ability) === 'inner_peace' ? 0 : p.advancement?.flat.healing || 0);
 }
 
 export function abilityHealing(p: AbilityContext, ability: string): number | undefined {

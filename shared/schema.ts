@@ -464,9 +464,12 @@ export function calculateCharacterStats(
   characterClass: CharacterClass,
   equipmentStats: EquipmentStats,
   passiveBonuses: { str?: number; int?: number; agi?: number; mnd?: number; vit?: number },
-  mechanicUpgrades: { maxComboPoints?: number; potionCraftBonus?: number; hexDuration?: number; siphonHealBonus?: number } = {}
+  mechanicUpgrades: { maxComboPoints?: number; potionCraftBonus?: number; hexDuration?: number; siphonHealBonus?: number } = {},
+  advancement?: import('./aa').AAEffects,
 ): CharacterStats {
   const baseJob = CLASS_STATS[characterClass];
+  if (advancement) passiveBonuses = Object.fromEntries((['str', 'int', 'agi', 'mnd', 'vit'] as const)
+    .map(stat => [stat, (passiveBonuses[stat] || 0) + advancement.primary[stat]]));
   
   // Calculate base stats (job + equipment + passives)
   const str = (baseJob.str || 0) + (equipmentStats?.str || 0) + (passiveBonuses?.str || 0);
@@ -476,12 +479,12 @@ export function calculateCharacterStats(
   const vit = (baseJob.vit || 0) + (equipmentStats?.vit || 0) + (passiveBonuses?.vit || 0);
   
   // Calculate derived stats
-  const maxHp = Math.max(1, Math.floor(baseJob.baseHP + vit));
-  const maxMp = (int + mnd) * 3;
-  const def = (equipmentStats?.def || 0);
-  const atk = (equipmentStats?.atk || 0);
-  const mat = (equipmentStats?.mat || 0);
-  const rtk = (equipmentStats?.rtk || 0);
+  const maxHp = Math.max(1, Math.floor(baseJob.baseHP + vit)) + (advancement?.flat.maxHp || 0);
+  const maxMp = (int + mnd) * 3 + (advancement?.flat.maxMp || 0);
+  const def = (equipmentStats?.def || 0) + (advancement?.flat.def || 0);
+  const atk = (equipmentStats?.atk || 0) + (advancement?.flat.atk || 0);
+  const mat = (equipmentStats?.mat || 0) + (advancement?.flat.mat || 0);
+  const rtk = (equipmentStats?.rtk || 0) + (advancement?.flat.rtk || 0);
   const maxComboPoints = (agi * 2) + (mechanicUpgrades.maxComboPoints || 0);
   
   return {
