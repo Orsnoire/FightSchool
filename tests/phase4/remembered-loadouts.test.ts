@@ -23,9 +23,9 @@ test('remembered loadouts retain empty slots and sanitize removed, unowned, wron
 test('restoration rechecks held-item pairs and cross-class unlocks, including duplicates and native-job abilities', () => {
   const levels = {warrior:15, wizard:15, herbalist:15};
   const abilities = getCrossClassAbilities('warrior', levels as any);
-  const saved = {...captureLoadout(getStartingEquipment('warrior')), crossClassAbility1:abilities[0].id, crossClassAbility2:abilities[1].id};
+  const saved = {...captureLoadout(getStartingEquipment('warrior')), crossClassAbility1:abilities[0].id, crossClassAbility2:abilities[1].id, crossClassAbilities:[abilities[0].id, abilities[1].id]};
   assert.deepEqual(restoreLoadout('warrior',saved,[],levels,{}),saved);
-  assert.equal(restoreLoadout('warrior',{...saved,crossClassAbility2:abilities[0].id},[],levels,{}).crossClassAbility2,null);
+  assert.equal(restoreLoadout('warrior',{...saved,crossClassAbilities:[abilities[0].id,abilities[0].id]},[],levels,{}).crossClassAbility2,null);
   const revoked = restoreLoadout('warrior',saved,[],{},{});
   assert.equal(revoked.crossClassAbility1,null);
   assert.equal(revoked.crossClassAbility2,null);

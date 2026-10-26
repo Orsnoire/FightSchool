@@ -3,7 +3,7 @@ import { equipmentUnavailable, handConflict, type EquippableItem } from './equip
 import { equipmentEffectText } from './tier-one-equipment';
 export type ComparisonItem = EquippableItem & {name:string;stats:EquipmentItemStats;tier?:number};
 export interface ComparisonLoadout {
-  student?: Partial<Record<EquipmentSlot,string|null>> & {characterClass?:CharacterClass|null};
+  student?: Partial<Record<EquipmentSlot,string|null>> & {characterClass?:CharacterClass|null;aaRanks?:import('./aa').AARanks};
   items:Record<string,ComparisonItem>;
   level:number;
   loading?:boolean;
@@ -30,7 +30,7 @@ export function compareEquipment(candidate:ComparisonItem, context:ComparisonLoa
  const newEffect=equipmentEffectText(candidate.id);
  return {current,removedOffhand,rows,
   equipped:current?.id===candidate.id,
-  blocker:equipmentUnavailable(student.characterClass || 'warrior',candidate,context.level,weapon,offhand),
+  blocker:equipmentUnavailable(student.characterClass || 'warrior',candidate,context.level,weapon,offhand,student.aaRanks),
   gainedEffect:newEffect && !oldEffects.includes(newEffect) ? newEffect : null,
   lostEffects:oldEffects.filter(text=>text!==newEffect),
  };

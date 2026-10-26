@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ArrowLeft, Swords, Target, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { type Guild, type Student, type StudentJobLevel, type CharacterClass } from "@shared/schema";
+import { crossClassSelections } from '@shared/job-loadouts';
+import { resolveAAEffects } from '@shared/aa';
+import { effectiveLevels } from '@shared/quests';
 import { availableAbilities, hasOffensiveAbility } from "@shared/combat/abilities";
 
 interface Fight {
@@ -41,15 +44,14 @@ export default function GuildFights() {
   });
   const loadoutReady = !!student && !!jobLevels && !studentFetching && !levelsFetching && !studentError && !levelsError;
   const levels = Object.fromEntries((jobLevels || []).map(row => [row.jobClass, row.level])) as Partial<Record<CharacterClass, number>>;
-  const canDamage = !!student && hasOffensiveAbility(availableAbilities(
-    student.characterClass || "warrior", levels,
-    [student.crossClassAbility1, student.crossClassAbility2].filter((id): id is string => !!id),
-  ));
-
   const { data: guild, isLoading: guildLoading } = useQuery<Guild>({
-    queryKey: [`/api/guilds/${guildId}`],
-    enabled: !!guildId,
+    queryKey: [`/api/guilds/${guildId}`], enabled: !!guildId,
   });
+  const tier = guild?.limitTier || 1;
+  const canDamage = !!student && hasOffensiveAbility(availableAbilities(
+    student.characterClass || 'warrior', effectiveLevels(levels, tier),
+    crossClassSelections(student).slice(0, 2 + resolveAAEffects(student.aaRanks, tier).extraSlots).filter((id): id is string => !!id),
+  ));
 
   const { data: fights = [], isLoading: fightsLoading } = useQuery<Fight[]>({
     queryKey: [`/api/guilds/${guildId}/fights`],

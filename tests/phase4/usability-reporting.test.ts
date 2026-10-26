@@ -283,6 +283,7 @@ test("session reports retain immutable attempts, compose filters and preserve le
       ).status,
       400,
     );
+    await db.insert(s.studentJobLevels).values({studentId:p.id,jobClass:"warrior",level:2,experience:0});
     const profile = await combatProfile(db, { ...p, armor: created.body.id });
     const withGear = addStudent(
       initialCombatState("GEARTEST", fight),

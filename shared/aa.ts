@@ -1,4 +1,4 @@
-import type { CharacterClass, CharacterStats, EquipmentSlot, WeaponType } from './schema';
+import type { CharacterClass, EquipmentSlot, WeaponType } from './schema';
 import { SLOT_DEFINITIONS } from './equipment-slots';
 
 /** Economy v1 is fixed: changing the class XP curve must not revalue earned points. */
@@ -129,14 +129,6 @@ export function resolveAAEffects(ranks: AARanks | null | undefined, tier: number
 }
 export function preserveCombo(before: number, normalAfter: number, protectedPoints: number) {
   return Math.max(normalAfter, Math.min(before, protectedPoints));
-}
-/** Pure stat stage, shared by lobby estimates and participant construction. */
-export function applyAAFlatStats(stats: CharacterStats, effects?: AAEffects): CharacterStats {
-  if (!effects) return stats;
-  const flat = effects.flat;
-  return { ...stats, atk: stats.atk + flat.atk, mat: stats.mat + flat.mat, rtk: stats.rtk + flat.rtk,
-    def: stats.def + flat.def, hp: stats.hp + flat.maxHp, maxHp: stats.maxHp + flat.maxHp,
-    mp: stats.mp + flat.maxMp, maxMp: stats.maxMp + flat.maxMp };
 }
 /** Informational relevance only; never determines purchase or combat eligibility. */
 export function aaRelevant(upgrade: AAUpgrade, job: CharacterClass, weapon?: string | null): boolean {

@@ -23,7 +23,7 @@ export function useClassAppearance(studentId: string | null, student: Student | 
   const handleClassChange = async (newClass: CharacterClass) => {
     if (!student?.gender) return;
     if (savedAppearance.isLoading || savedAppearance.isError || savedAppearance.saving) return;
-    try { await savedAppearance.save(appearanceDraft); }
+    try { if (!savedAppearance.data) await savedAppearance.save(appearanceDraft); }
     catch { toast({ title: 'Your appearance could not be saved. Please try again.', variant: 'destructive' }); return; }
     if (newClass === student.characterClass) {
       setShowClassModal(false);

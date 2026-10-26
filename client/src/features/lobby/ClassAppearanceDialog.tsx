@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AVATAR_JOBS, JOB_PRESENTATION, type AvatarJob } from '@shared/avatar/appearance';
 import { getUnlockedJobs } from "@shared/jobSystem";
 import { ALL_CHARACTER_CLASSES, type CharacterClass, type StudentJobLevel } from "@shared/schema";
+import { Link } from 'wouter';
 
 import type { LobbyStudent } from "./types";
 import type { useClassAppearance } from "./useClassAppearance";
@@ -35,9 +36,10 @@ export function ClassAppearanceDialog({ student, jobLevels, equippedVisuals, con
             <label className="block text-sm">Preview job<select aria-label="Preview job" className="block w-full mt-1 rounded border p-2 bg-background" value={previewJob} onChange={e => setPreviewJob(e.target.value as AvatarJob)}>
               {AVATAR_JOBS.map(job => <option key={job} value={job}>{JOB_PRESENTATION[job].name}</option>)}
             </select></label>
-            <AvatarAppearanceEditor value={appearanceDraft} onChange={setAppearanceDraft} modelLocked />
+            {!savedAppearance.data && <AvatarAppearanceEditor value={appearanceDraft} onChange={setAppearanceDraft} modelLocked />}
             <p className="text-sm text-muted-foreground">{previewJob === student.characterClass ? "Previewing your equipped gear." : "Starter gear preview. Returning jobs restore their saved loadout."}</p>
-            <Button disabled={savedAppearance.isLoading || savedAppearance.isError || savedAppearance.saving} onClick={() => student.characterClass && handleClassChange(student.characterClass)}>Save Appearance</Button>
+            {savedAppearance.data ? <Link href="/student/advancement?customize=1"><Button variant="outline">Recustomize character · 5 AA</Button></Link>
+              : <Button disabled={savedAppearance.isLoading || savedAppearance.isError || savedAppearance.saving} onClick={() => student.characterClass && handleClassChange(student.characterClass)}>Save initial appearance · Free</Button>}
             {savedAppearance.isError && <p role="alert">Your saved appearance could not load. <button className="underline" onClick={() => savedAppearance.refetch()}>Try again</button></p>}
           </div>
         </div>

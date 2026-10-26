@@ -50,7 +50,7 @@ export function equipmentPermissions(job:CharacterClass, ranks: AARanks = {}) {
    const item={id:kind,slot:'offhand' as const,offhandType:kind};
    return !equipmentExclusion(job,item) && WEAPON_RESTRICTIONS[job].some(type=>!handConflict({id:type,slot:'weapon',weaponType:type},item));
   }),
-  weapons:(Object.keys(WEAPON_LABELS) as WeaponType[]).filter(type=>!equipmentExclusion(job,{id:type,slot:'weapon',weaponType:type},ranks)).map(type=>WEAPON_LABELS[type]),
+  weapons:[...WEAPON_RESTRICTIONS[job], ...(Object.keys(WEAPON_LABELS) as WeaponType[]).filter(type=>!WEAPON_RESTRICTIONS[job].includes(type))].filter(type=>!equipmentExclusion(job,{id:type,slot:'weapon',weaponType:type},ranks)).map(type=>WEAPON_LABELS[type]),
   armor:(Object.keys(ARMOR_LABELS) as ArmorCategory[]).filter(type=>!ARMOR_EXCLUSIONS[job].includes(type)).map(type=>ARMOR_LABELS[type]),
  };
 }

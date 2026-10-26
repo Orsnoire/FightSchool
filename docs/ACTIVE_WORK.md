@@ -5,9 +5,10 @@
 - Decisions: 60 overflow XP per AA; dodge 10/20/30/40%; potion preservation 10/25/50%; Natural Agility 25/50/75% for 2/3/8 AA; protected-floor combo preservation; separate HP/MP tracks; two baseline cross-class slots plus three purchased slots. Existing earned XP/ranks/loadouts must survive caps and migration.
 - Scope: shared catalog/effective effects, atomic wallet/purchases, tier-aware stats/proficiencies/loadouts, deterministic combat mechanics, paid recustomization, Advancement UI, meaningful database/combat/browser verification. Campaign integration uses a shared power-context contract; campaign runtime remains separate.
 - Completed in the first implementation checkpoint: shared catalog/effective-rank projection; additive migration 0018 preserving AA XP and fractional carry; atomic receipt-backed purchases and customization service; ordered cross-class data with legacy-write synchronization; tier-aware stat/proficiency/slot effects; lower-power dodge/potion preservation and one automatic Natural Agility basic attack. Existing shared EXP formula is unchanged.
-- Verification so far: **11 targeted AA checks pass**, including migrated PostgreSQL, spend/retry/ownership, stat/tier boundaries and deterministic mechanics. TypeScript passed before the test addition; full regression/browser verification remains pending.
-- State: **INCOMPLETE**. Advancement screen, five-slot editing, paid appearance endpoint gating, more boundary/recovery coverage and full acceptance remain unfinished. Not merged or deployed. C12 #75 (`348b034`) and Campaign #81 (`d7c4a83`) remain separate.
-- Exact next action: complete the Advancement UI and all loadout/appearance integrations, then run regression, browser, migration and balance checks. Do not merge this checkpoint.
+- Second checkpoint: Advancement wallet/catalog/filter/rank/preview UI, shared five-slot editor, paid recustomization dialog and server bypass guards, shared server/client equipment projection, and initial model/gender synchronization implemented.
+- Verification so far: **34 focused AA/migration/Worker/loadout/reporting/data-cost checks pass**. TypeScript and client/Worker production builds pass. Full regression and browser acceptance are still pending.
+- State: **INCOMPLETE acceptance**. Broader combat/recovery boundaries, browser checks and balance report remain. Not merged or deployed. C12 #75 (`348b034`) and Campaign #81 (`d7c4a83`) remain separate.
+- Exact next action: run full regression; extend deterministic tier/replay/concurrency tests and desktop/phone browser acceptance; publish final balance and migration notes. Do not merge this checkpoint.
 
 # Solo exit EXP and periodic effects — released October 26, 2026
 

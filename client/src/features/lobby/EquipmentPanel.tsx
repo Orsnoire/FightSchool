@@ -45,7 +45,7 @@ export function EquipmentPanel({ student, jobLevels, inventoryItems, equippedIte
         </div>
       </CardHeader>
       <CardContent>
-        <EquipmentPermissions job={student.characterClass} />
+        <EquipmentPermissions job={student.characterClass} ranks={student.aaRanks} />
         {student[selectedSlot] && <Button variant="outline" size="sm" className="mb-4" onClick={() => updateEquipment(selectedSlot, null)}>Unequip {SLOT_LABELS[selectedSlot]}</Button>}
         {inventoryItems.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
@@ -62,7 +62,7 @@ export function EquipmentPanel({ student, jobLevels, inventoryItems, equippedIte
                 return true;
               })
               .map((item) => {
-                const unavailable = equipmentUnavailable(student.characterClass!, item, jobLevels.find(row => row.jobClass === student.characterClass)?.level || 1, equippedItemsMap[student.weapon || ''] || null, equippedItemsMap[student.offhand || ''] || null);
+                const unavailable = equipmentUnavailable(student.characterClass!, item, jobLevels.find(row => row.jobClass === student.characterClass)?.level || 1, equippedItemsMap[student.weapon || ''] || null, equippedItemsMap[student.offhand || ''] || null, student.aaRanks);
                 const isEquipped =
                   student[selectedSlot] === item.id;
 

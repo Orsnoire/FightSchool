@@ -126,3 +126,17 @@ BEGIN
  RETURN result;
 END;
 $$;
+
+--> statement-breakpoint
+-- Initial creation is free, but the chosen body must agree with the legacy render key.
+-- Only the successful insert fires; retries cannot overwrite a later paid change.
+CREATE FUNCTION sync_initial_avatar_gender() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ UPDATE students SET gender=CASE WHEN NEW.model_id='human-female-v1' THEN 'B' ELSE 'A' END,
+  loadout_revision=loadout_revision+1 WHERE id=NEW.student_id;
+ RETURN NEW;
+END;
+$$;
+--> statement-breakpoint
+CREATE TRIGGER student_avatar_initial_gender AFTER INSERT ON student_avatars
+FOR EACH ROW EXECUTE FUNCTION sync_initial_avatar_gender();

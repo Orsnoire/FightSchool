@@ -10,12 +10,15 @@ import { useAvatarAppearance } from '@/hooks/useAvatarAppearance';
 import { initialAppearance, JOB_PRESENTATION, STARTER_JOBS, type StarterJob } from '@shared/avatar/appearance';
 import { CLASS_STATS } from '@shared/schema';
 import { useToast } from '@/hooks/use-toast';
+import { useStudentLoadout } from '@/hooks/useStudentLoadout';
 
 export default function CharacterSelect() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const studentId = localStorage.getItem('studentId');
   const saved = useAvatarAppearance(studentId);
+  const { student } = useStudentLoadout(studentId);
+  useEffect(() => { if (student?.characterClass && student.gender) navigate('/student/lobby'); }, [student, navigate]);
   const [job, setJob] = useState<StarterJob>('warrior');
   const [appearance, setAppearance] = useState(() => initialAppearance());
   const [saving, setSaving] = useState(false);

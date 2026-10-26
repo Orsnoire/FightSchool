@@ -35,7 +35,10 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(migrated.loadout_revision, 0);
     assert.deepEqual(migrated.granted_jobs, []);
     assert.equal(migrated.aa_experience, 0);
-    const { granted_jobs:_grants,aa_experience:_aa,arms: _arms, job_loadouts: _saved, loadout_revision: _revision, ...preserved } = migrated;
+    assert.equal(migrated.aa_points_spent, 0);
+    assert.deepEqual(migrated.aa_ranks, {});
+    assert.deepEqual(migrated.cross_class_abilities, [null, null]);
+    const { aa_points_spent:_spent,aa_ranks:_ranks,aa_revision:_aaRevision,character_name:_characterName,cross_class_abilities:_abilities,granted_jobs:_grants,aa_experience:_aa,arms: _arms, job_loadouts: _saved, loadout_revision: _revision, ...preserved } = migrated;
     assert.deepEqual(preserved, legacyLoadout, 'arms migration preserves every existing student field');
     await pg.query('DELETE FROM students WHERE id=$1', [legacyId]);
     neonConfig.fetchFunction = async (_url, init) => {
@@ -148,14 +151,15 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.deepEqual((await api(avatarPath, "POST", student.cookie, appearance)).payload, appearance);
     assert.deepEqual((await api(avatarPath, "POST", student.cookie, {...appearance, skinColorId: PALETTES.skin[7].id})).payload, appearance);
     const changedAppearance = {...appearance, hairColorId: PALETTES.hair[7].id, eyeColorId: PALETTES.eyes[5].id};
-    assert.deepEqual((await api(avatarPath, "PUT", student.cookie, changedAppearance)).payload, changedAppearance);
+    await api(avatarPath, "PUT", student.cookie, changedAppearance, 409);
+    assert.deepEqual((await api(avatarPath, "GET", student.cookie)).payload, appearance);
     await api(avatarPath, "PUT", student.cookie, {...appearance, modelId: 'human-female-v1'}, 409);
     const afterAppearance = (await api(`/api/student/${student.payload.id}`, "GET", student.cookie)).payload;
     for (const key of ['characterClass','gender','weapon','headgear','armor','gold','totalXP']) assert.deepEqual(afterAppearance[key], beforeAppearance[key]);
     await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "scout", gender: "A" });
-    assert.deepEqual((await api(avatarPath, "GET", student.cookie)).payload, changedAppearance);
+    assert.deepEqual((await api(avatarPath, "GET", student.cookie)).payload, appearance);
     await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "wizard", gender: "A" });
-    assert.deepEqual((await api(avatarPath, "GET", student.cookie)).payload, changedAppearance);
+    assert.deepEqual((await api(avatarPath, "GET", student.cookie)).payload, appearance);
     const badOrigin = await worker.fetch(new Request(env.PUBLIC_ORIGIN + avatarPath, {method:'PUT',headers:{Origin:'https://untrusted.invalid',Cookie:student.cookie!,'Content-Type':'application/json'},body:JSON.stringify(appearance)}), env as any);
     assert.equal(badOrigin.status,403);
     const stock = (await api(`/api/student/${student.payload.id}`, 'GET', student.cookie)).payload.inventory;
@@ -220,11 +224,11 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     const cross = getCrossClassAbilities('warrior', {wizard:15} as any);
     await api(equipPath, 'PATCH', student.cookie, {crossClassAbility1:cross[0].id,crossClassAbility2:cross[1].id});
     await api(equipPath, 'PATCH', student.cookie, {crossClassAbility2:cross[0].id},400);
-    const wizardAgain = (await api(characterPath,'PATCH',student.cookie,{characterClass:'wizard',gender:'B'})).payload;
+    const wizardAgain = (await api(characterPath,'PATCH',student.cookie,{characterClass:'wizard',gender:'A'})).payload;
     assert.equal(wizardAgain.arms,null,'deliberately empty wizard arms are remembered');
     assert.equal(wizardAgain.headgear,'basic_laurel');
     assert.equal(wizardAgain.crossClassAbility1,null,'warrior abilities do not leak to wizard');
-    const back = (await api(characterPath,'PATCH',student.cookie,{characterClass:'warrior',gender:'B'})).payload;
+    const back = (await api(characterPath,'PATCH',student.cookie,{characterClass:'warrior',gender:'A'})).payload;
     for (const slot of EQUIPMENT_SLOTS) assert.equal(back[slot],customLoadout[slot]);
     assert.equal(back.crossClassAbility1,cross[0].id);
     assert.equal(back.crossClassAbility2,cross[1].id);
