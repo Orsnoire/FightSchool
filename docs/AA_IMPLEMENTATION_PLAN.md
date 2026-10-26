@@ -22,6 +22,8 @@ The owner authorized the proposed changes, delegated unresolved details to conse
 
 New encounters treat Soul Echo as an equipped cross-class passive: other classes need both Hex and Soul Echo; native Warlock 15 retains it automatically. It is never an action button. Historical saved rooms keep their original bonus until completion. This corrects a selectable no-op and an off-class bonus that previously ignored the passive slot. Existing multiclass primary-stat/mechanic bonuses are unchanged.
 
+Fortify's native and cross-class descriptions now state its implemented effect: double VIT for the fight, without stacking. The prior tooltip incorrectly promised toggle, maximum-HP and threat behavior, and borrowed Fortify displayed the native Monk combo-gain wording. This is a description correction, not a new stance or HP mechanic.
+
 See the [reproducible balance report](reviews/2026-10-26-alternate-advancement.md) and implementation checkpoint for verification. The review below is retained as the original proposal; approved decisions above supersede its open questions and proposed rates.
 
 ## 1. Goal and confirmed requirements

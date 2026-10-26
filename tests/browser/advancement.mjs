@@ -141,6 +141,7 @@ try {
   assert.equal(command.ability,'hex');assert.equal(command.targetId,'e1');
   state=selectAction(state,id,command.ability,command.targetId);state=advancePhase(state,fight,Date.now());await emit();
   await page.getByRole('button',{name:/^Fortify /}).click();
+  await page.getByText('Support action. Doubles VIT for this fight. Repeated uses do not stack.',{exact:true}).waitFor();
   await page.getByRole('button',{name:'Add Fortify',exact:true}).click();
   command=await page.evaluate(()=>window.aaCombat.sent.filter(m=>m.type==='action').at(-1));
   assert.equal(command.ability,'fortify');state=selectAction(state,id,command.ability,command.targetId);

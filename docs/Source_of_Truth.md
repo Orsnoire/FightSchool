@@ -143,7 +143,26 @@ and explicit student Leave fight behavior.
 The [October 26 solo-exit and periodic-effects decision](combat/solo-exit-xp-and-periodic-effects.md)
 shares teacher/solo-host completion EXP, counts total actual damage alongside
 correct answers, blocking and healing, and corrects Hex's MAT-based initial hit
-and later ticks plus Hemorrhage duration. It is implemented locally, not released.
+and later ticks plus Hemorrhage duration. PR #85 is merged, deployed and accepted;
+see the [release evidence](releases/2026-10-26-pr85.md).
+
+## Alternate Advancement — October 26, 2026
+
+The approved decisions at the top of the [AA implementation plan](AA_IMPLEMENTATION_PLAN.md)
+supersede its historical proposals. Preserve primary-stat amounts/prices and
+existing multiclass growth; do not introduce a total active-AA budget. Ranks
+are limited by the encounter's power tier, independent of adaptive enemy tier,
+and purchased ranks and loadout assignments survive lower-tier suppression.
+
+The owner's later combo correction applies to every class: wrong or unanswered
+questions clear all combo points. Combo Preservation keeps up to active rank
+1/2/3 of points already held; it does not create points or preserve the correct
+streak. Wrong-answer damage and retaliation do not refill those points.
+
+Implementation is in PR #86; [active work](ACTIVE_WORK.md) and the
+[balance report](reviews/2026-10-26-alternate-advancement.md) record verification
+and release status. Campaign's stricter power-context adapter remains a separate
+integration task; this does not release the campaign pilot.
 
 ## Current implementation and release queue
 
