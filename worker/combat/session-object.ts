@@ -18,7 +18,7 @@ import { addStudent, removeStudent } from "./participants";
 import { allLivingPlayersAnswered } from "./choices";
 import { initialCombatState, startQuestion, scaleEncounter } from "./encounter-setup";
 import { advancePhase } from "./phases";
-import { resurrectPlayer, eliminateEnemy, nextWave } from "./host-controls";
+import { resurrectPlayer, eliminateEnemy, nextWave, endFight } from "./host-controls";
 import { deterministicShuffle } from "./random";
 interface CombatEnv {
   DATABASE_URL: string;
@@ -233,8 +233,7 @@ export class CombatSessionObject {
           return Response.json({ success: true });
         }
         if (room.snapshot.currentPhase !== "game_over") {
-          room.snapshot = { ...room.snapshot, currentPhase: "game_over", victory: false,
-            endedByHost: true, endReason: "Fight ended by teacher", phaseDeadline: null,
+          room.snapshot = { ...endFight(room.snapshot),
             revision: room.snapshot.revision + 1 };
           await this.save(room);
         }
@@ -413,6 +412,10 @@ export class CombatSessionObject {
           const live = await this.repository.findLiveCombatSession(actor.sessionId);
           if (live && !(await studentCanAccessSession(this.repository, live, actor.actorId)))
             throw new CombatRuleError("Join the hosting guild before entering this fight.");
+          if (live?.soloStudentId && room.snapshot.soloHostId !== live.soloStudentId) {
+            room.snapshot.soloHostId = live.soloStudentId;
+            await this.save(room);
+          }
           const removal = room.removals?.[actor.actorId];
           if (removal) {
             if (removal.blocked) {
@@ -468,6 +471,7 @@ export class CombatSessionObject {
         }
         if (room.receipts.includes(key)) {
           if (command.type === "leave_fight" && actor.role === "student") {
+            if (room.snapshot.currentPhase === "game_over" && !room.resultsPersisted) await this.complete(room);
             this.acknowledgeLeave(ws, actor.actorId, actor.sessionId, command.commandId);
             return;
           }
@@ -483,13 +487,22 @@ export class CombatSessionObject {
           if (actor.role !== "student") throw new CombatRuleError("Student role required");
           // Identity comes from the authenticated socket, never a supplied target.
           // Completed rosters stay intact until their rewards have been persisted.
-          room.snapshot = removeStudent(room.snapshot, actor.actorId);
+          const live = await this.repository.findLiveCombatSession(actor.sessionId);
+          const soloHostExit = live?.soloStudentId === actor.actorId &&
+            !!room.snapshot.players[actor.actorId] && room.snapshot.currentPhase !== "waiting";
+          room.snapshot = soloHostExit
+            ? endFight(room.snapshot, "Solo fight ended by student")
+            : removeStudent(room.snapshot, actor.actorId);
           if (room.removals?.[actor.actorId]) room.removals[actor.actorId].requestedAt = undefined;
           room.snapshot.revision++;
           room.receipts = [...room.receipts, key].slice(-512);
           await this.save(room);
           await this.syncAlarm(room);
+          // Save earned solo results before dashboard navigation; failed SQL remains
+          // in the durable completion outbox and retries without a second award.
+          if (soloHostExit) await this.complete(room);
           this.acknowledgeLeave(ws, actor.actorId, actor.sessionId, command.commandId);
+          if (soloHostExit) return;
           if (["question", "actions", "abilities"].includes(room.snapshot.currentPhase) && allLivingPlayersAnswered(room.snapshot))
             await this.advance(room);
           else if (room.snapshot.currentPhase === "game_over") await this.complete(room);
@@ -570,14 +583,7 @@ export class CombatSessionObject {
         } else if (command.type === "end_fight") {
           if (actor.role !== "teacher")
             throw new CombatRuleError("Teacher role required");
-          room.snapshot = {
-            ...room.snapshot,
-            currentPhase: "game_over",
-            victory: false,
-            endReason: "Fight ended by teacher",
-            endedByHost: true,
-            phaseDeadline: null,
-          };
+          room.snapshot = endFight(room.snapshot);
         } else {
           if (actor.role !== "student" || !room.snapshot.players[actor.actorId])
             throw new CombatRuleError("Student participant required");

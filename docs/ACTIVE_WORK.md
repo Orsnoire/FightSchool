@@ -1,3 +1,13 @@
+# Solo exit EXP and periodic effects — active October 26, 2026
+
+- Owner requested earned EXP on solo exit using the shared host-ended formula, correct-answer/role contributions, and HoT/DoT investigation before any PR. Owner selected Hex initial MAT + INT and later ticks MAT + INT − 1, reduced by MDF.
+- Local branch: `fix/solo-exit-xp`, based on verified main `20188dc9c7a994d82a9e04ceb807b128002c8a25`. No competing implementation found. C12 #75 and Campaign #81 remain separate and unchanged.
+- Implemented: solo-host departure shares both teacher-end controls' completion transition and reward persistence; one EXP formula counts correct answers, actual damage/blocking/healing, preserving wrong-answer deduction, progress/attendance, stamina and receipts. Hex initial/tick values and full later duration, refresh without lost tick, independent owners, previews/logs; Hemorrhage no longer inherits Hex duration. Current catalog has no player HoT.
+- Verification: 347 tests pass across suites with Phase 4 verified in bounded-concurrency batches; TypeScript and client/Worker builds pass. Focused migrated SQL/DO tests prove reward/stamina deduplication after outages and lost acknowledgements. Original C10 historical fixture retained with narrowly documented changed-DoT exceptions and separate numeric/replay coverage.
+- Browser/CI: confirmation coverage added to existing Chromebook/phone test. Chromium download failed locally; browser CI remains pending. Default test fan-out stopped prematurely; bounded concurrency completed without relaxing assertions.
+- State: IMPLEMENTED LOCALLY / NOT PUSHED / NO PR / NOT MERGED / NOT DEPLOYED. The claim commit's push was blocked by automatic approval review because explicit permission to export to GitHub was missing. User then required the HoT/DoT investigation before any PR; implementation proceeded locally under that instruction. No permission bypass or publication retry performed.
+- Next: obtain explicit authorization to push this completed branch to `Orsnoire/FightSchool` and open its focused PR, then verify exact-head CI/browser checks before review. No migration/data reset. [Specification and investigation](combat/solo-exit-xp-and-periodic-effects.md).
+
 # Vampire, guild shop and battle joining — released October 22, 2026
 
 - Owner authorized merge and deployment. [PR #84](https://github.com/Orsnoire/FightSchool/pull/84) merged at `a6659482ea75b7eab8a83f96795d3001d8280ff7`, with the identical tree to reviewed head `646948cdb5ad84d52f24fa9ef628d9972a8c3001`.

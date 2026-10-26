@@ -58,6 +58,18 @@ test("student selection uses focused overlays while waiting and resolution revea
     await emit();
     assert.equal(document.querySelectorAll('[role="dialog"]').length, 1);
     assert.ok(button("Leave fight"), "leave is accessible in the phase window");
+    let leavePrompt = "";
+    dom.window.confirm = (message) => { leavePrompt = message || ""; return false; };
+    await act(async () => button("Leave fight").click());
+    assert.match(leavePrompt, /must return before completion/);
+    state.soloHostId = student().id;
+    await emit();
+    await act(async () => button("Leave fight").click());
+    assert.match(leavePrompt, /earned EXP will be saved/);
+    assert.match(leavePrompt, /no victory gold or loot/);
+    assert.equal(socket.sent.some((message: any) => message.type === "leave_fight"), false);
+    delete state.soloHostId;
+    await emit();
     assert.match(dialog().textContent!, /Healing potions 5\/5/);
     assert.equal(dialog().querySelector("b")?.textContent, "2 + 2");
     assert.ok(document.querySelector("main")?.textContent?.includes("herbalist"), "battlefield remains mounted behind the portal");

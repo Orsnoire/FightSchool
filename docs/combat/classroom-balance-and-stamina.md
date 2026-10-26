@@ -39,7 +39,9 @@ first reduction is 10%, its decay rate increases, and its floor is 1%.
 The counter belongs to the student, across all jobs, guilds, classroom rooms, and
 solo rooms. A completed win or loss counts after at least one resolved question,
 even if it earns no XP. An untouched room ended by the teacher does not count.
-Only persisted results count; quitting without a result grants no XP. The date
+Only persisted results count; quitting without a result grants no XP. The
+[October 26 solo-host exit decision](solo-exit-xp-and-periodic-effects.md) produces
+a normal partial result with this same stamina policy (not yet released). The date
 is the database award date in `America/Denver`. The next date starts fresh at
 midnight, including 23-hour and 25-hour daylight-saving days. Replaying an old
 result never changes today's stamina.

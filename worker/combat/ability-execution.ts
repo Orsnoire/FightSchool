@@ -2,7 +2,7 @@
  * No storage, transport, wall-clock reads or independent random sources. */
 import { type CombatSnapshot, type CombatPlayer } from "../../shared/combat/model.ts";
 import { hasOffensiveAbility, abilityProblem, COSTS, COMBOS, COOLDOWNS, ULTIMATES } from "../../shared/combat/abilities.ts";
-import { abilityDamage, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
+import { abilityDamage, abilityDot, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
 import { event } from "./state-events";
 import { abilityEffect } from "../../shared/combat/presentation";
 import { activeEnemies, bounceTarget } from "../../shared/combat/encounters";
@@ -184,23 +184,18 @@ function executeAbility(
     case "hemorrhage": {
       const e = s.enemies.find((e) => e.id === targetId);
       if (e) {
-        const duration =
-          2 +
-          (getTotalMechanicUpgrades(
-            p.jobLevels as Record<CharacterClass, number>,
-          ).hexDuration || 0);
+        const dot = abilityDot(p, id)!;
         e.effects = e.effects.filter(
           (x) => !(x.type === id && x.ownerId === p.studentId),
         );
         e.effects.push({
           ownerId: p.studentId,
           type: id,
-          rounds: duration,
-          damage: id === "hex" ? Math.max(0, int - 1) : atk / 2,
+          rounds: dot.rounds,
+          damage: dot.damage,
+          appliedRound: s.round,
         });
-        if (id === "hemorrhage") damage = damageValue;
-        if (id === "hex" && (p.jobLevels.warlock || 0) >= 15)
-          damage = (Math.max(0, int - 1) * duration) / 2;
+        damage = damageValue;
       }
       break;
     }
