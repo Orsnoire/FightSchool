@@ -1,3 +1,12 @@
+# Alternate Advancement — active October 26, 2026
+
+- Owner authorized implementation of the [AA plan](https://github.com/Orsnoire/FightSchool/blob/feature/alternate-advancement/docs/AA_IMPLEMENTATION_PLAN.md), with proposed lower-power changes and conservative defaults for remaining questions. Preserve the requested single-stat bonuses/costs and character growth; no total active-AA budget.
+- Branch: `feature/alternate-advancement`; [draft PR #86](https://github.com/Orsnoire/FightSchool/pull/86). Claim published at `ddb2eee`; base `7d31da3`.
+- Decisions: 60 overflow XP per AA; dodge 10/20/30/40%; potion preservation 10/25/50%; Natural Agility 25/50/75% for 2/3/8 AA; protected-floor combo preservation; separate HP/MP tracks; two baseline cross-class slots plus three purchased slots. Existing earned XP/ranks/loadouts must survive caps and migration.
+- Scope: shared catalog/effective effects, atomic wallet/purchases, tier-aware stats/proficiencies/loadouts, deterministic combat mechanics, paid recustomization, Advancement UI, meaningful database/combat/browser verification. Campaign integration uses a shared power-context contract; campaign runtime remains separate.
+- State: claim and approved decisions only. Implementation and verification pending. Not merged or deployed. C12 #75 (`348b034`) and Campaign #81 (`d7c4a83`) were inspected and remain separate; neither is an AA implementation.
+- Exact next action: resume the branch checkpoint in draft PR #86; implement catalog/wallet and preserve existing reward transactions.
+
 # Solo exit EXP and periodic effects — released October 26, 2026
 
 - Owner authorized merge and production deployment. [PR #85](https://github.com/Orsnoire/FightSchool/pull/85) merged at `5530459101438eb525c5a4c77ccc30d2b44b552e`, with identical tree `fade1156b8a2173bf7bd975577f109a3cb0258f7` to reviewed head `801fd82ea576fb3bdd6e79efaea927abffc15c63`.
