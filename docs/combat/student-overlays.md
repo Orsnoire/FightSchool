@@ -51,8 +51,9 @@ done. Leaving closes that student's other sockets for the room too. An empty
 waiting lobby remains open; an empty active fight ends. Interrupted connections
 retain participation and normal recovery.
 
-An unfinished departure grants no result, consistent with the existing stamina
-policy. The battlefield release supersedes the earlier entry restriction: a student
+An unfinished group-participant departure grants no result. The [October 26
+solo-host exception](solo-exit-xp-and-periodic-effects.md) ends the room and saves
+earned EXP through the shared teacher-ended calculation; that change is not yet released. The battlefield release supersedes the earlier entry restriction: a student
 may join or rejoin a running classroom fight at the next question. A returning
 student retains resources and participation; host removals require approval.
 Exiting a completed fight preserves its roster and pending/persisted rewards.

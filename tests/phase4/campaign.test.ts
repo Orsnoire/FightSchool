@@ -265,7 +265,7 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     const beforeUpgrade = (await call(path)).body;
     const oldLayout = { ...beforeUpgrade.layout, npcs: beforeUpgrade.layout.npcs.filter((n: any) => n.service !== 'items') };
     await db.update(s.campaigns).set({ layout: oldLayout }).where(eq(s.campaigns.id, created.body.id));
-    const upgrade = readFileSync(new URL('../../migrations/cloudflare/0020_campaign_consumables.sql', import.meta.url), 'utf8');
+    const upgrade = readFileSync(new URL('../../migrations/cloudflare/0021_campaign_consumables.sql', import.meta.url), 'utf8');
     await pg.exec(upgrade);
     const upgraded = (await call(path)).body;
     assert.deepEqual(upgraded.progress, beforeUpgrade.progress);
@@ -366,5 +366,7 @@ test('campaign room joins use frozen resources; eviction and reconnect do not re
   await restore().webSocketMessage(socket as any, JSON.stringify({ type: 'join', commandId: 'campaign-rejoin-2' }));
   assert.equal(data.get('room').snapshot.players[actor.id].health, 1); assert.equal(profileReads, 1);
   await restore().webSocketMessage(socket as any, JSON.stringify({ type: 'leave_fight', commandId: 'campaign-leave-3' }));
-  assert.equal(persisted.length, 1); assert.equal(persisted[0].departedPlayers[actor.id].health, 1);
+  assert.equal(persisted.length, 1); assert.equal(persisted[0].players[actor.id].health, 1, 'solo host exit retains the roster for shared EXP');
+  assert.equal(persisted[0].endedByHost, true);
+  assert.equal(persisted[0].victory, false);
 });

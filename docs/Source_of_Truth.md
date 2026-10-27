@@ -140,6 +140,30 @@ The [October 7 host panel and departure rules](combat/student-overlays.md#octobe
 record the consolidated host controls, attendance, temporary log placement,
 and explicit student Leave fight behavior.
 
+The [October 26 solo-exit and periodic-effects decision](combat/solo-exit-xp-and-periodic-effects.md)
+shares teacher/solo-host completion EXP, counts total actual damage alongside
+correct answers, blocking and healing, and corrects Hex's MAT-based initial hit
+and later ticks plus Hemorrhage duration. PR #85 is merged, deployed and accepted;
+see the [release evidence](releases/2026-10-26-pr85.md).
+
+## Alternate Advancement — October 26, 2026
+
+The approved decisions at the top of the [AA implementation plan](AA_IMPLEMENTATION_PLAN.md)
+supersede its historical proposals. Preserve primary-stat amounts/prices and
+existing multiclass growth; do not introduce a total active-AA budget. Ranks
+are limited by the encounter's power tier, independent of adaptive enemy tier,
+and purchased ranks and loadout assignments survive lower-tier suppression.
+
+The owner's later combo correction applies to every class: wrong or unanswered
+questions clear all combo points. Combo Preservation keeps up to active rank
+1/2/3 of points already held; it does not create points or preserve the correct
+streak. Wrong-answer damage and retaliation do not refill those points.
+
+PR #86 is merged, deployed and accepted at `207b7bb`; [active work](ACTIVE_WORK.md) and the
+[balance report](reviews/2026-10-26-alternate-advancement.md) record verification
+and release status. Campaign's stricter power-context adapter remains a separate
+integration task; this does not release the campaign pilot.
+
 ## Current implementation and release queue
 
 The [cleanup plan](CLEANUP_PLAN.md) is the current ordered implementation queue.
@@ -183,6 +207,10 @@ premium-regeneration policies must not be treated as separately approved details
 The [October 13 default shop correction](guild-quests-and-tiers.md#october-13-default-shop-inventory-correction)
 requires every defined progression tier's equipment in guild shops by default,
 while preserving shop unlocks and teacher custom stock. The correction in [PR #68](https://github.com/Orsnoire/FightSchool/pull/68) is merged and deployed in runtime `d18d1b5`; see current status for verified CI/deployment evidence.
+
+The [October 22 Tier 2 specification](combat/tier-two-equipment.md) adds the
+owner-approved Soldier's, Ranger's, Acolyte's and Ascetic's armor sets and revises
+common shop prices to 100 / 1,000 / 5,000 / 10,000 gold for tiers 1–4.
 
 The [October 7 Tier 1 specification](combat/tier-one-equipment.md) records the
 owner's level-2 equipment collection, revised tank VIT damage weighting and

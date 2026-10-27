@@ -9,6 +9,7 @@ import { campaignPath } from '../../shared/campaign/movement.ts';
 import { generateCampaignLayout } from '../../shared/campaign/generation.ts';
 import { healingActions, fieldHeal, normalizeResources, resetCampaignProgress } from '../../shared/campaign/resources.ts';
 import { initialCombatState, addStudent } from '../../worker/combat/engine.ts';
+import { projectCombatLoadout } from '../../shared/combat/loadout.ts';
 import { fight, student } from '../phase4/fixtures.ts';
 
 const origin = process.env.UI_ORIGIN || 'http://127.0.0.1:4173';
@@ -29,7 +30,7 @@ try {
       progress: { version: 1, zone: 'overworld', position: layout.overworld.spawn, job: 'herbalist', health: 1, maxHealth: player.maxHealth, mp: player.mp, maxMp: player.maxMp,
         healingPotions: 5, shieldPotions: 0, consumables: {}, itemProtections: {}, steps: 0, claimedUnlocks: [], explored: [], cleared: false, activeSessionId: null, lastCommandId: null } };
     let loadout = getStartingEquipment('herbalist');
-    const equipment = () => ({ loadout, items: ownedEquipment(view.inventory).map(id => EQUIPMENT_ITEMS[id]).filter(i => i && !equipmentUnavailable(view.progress.job, i, 2, EQUIPMENT_ITEMS[loadout.weapon], EQUIPMENT_ITEMS[loadout.offhand])).map(i => ({ ...i, stats: i.stats || {} })) });
+    const equipment = () => ({ loadout, items: ownedEquipment(view.inventory).map(id => EQUIPMENT_ITEMS[id]).filter(i => i && !equipmentUnavailable(view.progress.job, i, 2, EQUIPMENT_ITEMS[loadout.weapon], EQUIPMENT_ITEMS[loadout.offhand], player.advancement?.ranks)).map(i => ({ ...i, stats: i.stats || {} })) });
     let moveDelay = 0, rejectReset = false;
     const creations = [], commands = [];
     const stock = [{ id: 't1_fighter_sword', name: "Fighter's Sword", price: 150, shop: 'weapons', slot: 'weapon' }, { id: 't1_fighter_armor', name: "Fighter's Cuirass", price: 150, shop: 'armor', slot: 'armor' }];
@@ -188,8 +189,38 @@ try {
     await page.getByText('Ready — visit its keeper (!)', { exact: false }).waitFor();
     assert.deepEqual(view.progress.position, layout.overworld.spawn); assert.deepEqual(view.progress.claimedUnlocks, []);
     assert.ok(commands.every(c => c.commandId && !('health' in c.action)));
+    // The server supplies a tier-1 AA projection, including licensed equipment.
+    // Rendering/use commands never rewrite permanently selected cross-class slots.
+    const selections = ['fireball_crossclass', 'healing_potion_crossclass', 'hex_crossclass', 'mend_crossclass', 'fortify_crossclass'];
+    loadout = { ...getStartingEquipment('warrior'), offhand: null };
+    const projection = projectCombatLoadout('warrior', loadout, 4,
+      { 'cross-class-slots': 3, 'weapon:staff': 1, health: 3, mana: 3, 'natural:wisdom': 5 }, 1);
+    player = addStudent(initialCombatState('aa-campaign-preview', fight), student('warrior'), {
+      levels: { warrior: 4, priest: 4, warlock: 4, wizard: 4, herbalist: 4, monk: 4 },
+      crossClass: selections.slice(0, 2 + projection.advancement.extraSlots), ...projection,
+    }).players[student().id];
+    view.progress = normalizeResources({ ...view.progress, health: 1, mp: 1, consumables: { potion: 2 } }, player);
+    await page.reload(); await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
+    await page.locator('.campaign-resources').getByText(`1/${player.maxHealth}`, { exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: /^Mend ·/ }).count(), 0, 'tier-suppressed borrowed heal is absent');
+    await page.getByRole('button', { name: 'Equipment', exact: true }).click();
+    const weapon = page.getByLabel('Adventure Weapon', { exact: true });
+    assert.ok((await weapon.locator('option').allTextContents()).some(text => text.includes('Staff')));
+    await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), weapon.selectOption('basic_staff')]);
+    await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor();
+    assert.deepEqual(commands.at(-1).action, { type: 'equip', slot: 'weapon', itemId: 'basic_staff' });
+    assert.equal(view.progress.health, 1); assert.equal(view.progress.mp, 1);
+    await page.getByTestId('consumable-bag').locator('summary').click();
+    await page.getByText('Restore 6 HP. Cannot revive.', { exact: true }).waitFor();
+    await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: 'Use Potion', exact: true }).click()]);
+    await page.getByText('Potion ×1', { exact: true }).waitFor();
+    assert.equal(view.progress.health, 7);
+    await page.reload(); await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
+    await page.locator('.campaign-resources').getByText(`7/${player.maxHealth}`, { exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: `${output}/${viewport.width}-campaign-aa.png`, fullPage: true });
     await page.close();
   }
   assert.deepEqual(errors, []);
-  console.log('Campaign teacher setup, gates, exploration menu, inn, both shops, saved resources and encounter resume passed at desktop/phone sizes.');
+  console.log('Campaign teacher setup, gates, exploration menu, inn, both shops, saved resources, tier-limited AA, licensed gear and encounter resume passed at desktop/phone sizes.');
 } finally { await browser.close(); }

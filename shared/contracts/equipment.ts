@@ -69,6 +69,7 @@ export const loadoutInput = z
     ...Object.fromEntries(EQUIPMENT_SLOTS.map(slot => [slot, z.string().max(100).nullable().optional()])) as Record<typeof EQUIPMENT_SLOTS[number], z.ZodOptional<z.ZodNullable<z.ZodString>>>,
     crossClassAbility1: z.string().max(100).nullable().optional(),
     crossClassAbility2: z.string().max(100).nullable().optional(),
+    crossClassAbilities: z.array(z.string().max(100).nullable()).max(5).optional(),
   });
 export type LoadoutInput = z.infer<typeof loadoutInput>;
 export const purchaseInput = z.object({ itemId: equipmentIdSchema });

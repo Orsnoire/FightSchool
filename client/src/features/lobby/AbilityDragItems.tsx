@@ -75,7 +75,7 @@ export function AbilitySlot({
   isLocked,
   onRemove,
 }: {
-  slotNumber: 1 | 2;
+  slotNumber: number;
   equippedAbility?: Ability;
   isLocked: boolean;
   onRemove: () => void;
@@ -102,6 +102,7 @@ export function AbilitySlot({
         <div className="relative h-full flex flex-col">
           <button
             onClick={onRemove}
+            aria-label={`Remove ability from slot ${slotNumber}`}
             className="absolute -top-2 -left-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover-elevate active-elevate-2 z-10"
             data-testid={`button-remove-ability-${slotNumber}`}
           >

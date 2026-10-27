@@ -13,6 +13,7 @@ const guild = { id: "00000000-0000-4000-8000-000000000008", teacherId: fight.tea
 const errors = [];
 try {
   for (const viewport of [{ width: 1366, height: 768 }, { width: 390, height: 844 }]) {
+    guild.unlockedTier = 1;
     const page = await browser.newPage({ viewport });
     page.on("pageerror", error => errors.push(error.message));
     let savedStudent = { ...student(), guildId: guild.id, gold: 500, inventory: [] };
@@ -26,12 +27,13 @@ try {
       const path = url.pathname;
       let json = [];
       if (path === `/api/guilds/${guild.id}`) json = guild;
-      else if (path === "/api/equipment-items/shop") json = builtinShopItems();
+      else if (path === "/api/equipment-items/shop") json = builtinShopItems().filter(item => item.tier <= guild.unlockedTier);
       else if (path === `/api/student/${savedStudent.id}` || path.endsWith("/check-session")) json = savedStudent;
       else if (path.endsWith("/job-levels")) json = [{ jobClass: "warrior", level: 2 }];
       else if (path.endsWith("/purchase-item")) {
         purchases.push(route.request().postDataJSON());
-        savedStudent = { ...savedStudent, gold: 350, inventory: ["t1_fighter_armor"] };
+        const item = builtinShopItems().find(item => item.id === purchases.at(-1).itemId);
+        savedStudent = { ...savedStudent, gold: savedStudent.gold - item.shopPrice, inventory: [...savedStudent.inventory,item.id] };
         json = savedStudent;
       }
       return route.fulfill({ json });
@@ -47,7 +49,8 @@ try {
     assert.equal(await page.getByText("Default equipment", { exact: true }).count(), 37);
     assert.equal(await page.getByRole("button", { name: "Edit item" }).count(), 0);
     await selectTier("2");
-    await page.getByText("No items defined at tier 2 yet.", { exact: false }).waitFor();
+    await page.getByText("Soldier's Cuirass", { exact: true }).waitFor();
+    assert.equal(await page.getByText("Default equipment", { exact: true }).count(), 24);
     assert.ok((await page.getByRole("link").filter({ hasText: "Create item" }).getAttribute("href")).includes("tier=2"));
     await selectTier("1");
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -62,9 +65,20 @@ try {
     await page.screenshot({ path: `${output}/${viewport.width}-student-guild-shop.png` });
     await page.getByTestId("button-purchase-t1_fighter_armor").click();
     await page.getByText("Purchase Successful!", { exact: true }).waitFor();
-    await page.waitForFunction(() => document.querySelector('[data-testid="text-gold-balance"]')?.textContent === "350");
+    await page.waitForFunction(() => document.querySelector('[data-testid="text-gold-balance"]')?.textContent === "400");
     assert.equal(purchases.length, 1);
     assert.equal(purchases[0].itemId, "t1_fighter_armor");
+    guild.unlockedTier = 2;
+    savedStudent = {...savedStudent,gold:1400};
+    await page.goto(`${origin}/student/shop`);
+    await page.getByTestId("card-item-t2_soldier_armor").waitFor();
+    assert.equal(await page.locator('[data-testid^="card-item-"]').count(), 61);
+    await page.getByTestId("tab-armor").click();
+    assert.equal(await page.locator('[data-testid^="card-item-"]').count(), 8);
+    await page.getByTestId("button-purchase-t2_soldier_armor").click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="text-gold-balance"]')?.textContent === "400");
+    assert.equal(purchases.at(-1).itemId, "t2_soldier_armor");
+    await page.screenshot({path:`${output}/${viewport.width}-tier-two-shop.png`});
     await page.close();
   }
   assert.deepEqual(errors, []);

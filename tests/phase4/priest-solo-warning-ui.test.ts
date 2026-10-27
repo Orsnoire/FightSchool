@@ -32,7 +32,9 @@ test("Fight Library loads the real loadout, warns pure healers before creating a
   }}}});
   const root = createRoot(document.getElementById("root")!);
   localStorage.setItem("studentId", student().id);
-  cache.setQueryData([`/api/guilds/${guildId}`], {id: guildId, name: "Test guild"});
+  cache.setQueryData([`/api/guilds/${guildId}`], {id: guildId, name: "Test guild", limitTier: 2});
+  cache.setQueryData([`/api/guilds/${guildId}/active-sessions`], []);
+  dom.window.HTMLElement.prototype.scrollIntoView = () => {};
   cache.setQueryData([`/api/guilds/${guildId}/fights`], [{...fight, soloModeEnabled: true}]);
   try {
     const outfile = join(dir, "guild.mjs");
@@ -58,7 +60,9 @@ test("Fight Library loads the real loadout, warns pure healers before creating a
     assert.ok(button("Join a group fight"));
     assert.equal(document.querySelector('a[href="/student"]')?.textContent, "Join a teacher-hosted fight with its session code");
     await act(async () => button("Join a group fight").click());
-    assert.equal(location.pathname, "/student");
+    assert.equal(location.pathname, `/student/guilds/${guildId}/fights`);
+    assert.equal(document.querySelector('[role="dialog"]'), null);
+    assert.ok(document.getElementById("current-battles"));
     assert.equal(posts.length, 0, "group entry does not create a private solo room");
     await act(async () => { history.pushState({}, "", `/student/guilds/${guildId}/fights`); dispatchEvent(new dom.window.Event("popstate")); });
     await act(async () => solo().click());

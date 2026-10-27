@@ -127,6 +127,38 @@ try {
     await page.getByTestId('button-edit-question-0').click();
     assert.equal(await page.getByTestId('input-correct-answer').inputValue(), '16');
     await page.screenshot({ path: `${output}/${viewport.width}-c11-authoring.png` });
+    if (process.env.C11_BASELINE !== '1') {
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      const mathQuestion = {
+        question: 'Differentiate x^2. Compare x_1 and \\(\\frac{x^{2}}{2}\\).',
+        answers: ['2x', 'x^2', '\\frac{x^2}{2}', '<span class="math-inline" data-latex="x_{1}"></span>'],
+      };
+      const csv = [
+        ['Question Text', 'Question Type', 'Timer', 'Answer1', 'Answer2', 'Answer3', 'Answer4'],
+        [mathQuestion.question, 'MC', '90', ...mathQuestion.answers],
+      ].map(row => row.map(value => '"' + value.replaceAll('"', '""') + '"').join(',')).join('\n');
+      await page.getByTestId('input-csv-upload').setInputFiles({ name: 'math.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+      const imported = page.getByTestId('question-item-4');
+      await imported.waitFor();
+      assert.equal(await imported.locator('.katex').count(), 6);
+      assert.equal(await imported.locator('math msup').count(), 4);
+      assert.equal(await imported.locator('math mfrac').count(), 2);
+      assert.equal(await imported.locator('math msub').count(), 2);
+      assert.equal(await imported.locator('.katex-error').count(), 0);
+      await page.getByTestId('button-edit-question-4').click();
+      assert.equal(await page.getByTestId('textarea-question').inputValue(), mathQuestion.question);
+      await page.getByTestId('textarea-question').fill(mathQuestion.question + ' Use the power rule.');
+      await page.getByTestId('button-save-question').click();
+      await page.getByTestId('button-create-fight-submit').click();
+      await page.waitForURL('**/teacher');
+      assert.deepEqual(saved.questions[4].options, mathQuestion.answers);
+      assert.equal(saved.questions[4].correctAnswer, '2x');
+      await page.goto(origin + '/teacher/edit/' + fight.id);
+      await page.getByTestId('question-item-4').waitFor();
+      assert.equal(await page.getByTestId('question-item-4').locator('.katex').count(), 6);
+      await page.getByTestId('question-item-4').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: output + '/' + viewport.width + '-math-roundtrip.png' });
+    }
     await page.close();
 
     const lobby = await browser.newPage({ viewport });
@@ -150,7 +182,7 @@ try {
       } else if (path.endsWith('/equipment')) {
         const data = route.request().postDataJSON(); writes.push({ kind: 'equipment', data });
         if (failEquipment) { failEquipment = false; return route.fulfill({ status: 503, json: { error: 'Gear retry' } }); }
-        current = { ...current, ...data }; savedJobs[current.characterClass] = { ...savedJobs[current.characterClass], ...data }; json = current;
+        current = { ...current, ...data, ...(data.crossClassAbilities ? {crossClassAbility1:data.crossClassAbilities[0] ?? null,crossClassAbility2:data.crossClassAbilities[1] ?? null} : {}) }; savedJobs[current.characterClass] = { ...savedJobs[current.characterClass], ...data, crossClassAbility1:current.crossClassAbility1, crossClassAbility2:current.crossClassAbility2 }; json = current;
       } else if (path.endsWith('/character')) {
         const data = route.request().postDataJSON(); writes.push({ kind: 'character', data });
         if (failClass) { failClass = false; return route.fulfill({ status: 503, json: { error: 'Class retry' } }); }
@@ -175,7 +207,7 @@ try {
     await lobby.getByTestId('button-remove-ability-1').click();
     await lobby.getByText('Cross-class ability removed!', { exact: true }).waitFor();
     assert.equal(current.crossClassAbility1, null);
-    assert.match(await lobby.getByTestId('ability-slot-2').textContent(), /Locked/);
+    assert.match(await lobby.getByTestId(process.env.C11_BASELINE === '1' ? 'ability-slot-2' : 'ability-slot-3').textContent(), /Locked/);
     await lobby.getByTestId('filter-spell').click();
     const abilityIcon = lobby.getByTestId('draggable-ability-fireball_crossclass');
     await abilityIcon.scrollIntoViewIfNeeded();
@@ -196,6 +228,7 @@ try {
     await lobby.getByTestId('button-remove-ability-1').click();
     await lobby.getByTestId('button-remove-ability-1').waitFor({ state: 'hidden' });
     await lobby.getByTestId('button-open-class-modal').click();
+    if (process.env.C11_BASELINE === '1') {
     assert.equal(await lobby.getByLabel('Body model', { exact: true }).isDisabled(), true);
     await lobby.getByLabel('hair', { exact: true }).selectOption(PALETTES.hair[1].id);
     await lobby.getByLabel('Preview job', { exact: true }).selectOption('wizard');
@@ -219,6 +252,23 @@ try {
     assert.equal(await lobby.getByLabel('hair', { exact: true }).inputValue(), PALETTES.hair[1].id);
     await lobby.getByTestId('modal-class-warrior').click();
     await lobby.getByRole('dialog').waitFor({ state: 'hidden' });
+    } else {
+      assert.equal(await lobby.getByLabel('hair', {exact:true}).count(),0,'paid editor is no longer available in free class changes');
+      assert.equal(await lobby.getByRole('link',{name:'Recustomize character with AA'}).getAttribute('href'),'/student/advancement?customize=1');
+      const beforeClass=writes.length;
+      await lobby.getByTestId('modal-class-wizard').click();
+      await lobby.getByText('Failed to change class',{exact:true}).waitFor();
+      assert.equal(current.characterClass,'warrior');
+      await lobby.getByTestId('modal-class-wizard').click();
+      await lobby.getByRole('dialog').waitFor({state:'hidden'});
+      assert.equal(current.characterClass,'wizard');
+      assert.deepEqual(writes.slice(beforeClass).map(w=>w.kind),['character','character'],'class changes never write or charge appearance');
+      assert.equal(appearance.hairColorId,PALETTES.hair[0].id);
+      await lobby.getByTestId('text-weapon').filter({hasText:'Starter Staff'}).waitFor();
+      await lobby.getByTestId('button-open-class-modal').click();
+      await lobby.getByTestId('modal-class-warrior').click();
+      await lobby.getByRole('dialog').waitFor({state:'hidden'});
+    }
     await lobby.getByTestId('text-weapon').filter({ hasText: 'Starter Sword' }).waitFor();
     assert.equal(current.crossClassAbility1, null, 'returning jobs keep the authoritative remembered ability selection');
     await lobby.screenshot({ path: `${output}/${viewport.width}-c11-lobby.png` });

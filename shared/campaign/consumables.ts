@@ -30,6 +30,7 @@ export function normalizeProtections(protections: ItemProtections = {}): ItemPro
 export function bagWeight(bag: ConsumableBag = {}) {
   return CONSUMABLE_IDS.reduce((weight, id) => weight + (bag[id] || 0) * CONSUMABLES[id].weight, 0);
 }
+export const potionHealing = (p: Pick<CombatPlayer, 'advancement'>) => 5 + (p.advancement?.flat.healing || 0);
 export function consumableProblem(p: Pick<CombatPlayer, 'consumables' | 'health' | 'maxHealth' | 'statuses' | 'actionBlocked' | 'buffs' | 'itemProtections'>, id: ConsumableId): string | undefined {
   if (!(p.consumables?.[id]! > 0)) return 'None in your bag';
   if (p.health <= 0) return 'Cannot use while knocked out';
@@ -55,7 +56,7 @@ export function consumeItem(p: CombatPlayer, id: ConsumableId) {
   if (id === 'antivenom') delete p.buffs.poison;
   if (p.actionBlocked && cured.includes(p.actionBlocked.reason)) delete p.actionBlocked;
   if (!p.statuses.some(x => x.type === 'stun' || x.type === 'paralysis')) p.recoveryCorrectAnswers = 0;
-  if (id === 'potion') p.health = Math.min(p.maxHealth, p.health + 5);
+  if (id === 'potion') p.health = Math.min(p.maxHealth, p.health + potionHealing(p));
   if (id === 'psychic_needle') p.health -= 1;
   const protection = CONSUMABLES[id].protection;
   if (protection) p.itemProtections = { ...p.itemProtections, [protection]: 5 };

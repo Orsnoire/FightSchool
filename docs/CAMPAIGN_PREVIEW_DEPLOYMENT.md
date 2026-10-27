@@ -1,5 +1,13 @@
 # Campaign preview deployment
 
+> October 27 compatibility reconciliation is **review-only and not deployed**.
+> The preview still runs the October 21 build. Before a future authorized release,
+> follow the [AA/migration reconciliation procedure](reviews/2026-10-27-campaign-aa-reconciliation.md).
+> Legacy preview migration numbers below describe the historical release; canonical
+> campaign numbers are now 0019–0023 after production AA 0018. Do not apply the
+> standard migrator to the legacy preview before its guarded bridge. No reset is needed.
+
+
 The campaign remains in `feature/campaign-pilot`, PR #81. The classroom site and
 its short-domain redirect use a separate release path.
 
@@ -20,13 +28,14 @@ Do not use `Deploy Cloudflare Staging` to release this campaign branch.
 3. Check `Deploy Campaign Preview` in GitHub Actions. The preflight performs only
    a settings read and verifies preview bindings. An environment approval, if
    configured in GitHub, remains required.
-4. Apply any required forward-only migration to the isolated preview database
+4. For the reconciled runtime, first follow the linked preview bridge procedure
+   and verify canonical 0023 plus preserved playtest state. Apply any required forward-only migration to the isolated preview database
    through the authorized database tooling. Verify its migration ledger and saved
    campaign upgrade. Migrations 0020 and 0021 are applied to the preview (22 ledger
    entries); the boss-stamina migration preserves existing progress and rewards.
    Do not migrate the classroom database. The workflow intentionally has no database credential.
 5. Record `migration0020Applied: true`, `migration0021Applied: true` and
-   `mode: deploy` in the request, then commit.
+   `campaignAACompatibilityApplied: true` and `mode: deploy` in the request, then commit.
    The workflow checks out the exact requested source, runs its checks/tests/build,
    verifies campaign and combat UI at desktop/phone sizes, uploads that build,
    retains preview resources/secrets, and verifies the release

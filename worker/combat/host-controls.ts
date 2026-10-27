@@ -7,6 +7,13 @@ import { releaseInvalidStatuses } from "../../shared/combat/status-effects";
 import { event, leader } from "./state-events";
 import { defaultQuestionAction } from "./choices";
 
+/** Teacher endings and solo-host departures share completion and reward semantics. */
+export function endFight(state: CombatSnapshot, reason = "Fight ended by teacher"): CombatSnapshot {
+  if (state.currentPhase === "game_over") return state;
+  return { ...state, currentPhase: "game_over", victory: false,
+    endedByHost: true, endReason: reason, phaseDeadline: null };
+}
+
 /** Skip the current wave without inventing player damage or answer credit. */
 export function nextWave(state: CombatSnapshot, fight: FightRecord, now = Date.now()): CombatSnapshot {
   if (!canAdvanceWave(state)) throw new CombatRuleError("No next wave is available");

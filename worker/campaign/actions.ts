@@ -53,15 +53,16 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
       break;
     }
     case 'equip': {
-      const { catalog, owned, loadout, levels } = context;
+      const { catalog, owned, loadout, savedLoadout, levels } = context;
       if (action.itemId) {
         const item = catalog[action.itemId];
         if (!item || item.slot !== action.slot || !owned.includes(action.itemId)) throw new GameError('Equipment is not owned or has the wrong slot.');
-        const reason = equipmentUnavailable(next.job, item, levels[next.job] || 1, catalog[loadout.weapon || ''] || null, catalog[loadout.offhand || ''] || null);
+        const reason = equipmentUnavailable(next.job, item, levels[next.job] || 1, catalog[loadout.weapon || ''] || null, catalog[loadout.offhand || ''] || null, player.advancement?.ranks);
         if (reason) throw new GameError(reason);
       }
-      const changed = { ...loadout, [action.slot]: action.itemId };
-      if (handConflict(catalog[changed.weapon || ''] || null, catalog[changed.offhand || ''] || null))
+      const projected = { ...loadout, [action.slot]: action.itemId };
+      const changed = { ...savedLoadout, [action.slot]: action.itemId };
+      if (handConflict(catalog[projected.weapon || ''] || null, catalog[projected.offhand || ''] || null))
         throw new GameError('Remove the incompatible off-hand item first.');
       equipment = { job: next.job, loadout: changed };
       const updated = { ...student, ...(student.characterClass === next.job ? changed : {}),
@@ -141,7 +142,7 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
     next = { ...next, activeSessionId: id };
   }
   const result = await db.execute(sql`SELECT apply_campaign_action(${JSON.stringify({ campaign: campaign.id, student: student.id,
-    revision: input.revision, campaignRevision: campaign.revision, loadoutRevision: student.loadoutRevision,
+    revision: input.revision, campaignRevision: campaign.revision, loadoutRevision: student.loadoutRevision, aaRevision: student.aaRevision,
     command: input.commandId, state: next, ...(purchase ? { purchase } : {}), ...(itemPurchase ? { itemPurchase } : {}), ...(equipment ? { equipment } : {}), ...(encounter ? { encounter } : {}) })}::jsonb) AS result`);
   const outcome = result.rows[0].result as { error?: string };
   if (outcome.error) throw new GameError(outcome.error, 409);

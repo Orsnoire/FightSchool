@@ -2,7 +2,7 @@ import { readJson, bodyErrorResponse } from "../http/json";
 import { authenticateSession, type SessionConfig } from '../auth/session.ts';
 import type { IdentityRepository } from '../db/repository.ts';
 import type { GameDatabase } from '../db/database.ts';
-import { getStudentAvatar, createStudentAvatar, saveStudentAvatarColors } from '../db/avatar-repository.ts';
+import { getStudentAvatar, createStudentAvatar } from '../db/avatar-repository.ts';
 import { validAppearance } from '../../shared/avatar/appearance.ts';
 
 const json = (body: unknown, status=200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -26,6 +26,7 @@ export async function handleAvatar(request:Request, url:URL, repository:Identity
   if (request.method==='POST') return json(appearance(await createStudentAvatar(db,actor.actorId,value.modelId,value)));
   const existing=await getStudentAvatar(db,actor.actorId);
   if (!existing) return json({error:'Create your avatar first'},409);
-  if (value.modelId!==existing.modelId) return json({error:'The saved body model cannot be changed'},409);
-  return json(appearance(await saveStudentAvatarColors(db,actor.actorId,value)));
+  if (value.modelId === existing.modelId && value.hairColorId === existing.hairColorId &&
+    value.eyeColorId === existing.eyeColorId && value.skinColorId === existing.skinColorId) return json(appearance(existing));
+  return json({error:'Use Advancement to recustomize your character.'},409);
 }

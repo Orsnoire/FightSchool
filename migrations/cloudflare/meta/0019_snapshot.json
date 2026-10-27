@@ -1,6 +1,6 @@
 {
-  "id": "0199fd01-9df7-4342-b6d1-0aad0db03ef7",
-  "prevId": "5f15d1e2-8c65-443b-936c-d740f6fb6072",
+  "id": "5f15d1e2-8c65-443b-936c-d740f6fb6072",
+  "prevId": "78df7c36-731a-4ad5-8c80-583d4472e84c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3862,6 +3862,39 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "aa_points_spent": {
+          "name": "aa_points_spent",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "aa_ranks": {
+          "name": "aa_ranks",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "aa_revision": {
+          "name": "aa_revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "character_name": {
+          "name": "character_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cross_class_abilities": {
+          "name": "cross_class_abilities",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -3923,6 +3956,22 @@
         "students_aa_experience_check": {
           "name": "students_aa_experience_check",
           "value": "\"students\".\"aa_experience\" >= 0"
+        },
+        "students_aa_spent_check": {
+          "name": "students_aa_spent_check",
+          "value": "\"students\".\"aa_points_spent\" >= 0"
+        },
+        "students_aa_revision_check": {
+          "name": "students_aa_revision_check",
+          "value": "\"students\".\"aa_revision\" >= 0"
+        },
+        "students_aa_ranks_check": {
+          "name": "students_aa_ranks_check",
+          "value": "jsonb_typeof(\"students\".\"aa_ranks\") = 'object'"
+        },
+        "students_cross_class_list_check": {
+          "name": "students_cross_class_list_check",
+          "value": "\"students\".\"cross_class_abilities\" IS NULL OR (jsonb_typeof(\"students\".\"cross_class_abilities\") = 'array' AND jsonb_array_length(\"students\".\"cross_class_abilities\") <= 5)"
         }
       },
       "isRLSEnabled": false
@@ -4049,6 +4098,101 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.aa_purchases": {
+      "name": "aa_purchases",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upgrade_id": {
+          "name": "upgrade_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rank": {
+          "name": "rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost": {
+          "name": "cost",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version": {
+          "name": "catalog_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "receipt": {
+          "name": "receipt",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "aa_purchases_student_id_students_id_fk": {
+          "name": "aa_purchases_student_id_students_id_fk",
+          "tableFrom": "aa_purchases",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "aa_purchases_student_id_request_id_pk": {
+          "name": "aa_purchases_student_id_request_id_pk",
+          "columns": [
+            "student_id",
+            "request_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "aa_purchases_cost_check": {
+          "name": "aa_purchases_cost_check",
+          "value": "\"aa_purchases\".\"cost\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     }
   },

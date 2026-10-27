@@ -48,6 +48,10 @@ export interface CombatPlayer {
   consumables?: import('../campaign/consumables').ConsumableBag;
   itemProtections?: import('../campaign/consumables').ItemProtections;
   itemUsedRound?: number;
+  /** Frozen effective ranks and effects; missing means a historical room with no AA. */
+  advancement?: import('../aa').AAEffects;
+  /** Persisted one-round roll; does not cure the underlying control effect. */
+  agilityAttack?: { round: number; allowed: boolean };
   /** Server-only marker: answer recovery is prepared once before choices. */
   statusPreparedRound?: number;
   statuses?: CombatStatus[];
@@ -118,6 +122,8 @@ export interface CombatEnemy {
     type: string;
     rounds: number;
     damage: number;
+    /** New DoTs tick on subsequent rounds; absent in historical saved effects. */
+    appliedRound?: number;
   }>;
 }
 export interface CombatEvent {
@@ -172,6 +178,7 @@ export interface CombatSnapshot {
   completedRounds?: number;
   damageLeaderId?: string | null;
   endedByHost?: boolean;
+  soloHostId?: string;
   enemies: CombatEnemy[];
   questionStartTime: number | null;
   phaseStartTime: number;

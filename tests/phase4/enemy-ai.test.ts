@@ -242,14 +242,64 @@ test("Purify removes poison and paralysis without spending an extra question act
   s = advanceTo(s, "abilities", f); s = selectAction(s, id, "purify", "p1"); s = advancePhase(s, f);
   assert.equal(s.players.p1.statuses!.length, 0);
 });
-test("Vampiric Bite heals by actual player HP percentage and cannot overheal; cooldown is five full rounds", () => {
+test("Vampiric Bite heals only actual HP drained; cooldown is five full rounds", () => {
   const { s, f } = state("vampiric_bite"); s.enemies[0].health = 100;
   s.players[id].stats.def = 0; s.players[id].stats.vit = 0;
   const { hits } = execute(s, f);
-  assert.equal(s.enemies[0].health, 100 + hits[0].dealt / 100 * 1000);
+  assert.equal(s.enemies[0].health, 100 + hits[0].dealt);
   assert.equal(s.enemies[0].aiState!.readyRounds.vampiric_bite, 7);
   s.round = 6; assert.equal(chooseEnemyRule(s, s.enemies[0], () => 0).move, "attack");
   s.round = 7; assert.equal(chooseEnemyRule(s, s.enemies[0], () => 0).move, "vampiric_bite");
+});
+test("Vampiric Bite healing follows resolved damage, HP limits and JSON recovery in current and legacy rooms", () => {
+  for (const modern of [false, true]) {
+    const cases = [
+      { name: "large boss", drained: 12, healed: 12 },
+      { name: "armor and vitality", drained: 6, healed: 6 },
+      { name: "partial shield", drained: 5, healed: 5 },
+      { name: "full shield", drained: 0, healed: 0 },
+      { name: "guard", drained: 0, healed: 0 },
+      { name: "immunity", drained: 0, healed: 0 },
+      { name: "overkill", drained: 3, healed: 3 },
+      { name: "solo cap", drained: 4, healed: 4 },
+      { name: "missing HP cap", drained: 12, healed: 2 },
+      { name: "full vampire", drained: 12, healed: 0 },
+      ...(modern ? [{ name: "concentration cap", drained: 35, healed: 35 }] : []),
+    ];
+    for (const { name, drained, healed } of cases) {
+      const { s, f } = state("vampiric_bite", "warrior", 2);
+      const p = s.players[id], e = s.enemies[0];
+      s.currentPhase = "question_resolution";
+      p.threat = 100;
+      p.stats.def = p.stats.vit = 0;
+      e.maxHealth = 10000; e.health = 100;
+      if (modern) {
+        s.encounterRules = 2; s.encounterHpPool = 10000;
+        s.enemyRoundBudget = 24; e.role = "boss";
+      }
+      if (name === "armor and vitality") { p.stats.def = 4; p.stats.vit = 4; }
+      if (name === "partial shield") p.buffs.shield = { amount: 7, rounds: 1 };
+      if (name === "full shield") p.buffs.shield = { amount: 20, rounds: 1 };
+      if (name === "guard") s.players.p1.buffs[`guard:${id}`] = { amount: 20, rounds: 1 };
+      if (name === "immunity") p.buffs.immunity = { amount: 1, rounds: 1 };
+      if (name === "overkill") p.health = 3;
+      if (name === "solo cap") s.soloEnemyDamageCap = 4;
+      if (name === "missing HP cap") e.health = e.maxHealth - 2;
+      if (name === "full vampire") e.health = e.maxHealth;
+      if (name === "concentration cap") s.enemyRoundBudget = 400;
+      const result = advancePhase(s, f, 40);
+      const label = `${modern ? "current" : "legacy"}: ${name}`;
+      assert.equal(p.health - result.players[id].health, drained, label);
+      assert.equal(result.enemies[0].health - e.health, healed, label);
+      assert.equal(result.players[id].totals.damageTaken, drained, label);
+      const event = result.events.find(x => x.type === "heal" && x.actorId === e.id);
+      assert.ok(event, label);
+      assert.equal(event.amount, healed, label);
+      assert.equal(event.healthBefore, e.health, label);
+      assert.equal(event.healthAfter, e.health + healed, label);
+      assert.deepEqual(advancePhase(JSON.parse(JSON.stringify(s)), f, 40), result, label);
+    }
+  }
 });
 test("corrosion stacks without permanent stat mutation and never makes defense negative", () => {
   const { s } = state(); const p = s.players[id]; p.stats.def = 10;

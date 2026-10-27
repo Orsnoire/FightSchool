@@ -1,5 +1,6 @@
 import type { SavedJobLoadouts } from "../../shared/job-loadouts";
 import type { CampaignGate, CampaignLayout, CampaignProgress } from "../../shared/campaign/model";
+import type { AARanks } from "../../shared/aa";
 import { sql } from "drizzle-orm";
 import type {
   CharacterClass,
@@ -149,6 +150,10 @@ export const students = pgTable(
   {
     grantedJobs: jsonb("granted_jobs").$type<CharacterClass[]>().notNull().default([]),
     aaExperience: integer("aa_experience").notNull().default(0),
+    aaPointsSpent: integer("aa_points_spent").notNull().default(0),
+    aaRanks: jsonb("aa_ranks").$type<AARanks>().notNull().default({}),
+    aaRevision: integer("aa_revision").notNull().default(0),
+    characterName: text("character_name"),
     staminaDay: text("stamina_day"),
     dailyCombats: integer("daily_combats").notNull().default(0),
     staminaRecovery: doublePrecision("stamina_recovery").notNull().default(0),
@@ -169,6 +174,7 @@ export const students = pgTable(
     loadoutRevision: integer("loadout_revision").notNull().default(0),
     crossClassAbility1: text("cross_class_ability_1"),
     crossClassAbility2: text("cross_class_ability_2"),
+    crossClassAbilities: jsonb("cross_class_abilities").$type<(string | null)[]>(),
     inventory: jsonb("inventory").$type<string[]>().notNull().default([]),
     gold: integer("gold").notNull().default(0),
     passwordHash: text("password_hash").notNull(),
@@ -188,12 +194,30 @@ export const students = pgTable(
     dailyCombatsCheck: check("students_daily_combats_check", sql`${table.dailyCombats} >= 0`),
     xpRemainderCheck: check("students_xp_remainder_check", sql`${table.xpRemainder} >= 0 AND ${table.xpRemainder} < 1`),
     aaExperienceCheck: check("students_aa_experience_check", sql`${table.aaExperience} >= 0`),
+    aaSpentCheck: check("students_aa_spent_check", sql`${table.aaPointsSpent} >= 0`),
+    aaRevisionCheck: check("students_aa_revision_check", sql`${table.aaRevision} >= 0`),
+    aaRanksCheck: check("students_aa_ranks_check", sql`jsonb_typeof(${table.aaRanks}) = 'object'`),
+    crossClassListCheck: check("students_cross_class_list_check", sql`${table.crossClassAbilities} IS NULL OR (jsonb_typeof(${table.crossClassAbilities}) = 'array' AND jsonb_array_length(${table.crossClassAbilities}) <= 5)`),
     nicknameUnique: unique("students_nickname_normalized_unique").on(
       table.nicknameNormalized,
     ),
     guildCodeIndex: index("students_guild_code_idx").on(table.guildCode),
   }),
 );
+
+export const aaPurchases = pgTable('aa_purchases', {
+  studentId: uuid('student_id').notNull().references(() => students.id, { onDelete: 'cascade' }),
+  requestId: uuid('request_id').notNull(),
+  upgradeId: text('upgrade_id').notNull(),
+  rank: integer('rank').notNull(),
+  cost: integer('cost').notNull(),
+  catalogVersion: integer('catalog_version').notNull(),
+  payload: jsonb('payload').notNull().$type<Record<string, unknown>>(),
+  receipt: jsonb('receipt').notNull().$type<import('../../shared/contracts/advancement').AAPurchaseReceipt>(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => ({ pk: primaryKey({ columns: [t.studentId, t.requestId] }),
+  costCheck: check('aa_purchases_cost_check', sql`${t.cost} >= 0`),
+}));
 
 export const liveCombatSessions = pgTable(
   "live_combat_sessions",

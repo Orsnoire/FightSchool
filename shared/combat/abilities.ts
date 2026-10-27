@@ -1,6 +1,7 @@
 import { JOB_TREE, getCrossClassAbilities } from "../jobSystem";
 import type { CharacterClass } from "../schema";
 import type { CombatPlayer } from "./model";
+export const PASSIVE_ABILITIES = new Set(['soul_echo', 'dark_vigor']);
 export const ULTIMATES = new Set([
   "unbreakable",
   "manabomb",
@@ -146,6 +147,7 @@ export function availableAbilities(
   return [...new Set(result)];
 }
 export function abilityProblem(p: CombatPlayer, id: string): string | null {
+  if (PASSIVE_ABILITIES.has(id)) return 'Passive abilities apply automatically';
   if (p.characterClass === "priest" && id === "attack")
     return "Priests use First Aid instead of Attack";
   if (!p.availableAbilities.includes(id))

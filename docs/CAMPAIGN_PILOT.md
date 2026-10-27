@@ -1,5 +1,13 @@
 # One-dungeon campaign pilot
 
+> October 27 compatibility reconciliation is **review-only and not deployed**.
+> The preview still runs the October 21 build. Before a future authorized release,
+> follow the [AA/migration reconciliation procedure](reviews/2026-10-27-campaign-aa-reconciliation.md).
+> Legacy preview migration numbers below describe the historical release; canonical
+> campaign numbers are now 0019–0023 after production AA 0018. Do not apply the
+> standard migrator to the legacy preview before its guarded bridge. No reset is needed.
+
+
 **IMPLEMENTED / ISOLATED PREVIEW DEPLOYED — owner authorized October 20, 2026.** Branch:
 `feature/campaign-pilot`. This is a separately requested campaign pilot; C12
 continues on its own branch. No production merge, migration, or deployment is

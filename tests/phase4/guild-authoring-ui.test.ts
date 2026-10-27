@@ -168,7 +168,7 @@ test("teacher authoring submits limits and quest rewards, and shop creation carr
     assert.equal(document.querySelectorAll("h3").length, 37, "all built-in tier-one gear appears with no custom items");
     assert.match(document.body.textContent!, /Fighter's Cuirass/);
     assert.match(document.body.textContent!, /Healer's Robes/);
-    assert.match(document.body.textContent!, /150 gold/);
+    assert.match(document.body.textContent!, /100 gold/);
     assert.equal(document.querySelectorAll('a[href*="edit="]').length, 0, "built-ins are not sent to the custom editor");
     await act(async () => {
       cache.setQueryData(["/api/teacher/teacher/equipment-items"], [{
@@ -180,6 +180,11 @@ test("teacher authoring submits limits and quest rewards, and shop creation carr
     assert.equal(document.querySelectorAll("h3").length, 38);
     assert.equal(document.querySelector('a[href*="edit="]')?.getAttribute("href"), "/teacher/items?guild=guild&tier=1&edit=custom");
     assert.match(document.body.textContent!, /73 gold/);
+    await change("Browse shop tier", "2");
+    assert.equal(document.querySelectorAll("h3").length,24);
+    for (const name of ["Soldier's Cuirass","Ranger's Jerkin","Acolyte's Robes","Ascetic's Robes"])
+      assert.ok(document.body.textContent!.includes(name));
+    assert.match(document.body.textContent!,/1000 gold/);
     assert.equal(writes.length, writesBeforeBrowsing, "browsing does not mutate guild limits");
   } finally {
     await act(async () => root.unmount());

@@ -22,6 +22,7 @@ const Campaigns = deferred(() => import("@/pages/Campaigns"), "campaigns", true)
 const CampaignAdventure = deferred(() => import("@/pages/CampaignAdventure"), "your adventure", true);
 const StudentStats = deferred(() => import("@/pages/StudentStats"), "your statistics", true);
 const StudentEquipment = deferred(() => import("@/pages/StudentEquipment"), "equipment", true);
+const Advancement = deferred(() => import('@/pages/Advancement'), 'advancement', true);
 const StudentGuilds = deferred(() => import("@/pages/StudentGuilds"), "your guilds", true);
 const StudentGuildDetail = deferred(() => import("@/pages/StudentGuildDetail"), "the guild", true);
 const StudentGuildLobby = deferred(() => import("@/pages/StudentGuildLobby"), "the guild lobby", true);
@@ -51,6 +52,7 @@ function Router() {
       </Route>
       <Route path="/student/character-select" component={CharacterSelect} />
       <Route path="/student/equipment" component={StudentEquipment} />
+      <Route path="/student/advancement" component={Advancement} />
       <Route path="/student/shop" component={GuildShop} />
       <Route path="/student/lobby" component={Lobby} />
       <Route path="/student/campaigns" component={Campaigns} />

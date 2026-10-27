@@ -32,7 +32,7 @@ export const ENEMY_MOVES: Record<EnemyMove, Move> = {
   mandible_strike: { name: "Mandible Strike", type: "spider", description: "Damage; 30% bleed: −1 ATK and one-quarter base damage for three rounds.", cooldown: 0, target: "threat", effect: "bleed" },
   leg_strike: { name: "Leg Strike", type: "spider", description: "Normal damage.", cooldown: 0, target: "threat" },
   hypnotic_stare: { name: "Hypnotic Stare", type: "vampire", description: "Single-target hypnosis. Three correct answers free the player; the vampire cannot act while the target is hypnotized.", cooldown: 6, target: "threat", effect: "stare" },
-  vampiric_bite: { name: "Vampiric Bite", type: "vampire", description: "Damage; heal the same percentage of vampire max HP as the target actually loses.", cooldown: 5, target: "threat" },
+  vampiric_bite: { name: "Vampiric Bite", type: "vampire", description: "Damage; heal for the actual HP drained from the target, capped at missing HP.", cooldown: 5, target: "threat" },
   wolf_charge: { name: "Wolf Charge", type: "vampire", description: "Damage; 30% one-turn stun.", cooldown: 0, target: "threat", effect: "stun" },
   bat_strafe: { name: "Bat Strafe", type: "vampire", description: "80% fear for one round: no attacks; answering and non-attacking actions remain available.", cooldown: 2, target: "damage", effect: "fear" },
   corrode: { name: "Corrode", type: "slime", description: "Damage; 30% corrosion: −10% base DEF per stack for five rounds, capped at −100%.", cooldown: 0, target: "threat", effect: "corrosion" },

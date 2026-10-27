@@ -128,6 +128,8 @@ export async function handleStudentAuth(
       const input = characterSchema.parse(await readJson(request));
       const current = await repository.findStudentById(session.actorId);
       if (!current) return json({ error: "Student not found" }, 404);
+      if (current.characterClass && current.gender !== input.gender)
+        return json({ error: 'Use Advancement to change your character appearance for 5 AA.' }, 409);
       const profile = await repository.getCombatProfile?.(current);
       if (
         !getUnlockedJobs(

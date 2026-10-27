@@ -59,7 +59,9 @@ first reduction is 10%, its decay rate increases, and its floor is 1%.
 The counter belongs to the student, across all jobs, guilds, classroom rooms, and
 solo rooms. A completed win or loss counts after at least one resolved question,
 even if it earns no XP. An untouched room ended by the teacher does not count.
-Only persisted results count; quitting without a result grants no XP. The date
+Only persisted results count; quitting without a result grants no XP. The
+[October 26 solo-host exit decision](solo-exit-xp-and-periodic-effects.md) produces
+a normal partial result with this same stamina policy (not yet released). The date
 is the database award date in `America/Denver`. The next date starts fresh at
 midnight, including 23-hour and 25-hour daylight-saving days. Replaying an old
 result never changes today's stamina.
@@ -179,9 +181,7 @@ minimum, not an exact target. The implemented rules are:
 - Count the current correct answer, so the first Headshot on question four deals
   8 damage with starting equipment.
 - Spend 3 CP and return 2 CP total on a damaging Headshot; basic damage returns 1 CP.
-- A wrong or unanswered question costs 1 CP (minimum zero) for Headshot users,
-  including equipped cross-class Headshot; it also resets the damage streak.
-  Other combo jobs retain their existing miss behavior.
+- **Superseded by the October 26 AA owner correction (PR #86):** a wrong or unanswered question clears all CP on every class. Combo Preservation retains at most 1/2/3 existing points according to active AA rank; the damage streak still resets. Wrong-answer damage/retaliation cannot refill those points. This replaces the earlier Headshot-only one-point loss.
 - Correct answers build the streak regardless of action; damaging Headshots return
   2 CP total, not 2 plus the regular 1. Failed attacks cannot earn the refund.
 - The streak persists across rounds, quiz cycles, and reconnects, and starts at
@@ -226,12 +226,23 @@ enemy HP remains one; an all-healer party still needs an offensive loadout.
 
 Before creating a solo room, the Fight Library warns when the loaded job and
 validated cross-class unlocks contain no offensive ability. Students can change
-equipment, join a teacher-hosted group, or explicitly continue solo anyway.
-Solo rooms remain private. Group entry reuses the existing student lobby's real
-six-character session-code flow and the October 7 join/rejoin behavior: students
-can join waiting or active teacher-hosted rooms, enter at a question boundary,
-and receive participation-based rewards. Intentionally removed students still
-need host approval. No second room type or duplicate join implementation is added.
+equipment, join a current guild battle, or explicitly continue solo anyway.
+
+**October 22 owner update:** student-created solo battles with a hosting guild
+admit active members of that guild. The guild lobby and Fight Library expose a
+polling **Current battles** list, with Join/Rejoin buttons, waiting/in-progress
+status, creator nickname, explicit refresh/retry and a useful empty state.
+Lookup and WebSocket entry verify active membership; archived guilds and removed
+members cannot join or reconnect. Legacy solo rooms without a guild remain
+creator-only. Teacher ownership and moderation rights are unchanged.
+
+The first authorized student to enter a waiting solo room starts it, including
+when its creator has not connected yet. Later entrants use the existing
+next-question admission, frozen entry profile and participation-based rewards.
+Reconnects do not add a second participant or restart the encounter. Finished
+rooms leave the discovery list; stale joins fail without changing the stored
+session. Existing session-code entry remains available. Discovery summaries do
+not contain questions, answers or combat player state.
 
 ## October 7 classroom corrections
 

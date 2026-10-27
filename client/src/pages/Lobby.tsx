@@ -89,7 +89,8 @@ export default function Lobby() {
           <h1 className="text-2xl font-serif font-bold" data-testid="text-lobby-title">
             Battle Lobby
           </h1>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Link href="/student/advancement"><Button variant="outline" data-testid="button-advancement">Advancement</Button></Link>
             <Link href="/student/campaigns"><Button variant="outline">Campaigns</Button></Link>
             <Link href="/student/guilds">
               <Button variant="outline" data-testid="button-my-guilds">

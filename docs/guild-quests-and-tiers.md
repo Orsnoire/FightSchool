@@ -50,7 +50,7 @@ Shop tiers are separate from combat limit tiers. Guild quests and explicit teach
 ### October 13 default shop inventory correction
 
 Every guild shop includes all defined progression equipment by default: all 37
-Tier 1 armor, weapon and off-hand items now, and future Tier 2, Tier 3 and later
+Tier 1 armor, weapon and off-hand items plus the 24 [Tier 2 armor pieces](combat/tier-two-equipment.md), and future Tier 3 and later
 collections when registered with an explicit positive tier in the shared equipment
 catalog. No per-guild item creation or database seed is required. Permanent Tier 0
 starters remain free entitlements; untiered legacy drops are not new shop stock.
@@ -59,7 +59,7 @@ Teachers can preview default stock alongside their custom items at each tier.
 Default equipment is labeled and read-only; custom items retain editing and
 loot-only controls. Student listings and purchases respect the guild's unlocked
 shop tier, independently of its combat limit tier. Built-in prices use the existing
-tier/rarity formula (common Tier 1: 150 gold); custom prices remain authoritative.
+tier/rarity formula (common T1: 100g, T2: 1,000g, T3: 5,000g, T4: 10,000g per item; owner update October 22); custom prices remain authoritative.
 Purchase does not auto-equip or bypass job/class equipment restrictions. Gold and
 inventory update atomically, with no duplicate charge or duplicate ownership.
 

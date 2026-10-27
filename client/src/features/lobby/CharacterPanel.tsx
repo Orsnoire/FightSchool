@@ -31,7 +31,7 @@ export function CharacterPanel({ student, equippedItemsMap, equippedVisuals, sav
         />
         {savedAppearance.data && <p className="text-xs text-muted-foreground">Equipped appearance</p>}
         <div className="text-center">
-          <h2 className="text-2xl font-bold" data-testid="text-nickname">{student.nickname}</h2>
+          <h2 className="text-2xl font-bold break-words" data-testid="text-nickname">{student.characterName || student.nickname}</h2>
           <p className="text-muted-foreground capitalize">{student.characterClass}</p>
         </div>
         <div className="w-full space-y-2 text-sm">

@@ -77,20 +77,22 @@ export function getTotalXPForLevel(level: number): number {
   return total;
 }
 
-// Calculate XP formula: {correct} + {blocked} + {healed} + {bonus damage} - {incorrect} + {base XP}
+// One contribution formula for every combat result. Actual damage already includes
+// bonus damage; counting both would double-award spells, abilities and DoT ticks.
+// All jobs can earn each contribution, including hybrid/cross-class support.
 export function calculateXP(stats: {
   questionsCorrect: number;
   questionsIncorrect: number;
   damageBlocked: number;
   healingDone: number;
-  bonusDamage: number;
+  damageDealt: number;
   baseFightXP: number;
 }): number {
   const xp = 
     stats.questionsCorrect +
     stats.damageBlocked +
     stats.healingDone +
-    stats.bonusDamage -
+    stats.damageDealt -
     stats.questionsIncorrect +
     stats.baseFightXP;
   
@@ -406,7 +408,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "hex",
           name: "Hex",
-          description: "Deals the targeted enemy (HEXDMG) curse damage per round for the next (HEXDUR) rounds. (HEXDMG)= INT – 1. (HEXDUR)=2 + passives/equipment. Casting hex on a hexed target sets timer to y.",
+          description: "Deals MAT + INT curse damage initially, then MAT + INT - 1 per subsequent round for 2 + duration upgrades rounds. MDF reduces each hit. Recasting refreshes your Hex without stacking.",
           isCrossClass: false,
         }]
       },
@@ -427,7 +429,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "hex_crossclass",
           name: "Hex",
-          description: "Cross-class unlock. Deals the targeted enemy (INT-1) curse damage per round for the next (2 + duration upgrades) rounds.",
+          description: "Cross-class unlock. Deals MAT + INT curse damage initially, then MAT + INT - 1 per subsequent round for 2 + duration upgrades rounds. MDF reduces each hit. Recasting refreshes your Hex without stacking.",
           isCrossClass: true,
         }]
       },
@@ -455,7 +457,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "soul_echo",
           name: "Soul Echo",
-          description: "Cross-class unlock. (passive) Hex now deals bonus curse damage equal to (hex damage × hex duration) / 2 in the first combat round after it is cast.",
+          description: "Passive: adds (Hex tick damage × Hex duration) / 2 to the initial Hex hit, before MDF. Other classes must equip both Hex and Soul Echo. It is not an action.",
           isCrossClass: true,
         }]
       },
@@ -751,7 +753,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "fortify",
           name: "Fortify",
-          description: "Stance (toggle during question phase). Uses tank threat calculation while active. Grants 2*VIT HP while active. Generates 1 combo point per round when taking damage.",
+          description: "Support action. Doubles VIT for this fight. Repeated uses do not stack.",
           isCrossClass: false,
         }]
       },
@@ -772,7 +774,7 @@ export const JOB_TREE: Record<CharacterClass, JobConfig> = {
         abilities: [{
           id: "fortify_crossclass",
           name: "Fortify",
-          description: "Cross-class unlock. Stance (toggle during question phase). Uses tank threat calculation while active. Grants 2*VIT HP while active.",
+          description: "Cross-class unlock. Support action. Doubles VIT for this fight. Repeated uses do not stack.",
           isCrossClass: true,
         }]
       },

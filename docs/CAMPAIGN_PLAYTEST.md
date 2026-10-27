@@ -1,5 +1,13 @@
 # Campaign pilot playtest
 
+> October 27 compatibility reconciliation is **review-only and not deployed**.
+> The preview still runs the October 21 build. Before a future authorized release,
+> follow the [AA/migration reconciliation procedure](reviews/2026-10-27-campaign-aa-reconciliation.md).
+> Legacy preview migration numbers below describe the historical release; canonical
+> campaign numbers are now 0019–0023 after production AA 0018. Do not apply the
+> standard migrator to the legacy preview before its guarded bridge. No reset is needed.
+
+
 Preview: https://questacademy-campaign-preview.coxsonator.workers.dev/
 
 This is the isolated PR #81 preview, with synthetic accounts and its own database,

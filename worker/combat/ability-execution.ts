@@ -2,7 +2,7 @@
  * No storage, transport, wall-clock reads or independent random sources. */
 import { type CombatSnapshot, type CombatPlayer } from "../../shared/combat/model.ts";
 import { hasOffensiveAbility, abilityProblem, COSTS, COMBOS, COOLDOWNS, ULTIMATES } from "../../shared/combat/abilities.ts";
-import { abilityDamage, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
+import { abilityDamage, abilityDot, baseAbilityHealing } from "../../shared/combat/abilityValues.ts";
 import { event } from "./state-events";
 import { abilityEffect } from "../../shared/combat/presentation";
 import { activeEnemies, bounceTarget } from "../../shared/combat/encounters";
@@ -11,18 +11,20 @@ import { abilityDamageType } from "../../shared/combat/damage-types";
 import { rng } from "./random";
 import { getTotalMechanicUpgrades } from "../../shared/jobSystem.ts";
 import { type CharacterClass } from "../../shared/schema.ts";
-import { cleansePlayer } from "../../shared/combat/status-effects";
+import { cleansePlayer, naturalAgilityAttack } from "../../shared/combat/status-effects";
 import { CombatRuleError } from "../../shared/combat/errors";
 
 export function applyAbility(s: CombatSnapshot, p: CombatPlayer, id: string, targetId: string) {
   const lock = p.actionBlocked?.round === s.round ? p.actionBlocked : undefined;
-  if (lock && (!lock.attacksOnly || hasOffensiveAbility([id]) || abilityDamage(p, id) !== undefined)) {
+  const agility = id === 'attack' && naturalAgilityAttack(p, s.round);
+  if (lock && !agility && (!lock.attacksOnly || hasOffensiveAbility([id]) || abilityDamage(p, id) !== undefined)) {
     event(s, "ability", p.studentId, targetId, 0, `${p.nickname} cannot use ${id.replaceAll("_", " ")}: ${lock.reason}`);
     return;
   }
   const bleedPenalty = p.statuses?.some(x => x.type === "bleed") ? Math.min(1, p.stats.atk) : 0;
   p.stats.atk -= bleedPenalty;
   const start=s.events.length;
+  if (agility) event(s, 'ability', p.studentId, targetId, 0, `${p.nickname} attacks through ${lock!.reason} with Natural Agility`);
   try { executeAbility(s, p, id, targetId); }
   finally {
     p.stats.atk += bleedPenalty;
@@ -66,6 +68,13 @@ function executeAbility(
   let damage = 0;
   const damageValue = abilityDamage(p, id) ?? 0;
   const healingValue = baseAbilityHealing(p, id) ?? 0;
+  // A cancelled or invalid single-target potion action spends nothing and never rolls.
+  if (['healing_potion', 'shield_potion'].includes(id) && (!s.players[targetId] || s.players[targetId].isDead)) return;
+  const consumePotion = (kind: 'healingPotions' | 'shieldPotions') => {
+    if ((p.advancement?.potionChance || 0) > 0 && rng(s) < p.advancement!.potionChance)
+      event(s, 'ability', p.studentId, p.studentId, 0, `${p.nickname} preserved a ${kind === 'healingPotions' ? 'healing' : 'shield'} potion charge`);
+    else p[kind]--;
+  };
   const problem = abilityProblem(p, id);
   if (problem) {
     event(s, "ability", p.studentId, targetId, 0, `${id}: ${problem}`);
@@ -149,7 +158,7 @@ function executeAbility(
     case "healing_potion":
       heal(s, p, targetId, healingValue);
       if (s.players[targetId]) potionBuff(s.players[targetId]);
-      p.healingPotions--;
+      consumePotion('healingPotions');
       break;
     case "craft_healing_potion":
       p.healingPotions = Math.min(
@@ -166,13 +175,13 @@ function executeAbility(
     case "shield_potion":
       if (s.players[targetId])
         s.players[targetId].buffs.shield = { rounds: 999, amount: mnd };
-      p.shieldPotions--;
+      consumePotion('shieldPotions');
       break;
     case "potion_diffuser":
       if (p.healingPotions > 0) {
         groupHeal(healingValue);
         party().forEach(potionBuff);
-        p.healingPotions--;
+        consumePotion('healingPotions');
       }
       break;
     case "life_potion":
@@ -184,23 +193,18 @@ function executeAbility(
     case "hemorrhage": {
       const e = s.enemies.find((e) => e.id === targetId);
       if (e) {
-        const duration =
-          2 +
-          (getTotalMechanicUpgrades(
-            p.jobLevels as Record<CharacterClass, number>,
-          ).hexDuration || 0);
+        const dot = abilityDot(p, id)!;
         e.effects = e.effects.filter(
           (x) => !(x.type === id && x.ownerId === p.studentId),
         );
         e.effects.push({
           ownerId: p.studentId,
           type: id,
-          rounds: duration,
-          damage: id === "hex" ? Math.max(0, int - 1) : atk / 2,
+          rounds: dot.rounds,
+          damage: dot.damage,
+          appliedRound: s.round,
         });
-        if (id === "hemorrhage") damage = damageValue;
-        if (id === "hex" && (p.jobLevels.warlock || 0) >= 15)
-          damage = (Math.max(0, int - 1) * duration) / 2;
+        damage = damageValue;
       }
       break;
     }

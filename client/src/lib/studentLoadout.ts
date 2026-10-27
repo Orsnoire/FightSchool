@@ -2,7 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { apiRequest } from './queryClient';
 import type { Student, EquipmentSlot, CharacterClass } from '@shared/schema';
 
-type EquipmentChange = Partial<Record<EquipmentSlot, string | null>> & {crossClassAbility1?:string|null;crossClassAbility2?:string|null};
+type EquipmentChange = Partial<Record<EquipmentSlot, string | null>> & {crossClassAbility1?:string|null;crossClassAbility2?:string|null;crossClassAbilities?:(string|null)[]};
 type CharacterChange = {characterClass:CharacterClass;gender:string};
 const pending = new WeakMap<QueryClient, Map<string, Promise<unknown>>>();
 

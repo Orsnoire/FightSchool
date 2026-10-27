@@ -1,4 +1,4 @@
-import { bagWeight, CONSUMABLES, CONSUMABLE_IDS, consumableProblem, type ConsumableId } from '@shared/campaign/consumables';
+import { bagWeight, CONSUMABLES, CONSUMABLE_IDS, consumableProblem, potionHealing, type ConsumableId } from '@shared/campaign/consumables';
 import type { CombatPlayer } from '@shared/combat/model';
 import { Button } from './ui/button';
 
@@ -13,7 +13,7 @@ export function ConsumableBag({ player, disabled, onUse, combat = false }: {
     {CONSUMABLE_IDS.filter(id => bag[id]).map(id => {
       const item = CONSUMABLES[id], problem = consumableProblem(player, id);
       return <div key={id} className="rounded border p-3 space-y-2">
-        <strong>{item.name} ×{bag[id]}</strong><p className="text-sm">{item.description}</p>
+        <strong>{item.name} ×{bag[id]}</strong><p className="text-sm">{id === 'potion' ? `Restore ${potionHealing(player)} HP. Cannot revive.` : item.description}</p>
         <Button size="sm" variant="outline" className="h-auto whitespace-normal py-2 text-left" disabled={disabled || !!problem} title={problem} onClick={() => onUse(id)}>Use {item.name}</Button>
         {problem && <p className="text-xs text-muted-foreground">{problem}</p>}
       </div>;

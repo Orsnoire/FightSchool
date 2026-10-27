@@ -1,3 +1,4 @@
+import { isActiveGuildMember } from "../services/combat-access";
 import { gameDatabase } from "./database";
 import { evaluateFightQuests } from "../progression/quests.ts";
 import { listTeacherFightSummaries } from "./fight-summaries";
@@ -38,6 +39,7 @@ import {
 } from "./schema.ts";
 
 export interface IdentityRepository extends SessionRepository {
+  isActiveGuildMember?(studentId: string, guildId: string, teacherId: string): Promise<boolean>;
   validateLoot?(teacherId: string, itemIds: string[]): Promise<boolean>;
   getCombatProfile?(student: StudentRecord, sessionId?: string): Promise<CombatProfile>;
   recordSessionReporting?(state: CombatSnapshot, fight: FightRecord): Promise<void>;
@@ -96,6 +98,7 @@ export function createIdentityRepository(
   const database = gameDatabase(databaseUrl);
 
   return {
+    isActiveGuildMember: (studentId, guildId, teacherId) => isActiveGuildMember(database, studentId, guildId, teacherId),
     async validateLoot(teacherId, itemIds) {
       itemIds = itemIds.filter(id => !Object.hasOwn(EQUIPMENT_ITEMS,id));
       if (!itemIds.length) return true;

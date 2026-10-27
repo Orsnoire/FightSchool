@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 import { guildAssignmentInput, guildInput, guildMemberInput, guildPatch, guildProgressionInput, guildSettingsInput, guildSoloInput } from "../../shared/contracts/guilds";
 import * as s from "../db/schema";
@@ -164,17 +164,25 @@ export async function handleGuilds(context: GameRouteContext): Promise<Response 
           .returning())[0]);
       }
     }
-    if (tail === "active-sessions") {
+    if (tail === "active-sessions" && method(request, "GET")) {
+      if (g.isArchived) return json([]);
       const rows = await db
-        .select({ session: s.liveCombatSessions, fight: s.fights })
+        .select({sessionId:s.liveCombatSessions.sessionId, fightId:s.fights.id, title:s.fights.title,
+          status:s.liveCombatSessions.status, soloStudentId:s.liveCombatSessions.soloStudentId,
+          hostNickname:s.students.nickname, createdAt:s.liveCombatSessions.createdAt})
         .from(s.guildFights)
         .innerJoin(s.fights, eq(s.fights.id, s.guildFights.fightId))
         .innerJoin(s.liveCombatSessions, eq(s.liveCombatSessions.fightId, s.fights.id))
-        .where(and(eq(s.guildFights.guildId, id), or(eq(s.liveCombatSessions.guildId, id), isNull(s.liveCombatSessions.guildId)), ...(teacher ? [] : [or(isNull(s.liveCombatSessions.soloStudentId), eq(s.liveCombatSessions.soloStudentId, actor.actorId))]), inArray(s.liveCombatSessions.status, ["waiting", "active"])));
-      return json(rows.map((r) => ({
-        ...r.session,
-        title: r.fight.title,
-        soloMode: !!r.session.soloStudentId,
+        .leftJoin(s.students, eq(s.students.id, s.liveCombatSessions.soloStudentId))
+        .leftJoin(s.campaignEncounters, eq(s.campaignEncounters.sessionId, s.liveCombatSessions.sessionId))
+        .where(and(eq(s.guildFights.guildId, id), eq(s.liveCombatSessions.teacherId,g.teacherId),
+          isNull(s.campaignEncounters.sessionId),
+          or(eq(s.liveCombatSessions.guildId, id), isNull(s.liveCombatSessions.guildId)),
+          ...(teacher ? [] : [or(eq(s.liveCombatSessions.guildId,id), isNull(s.liveCombatSessions.soloStudentId), eq(s.liveCombatSessions.soloStudentId, actor.actorId))]),
+          inArray(s.liveCombatSessions.status, ["waiting", "active"])))
+        .orderBy(desc(s.liveCombatSessions.createdAt),desc(s.liveCombatSessions.sessionId));
+      return json(rows.map(({soloStudentId,...row}) => ({
+        ...row, soloMode: !!soloStudentId, isHost: soloStudentId === actor.actorId,
       })));
     }
     const quests = await handleGuildQuests(context, g, tail);

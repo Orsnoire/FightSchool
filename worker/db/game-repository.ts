@@ -1,5 +1,7 @@
 import { effectiveLevels, limitLevel } from "../../shared/quests";
-import { equipmentRequiredLevel, handConflict } from "../../shared/equipment-rules";
+import { aaTier } from '../../shared/aa';
+import { crossClassSelections } from '../../shared/job-loadouts';
+import { projectCombatLoadout } from '../../shared/combat/loadout';
 import { questionKey } from "../progression/question-key";
 import { snapshotEquipmentLoadout } from '../../shared/equipment-catalog';
 import { equipmentEffects } from "../../shared/tier-one-equipment";
@@ -12,11 +14,8 @@ import * as s from "./schema.ts";
 import { calculateXP, calculateNewLevel } from "../../shared/jobSystem.ts";
 import {
   calculateGoldReward,
-  calculateLoadoutEquipmentStats,
   EQUIPMENT_ITEMS,
-  getStartingEquipment,
   type CharacterClass,
-  type EquipmentStats,
 } from "../../shared/schema.ts";
 import type { CombatSnapshot } from "../../shared/combat/model.ts";
 import { completedRounds, participatedRounds, type CombatProfile } from "../combat/engine.ts";
@@ -28,6 +27,7 @@ export async function combatProfile(
   db: GameDatabase,
   student: s.StudentRecord,
   sessionId?: string,
+  campaignPower?: { guildId: string; guildTier: number; campaignTier: number },
 ): Promise<CombatProfile> {
   const jobs = await db
     .select()
@@ -49,9 +49,12 @@ export async function combatProfile(
     return {levels:campaign.playerSnapshot.jobLevels,campaignPlayer:campaign.playerSnapshot};
    }
   }
-  let equipped={...student};
+  if (campaignPower) {
+    context = { guildId: campaignPower.guildId, limitTier: aaTier(campaignPower) };
+    levels = effectiveLevels(levels, context.limitTier);
+  }
+  const aaLimit = sessionId || campaignPower ? context?.limitTier || 1 : 4;
   const ids = EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id);
-  let equipment = calculateLoadoutEquipmentStats(equipped);
   const custom = await db
     .select()
     .from(s.equipmentItems)
@@ -61,30 +64,21 @@ export async function combatProfile(
         ids.filter((x) => !EQUIPMENT_ITEMS[x]),
       ),
     );
-  if(sessionId){
-   const level=levels[student.characterClass||'warrior']||1;
-   const catalog:Record<string,any>={...EQUIPMENT_ITEMS,...Object.fromEntries(custom.map(i=>[i.id,i]))};
-   const starters=getStartingEquipment(student.characterClass||'warrior');
-   for(const slot of EQUIPMENT_SLOTS){const id=equipped[slot];if(id&&equipmentRequiredLevel(catalog[id]?.tier??99)>level)equipped[slot]=starters[slot]||null;}
-   if(handConflict(catalog[equipped.weapon||'']||null,catalog[equipped.offhand||'']||null))equipped.offhand=null;
-   equipment=calculateLoadoutEquipmentStats(equipped);
-  }
-  for (const item of custom)if(EQUIPMENT_SLOTS.some(slot=>equipped[slot]===item.id))
-    for (const [k, n] of Object.entries(item.stats)) equipment[k as keyof EquipmentStats] += n || 0;
+  const job = student.characterClass || 'warrior';
+  const { loadout: equipped, equipment, weaponKind, advancement } = projectCombatLoadout(job, student, levels[job] || 1, student.aaRanks, aaLimit, custom);
   const avatar = await getStudentAvatar(db, student.id);
   const appearance = avatar && { modelId: avatar.modelId, hairColorId: avatar.hairColorId, eyeColorId: avatar.eyeColorId, skinColorId: avatar.skinColorId };
   return {
-    ...(sessionId ? {questGuildId:context?.guildId||null,limitTier:context?.limitTier||1} : {}),
+    advancement,
+    ...(sessionId || campaignPower ? {questGuildId:context?.guildId||null,limitTier:context?.limitTier||1} : {}),
     appearance: validAppearance(appearance) ? appearance : null,
     levels,
     equipment,
     equipmentEffects: equipmentEffects(equipped),
     equipmentLoadout: snapshotEquipmentLoadout(equipped),
-    weaponKind: custom.find(i=>i.id===equipped.weapon)?.weaponType || EQUIPMENT_ITEMS[equipped.weapon||""]?.weaponType,
+    weaponKind: weaponKind || undefined,
     equipmentVisuals: Object.fromEntries(EQUIPMENT_SLOTS.flatMap(slot => {const item=custom.find(i=>i.id===equipped[slot]);return item?.visual ? [[slot,item.visual]] : [];})),
-    crossClass: [student.crossClassAbility1, student.crossClassAbility2].filter(
-      Boolean,
-    ) as string[],
+    crossClass: crossClassSelections(student).slice(0, 2 + advancement.extraSlots).filter((id): id is string => !!id),
   };
 }
 /** Activity XP is never prorated. Stamina is applied atomically by the database. */

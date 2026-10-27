@@ -4,10 +4,11 @@ import type { FightRecord } from "../db/schema";
 import type { CombatEnemy, CombatPlayer, CombatSnapshot, CombatStatus, StatusType } from "../../shared/combat/model";
 import { chooseEnemyRule, enemyTargets, ENEMY_MOVES, livingPlayers, BIOME_ATTACKS } from "../../shared/combat/enemy-ai";
 import { addStatus, breakHypnosisFromAttack, effectiveDefense, isHypnosis, releaseInvalidStatuses, STATUS_LABELS } from "../../shared/combat/status-effects";
+import type { IncomingDamageCause } from './health';
 
 export interface EnemyTurnPorts {
   random: () => number;
-  damage: (id: string, raw: number, source: string, ignoreDefense: boolean, limit: number, fractional?: boolean) => number;
+  damage: (id: string, raw: number, source: string, ignoreDefense: boolean, limit: number, fractional?: boolean, cause?: IncomingDamageCause) => number;
   say: (actor: string, target: string, message: string, amount?: number, healing?: boolean) => void;
   possess: (enemy: CombatEnemy, copied: CombatPlayer, target: CombatPlayer, damage: (id: string, raw: number) => number) => boolean;
 }
@@ -26,7 +27,7 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
     if (modern && !ignoreDefense) amount = Math.max(0, raw - effectiveDefense(p) - (p.buffs.vampiric_guard ? 0 : Math.floor(p.stats.vit / 2))) + swarmBonus;
     const limit = Math.min(remaining, modern ? Math.max(0, p.maxHealth * 0.35 - (taken[id] || 0)) : Infinity);
     if (amount <= 0 || limit <= 0) return 0;
-    const dealt = ports.damage(id, amount, source, modern || ignoreDefense, limit, modern);
+    const dealt = ports.damage(id, amount, source, modern || ignoreDefense, limit, modern, direct ? 'monster_attack' : 'periodic');
     taken[id] = (taken[id] || 0) + dealt;
     remaining -= dealt;
     if (direct && dealt > 0 && breakHypnosisFromAttack(s, p, source))
@@ -130,7 +131,8 @@ export function resolveEnemyTurn(s: CombatSnapshot, fight: FightRecord, ports: E
       case "hypnotic_stare": status("stare", 1); break;
       case "vampiric_bite": {
         const actual = strike();
-        if (target) healEnemy(actual / target.maxHealth * enemy.maxHealth);
+        // Lifesteal uses HP actually removed after mitigation, caps and overkill.
+        if (target) healEnemy(actual);
         break;
       }
       case "wolf_charge": if (strike() > 0) status("stun", 0.3, 1); break;

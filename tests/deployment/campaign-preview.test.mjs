@@ -29,7 +29,7 @@ test('wrong environment, storage, source and secret configuration stop before an
     s => { s.bindings = s.bindings.filter(b => b.name !== 'DATABASE_URL'); },
   ]) {
     const s = settings(); change(s); let writes = 0;
-    await assert.rejects(run({ request: { ...request, mode: 'deploy', migration0020Applied: true, migration0021Applied: true },
+    await assert.rejects(run({ request: { ...request, mode: 'deploy', migration0020Applied: true, migration0021Applied: true, campaignAACompatibilityApplied: true },
       accountId: 'c'.repeat(32), token: 'test', runtimeDir: '/nonexistent', log() {},
       fetcher: async (url, options) => { if (options.method !== 'GET') writes++; return Response.json({ success: true, result: s }); } }));
     assert.equal(writes, 0);
@@ -38,6 +38,7 @@ test('wrong environment, storage, source and secret configuration stop before an
 test('deployment requires explicit migration attestation and full SHAs', () => {
   assert.throws(() => validateRequest({ ...request, mode: 'deploy' }), /migration/);
   assert.throws(() => validateRequest({ ...request, mode: 'deploy', migration0020Applied: true }), /0021/);
+  assert.throws(() => validateRequest({ ...request, mode: 'deploy', migration0020Applied: true, migration0021Applied: true }), /compatibility/);
   assert.throws(() => validateRequest({ ...request, sourceSha: 'main' }), /hash/);
   assert.throws(() => validateRequest({ ...request, mode: 'production' }), /mode/);
   assert.doesNotThrow(() => validateSettings(settings(), request));

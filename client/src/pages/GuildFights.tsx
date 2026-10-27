@@ -1,3 +1,4 @@
+import { GuildSessionList } from "@/features/lobby/GuildSessionList";
 import { StaminaBar } from "@/components/StaminaBar";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
@@ -10,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ArrowLeft, Swords, Target, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { type Guild, type Student, type StudentJobLevel, type CharacterClass } from "@shared/schema";
+import { crossClassSelections } from '@shared/job-loadouts';
+import { resolveAAEffects } from '@shared/aa';
+import { effectiveLevels } from '@shared/quests';
 import { availableAbilities, hasOffensiveAbility } from "@shared/combat/abilities";
 
 interface Fight {
@@ -40,15 +44,14 @@ export default function GuildFights() {
   });
   const loadoutReady = !!student && !!jobLevels && !studentFetching && !levelsFetching && !studentError && !levelsError;
   const levels = Object.fromEntries((jobLevels || []).map(row => [row.jobClass, row.level])) as Partial<Record<CharacterClass, number>>;
-  const canDamage = !!student && hasOffensiveAbility(availableAbilities(
-    student.characterClass || "warrior", levels,
-    [student.crossClassAbility1, student.crossClassAbility2].filter((id): id is string => !!id),
-  ));
-
   const { data: guild, isLoading: guildLoading } = useQuery<Guild>({
-    queryKey: [`/api/guilds/${guildId}`],
-    enabled: !!guildId,
+    queryKey: [`/api/guilds/${guildId}`], enabled: !!guildId,
   });
+  const tier = guild?.limitTier || 1;
+  const canDamage = !!student && hasOffensiveAbility(availableAbilities(
+    student.characterClass || 'warrior', effectiveLevels(levels, tier),
+    crossClassSelections(student).slice(0, 2 + resolveAAEffects(student.aaRanks, tier).extraSlots).filter((id): id is string => !!id),
+  ));
 
   const { data: fights = [], isLoading: fightsLoading } = useQuery<Fight[]>({
     queryKey: [`/api/guilds/${guildId}/fights`],
@@ -128,15 +131,16 @@ export default function GuildFights() {
       <main className="container mx-auto px-4 py-6 flex-1">
         <div className="mb-4 rounded-lg border bg-card p-3"><StaminaBar studentId={studentId} /></div>
         {(studentError || levelsError) && <p role="alert" className="mb-4 text-sm">Unable to check your loadout for solo play. <Button variant="outline" onClick={() => { refetchStudent(); refetchLevels(); }}>Retry loadout check</Button></p>}
+        <GuildSessionList guildId={guildId!} />
         <p className="mb-4 text-sm">Playing with a partner or group? <Link href="/student" className="underline">Join a teacher-hosted fight with its session code</Link>.</p>
         <Dialog open={!!soloWarningFightId} onOpenChange={open => { if (!open) setSoloWarningFightId(null); }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>No offensive ability equipped</DialogTitle>
-              <DialogDescription>Your current loadout can heal and support, but cannot damage enemies or win this fight alone. Solo rooms are private. Join a teacher-hosted group using its session code, or equip an offensive cross-class ability before playing solo.</DialogDescription>
+              <DialogDescription>Your current loadout can heal and support, but cannot damage enemies or win this fight alone. Guildmates can join your battle. Join a current battle above, or equip an offensive cross-class ability before playing alone.</DialogDescription>
             </DialogHeader>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => navigate("/student")}>Join a group fight</Button>
+              <Button onClick={() => { setSoloWarningFightId(null); document.getElementById("current-battles")?.scrollIntoView({behavior:"smooth",block:"start"}); }}>Join a group fight</Button>
               <Button variant="outline" onClick={() => navigate("/student/equipment")}>Change loadout</Button>
               <Button variant="outline" onClick={() => soloWarningFightId && hostSoloMode(soloWarningFightId, true)}>Continue solo anyway</Button>
             </div>
@@ -192,7 +196,7 @@ export default function GuildFights() {
                             disabled={isHosting || !loadoutReady}
                             data-testid={`button-host-solo-${fight.id}`}
                           >
-                            {isHosting ? "Starting..." : "Host Solo Mode"}
+                            {isHosting ? "Starting..." : "Start solo battle"}
                           </Button>
                         )}
                         

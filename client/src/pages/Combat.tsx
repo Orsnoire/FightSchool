@@ -1,8 +1,9 @@
 import { ConsumableBag } from '@/components/ConsumableBag';
+import { PASSIVE_ABILITIES } from '@shared/combat/abilities';
 import { CombatCountdown } from "@/components/CombatCountdown";
 import { useBeforeCombatDeadline } from "@/hooks/useCombatCountdown";
 import { activeEnemies, hpLabel } from "@shared/combat/encounters";
-import { actionBlockLabel, combatActionBlock } from "@shared/combat/status-effects";
+import { actionBlockLabel, combatActionBlock, naturalAgilityAttack } from "@shared/combat/status-effects";
 import { AnswerFeedback } from "@/components/AnswerFeedback";
 import { LootRewardChoices } from "@/components/LootRewardChoices";
 import { abilityPreview } from "@shared/combat/abilityValues";
@@ -63,6 +64,8 @@ export default function Combat() {
       ? "Return to your adventure? Your remaining HP, MP and consumables will be saved. Leaving an unfinished encounter ends this attempt."
       : state?.currentPhase === "game_over"
       ? "Leave this fight and return to your dashboard? Your completed results are kept."
+      : state?.soloHostId === studentId
+      ? "End your solo fight and return to your dashboard? Your earned EXP will be saved, including correct answers and combat contributions. Ending early grants no victory gold or loot. This ends the fight for anyone who joined you."
       : "Leave this fight and return to your dashboard? You can rejoin with the fight code while it is active. Your resources and earlier participation will be kept; you must return before completion to receive rewards.";
     if (window.confirm(message)) leave();
   };
@@ -100,7 +103,7 @@ export default function Combat() {
   const canAct = status === "connected" && !isLeaving && !queued && !!p && !p.isDead;
   const available =
     p?.availableAbilities.filter(
-      (id) => SUPPORT.has(id) === (phase === "abilities") &&
+      (id) => !PASSIVE_ABILITIES.has(id) && SUPPORT.has(id) === (phase === "abilities") &&
         !(id === "healing_potion" && p.healingPotions === 0),
     ) || [];
   const guard = ["warrior_block", "shield_bash", "healing_guard", "aegis", "deflect"].includes(ability);
@@ -134,7 +137,7 @@ export default function Combat() {
   const view = queued && phase !== "game_over" ? "joining" : intro ? "intro" : p?.isDead && ["question", "actions", "abilities"].includes(phase) ? "knocked-out" : disabledChoice ? "disabled" : p?.ready && ["question", "actions", "abilities"].includes(phase) ? "ready" : phase === "question" && p?.hasAnswered ? "answered" : phase === "actions" ? "action" : phase;
   const title = view === "answered" ? "Answer submitted" : view === "intro" ? (state.round === 1 ? "Question" : "Next question") : view === "knocked-out" ? "Your party is still fighting" : view === "ready" ? "Ready — waiting for your party" : view === "action" ? "Choose your combat action" : phase === "question" ? `Question ${state.currentQuestionIndex + 1}` : names[phase];
   const minimal = ["waiting", "wave_break", "joining", "intro", "answered", "ready", "disabled", "knocked-out", "question_resolution", "enemy_ai"].includes(view);
-  const waitMessage = view === "disabled" ? `${actionBlockLabel(actionBlock!.reason)} · Cannot act · Waiting for other players` : view === "question_resolution" ? "Your party attacks" : view === "enemy_ai" ? "Enemy counterattacks" : view === "wave_break" ? "Wave cleared · Waiting for the next wave" : view === "joining" ? "Joining next round" : view === "waiting" ? "Waiting for your teacher" : view === "intro" ? "Get ready…" : view === "knocked-out" ? "Knocked out · Your party is still fighting" : "Waiting for other players";
+  const waitMessage = view === "disabled" ? (p && naturalAgilityAttack(p, state.round) ? 'Natural Agility · One automatic basic attack this round · Status remains' : `${actionBlockLabel(actionBlock!.reason)} · Cannot act · Waiting for other players`) : view === "question_resolution" ? "Your party attacks" : view === "enemy_ai" ? "Enemy counterattacks" : view === "wave_break" ? "Wave cleared · Waiting for the next wave" : view === "joining" ? "Joining next round" : view === "waiting" ? "Waiting for your teacher" : view === "intro" ? "Get ready…" : view === "knocked-out" ? "Knocked out · Your party is still fighting" : "Waiting for other players";
   const claim = async (itemId?: string) => {
     if (claimInFlight.current || claimed) return;
     claimInFlight.current = true;

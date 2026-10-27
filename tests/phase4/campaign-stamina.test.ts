@@ -18,11 +18,11 @@ test('campaign boss stamina preserves migrated data and awards each participatin
   try {
     const journal = JSON.parse(readFileSync(new URL('../../migrations/cloudflare/meta/_journal.json', import.meta.url), 'utf8'));
     const migration = (tag: string) => readFileSync(new URL(`../../migrations/cloudflare/${tag}.sql`, import.meta.url), 'utf8');
-    for (const { tag } of journal.entries.slice(0, -1)) await pg.exec(migration(tag));
+    for (const { tag } of journal.entries.filter((e: any) => e.idx < 22)) await pg.exec(migration(tag));
     // A populated pre-migration character retains every existing field, including today's stamina.
     await pg.query("INSERT INTO students(id,nickname,nickname_normalized,password_hash,daily_combats,stamina_day,gold,xp_remainder) VALUES($1,'existing','existing','unused',7,$2,321,0.75)", [student().id, mountainDay(Date.now())]);
     const before = (await pg.query('SELECT * FROM students')).rows[0] as any;
-    await pg.exec(migration(journal.entries.at(-1).tag));
+    for (const { tag } of journal.entries.filter((e: any) => e.idx >= 22)) await pg.exec(migration(tag));
     const { stamina_recovery, ...after } = (await pg.query('SELECT * FROM students')).rows[0] as any;
     assert.deepEqual(after, before); assert.equal(stamina_recovery, 0);
     await db.insert(s.teachers).values({ id: fight.teacherId, firstName: 'Test', lastName: 'Teacher', email: 'boss-stamina@example.invalid', emailNormalized: 'boss-stamina@example.invalid', passwordHash: 'unused', guildCode: 'BOSSTA', billingAddress: 'Test', schoolDistrict: 'Test', school: 'Test', subject: 'Math', gradeLevel: '5' });

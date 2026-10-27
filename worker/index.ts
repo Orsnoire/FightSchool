@@ -1,3 +1,4 @@
+import { studentCanAccessSession } from "./services/combat-access";
 import { diagnostic } from "./diagnostics";
 import { gameDatabase } from "./db/database.ts";
 import { handleAvatar } from "./routes/avatars.ts";
@@ -137,9 +138,8 @@ async function handleWebSocket(
       );
     }
     if (
-      room.soloStudentId &&
       actor.actorType === "student" &&
-      actor.actorId !== room.soloStudentId
+      !(await studentCanAccessSession(repository, room, actor.actorId))
     )
       return json({ error: "Forbidden" }, 403, currentRequestId);
     if (actor.actorType === "teacher" && actor.actorId !== room.teacherId) {

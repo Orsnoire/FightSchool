@@ -38,3 +38,15 @@ export const guildAssignmentInput = z.object({ fightId: uuid });
 export const guildSoloInput = z.object({ enabled: z.boolean() });
 export type GuildInput = z.infer<typeof guildInput>;
 export type GuildProgressionInput = z.infer<typeof guildProgressionInput>;
+
+/** Discovery only: combat players, questions and answer keys are never included. */
+export interface ActiveGuildSession {
+  sessionId: string;
+  fightId: string;
+  title: string;
+  status: 'waiting' | 'active';
+  soloMode: boolean;
+  isHost: boolean;
+  hostNickname: string | null;
+  createdAt: number;
+}

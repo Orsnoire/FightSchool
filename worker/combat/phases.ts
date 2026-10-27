@@ -16,11 +16,12 @@ import { damagePlayer, hit, heal, resolvedHP } from "./health";
 import { currentHP } from "../../shared/combat/hp";
 import { baseDamage } from "./damage-values";
 import { activeEnemies, performance, encounterEntry, encounterBudgetFromEntries, allocateHP, roundHP } from "../../shared/combat/encounters";
-import { makePlayback } from "../../shared/combat/presentation";
+import { makePlayback, abilityEffect } from "../../shared/combat/presentation";
 import { resolveEnemyTurn } from "./enemy-turn";
 import { abilityDamage } from "../../shared/combat/abilityValues.ts";
 import { tickItemProtections } from '../../shared/campaign/consumables';
 import { ENCOUNTER_TIERS } from "../../shared/encounter-tiers";
+import { preserveCombo } from '../../shared/aa';
 
 export function advancePhase(
   state: CombatSnapshot,
@@ -70,6 +71,11 @@ export function advancePhase(
     return s;
   }
   if (s.currentPhase === "abilities") {
+    // Capture already-due ticks before recasts refresh their saved effects.
+    // Refreshing duration must not cancel the tick earned this round.
+    const dueTicks = activeEnemies(s).flatMap(enemy => enemy.effects
+      .filter(effect => effect.damage > 0 && (effect.appliedRound === undefined || effect.appliedRound < s.round))
+      .map(effect => ({ enemyId: enemy.id, effect: { ...effect } })));
     const completed = completedRounds(s);
     for (const p of Object.values(s.players)) p.roundsParticipated = participatedRounds(s, p) + 1;
     s.completedRounds = completed + 1;
@@ -144,8 +150,7 @@ export function advancePhase(
       } else {
         p.totals.questionsIncorrect++;
         p.consecutiveCorrectAnswers = 0;
-        if (p.availableAbilities.includes("headshot"))
-          p.comboPoints = Math.max(0, p.comboPoints - 1);
+        p.comboPoints = preserveCombo(p.comboPoints, p.advancement?.comboFloor || 0);
         const provoke = ordered.find((x) => !x.isDead && x.buffs.provoke);
         damagePlayer(
           s,
@@ -156,7 +161,7 @@ export function advancePhase(
       }
       const dealt = p.totals.damageDealt - before;
       if (dealt > 0) {
-        p.comboPoints = Math.min(p.maxComboPoints, p.comboPoints + 1);
+        if (p.lastAnswerCorrect) p.comboPoints = Math.min(p.maxComboPoints, p.comboPoints + 1);
         if (p.buffs.blood_sword) heal(s, p, p.studentId, dealt);
         if (
           p.characterClass === "blood_knight" &&
@@ -165,11 +170,19 @@ export function advancePhase(
           heal(s, p, p.studentId, dealt / 4);
       }
     }
-    for (const e of activeEnemies(s))
-      for (const effect of e.effects)
-        if (effect.damage > 0 && s.players[effect.ownerId])
-          hit(s, s.players[effect.ownerId], e.id, effect.damage, true,
-            effect.type === "hex" ? "magic" : "physical");
+    for (const { enemyId, effect } of dueTicks) {
+      if (s.players[effect.ownerId]) {
+        const start = s.events.length;
+        hit(s, s.players[effect.ownerId], enemyId, effect.damage, true,
+          effect.type === "hex" ? "magic" : "physical");
+        for (const event of s.events.slice(start)) {
+          event.actionId = `${s.round}:dot:${start}`;
+          event.abilityId = effect.type;
+          event.effect = abilityEffect(effect.type, s.players[effect.ownerId]);
+          event.message = `${effect.type === "hex" ? "Hex" : effect.type} tick: ${event.message}`;
+        }
+      }
+    }
     // Transfer once per blocker/target after this round's damage has generated threat.
     // Self-blocks never manufacture threat; Block + Shield Bash cannot transfer twice.
     for (const p of ordered.filter((p) => !p.isDead)) {
@@ -196,7 +209,7 @@ export function advancePhase(
     leader(s);
     resolveEnemyTurn(s, fight, {
       random: () => rng(s),
-      damage: (id, raw, source, ignoreDefense, limit, fractional) => damagePlayer(s, id, raw, source, ignoreDefense, limit, fractional),
+      damage: (id, raw, source, ignoreDefense, limit, fractional, cause) => damagePlayer(s, id, raw, source, ignoreDefense, limit, fractional, cause),
       say: (actor, target, message, amount = 0, healing = false) => {
         const enemy=s.enemies.find(e=>e.id===target);
         event(s, healing?"heal":"ability", actor, target, amount, message,
@@ -261,7 +274,7 @@ export function advancePhase(
     s.enemies.forEach(
       (e) =>
         (e.effects = e.effects
-          .map((x) => ({ ...x, rounds: x.rounds - 1 }))
+          .map((x) => ({ ...x, rounds: x.rounds - (x.appliedRound === undefined || x.appliedRound < s.round ? 1 : 0) }))
           .filter((x) => x.rounds > 0)),
     );
     if(s.encounterRules===2 && Object.keys(s.pendingPlayers||{}).length){

@@ -1,4 +1,24 @@
+# Campaign reconciliation — October 27, 2026 (review only)
+
+PR #81 integrates production baseline `2d524df` (PRs #85/#86) with the campaign
+pilot. AA power, licensed gear, five saved cross-class slots, persistent resources
+and shared combat/rewards are reconciled. Canonical production migration 0018 is
+unchanged; campaign migrations now occupy 0019–0023 with a separately guarded,
+append-only bridge for the already-migrated isolated preview. Verification is in
+progress; [evidence and upgrade procedure](reviews/2026-10-27-campaign-aa-reconciliation.md).
+No new merge, deployment, database migration or playtester reset has occurred.
+The preview still runs `6de4263`; authenticated owner guardian-victory acceptance
+is pending. Production release status below and separate C12 work are unchanged.
+
 # Current status
+
+**October 26 Alternate Advancement release:** [PR #86](https://github.com/Orsnoire/FightSchool/pull/86) is complete, merged, deployed and accepted at `207b7bb`. Worker `edc96b23-6e74-4916-9330-ad5cbc3359a1` serves 100%. Includes the AA wallet/ranks/interface, five cross-class slots, paid recustomization and full wrong-answer CP reset with AA preservation. All 364 tests, TypeScript/builds, four Chromium jobs and merged-main CI pass. Deployment 40370834834 applied additive migration 0018 and passed both hostname smoke checks; canonical acceptance 40371373272 passed on its first attempt. 30-answer p50/p95/max: 1458/2767/2867 ms, a functional sample. No reset. [Release evidence and limits](releases/2026-10-26-pr86.md).
+
+**October 26 solo-exit EXP / periodic-effects release:** [PR #85](https://github.com/Orsnoire/FightSchool/pull/85) is complete, merged, deployed and accepted at `5530459`, Worker `b984a444-6bc3-45f0-a94e-d6af64767f1a` serving 100%. Shared teacher/solo-host EXP counts correct answers and actual combat contributions; Hex uses MAT/MDF with an initial hit and full later ticks. All 347 tests, TypeScript/builds and four Chromium jobs pass. Deployment 40344349000 and canonical acceptance 40345280239 (first attempt, corrected test source `453925f`) pass, including fractional rewards and exactly-once persistence. 30-answer p50/p95/max: 1368/2527/2628 ms, a functional sample. No new migration or data reset. [Release evidence and limits](releases/2026-10-26-pr85.md).
+
+**October 22 vampire/shop/joining release:** [PR #84](https://github.com/Orsnoire/FightSchool/pull/84) is complete, merged, deployed and accepted at `a665948`, Worker `dc43a5bc-ec62-4a12-aeb5-88837d410c4b` serving 100%. All 339 tests, TypeScript/builds and exact-head browser checks pass. Deployment 39819733897 and canonical acceptance 39820153872 (first attempt) pass. Includes actual-damage Bite healing, revised common gear prices, the four Tier 2 armor sets and visible guild battle Join/Rejoin. 30-answer p50/p95/max: 1966/3733/3834 ms, a functional sample. [Release evidence and limits](releases/2026-10-22-pr84.md).
+
+**October 21 math display release:** [PR #83](https://github.com/Orsnoire/FightSchool/pull/83) is merged and deployed as `2ca741ff28a81d75c75de59c51d784415c7e418a`, Worker `3e87099c-a7b6-4c18-b023-75262acd44ac` at 100%. Current-head CI/four Chromium jobs, merged-main CI and production deployment 39695583585 pass. All 48 differentiation/integration questions (264 equations) pass deployed-renderer verification; canonical save/reload and correct/distractor grading pass. **Canonical acceptance passed:** [39695893872, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/39695893872/attempts/2), with unchanged tests. Combat/progression and all eight operational checks pass; 30-answer p50/p95/max 1857/3564/3664 ms. Attempt 1 timed out awaiting the abilities phase; its cause remains unconfirmed. No stored-question rewrite, new migration or student-data reset. Campaign/C12 stay separate. [Evidence and limits](releases/2026-10-21-pr83.md).
 
 **October 20 adaptive-combat release:** PR #79 is **complete, merged, deployed and accepted** at `989c9ec63453d06804900d0458d89664391bf849`, Worker `6b254de6-e7d8-46f7-9daf-bc878c8351bd` (100%). Current-head CI/browser checks and production deployment pass. Canonical acceptance 39438588938 attempt 3 passes the original fixture on the deployed commit, including 30-player reconnect and exactly-once results (p50 1154 ms, p95 2261 ms, max 2313 ms). The first two connection timeouts were investigated; their root cause remains unconfirmed. Test-only diagnostics in merged PR #80 also pass canonical acceptance 39442555095; no gates were weakened or runtime redeployment required. Supplemental live tier/swarm/HP, old-room compatibility and earned-progression checks pass. [Release record](releases/2026-10-20-pr79.md) and [active checkpoint](ACTIVE_WORK.md) contain exact evidence. No reset or C12 rehearsal change.
 

@@ -19,6 +19,12 @@ function player(p:CombatPlayer, reveal:boolean):PublicCombatPlayer {
     itemProtections: p.itemProtections ? normalizeProtections(p.itemProtections) : undefined,
     lastAnswerCorrect:reveal?p.lastAnswerCorrect:undefined,
     answerOutcome:reveal?answerOutcome(p):undefined,
+    ...(p.advancement ? {advancement:{
+      ...pick(p.advancement,['version','tier','extraSlots','comboFloor','potionChance','dodgeChance','agilityChance']),
+      ranks:{...p.advancement.ranks}, primary:pick(p.advancement.primary,['str','int','agi','mnd','vit']),
+      flat:pick(p.advancement.flat,['atk','mat','rtk','def','healing','maxHp','maxMp']),
+    }} : {}),
+    ...(p.agilityAttack ? {agilityAttack:pick(p.agilityAttack,['round','allowed'])} : {}),
     statuses:p.statuses?.map(s=>({...pick(s,['type','sourceId','appliedRound','throughRound','amount','carry','chance','correctAnswers']),actionFailure:s.actionFailure?pick(s.actionFailure,['round','skip']):undefined})),
     actionBlocked:p.actionBlocked?pick(p.actionBlocked,['round','reason','attacksOnly']):undefined,
     equipmentLoadout:p.equipmentLoadout?pick(p.equipmentLoadout,EQUIPMENT_SLOTS):undefined,

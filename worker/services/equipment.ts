@@ -9,6 +9,8 @@ import { EQUIPMENT_ITEMS, calculateTierPrice, type CharacterClass } from "../../
 import type { GameDatabase } from "../db/database";
 import * as s from "../db/schema";
 import { GameError as ApiError } from "./errors";
+import { crossClassSelections } from '../../shared/job-loadouts';
+import { resolveAAEffects } from '../../shared/aa';
 const uuid = z.string().uuid();
 export async function updateStudentEquipment(db: GameDatabase, student: s.StudentRecord, input: LoadoutInput) {
   const id = student.id;
@@ -18,8 +20,28 @@ export async function updateStudentEquipment(db: GameDatabase, student: s.Studen
     .where(eq(s.studentJobLevels.studentId, id));
   const levels = Object.fromEntries(jobs.map((j) => [j.jobClass, j.level]));
   const cross = getCrossClassAbilities(student.characterClass || "warrior", levels as Record<CharacterClass, number>);
+  const hasList = 'crossClassAbilities' in input;
+  const hasLegacy = 'crossClassAbility1' in input || 'crossClassAbility2' in input;
+  if (hasList && hasLegacy) throw new ApiError('Use one cross-class loadout format');
+  const selections = crossClassSelections(student);
+  if (hasLegacy) {
+    if ('crossClassAbility1' in input) selections[0] = input.crossClassAbility1 ?? null;
+    if ('crossClassAbility2' in input) selections[1] = input.crossClassAbility2 ?? null;
+  }
+  if (hasList || hasLegacy) {
+    input = { ...input, crossClassAbilities: hasList ? input.crossClassAbilities : selections };
+    const chosen = input.crossClassAbilities!;
+    const capacity = 2 + resolveAAEffects(student.aaRanks, 4).extraSlots;
+    if (chosen.some((id, index) => !!id && (index >= capacity || !cross.some(a => a.id === id))))
+      throw new ApiError('Cross-class slot or ability not unlocked');
+    const populated = chosen.filter(Boolean);
+    if (new Set(populated).size !== populated.length) throw new ApiError('Choose different cross-class abilities');
+    input.crossClassAbility1 = chosen[0] ?? null;
+    input.crossClassAbility2 = chosen[1] ?? null;
+  }
   for (const [slot, itemId] of Object.entries(input)) {
-    if (!itemId)
+    if (slot === 'crossClassAbilities') continue;
+    if (!itemId || typeof itemId !== 'string')
       continue;
     if (slot.startsWith("crossClass")) {
       if (!cross.some((a) => a.id === itemId))
@@ -35,7 +57,7 @@ export async function updateStudentEquipment(db: GameDatabase, student: s.Studen
         .where(eq(s.equipmentItems.id, uuid.parse(itemId)));
     const item = builtin || custom;
     if (item) {
-      const exclusion = equipmentExclusion(student.characterClass || 'warrior', item);
+      const exclusion = equipmentExclusion(student.characterClass || 'warrior', item, student.aaRanks);
       if (exclusion)
         throw new ApiError(exclusion);
     }
