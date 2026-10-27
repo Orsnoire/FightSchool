@@ -7,8 +7,8 @@ with main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`. The original comparison wa
 33 behind / 29 ahead. Main includes releases #83–86; this merge keeps their math,
 shop, guild combat access, solo EXP, periodic effects and AA changes.
 
-**Implementation complete; verification in progress. No merge to main, deployment,
-provider/database operation or playtest reset is authorized or performed.** C12
+**Implementation and repository verification complete; ready for review. No merge
+to main, deployment, provider/database operation or playtest reset was performed.** C12
 is separate. The preview release-request file is unchanged. Its runtime remains
 `6de42632f4953e408b566bf60978cfe482a11f10`, with the October 21 preview-only ledger.
 Owner-authenticated guardian-victory acceptance remains pending; fixture tests
@@ -108,7 +108,21 @@ after AA purchases; retain AA wallet/receipt data and a compatible runtime.
 
 ## Verification and limits
 
-- Local TypeScript and client/Worker builds pass.
+The tested integration is `bcf2c4c251c24f2d5a4cbcc5a62aac97149bb3af`, with main
+`2d524dff1ff7ac784d37b02fb48a4ec530e9b666` as its second parent. The subsequent
+checkpoint commit only records these results; it changes no runtime, migration,
+test or deployment configuration.
+
+| Gate | Result / evidence |
+| --- | --- |
+| Full deterministic suites | **385/385 pass** locally and in [CI 40535793500](https://github.com/Orsnoire/FightSchool/actions/runs/40535793500): phase 2 = 5, phase 3 = 7, phase 4 = 357, rich content = 16 |
+| TypeScript and client/Worker builds | Pass locally and in the same CI run |
+| Deployment boundary | **4/4 pass** locally; requires the new AA compatibility attestation while preserving the fixed isolated target |
+| Chromium acceptance | All four jobs pass in [40535793069](https://github.com/Orsnoire/FightSchool/actions/runs/40535793069): browser, initial-loading, authoring-lobby and battlefield-rendering |
+| Campaign visual inspection | Inspected `1366-campaign-aa.png` and `390-campaign-aa.png` from [browser artifact 12747678359](https://github.com/Orsnoire/FightSchool/actions/runs/40535793069/artifacts/12747678359); HP/MP, suppressed healing and responsive layout are legible without overlap |
+
+- Local phase-4 tests used concurrency 2 to fit the workspace; CI's normal `npm test`
+  also passes without that override.
 - Disposable PostgreSQL/PGlite tests pass for production-history upgrades and
   legacy preview bridging, seeded wallets/receipts/results/progress/active rooms,
   old ledger preservation, retry/no-op behavior, corrupt-history rejection and
@@ -117,10 +131,20 @@ after AA purchases; retain AA wallet/receipt data and a compatible runtime.
   forward migration and post-bridge no-op use Drizzle's real timestamp migrator.
   PGlite's prepared-query limitation on old multi-statement migration 0008 is
   handled only while seeding the historical fixture with `exec`.
-- Deterministic full-suite verification and updated desktop/phone fixture browser
-  CI remain in progress. Browser coverage adds licensed gear, capped resource
-  display, suppressed borrowed healing, AA potion amount and reload persistence;
-  existing five-slot combat/browser coverage is retained.
+- Updated desktop/phone fixture browser acceptance passes teacher setup, gates,
+  exploration, inn, both shops, saved resources and encounter resume. New checks
+  cover licensed gear, capped resource display, suppressed borrowed healing, AA
+  potion amount and reload persistence. The production AA browser suite also
+  passes five-slot persistence and actual cross-class combat actions.
 - Local Chromium download failed with a truncated archive. This is **not** a
   local browser pass. Live preview upgrade, live guardian victory, physical-device
   pacing and C12 operational signoff are not established by these checks.
+
+## Handoff
+
+PR #81 is reviewable, open and unmerged. The next action is code/migration review;
+any later preview migration and deployment require separate authorization. That
+release must use the guarded bridge above, preserve existing playtest progress,
+and then record authenticated owner acceptance of a live guardian victory and
+its 20-percentage-point stamina reward. Current fixture acceptance does not claim
+that live acceptance. Production and C12 remain untouched.

@@ -4,9 +4,11 @@ PR #81 integrates production baseline `2d524df` (PRs #85/#86) with the campaign
 pilot. AA power, licensed gear, five saved cross-class slots, persistent resources
 and shared combat/rewards are reconciled. Canonical production migration 0018 is
 unchanged; campaign migrations now occupy 0019–0023 with a separately guarded,
-append-only bridge for the already-migrated isolated preview. Verification is in
-progress; [evidence and upgrade procedure](reviews/2026-10-27-campaign-aa-reconciliation.md).
-No new merge, deployment, database migration or playtester reset has occurred.
+append-only bridge for the already-migrated isolated preview. **Ready for review:**
+385 tests, TypeScript/builds, four deployment boundary tests and all four Chromium
+jobs pass; desktop/phone campaign AA screenshots inspected.
+[evidence and upgrade procedure](reviews/2026-10-27-campaign-aa-reconciliation.md).
+No merge to main, deployment, database migration or playtester reset has occurred.
 The preview still runs `6de4263`; authenticated owner guardian-victory acceptance
 is pending. Production release status below and separate C12 work are unchanged.
 
