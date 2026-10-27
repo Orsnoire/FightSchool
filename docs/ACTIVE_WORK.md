@@ -1,3 +1,11 @@
+# Campaign compatibility — active October 27, 2026
+
+- Resume `feature/campaign-pilot`, draft [PR #81](https://github.com/Orsnoire/FightSchool/pull/81). Owner authorized reconciliation and publication for review only.
+- Starting campaign head `d7c4a835f4ccc7169452c492d5b7262d9fb6ad0e`; main baseline `2d524dff1ff7ac784d37b02fb48a4ec530e9b666` (33 behind / 29 ahead), including released PRs #85/#86.
+- Scope: merge main, integrate AA power context/five cross-class slots/current combat/resource calculations, preserve campaign mechanics, reconcile migration 0018 and preview history, and verify deterministic/migrated database/browser regressions.
+- State: CLAIMED / IMPLEMENTATION PENDING. No new verification yet. Exact next action: inspect merge conflicts and both migration ledgers; implement a data-preserving compatibility path and tests.
+- No deployment, production/C12 mutation, existing playtest reset or disruptive provider test is authorized. Keep `deploy/campaign-preview.json` unchanged. Historical preview runtime and owner-acceptance limits remain below.
+
 # Campaign boss stamina — released October 21, 2026
 
 - Continue `feature/campaign-pilot`, [PR #81](https://github.com/Orsnoire/FightSchool/pull/81), open/unmerged. Owner requested 20% stamina for every campaign boss victory, including first clears and matchmaking.
