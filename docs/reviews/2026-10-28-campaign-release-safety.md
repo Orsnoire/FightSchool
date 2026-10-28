@@ -34,6 +34,14 @@ student reset, production change or C12 change is authorized by this review.
    journal entries. Lock wait (15 seconds) and statement execution (120 seconds)
    are bounded. Deployment now requires dependency readiness as well as liveness.
 
+5. **Browser dependency drift:** the browser/loading jobs ran a root-directory
+   `npm install --no-save --package-lock=false` after `npm ci`; the observed log
+   changed 168 packages and removed 55. These jobs now install pinned Playwright
+   in an isolated temporary prefix and link only the tool, matching the existing
+   battlefield/authoring/preview-deployment pattern. Application lockfile and
+   runtime code are unchanged. This fixes reproducibility; it does not establish
+   the cause of the separately observed gear-popup Escape timeout.
+
 No shipped SQL, active journal, historical ledger row, gameplay rule or release
 request was changed for these corrections. Canonical 0019–0022 remain identical
 to historical campaign SQL; production 0000–0018 remain unchanged.

@@ -21,7 +21,11 @@ jobs:
       # ubuntu-24.04 already supplies the Chromium runtime libraries. Avoid
       # reinstalling unrelated system fonts from an unreliable apt mirror.
       - name: Install isolated browser test tooling
-        run: npm install --no-save --package-lock=false playwright@1.62.1 && npx playwright install chromium
+        run: |
+          # Keep npm ci's application dependency tree identical to the release build.
+          npm install --prefix "$RUNNER_TEMP/ui-browser-tools" --no-save --package-lock=false playwright@1.62.1
+          ln -s "$RUNNER_TEMP/ui-browser-tools/node_modules/playwright" node_modules/playwright
+          node "$RUNNER_TEMP/ui-browser-tools/node_modules/playwright/cli.js" install chromium
       - name: Exercise combat overlays at Chromebook and phone sizes
         shell: bash
         run: |
@@ -60,7 +64,11 @@ jobs:
       - run: npm ci
       - run: npm run build:client
       - name: Install isolated browser test tooling
-        run: npm install --no-save --package-lock=false playwright@1.62.1 && npx playwright install chromium
+        run: |
+          # Keep npm ci's application dependency tree identical to the release build.
+          npm install --prefix "$RUNNER_TEMP/ui-browser-tools" --no-save --package-lock=false playwright@1.62.1
+          ln -s "$RUNNER_TEMP/ui-browser-tools/node_modules/playwright" node_modules/playwright
+          node "$RUNNER_TEMP/ui-browser-tools/node_modules/playwright/cli.js" install chromium
       - name: Verify production loading, polling and editor recovery
         shell: bash
         run: |
