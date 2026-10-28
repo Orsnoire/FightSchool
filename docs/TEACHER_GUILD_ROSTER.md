@@ -49,10 +49,12 @@ players retain at most their bounded final sample window until return or account
 deletion. Deleting a player cascades all activity tables. Rollback can retain these
 additive tables while restoring a compatible earlier runtime.
 
-The unmerged campaign branch also uses migration numbers beginning at 0019.
-Whichever feature integrates second must reconcile the unapplied history and
-regenerate its snapshots; do not rewrite any migration already applied to an
+Roster migration 0019 was applied by the October 28 production deployment.
+The unmerged campaign branch also uses migration numbers beginning at 0019 and
+must reconcile its unapplied history and regenerate its snapshots; do not rewrite any migration already applied to an
 environment or run the classroom migration against the campaign preview.
 
 The roster refreshes every minute while visible, on window focus and manually.
 Failures are visible and retained values are explicitly labeled stale.
+
+[October 28 merge, deployment and acceptance evidence](releases/2026-10-28-pr87.md).

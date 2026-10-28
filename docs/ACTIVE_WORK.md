@@ -1,13 +1,12 @@
-# Teacher guild roster statistics — active October 28, 2026
+# Teacher guild roster statistics — deployed October 28, 2026
 
-- Owner requests every job and its permanent level for each player ID (0 when never played), lifetime AAs earned, rolling seven-day active game hours, and accuracy across the past 24 hours of fights.
-- Owner selected active game time across fights, exploration and menus; hidden/idle tabs do not count. Existing records do not measure this reliably, so new tracking will identify partial history rather than fabricate past hours.
-- Branch: `feature/teacher-guild-roster-stats`, based on main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`. This is a separate owner-requested feature, not C12 or Campaign #81. Both registered branches and production remain unchanged.
-- State: IMPLEMENTED / VERIFIED / READY FOR REVIEW in [PR #87](https://github.com/Orsnoire/FightSchool/pull/87). All 12 job levels, lifetime AA, seven-day active hours and 24-hour question-weighted guild accuracy are complete. Missing/partial history, refresh, stale/error and empty states are explicit.
-- Verified runtime: `f573869641e0d2d9f46a62398edb29a90dd2bffd`. [CI 40712509500](https://github.com/Orsnoire/FightSchool/actions/runs/40712509500) passes all 374 tests, TypeScript and both builds. All four [Chromium jobs 40712509357](https://github.com/Orsnoire/FightSchool/actions/runs/40712509357) pass, including desktop/phone roster rendering and actual idle/visibility behavior. Local rendered-component/DOM and migrated-SQL checks also pass. Local Chromium download failed; browser evidence is from CI.
-- Final review covers server-time bounds, timer jitter/suspension, concurrent tabs/devices, retries including the losing tab, recent guild accuracy and legacy fallback, teacher/student isolation, and narrow recurring reads. Migration tests preserve existing student data and verify a no-op Drizzle diff.
-- Additive migration 0019 remains UNAPPLIED. Campaign #81 has a separate unmerged 0019 history and must reconcile before combined integration. No live database changes, merge or deployment occurred. [Metric semantics and migration boundary](TEACHER_GUILD_ROSTER.md).
-- Next: release review and owner-authorized merge/deployment, applying the additive migration through the existing workflow. Tracking starts on each player's first visit using the new client; prior active hours cannot be reconstructed. This final checkpoint changes documentation only; the runtime above is the verified code.
+- Owner authorized merge and production deployment. [PR #87](https://github.com/Orsnoire/FightSchool/pull/87) merged at `f34b49fab143f23d971e09dd53c6f83814e3595d`; tree `d2ff6112a6c20ebda2ee342de03006ea3b1dd93c` matches reviewed head `c40825d62ea6a9345c3f6b4677b21467dc694d27` exactly.
+- Complete: all 12 permanent job levels (0 without progression), lifetime AA, rolling seven-day active game hours and 24-hour question-weighted guild accuracy. Missing/partial history, refresh, stale/error and empty states are explicit. Idle/hidden use is excluded and retries/concurrent tabs do not multiply time.
+- 374 tests, TypeScript/builds, final PR CI 40713238597 and all four Chromium jobs 40713238514 pass. Merged-main CI 40714376598 passes. Desktop/phone roster and actual idle/visibility behavior are covered. [Evidence and limits](releases/2026-10-28-pr87.md).
+- Deployment 40714742768 passed on the exact merge, applying additive migration 0019 and passing both hostname smoke checks. Worker `975be8fc-972e-4738-98e0-c36b7cb5f8d1` serves 100%, confirmed by Wrangler and Cloudflare. No data reset.
+- Canonical acceptance 40715425162 is running on the exact merged commit; acceptance is not yet claimed.
+- State: MERGED / DEPLOYED; live acceptance pending. Campaign #81 and C12 #75 remain separate. Campaign must reconcile its unmerged 0019 history before integration; the classroom migration is now applied and immutable. [Metric semantics](TEACHER_GUILD_ROSTER.md).
+- Next: finish the canonical acceptance workflow and record its outcome. Tracking starts with each player's first visit using the new client, with partial history until seven days have elapsed; previous active hours cannot be reconstructed.
 
 # Alternate Advancement — released October 26, 2026
 
