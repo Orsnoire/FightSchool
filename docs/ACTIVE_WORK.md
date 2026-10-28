@@ -1,3 +1,14 @@
+# PR #90 deployed — final acceptance and release tooling
+
+- PR #90 merged at `d44995a109e8ca5549e29ba63c616b68d84e2ac3`, matching tested head `7688151` exactly. Merged-main CI 40767932864 passes.
+- Production migration 0025 and deployment are complete. Isolated production-child rehearsal and final paused recovery copy precede the atomic change. All public table contents and the original 25 ledger rows are preserved; the 26-row ledger and final catalog match. Every saved room matches its paused checkpoint. Maintenance history and all bindings remain intact; the temporary probe is removed. Worker `3c55150b-5deb-40bd-a8d2-feeabe9e5e43` serves the exact merged source at 100%. Both public hostnames pass readiness.
+- Initial protected workflow 40768311269 stopped on a room-probe HTTP 401 during propagation, before migration. A subsequent complete read-only verification passed; no code/assertion change or bypass was needed. Resume's first settings request was atomically rejected for an omitted export; declaring the unchanged CombatSession SQLite export succeeded with namespace identity verified.
+- Canonical live acceptance 40769862238 is running against this runtime. The local attempt could not open WebSockets (runner DNS restriction); it is not acceptance evidence.
+- Continue `release/pr90-checkpoint` / PR #91. Release-only follow-up explicitly recognizes the 26-row question-bank ledger, preserves historical 20/25-row stages and rejects unknown stages. All 12 deployment tests pass locally. The request returns to read-only preflight; no further runtime deployment or migration is required. Exact-head CI is recorded in PR #91.
+- Beta remains closed. Owner still needs to select a dedicated production beta guild for access/guardian/stamina acceptance. Preview and C12 are unchanged; no saves are imported or reset. [Release evidence](releases/2026-10-28-pr90.md).
+
+## Historical checkpoints
+
 # PR #90 deployed — release follow-up active
 
 Production is reopened at `d44995a109e8ca5549e29ba63c616b68d84e2ac3`, with migration 0025, every existing table and saved room preserved. Beta stays closed. Canonical acceptance [40769862238](https://github.com/Orsnoire/FightSchool/actions/runs/40769862238) is running. Continue `release/pr90-checkpoint` / [PR #91](https://github.com/Orsnoire/FightSchool/pull/91) for the current-ledger preflight and final evidence. No further app deployment or migration is needed. C12 and preview remain unchanged.

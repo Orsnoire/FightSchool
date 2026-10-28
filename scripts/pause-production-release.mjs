@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { neon } from '@neondatabase/serverless';
 import { run, ledgerDigest, PRODUCTION } from './deploy-campaign-preview.mjs';
-import { canonicalCampaignLedger } from './campaign-preview-migration-bridge.mjs';
+import { productionReleaseLedger } from './production-release-ledger.mjs';
 
 try {
   const request=JSON.parse(readFileSync('deploy/production-release.json','utf8'));
@@ -18,7 +18,7 @@ try {
   const db=neon(process.env.DATABASE_URL);
   const [identity]=await db`SELECT current_database() AS database,current_user AS role`;
   const ledger=await db`SELECT hash,created_at::text AS created_at FROM drizzle.__drizzle_migrations ORDER BY id`;
-  const expected=canonicalCampaignLedger.slice(0,request.schemaStage==='after'?25:20);
+  const expected=productionReleaseLedger(request.schemaStage ?? 'before');
   if(ledgerDigest(ledger)!==ledgerDigest(expected))throw Error('Production canonical ledger mismatch');
   const host=new URL(process.env.DATABASE_URL).hostname.replace('-pooler.','.');
   const databaseFingerprint=createHash('sha256').update(JSON.stringify([probeToken,host,identity.database,identity.role])).digest('hex');
