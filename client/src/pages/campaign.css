@@ -7,3 +7,5 @@ body:has(.campaign-shell){background:#0d1a17}
 .campaign-equipment-grid { display: grid; gap: .65rem; margin-top: .75rem; }
 .campaign-equipment-grid label { min-width: 0; }
 .campaign-equipment-grid select { width: 100%; min-width: 0; }
+.campaign-beta { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; padding:1rem; margin:1rem 0; border:1px solid #9b7d37; border-radius:.75rem; background:#faf3dc; color:#3a2f18; }
+.campaign-beta p { margin:.25rem 0 0; font-size:.9rem; }

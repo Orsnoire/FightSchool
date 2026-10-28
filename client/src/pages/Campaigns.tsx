@@ -6,6 +6,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { useTeacherAuth } from '@/hooks/useTeacherAuth';
 import type { CampaignSummary, CampaignView } from '@shared/campaign/model';
 import './campaign.css';
+import { BetaNotice, useCampaignBeta } from '@/features/campaign/BetaNotice';
 
 export async function campaignRequest<T>(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(path, { method, signal, credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -25,12 +26,14 @@ function TeacherCampaigns() {
 }
 function CampaignList({ teacher }: { teacher: boolean }) {
   const client = useQueryClient();
+  const identity = `${teacher ? 'teacher' : 'student'}:${localStorage.getItem(teacher ? 'teacherId' : 'studentId') || ''}`;
+  const beta = useCampaignBeta(identity);
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const [name, setName] = useState('Hearthlight Expedition'), [dungeonName, setDungeonName] = useState('Echo Cave');
   const [guildId, setGuildId] = useState(''), [fightId, setFightId] = useState('');
   const [search, setSearch] = useState(''), [guildFilter, setGuildFilter] = useState(''), [keys, setKeys] = useState('Cave Key');
-  const query = useQuery({ queryKey: ['/api/campaigns', teacher], queryFn: () => campaignRequest<CampaignSummary[]>('/api/campaigns'), staleTime: 0 });
-  const options = useQuery({ queryKey: ['/api/campaigns/options'], queryFn: () => campaignRequest<Options>('/api/campaigns/options'), enabled: teacher });
+  const query = useQuery({ queryKey: ['/api/campaigns', identity], queryFn: () => campaignRequest<CampaignSummary[]>('/api/campaigns'), staleTime: 0, enabled: beta.data?.enabled === true });
+  const options = useQuery({ queryKey: ['/api/campaigns/options', identity], queryFn: () => campaignRequest<Options>('/api/campaigns/options'), enabled: teacher && beta.data?.enabled === true });
   const quizzes = options.data?.quizzes.filter(q => q.title.toLowerCase().includes(search.toLowerCase()) && (!guildFilter || options.data.assignments.some(a => a.guildId === guildFilter && a.fightId === q.id))) || [];
   async function create(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError('');
@@ -48,9 +51,11 @@ function CampaignList({ teacher }: { teacher: boolean }) {
   }
   return <main className="campaign-shell">
     <Link href={teacher ? '/teacher' : '/student/lobby'} className="campaign-back">← Back to {teacher ? 'dashboard' : 'lobby'}</Link>
+    <BetaNotice />
     <header className="campaign-heading"><span className="campaign-eyebrow">Adventures · solo pilot</span><h1>Campaigns</h1><p>A town to return to. A cave to explore. Every encounter leaves its mark.</p></header>
     {(error || query.error || options.error) && <p role="alert" className="campaign-error">{error || (query.error || options.error)?.message}</p>}
-    {teacher && <form className="campaign-panel campaign-create" onSubmit={create}>
+    {beta.data?.enabled !== true && <p role="status">{beta.isPending ? 'Checking beta access…' : 'Campaign beta is available to designated testing guilds.'}</p>}
+    {teacher && beta.data?.enabled === true && <form className="campaign-panel campaign-create" onSubmit={create}>
       <h2>Create a test campaign</h2><p>One saved overworld, one normal cave, and a snapshot of your selected quiz. Tier 1 encounters; job levels capped at 4. No students or questions are created automatically.</p>
       <div className="campaign-form-grid">
         <label>Campaign name<input aria-label="Campaign name" required maxLength={100} value={name} onChange={e => setName(e.target.value)} /></label>
@@ -64,7 +69,7 @@ function CampaignList({ teacher }: { teacher: boolean }) {
       <p className="campaign-note">Each key has a quest giver. Open its gate below when the class is ready; students then collect the key in town. Clearing a dungeon is not required to include its unlocked questions in overworld encounters.</p>
       <Button disabled={busy || !options.data?.guilds.length}>{busy ? 'Saving…' : 'Generate campaign'}</Button>
     </form>}
-    <section className="campaign-cards" aria-label="Available campaigns">
+    {beta.data?.enabled === true && <section className="campaign-cards" aria-label="Available campaigns">
       {query.isLoading && <p>Loading campaigns…</p>}
       {query.data?.length === 0 && <p>{teacher ? 'Create your first campaign above.' : 'Your teacher has not created a campaign for your guilds yet.'}</p>}
       {query.data?.map(c => <article className="campaign-panel" key={c.id}>
@@ -72,7 +77,7 @@ function CampaignList({ teacher }: { teacher: boolean }) {
         {c.gates.length ? <ul className="campaign-gate-list">{c.gates.map(g => <li key={g.id}><span>{g.name} · {g.open ? 'Available' : 'Teacher locked'}</span>{teacher && <Button variant="outline" disabled={busy} onClick={() => toggle(c, g.id)}>{g.open ? 'Close gate' : 'Open gate'}</Button>}</li>)}</ul> : <p>No keys required.</p>}
         {!teacher && <div className="campaign-actions"><Link href={`/student/campaign/${c.id}`}><Button>Enter adventure</Button></Link><ResetCampaign campaign={c} /></div>}
       </article>)}
-    </section>
+    </section>}
   </main>;
 }
 

@@ -7,6 +7,7 @@ import { campaignRequest } from './Campaigns';
 import { createCampaignController } from '@/features/campaign/movement';
 import { EQUIPMENT_SLOTS, SLOT_LABELS } from '@shared/equipment-slots';
 import './campaign.css';
+import { BetaNotice } from '@/features/campaign/BetaNotice';
 import { ConsumableBag } from '@/components/ConsumableBag';
 import { bagWeight } from '@shared/campaign/consumables';
 type ShopItem = { id: string; name: string; slot: string; price: number; shop: string; description?: string; weight?: number };
@@ -44,7 +45,7 @@ export default function CampaignAdventure() {
     };
     window.addEventListener('keydown', keydown); return () => window.removeEventListener('keydown', keydown);
   });
-  if (!view) return <main className="campaign-shell"><Link href="/student/campaigns">← Campaigns</Link><p role={query.error ? 'alert' : 'status'}>{query.error?.message || 'Opening your adventure…'}</p></main>;
+  if (!view) return <main className="campaign-shell"><Link href="/student/campaigns">← Campaigns</Link><BetaNotice /><p role={query.error ? 'alert' : 'status'}>{query.error?.message || 'Opening your adventure…'}</p></main>;
   const p = view.progress, map = view.layout[p.zone], town = p.zone === 'overworld';
   const services = town ? view.layout.npcs.filter(n => near(n, p.position)) : [];
   const disabled = busy || recovering || !!p.activeSessionId;
@@ -53,6 +54,7 @@ export default function CampaignAdventure() {
   const open = dungeonAccessible(view.gates, p);
   return <main className="campaign-shell">
     <Link href="/student/campaigns" className="campaign-back">← Campaigns</Link>
+    <BetaNotice />
     <header className="campaign-heading"><span className="campaign-eyebrow">{view.guildName} · Solo adventure</span><h1>{view.name}</h1><p>{town ? 'Hearthlight & the wilds' : view.dungeonName} · {p.cleared ? 'Dungeon cleared' : open ? 'The cave is open' : 'Find the key keepers in town'}</p></header>
     <div className="campaign-resources" aria-live="polite"><strong className="capitalize">{p.job}</strong><span>HP <b>{p.health}/{p.maxHealth}</b></span><span>MP <b>{p.mp}/{p.maxMp}</b></span><span>Healing charges <b>{p.healingPotions}/5</b></span><span>Bag weight <b>{bagWeight(p.consumables)}</b></span><span>Gold <b>{view.gold}</b></span></div>
     {(error || query.error) && <p role="alert" className="campaign-error">{error || query.error?.message}</p>}

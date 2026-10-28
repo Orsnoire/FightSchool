@@ -128,7 +128,13 @@ short branches from main. Beta status does not waive migration or acceptance gat
 
 ## Current decision
 
-**NO-GO for migration/deployment now.** Local guard regressions pass; remaining
-work is full verification and the newly requested main-site beta preparation.
+**NO-GO for migration/deployment now; implementation ready for CI/review.**
+Main-site beta preparation is implemented. All 388 local tests (5 phase 2,
+7 phase 3, 360 phase 4, 16 rich content), five deployment tests, TypeScript and
+client/Worker builds pass. Local Chromium installation failed with a truncated
+archive; no local browser pass is claimed. Final published-head CI/browser
+evidence remains required. Main advanced during review only by the guild-roster
+PR #87 discovery pointer (`e3076fc`); the pointer is preserved without importing
+that feature implementation.
 A later release requires concrete authorization plus provider identity/backup/
 maintenance evidence. No live guardian-victory acceptance is claimed.

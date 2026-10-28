@@ -1,4 +1,5 @@
 import { StaminaBar } from "@/components/StaminaBar";
+import { CampaignBetaLink } from '@/features/campaign/BetaNotice';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,7 +92,7 @@ export default function Lobby() {
           </h1>
           <div className="flex flex-wrap gap-2">
             <Link href="/student/advancement"><Button variant="outline" data-testid="button-advancement">Advancement</Button></Link>
-            <Link href="/student/campaigns"><Button variant="outline">Campaigns</Button></Link>
+            <CampaignBetaLink />
             <Link href="/student/guilds">
               <Button variant="outline" data-testid="button-my-guilds">
                 <Users className="mr-2 h-4 w-4" />

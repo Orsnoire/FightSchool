@@ -1,9 +1,9 @@
 # Campaign release-safety review — active October 28, 2026
 
 - Resume existing `feature/campaign-pilot` / [PR #81](https://github.com/Orsnoire/FightSchool/pull/81); reviewed starting head `634907fd7ff721fbeb7383c1ed2e258ae8cfc6a3`, current main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`.
-- Owner authorized focused bridge/schema/deployment/regression review and narrowly scoped corrections. Safety fixes IMPLEMENTED: strict legacy/completed catalog validation, reviewed history pinning, compatible-runtime deployment ancestry, readiness and expanded rejection/preservation/late rollback coverage. Nine focused migration/schema tests and five deployment tests pass; TypeScript passes; full suite is running. See [safety review/runbook](reviews/2026-10-28-campaign-release-safety.md).
+- Owner authorized focused bridge/schema/deployment/regression review and narrowly scoped corrections. Safety fixes IMPLEMENTED: strict legacy/completed catalog validation, reviewed history pinning, compatible-runtime deployment ancestry, readiness and expanded rejection/preservation/late rollback coverage. Nine focused migration/schema tests, five deployment tests, TypeScript and all 387 deterministic tests pass for safety checkpoint `77d2e13`. See [safety review/runbook](reviews/2026-10-28-campaign-release-safety.md).
 - No merge, database/provider migration, deployment, production/C12 change or playtester reset is authorized. Keep `deploy/campaign-preview.json` unchanged. Existing preview runtime and live owner acceptance remain as recorded below.
-- Owner selected main-site gated beta with visible bug reporting to consolidate campaign development into main. Next: implement/test the beta gate and report entry point on this same PR, then complete verification. No merge/deployment is authorized; preview saves must remain intact.
+- Owner selected main-site gated beta with visible bug reporting to consolidate campaign development into main. Beta gate and report entry point are implemented; all 388 local tests, five deployment tests, TypeScript and builds pass. Local Chromium download failed (truncated archive); final-head CI/browser verification is pending publication. Main advanced only by the PR #87 documentation claim (`e3076fc`), retained below; no roster/C12 implementation was imported. See [beta release plan](CAMPAIGN_BETA_RELEASE.md). Next: finish verification and publish the concrete go/no-go. No merge/deployment is authorized; preview saves must remain intact.
 
 # Campaign compatibility — active October 27, 2026
 
@@ -27,6 +27,14 @@
 - Use the fixed-target GitHub preview workflow. **Never use Deploy Cloudflare Staging for this branch.** Classroom merge/deployment, C12/PR #75, math display/PR #83 and short-domain routing remain separate. UI workshop, bestiaries, herbalist balance, multiplayer, transport and assigned loot remain roadmap work.
 
 Earlier checkpoints are preserved in [Git history](https://github.com/Orsnoire/FightSchool/commits/feature/campaign-pilot/docs/ACTIVE_WORK.md).
+
+## Other registered work — retained from current main
+
+# Teacher guild roster statistics — active October 28, 2026
+
+- Owner requested per-player job levels (including 0 for unplayed jobs), lifetime AAs earned, seven-day active game hours and 24-hour fight accuracy.
+- Resume `feature/teacher-guild-roster-stats`, [draft PR #87](https://github.com/Orsnoire/FightSchool/pull/87), and its branch checkpoint. Initial claim `1f2562d1de307b1c869cdf1848d08fde75e246f1`; implementation/verification pending.
+- Separate from Campaign #81 and C12 #75. No merge, deployment or live-data reset is part of this task. The active branch and PR carry the latest verification state.
 
 ## Production baseline incorporated in this reconciliation
 

@@ -31,7 +31,7 @@ try {
         healingPotions: 5, shieldPotions: 0, consumables: {}, itemProtections: {}, steps: 0, claimedUnlocks: [], explored: [], cleared: false, activeSessionId: null, lastCommandId: null } };
     let loadout = getStartingEquipment('herbalist');
     const equipment = () => ({ loadout, items: ownedEquipment(view.inventory).map(id => EQUIPMENT_ITEMS[id]).filter(i => i && !equipmentUnavailable(view.progress.job, i, 2, EQUIPMENT_ITEMS[loadout.weapon], EQUIPMENT_ITEMS[loadout.offhand], player.advancement?.ranks)).map(i => ({ ...i, stats: i.stats || {} })) });
-    let moveDelay = 0, rejectReset = false;
+    let moveDelay = 0, rejectReset = false, betaEnabled = true;
     const creations = [], commands = [];
     const stock = [{ id: 't1_fighter_sword', name: "Fighter's Sword", price: 150, shop: 'weapons', slot: 'weapon' }, { id: 't1_fighter_armor', name: "Fighter's Cuirass", price: 150, shop: 'armor', slot: 'armor' }];
     stock.push(...CONSUMABLE_IDS.map(id => ({ id, ...CONSUMABLES[id], shop: 'items', slot: 'consumable' })));
@@ -41,6 +41,7 @@ try {
       const request = route.request(), path = new URL(request.url()).pathname;
       let result;
       if (path.endsWith('/check-session')) result = { id: fight.teacherId };
+      else if (path === '/api/campaigns/availability') result = { enabled: betaEnabled };
       else if (path === '/api/campaigns/options') result = { guilds: [{ id: guildId, name: 'Explorers' }], quizzes: [{ id: fight.id, title: 'Fractions', questionCount: 10 }, { id: 'other', title: 'Geometry', questionCount: 10 }], assignments: [{ guildId, fightId: fight.id }] };
       else if (path === '/api/campaigns' && request.method() === 'POST') { creations.push(request.postDataJSON()); result = { id }; }
       else if (path === '/api/campaigns') result = [view];
@@ -69,6 +70,13 @@ try {
       await route.fulfill({ json: result });
     });
     await page.goto(`${origin}/teacher/campaigns`);
+    await page.getByRole('button', { name: 'Report a bug', exact: true }).click();
+    await page.getByRole('dialog').waitFor();
+    const reportLink = page.getByRole('link', { name: 'Open bug report on GitHub' });
+    assert.equal(await reportLink.getAttribute('href'), 'https://github.com/Orsnoire/FightSchool/issues/new?template=campaign-beta-bug.yml');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: `${output}/${viewport.width}-campaign-beta-report.png`, fullPage: true });
+    await page.keyboard.press('Escape');
     await page.getByLabel('Campaign guild', { exact: true }).selectOption(guildId);
     assert.equal(await page.getByRole('button', { name: 'Reset campaign', exact: true }).count(), 0, 'personal reset is student-only');
     await page.getByLabel('Filter quizzes by guild').selectOption(guildId);
@@ -219,6 +227,12 @@ try {
     await page.locator('.campaign-resources').getByText(`7/${player.maxHealth}`, { exact: true }).waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: `${output}/${viewport.width}-campaign-aa.png`, fullPage: true });
+    betaEnabled = false;
+    await page.goto(`${origin}/teacher/campaigns`);
+    await page.getByRole('status').filter({ hasText: 'designated testing guilds' }).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Generate campaign' }).count(), 0);
+    assert.equal(await page.getByRole('region', { name: 'Available campaigns' }).count(), 0);
+    await page.getByRole('button', { name: 'Report a bug', exact: true }).waitFor();
     await page.close();
   }
   assert.deepEqual(errors, []);

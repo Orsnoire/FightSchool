@@ -19,6 +19,14 @@ import { CombatSessionObject } from '../../worker/combat/session-object';
 import { removeStudent } from '../../worker/combat/participants';
 import { startQuestion } from '../../worker/combat/engine';
 import { fight, student, fightSummary } from './fixtures';
+import { campaignBetaPolicy } from '../../worker/campaign/beta';
+
+test('campaign beta is closed by default and rejects malformed or wildcard guild allowlists', () => {
+  for (const input of ['', '*', 'all', `${fight.teacherId},broken`]) assert.deepEqual(campaignBetaPolicy('staging', input), { preview: false, guildIds: [] });
+  assert.deepEqual(campaignBetaPolicy('staging', ` ${fight.teacherId.toUpperCase()},${fight.teacherId} `), { preview: false, guildIds: [fight.teacherId] });
+  assert.equal(campaignBetaPolicy('campaign-preview').preview, true);
+  assert.equal(campaignBetaPolicy('c12').preview, false);
+});
 
 test('campaign generation is repeatable, connected, and creates one keeper per unlock', () => {
   const gates = ['Cave Key', 'Science Seal', 'Library Key'].map(name => ({ id: name, name, open: false }));
@@ -66,9 +74,10 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     const teacherCookie = (await issueSession(repository, config, 'teacher', fight.teacherId)).split(';')[0];
     const studentCookie = (await issueSession(repository, config, 'student', student().id)).split(';')[0];
     const otherCookie = (await issueSession(repository, config, 'teacher', outsider)).split(';')[0];
+    let beta = campaignBetaPolicy('campaign-preview');
     const call = async (path: string, method = 'GET', body?: unknown, cookie = studentCookie) => {
       const url = new URL('https://qa.example' + path);
-      const response = await handleGame(new Request(url, { method, headers: { Cookie: cookie, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) }), url, repository, config, db as any);
+      const response = await handleGame(new Request(url, { method, headers: { Cookie: cookie, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) }), url, repository, config, db as any, beta);
       assert.ok(response); return { status: response.status, body: await response.json() as any };
     };
     const create = { name: 'Test expedition', guildId: guild.id, fightId: fight.id, dungeonName: 'Echo Cave', gates: [{ name: 'Cave Key', open: false }] };
@@ -77,6 +86,36 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     const created = await call('/api/campaigns', 'POST', create, teacherCookie);
     assert.equal(created.status, 201, JSON.stringify(created.body));
     const path = `/api/campaigns/${created.body.id}`;
+    const [nonBetaGuild] = await db.insert(s.guilds).values({ teacherId: fight.teacherId, name: 'Not enrolled', code: 'NOBETA' }).returning();
+    await db.insert(s.guildMemberships).values({ guildId: nonBetaGuild.id, studentId: student().id });
+    const nonBetaCampaign = await call('/api/campaigns', 'POST', { ...create, guildId: nonBetaGuild.id }, teacherCookie);
+    beta = campaignBetaPolicy();
+    assert.deepEqual((await call('/api/campaigns/availability')).body, { enabled: false });
+    for (const cookie of [teacherCookie, studentCookie]) {
+      for (const [route, method] of [['/api/campaigns', 'GET'], ['/api/campaigns', 'POST'], ['/api/campaigns/options', 'GET'], [path, 'GET'], [`${path}/shop`, 'GET'], [`${path}/actions`, 'POST'], [`${path}/gates`, 'PUT']]) {
+        assert.equal((await call(route + '?beta=true', method, undefined, cookie)).status, 403, `${method} ${route}`);
+      }
+    }
+    beta = campaignBetaPolicy('staging', guild.id);
+    for (const cookie of [teacherCookie, studentCookie]) {
+      assert.deepEqual((await call('/api/campaigns/availability', 'GET', undefined, cookie)).body, { enabled: true });
+      assert.deepEqual((await call('/api/campaigns', 'GET', undefined, cookie)).body.map((c: any) => c.id), [created.body.id]);
+      assert.equal((await call(`/api/campaigns/${nonBetaCampaign.body.id}`, 'GET', undefined, cookie)).status, 403);
+    }
+    assert.equal((await call('/api/campaigns', 'POST', { ...create, guildId: nonBetaGuild.id }, teacherCookie)).status, 403);
+    assert.deepEqual((await call('/api/campaigns/options', 'GET', undefined, teacherCookie)).body.guilds.map((g: any) => g.id), [guild.id]);
+    assert.deepEqual((await call('/api/campaigns/availability', 'GET', undefined, otherCookie)).body, { enabled: false });
+    await db.update(s.guilds).set({ isArchived: true }).where(eq(s.guilds.id, guild.id));
+    assert.equal((await call(path)).status, 403);
+    await db.update(s.guilds).set({ isArchived: false }).where(eq(s.guilds.id, guild.id));
+    await db.delete(s.guildMemberships).where(and(eq(s.guildMemberships.guildId, guild.id), eq(s.guildMemberships.studentId, student().id)));
+    assert.equal((await call(path)).status, 403, 'removed membership revokes beta access');
+    await db.insert(s.guildMemberships).values({ guildId: guild.id, studentId: student().id });
+    // Removing beta access changed no campaigns or player saves; re-enabling resumes.
+    assert.equal((await db.select().from(s.campaigns)).length, 2);
+    await db.delete(s.campaigns).where(eq(s.campaigns.id, nonBetaCampaign.body.id));
+    await db.delete(s.guilds).where(eq(s.guilds.id, nonBetaGuild.id));
+    beta = campaignBetaPolicy('campaign-preview'); // Existing preview behavior remains unchanged below.
     let view = (await call(path)).body;
     const initialLayout = view.layout;
     assert.equal(view.eligibleQuestionCount, 0);
