@@ -37,6 +37,9 @@ implementation. C12's separate work is unchanged by this package.
    all four Chromium jobs, including desktop/phone beta-report UI. Review
    [release safety](reviews/2026-10-28-campaign-release-safety.md). Resolve any
    GitHub mergeability disagreement from fresh refs without overwriting work.
+   Main's roster release is deployed but its classroom acceptance is blocked
+   by timeouts/Cloudflare 1102; resolve and pass that original operational gate
+   before enabling the main-site beta. See [current baseline evidence](releases/2026-10-28-pr87.md).
 2. Obtain authorization for the concrete merge, **canonical additive database
    migration**, production deployment and limited beta acceptance. No production
    release is implied by a preview attestation. Select the dedicated beta guild
@@ -46,8 +49,9 @@ implementation. C12's separate work is unchanged by this package.
    in the safety review. Preserve the owner's current save. Preview acceptance
    is valuable evidence; it does not migrate that save to the main site.
 4. After authorization, recheck main/PR heads and exact tests, merge using an
-   expected-head guard and verify the merge tree. Production is the 19-row AA
-   history: use the ordinary **0019–0023 forward migrations**, reaching 24 rows,
+   expected-head guard and verify the merge tree. Verify production's actual ledger: AA-only is 19 rows; roster 0019 brings it
+   to 20. Preserve main 0000–0019 and use the ordinary remaining forward
+   migrations (campaign **0020–0024**), reaching 25 rows,
    through the established production release procedure. **Never use the legacy
    preview bridge on production.** Back up/verify AA wallets, receipts, loadouts,
    students and results, and retain existing room checkpoints.

@@ -2,9 +2,9 @@
 
 > October 27 compatibility reconciliation is **review-only and not deployed**.
 > The preview still runs the October 21 build. Before a future authorized release,
-> follow the [AA/migration reconciliation procedure](reviews/2026-10-27-campaign-aa-reconciliation.md).
+> follow the [current release-safety procedure](reviews/2026-10-28-campaign-release-safety.md).
 > Legacy preview migration numbers below describe the historical release; canonical
-> campaign numbers are now 0019–0023 after production AA 0018. Do not apply the
+> campaign numbers are now 0020–0024 after production AA 0018 and roster 0019. Do not apply the
 > standard migrator to the legacy preview before its guarded bridge. No reset is needed.
 
 

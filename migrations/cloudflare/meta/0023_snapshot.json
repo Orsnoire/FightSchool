@@ -1,6 +1,6 @@
 {
-  "id": "f2583ead-d406-4cff-a0cc-30eed7397adc",
-  "prevId": "4b031a8e-001d-45c0-89c7-22709768b593",
+  "id": "6a063012-60b4-4663-bd8c-421827d4e897",
+  "prevId": "cbe22b6e-9d3a-4454-a9aa-d10aca1938be",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2941,6 +2941,33 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "question_attempts_guild_recent_idx": {
+          "name": "question_attempts_guild_recent_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recorded_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -4211,6 +4238,200 @@
           "value": "\"aa_purchases\".\"cost\" >= 0"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.student_activity_receipts": {
+      "name": "student_activity_receipts",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pulse_id": {
+          "name": "pulse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bucket_start": {
+          "name": "bucket_start",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "student_activity_receipts_retention_idx": {
+          "name": "student_activity_receipts_retention_idx",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "bucket_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "student_activity_receipts_student_id_students_id_fk": {
+          "name": "student_activity_receipts_student_id_students_id_fk",
+          "tableFrom": "student_activity_receipts",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "student_activity_receipts_student_id_pulse_id_pk": {
+          "name": "student_activity_receipts_student_id_pulse_id_pk",
+          "columns": [
+            "student_id",
+            "pulse_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_activity_samples": {
+      "name": "student_activity_samples",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bucket_start": {
+          "name": "bucket_start",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pulse_id": {
+          "name": "pulse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "student_activity_pulse_unique": {
+          "name": "student_activity_pulse_unique",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "pulse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "student_activity_samples_student_id_students_id_fk": {
+          "name": "student_activity_samples_student_id_students_id_fk",
+          "tableFrom": "student_activity_samples",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "student_activity_samples_student_id_bucket_start_pk": {
+          "name": "student_activity_samples_student_id_bucket_start_pk",
+          "columns": [
+            "student_id",
+            "bucket_start"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "student_activity_bucket_check": {
+          "name": "student_activity_bucket_check",
+          "value": "\"student_activity_samples\".\"bucket_start\" >= 0 AND \"student_activity_samples\".\"bucket_start\" % 30000 = 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.student_activity_tracking": {
+      "name": "student_activity_tracking",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_activity_tracking_student_id_students_id_fk": {
+          "name": "student_activity_tracking_student_id_students_id_fk",
+          "tableFrom": "student_activity_tracking",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },

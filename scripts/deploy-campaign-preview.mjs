@@ -21,7 +21,7 @@ export function validateRequest(request) {
   requireThat(request.mode !== 'deploy' || request.migration0020Applied === true, 'Preview migration 0020 must be verified before deployment');
   requireThat(request.mode !== 'deploy' || request.migration0021Applied === true, 'Preview migration 0021 must be verified before deployment');
   requireThat(request.mode !== 'deploy' || request.campaignAACompatibilityApplied === true,
-    'Preview AA compatibility bridge and canonical migration 0023 must be verified before deployment');
+    'Preview AA compatibility bridge and canonical migration 0024 must be verified before deployment');
   return request;
 }
 export function validateSettings(settings, request) {

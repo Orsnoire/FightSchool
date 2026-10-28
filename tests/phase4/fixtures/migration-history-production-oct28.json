@@ -1,0 +1,166 @@
+{
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790013600000,
+      "tag": "0000_phase3_teacher_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790017600000,
+      "tag": "0001_phase3_teacher_fights",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790046000000,
+      "tag": "0002_phase4_student_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790779641710,
+      "tag": "0003_progression_guilds_results",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790780443569,
+      "tag": "0004_quest_seed_uniqueness",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790781987899,
+      "tag": "0005_history_preservation",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790802059448,
+      "tag": "0006_avatar_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790803828610,
+      "tag": "0007_human_recolor_masks",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790866800000,
+      "tag": "0008_daily_combat_stamina",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791228000000,
+      "tag": "0009_starter_wardrobe",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791406800000,
+      "tag": "0010_fractional_participation_xp",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791410400000,
+      "tag": "0011_equipment_arms",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791426000000,
+      "tag": "0012_remembered_job_loadouts",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791428400000,
+      "tag": "0013_spellbook_offhand",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791464400000,
+      "tag": "0014_guild_quests",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791836291397,
+      "tag": "0015_usability_patch_1",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791836465888,
+      "tag": "0016_equipment_color_variants",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792274362502,
+      "tag": "0017_c06_data_cost_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793030559086,
+      "tag": "0018_alternate_advancement",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793199709504,
+      "tag": "0019_teacher_roster_activity",
+      "breakpoints": true
+    }
+  ],
+  "sha256": {
+    "0000_phase3_teacher_identity.sql": "72693cfb4675f1f7c471b394df5e2ab86746f939ae10f8a061b1ee6016590457",
+    "0001_phase3_teacher_fights.sql": "facda6993b63d3023d12e28e622a9ab00387c0bff1b67135747611fd59aa6f60",
+    "0002_phase4_student_identity.sql": "675ca24a0868e1f0eab48c5c286e99e1420077d49edc4713636626c03655537a",
+    "0003_progression_guilds_results.sql": "72b0cc01e0b79d31272cb98b317e21fb7a2993226d05e61556070782c6712f42",
+    "0004_quest_seed_uniqueness.sql": "badabcd6a167e1c6b0a0014304f5a46498cea9bae9c58a90a11ac3b52714eb39",
+    "0005_history_preservation.sql": "bbfca742b92903426fc94afa4eada8c295f4903f7d957c9be52cb23b3dc19277",
+    "0006_avatar_foundation.sql": "4aa56d74560d6bcb9c349621ad7850721c08e2148e2791e6d92cad43cb5a003a",
+    "0007_human_recolor_masks.sql": "ea405d067c2679559cb02e72bee4fcf1c876eb9572bc67c38822547e25db59c0",
+    "0008_daily_combat_stamina.sql": "2687f3ae63b552bf4e0303b880e84158598d990520348b8adb64d65fdfcc3a36",
+    "0009_starter_wardrobe.sql": "f5a2c45ad3e27a1a2c0ff7a18d0b20dbb8c677d14a0978c3c6836abe2ba99342",
+    "0010_fractional_participation_xp.sql": "105d6164146d0cfe5a91325e90777a7562bf47c2e6cc4d42378b408faa6a5b57",
+    "0011_equipment_arms.sql": "4e1128730b5a4431bd2be6ca4eda026fffddebc57f2edea2863a528cf6c87cf5",
+    "0012_remembered_job_loadouts.sql": "07a471e93da29d0ae0f03f0d07874b422640d219adc29bea7076391bec6b3191",
+    "0013_spellbook_offhand.sql": "3f34234336ee30b328e5788fe0bb62bccfbce14a5dc569546cdf27a60e163539",
+    "0014_guild_quests.sql": "e55a7b9aad83137e99c734504088e21556be6bde1a04fcf756cf2c2937ec5111",
+    "0015_usability_patch_1.sql": "937479ff35ffdf69d6b62c7992c3d44ab5699821ca14e8f884a97621774d8849",
+    "0016_equipment_color_variants.sql": "0459af0a4a4fda468213cb6edbe35a74ed6800d7a4724938735d2b9f3aef1f9c",
+    "0017_c06_data_cost_indexes.sql": "f23ed019af0aa2a9dd0ec81b15d55f87d343247302cdbc058b16d4e10bbf3cf9",
+    "0018_alternate_advancement.sql": "3d1398d13dfba90c82afc93fa979c319530e4d25a1855c054ee98803816ab156",
+    "0019_teacher_roster_activity.sql": "dff4930f78708fcfbd4d6fb9f83fdc6a9529c1811cc86dbdf6483d4814c69c16"
+  }
+}

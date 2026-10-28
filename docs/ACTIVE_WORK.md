@@ -1,15 +1,11 @@
-# Campaign beta — PR #87 integration in progress October 28, 2026
+# Campaign beta — current-main integration October 28, 2026
 
-- Main advanced to `f34b49fab143f23d971e09dd53c6f83814e3595d` by merging roster PR #87 during this review. It owns migration 0019. The previous campaign release assessment is superseded for current-main integration; **NO-GO pending reconciliation and verification**.
-- Continue this same PR #81. Preserve main 0000–0019; move unshipped canonical campaign history to 0020–0024, update the strict bridge/catalog contract and populated preservation tests, and retain the gated beta/report UI. Existing preview history and saves remain unchanged.
-- No merge into main, provider migration, deployment, C12 mutation or reset is authorized. Last published checkpoint `5c388d5` is recoverable; its runtime passed 388 tests, 5 deploy tests, checks/builds and four browser jobs at `c2244fe` (browser retry passed). The latest workflow-only dependency-isolation correction awaits combined-head CI.
-
-# Campaign release-safety review — active October 28, 2026
-
-- Resume existing `feature/campaign-pilot` / [PR #81](https://github.com/Orsnoire/FightSchool/pull/81); reviewed starting head `634907fd7ff721fbeb7383c1ed2e258ae8cfc6a3`, current main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`.
-- Owner authorized focused bridge/schema/deployment/regression review and narrowly scoped corrections. Safety fixes IMPLEMENTED: strict legacy/completed catalog validation, reviewed history pinning, compatible-runtime deployment ancestry, readiness and expanded rejection/preservation/late rollback coverage. Nine focused migration/schema tests, five deployment tests, TypeScript and all 387 deterministic tests pass for safety checkpoint `77d2e13`. See [safety review/runbook](reviews/2026-10-28-campaign-release-safety.md).
-- No merge, database/provider migration, deployment, production/C12 change or playtester reset is authorized. Keep `deploy/campaign-preview.json` unchanged. Existing preview runtime and live owner acceptance remain as recorded below.
-- Owner selected main-site gated beta with visible bug reporting to consolidate campaign development into main. Beta gate and report entry point are implemented; all 388 local tests, five deployment tests, TypeScript and builds pass. Local Chromium download failed (truncated archive); CI passes at runtime `cf64e9c` and fixture-only follow-up `5251565`; final exact-head browser/CI evidence is recorded in the live PR. The first browser run exposed a missing disabled-beta fixture route, corrected without weakening assertions; report-dialog capture now waits for its opening animation. Main advanced only by the PR #87 documentation claim (`e3076fc`), retained below; no roster/C12 implementation was imported. See [beta release plan](CAMPAIGN_BETA_RELEASE.md). Next: verify final-head CI/browser gates, then obtain explicit authorization for the selected release sequence. Browser CI now isolates Playwright rather than re-resolving app dependencies after npm ci; the final run/any unchanged gear-popup timeout retry is recorded in the PR. Conditional GO for the guarded beta after those gates; NO-GO for execution without authorization and provider preflight. No live acceptance is claimed. No merge/deployment is authorized; preview saves must remain intact.
+- Continue `feature/campaign-pilot` / [PR #81](https://github.com/Orsnoire/FightSchool/pull/81). Owner selected main-site gated beta and visible bug reporting to finish this work stream and use main for future development.
+- Integrated main `b9d33b42117271bdb52d10ec037e37f317146830` (roster PR #87 runtime `f34b49f` plus release evidence). Preserve main 0000–0019; unshipped campaign migrations are now 0020–0024. The legacy preview remains 22 rows until an authorized strict bridge reaches 29; ordinary canonical migration reaches 25. No existing row is renumbered or replayed.
+- Implemented: server-enforced guild beta gate (default closed), prominent Beta / Report a bug dialog, strict legacy/completed schema and ledger guards, compatible-runtime deployment ancestry/readiness, dependency-isolated browser tools, populated AA/campaign/roster preservation and late rollback/retry tests. See [safety review/runbook](reviews/2026-10-28-campaign-release-safety.md) and [beta release plan](CAMPAIGN_BETA_RELEASE.md).
+- All 399 combined-tree tests pass locally (5 phase 2, 7 phase 3, 371 phase 4, 16 rich content), plus 5 deployment tests, TypeScript and client/Worker builds. Exact published-head CI/browser evidence is maintained in the live PR. Local Chromium installation failed with a truncated archive; no local browser pass is claimed.
+- **NO-GO for live release:** main now reports classroom acceptance blocked by timeouts/Cloudflare 1102; that operational gate must be resolved before enabling the main-site beta. Exact-head CI/browser gates, provider identity/backup/writer-quiescence evidence and explicit authorization also remain required. No merge into main, provider migration, deployment, C12 mutation or reset occurred. The release-request file is unchanged. Existing preview runtime `6de42632f4953e408b566bf60978cfe482a11f10` and its saves remain untouched; authenticated owner guardian victory/stamina acceptance is still pending.
+- Next: publish and verify combined-head CI/browser gates; resolve main's recorded operational acceptance blocker before requesting concrete beta release authorization. Retain preview progress even when consolidating development; code consolidation does not import preview saves into production.
 
 # Campaign compatibility — active October 27, 2026
 
@@ -36,11 +32,16 @@ Earlier checkpoints are preserved in [Git history](https://github.com/Orsnoire/F
 
 ## Other registered work — retained from current main
 
-# Teacher guild roster statistics — active October 28, 2026
+# Teacher guild roster statistics — deployed October 28, 2026
 
-- Owner requested per-player job levels (including 0 for unplayed jobs), lifetime AAs earned, seven-day active game hours and 24-hour fight accuracy.
-- Resume `feature/teacher-guild-roster-stats`, [draft PR #87](https://github.com/Orsnoire/FightSchool/pull/87), and its branch checkpoint. Initial claim `1f2562d1de307b1c869cdf1848d08fde75e246f1`; implementation/verification pending.
-- Separate from Campaign #81 and C12 #75. No merge, deployment or live-data reset is part of this task. The active branch and PR carry the latest verification state.
+- Owner authorized merge and production deployment. [PR #87](https://github.com/Orsnoire/FightSchool/pull/87) merged at `f34b49fab143f23d971e09dd53c6f83814e3595d`; tree `d2ff6112a6c20ebda2ee342de03006ea3b1dd93c` matches reviewed head `c40825d62ea6a9345c3f6b4677b21467dc694d27` exactly.
+- Complete: all 12 permanent job levels (0 without progression), lifetime AA, rolling seven-day active game hours and 24-hour question-weighted guild accuracy. Missing/partial history, refresh, stale/error and empty states are explicit. Idle/hidden use is excluded and retries/concurrent tabs do not multiply time.
+- 374 tests, TypeScript/builds, final PR CI 40713238597 and all four Chromium jobs 40713238514 pass. Merged-main CI 40714376598 passes. Desktop/phone roster and actual idle/visibility behavior are covered. [Evidence and limits](releases/2026-10-28-pr87.md).
+- Deployment 40714742768 passed on the exact merge, applying additive migration 0019 and passing both hostname smoke checks. Worker `975be8fc-972e-4738-98e0-c36b7cb5f8d1` serves 100%, confirmed by Wrangler and Cloudflare. No data reset.
+- Canonical acceptance 40715425162 did not pass after three unchanged attempts: playback timeout, session-creation HTTP timeout, then HTTP 503 / Cloudflare error 1102 during synthetic student character setup. Attempts 2 and 3 passed live combat and both storage checks. Classroom concurrency remains unaccepted; no further retry followed the resource-limit response. See the release record for provider evidence and limits.
+- State: MERGED / DEPLOYED / LIVE ACCEPTANCE BLOCKED. Campaign #81 and C12 #75 remain separate. Campaign must reconcile its unmerged 0019 history before integration; the classroom migration is now applied and immutable. [Metric semantics](TEACHER_GUILD_ROSTER.md).
+- Next: diagnose production resource/latency failures and rerun the original full canonical acceptance suite; do not claim acceptance or weaken its gates. Tracking starts with each player's first visit using the new client, with partial history until seven days have elapsed; previous active hours cannot be reconstructed.
+
 
 ## Production baseline incorporated in this reconciliation
 

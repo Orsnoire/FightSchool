@@ -1,5 +1,9 @@
 # Campaign / October 26 production compatibility
 
+> Historical October 27 evidence. For current numbering (roster 0019, campaign
+> 0020–0024), strict schema guards and the 22-to-29-row preview bridge, use the
+> [October 28 safety review](2026-10-28-campaign-release-safety.md).
+
 > Superseded release-safety guidance: use the [October 28 review and runbook](2026-10-28-campaign-release-safety.md) for schema validation, retry/rollback, provider preflight and the subsequent gated-beta release. The evidence below describes the October 27 head.
 
 ## Scope and release boundary

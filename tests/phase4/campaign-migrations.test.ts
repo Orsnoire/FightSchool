@@ -24,12 +24,12 @@ const fingerprint = async (pg: PGlite) => {
 };
 
 // Exercise Drizzle's real timestamp-based ledger, not only a loop over SQL files.
-async function migrateHistory(pg: PGlite, preview: boolean, c12 = false) {
+async function migrateHistory(pg: PGlite, preview: boolean, c12 = false, withRoster = false) {
   // Historical 0008 contains multi-statement chunks supported by the deployment
   // driver but not PGlite prepared queries. Seed those exact bytes/ledger rows via
   // exec; the forward upgrade and no-op below use the actual Drizzle migrator.
   await pg.exec('CREATE SCHEMA drizzle; CREATE TABLE drizzle.__drizzle_migrations(id SERIAL PRIMARY KEY, hash text NOT NULL, created_at bigint)');
-  const selected = preview ? legacy.entries : journal.entries.slice(0, c12 ? 18 : 19);
+  const selected = preview ? legacy.entries : journal.entries.slice(0, c12 ? 18 : withRoster ? 20 : 19);
   for (const entry of selected) {
     const source = read(`${preview && entry.idx >= 18 ? 'legacy-campaign-preview/' : ''}${entry.tag}.sql`);
     await pg.exec(source);
@@ -76,11 +76,11 @@ async function seed(pg: PGlite, preview: boolean) {
   }
 }
 
-test('production SQL/journal through AA 0018 and archived preview SQL are immutable', () => {
-  const history = JSON.parse(readFileSync('tests/phase4/fixtures/migration-history-production-oct26.json', 'utf8'));
-  assert.deepEqual(journal.entries.slice(0, 19), history.entries);
+test('production SQL/journal through roster 0019 and archived preview SQL are immutable', () => {
+  const history = JSON.parse(readFileSync('tests/phase4/fixtures/migration-history-production-oct28.json', 'utf8'));
+  assert.deepEqual(journal.entries.slice(0, 20), history.entries);
   for (const [name, digest] of Object.entries(history.sha256)) assert.equal(hash(read(name)), digest, name);
-  for (let i = 18; i <= 21; i++) assert.equal(hash(read(`legacy-campaign-preview/${legacy.entries[i].tag}.sql`)), canonicalCampaignLedger[i + 1].hash);
+  for (let i = 18; i <= 21; i++) assert.equal(hash(read(`legacy-campaign-preview/${legacy.entries[i].tag}.sql`)), canonicalCampaignLedger[i + 2].hash);
   assert.equal(new Set(journal.entries.map((e: any) => e.idx)).size, journal.entries.length);
   assert.ok(journal.entries.every((e: any, i: number) => !i || e.when > journal.entries[i - 1].when));
 });
@@ -97,7 +97,7 @@ test('production history upgrades forward without altering AA purchases, saved s
     for (const item of after[3] as any[]) { assert.equal(item.row.stamina_restored, 0); delete item.row.stamina_restored; }
     assert.deepEqual(after, before);
     assert.deepEqual((await ledger(pg)).slice(0, 19), oldLedger);
-    assert.equal((await ledger(pg)).length, 24);
+    assert.equal((await ledger(pg)).length, 25);
     assert.equal((await snapshot(pg, 'campaign_players')).length, 0, 'no playtest records seeded');
     assert.deepEqual(await fingerprint(pg), contract.canonical, 'contract matches independently migrated canonical history');
   } finally { await pg.close(); }
@@ -125,7 +125,7 @@ test('legacy preview bridges atomically, retains playtest/active snapshots and l
     const bridged = await ledger(pg);
     assert.deepEqual(await fingerprint(pg), contract.canonical, 'bridge and normal forward path have identical tables/routines/triggers');
     assert.deepEqual(bridged.slice(0, 22), oldLedger, 'never renumber, replace or delete preview ledger rows');
-    assert.equal(bridged.length, 28, '22 old rows + AA + four aliases + compatibility migration');
+    assert.equal(bridged.length, 29, '22 old rows + AA + roster + four aliases + compatibility migration');
     // A retry after the new runtime has been used must preserve paid AA state.
     await pg.query(`SELECT purchase_aa($1,$2,'stat:str',1,2,1,60,'{"request":"post-bridge"}')`, [student().id, crypto.randomUUID()]);
     await pg.query(`UPDATE students SET cross_class_abilities='["a","b","c","d","e"]',character_name='Paid Name' WHERE id=$1`, [student().id]);
@@ -139,11 +139,35 @@ test('legacy preview bridges atomically, retains playtest/active snapshots and l
   } finally { await pg.close(); }
 });
 
+test('merged roster history upgrades without changing activity samples, retry receipts or AA/player data', async () => {
+  const pg = new PGlite();
+  try {
+    await migrateHistory(pg, false, false, true); await seed(pg, false);
+    const id = student().id, pulse = crypto.randomUUID();
+    await pg.query('INSERT INTO student_activity_tracking(student_id,started_at) VALUES($1,30000)', [id]);
+    await pg.query('INSERT INTO student_activity_samples(student_id,bucket_start,pulse_id) VALUES($1,60000,$2)', [id, pulse]);
+    await pg.query('INSERT INTO student_activity_receipts(student_id,bucket_start,pulse_id) VALUES($1,60000,$2)', [id, pulse]);
+    const tables = ['students', 'aa_purchases', 'combat_results', 'student_activity_tracking', 'student_activity_samples', 'student_activity_receipts'];
+    const before = await Promise.all(tables.map(t => snapshot(pg, t))), oldLedger = await ledger(pg);
+    await migrate(drizzle(pg), { migrationsFolder: root });
+    const after = await Promise.all(tables.map(t => snapshot(pg, t)));
+    for (const item of after[0] as any[]) { assert.equal(item.row.stamina_recovery, 0); delete item.row.stamina_recovery; }
+    for (const item of after[2] as any[]) { assert.equal(item.row.stamina_restored, 0); delete item.row.stamina_restored; }
+    assert.deepEqual(after, before);
+    assert.deepEqual((await ledger(pg)).slice(0, 20), oldLedger);
+    assert.equal((await ledger(pg)).length, 25);
+    assert.deepEqual(await fingerprint(pg), contract.canonical);
+    await assert.rejects(pg.exec(campaignPreviewBridgeSQL()), /Unrecognized/);
+    await pg.exec('ROLLBACK');
+    assert.deepEqual(await fingerprint(pg), contract.canonical);
+  } finally { await pg.close(); }
+});
+
 test('bridge rejects production, unknown or corrupt history and rolls back an interrupted schema upgrade', async () => {
-  for (const scenario of ['production', 'c12', 'corrupt', 'partial-ddl', 'missing-row', 'extra-row', 'wrong-time', 'duplicate-row']) {
+  for (const scenario of ['production', 'roster', 'c12', 'corrupt', 'partial-ddl', 'missing-row', 'extra-row', 'wrong-time', 'duplicate-row']) {
     const pg = new PGlite();
     try {
-      await migrateHistory(pg, !['production', 'c12'].includes(scenario), scenario === 'c12');
+      await migrateHistory(pg, !['production', 'roster', 'c12'].includes(scenario), scenario === 'c12', scenario === 'roster');
       if (scenario === 'corrupt') await pg.exec(`UPDATE drizzle.__drizzle_migrations SET hash='tampered' WHERE created_at=${legacyPreviewLedger.at(-1)!.created_at}`);
       if (scenario === 'partial-ddl') await pg.exec('ALTER TABLE students ADD COLUMN aa_ranks jsonb');
       if (scenario === 'missing-row') await pg.exec('DELETE FROM drizzle.__drizzle_migrations WHERE id=22');
@@ -156,7 +180,7 @@ test('bridge rejects production, unknown or corrupt history and rolls back an in
       await pg.exec('ROLLBACK');
       assert.deepEqual(await ledger(pg), before);
       assert.deepEqual(await fingerprint(pg), schemaBefore);
-      if (scenario !== 'production') assert.equal((await pg.query(`SELECT to_regclass('public.aa_purchases') AS name`)).rows[0].name, null);
+      if (!['production', 'roster'].includes(scenario)) assert.equal((await pg.query(`SELECT to_regclass('public.aa_purchases') AS name`)).rows[0].name, null);
     } finally { await pg.close(); }
   }
 });
@@ -200,7 +224,7 @@ test('failure after all bridge DDL/backfills/aliases rolls back rows and routine
     assert.deepEqual(await fingerprint(pg), schemaBefore);
     assert.deepEqual(await Promise.all(tables.map(t => snapshot(pg, t))), before);
     await pg.exec(campaignPreviewBridgeSQL());
-    assert.equal((await ledger(pg)).length, 28);
+    assert.equal((await ledger(pg)).length, 29);
     assert.deepEqual((await ledger(pg)).slice(0, 22), oldLedger);
     assert.deepEqual(await fingerprint(pg), contract.canonical);
   } finally { await pg.close(); }

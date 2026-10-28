@@ -15,9 +15,9 @@ const quote = value => `'${String(value).replaceAll("'", "''")}'`;
 const ledgerRow = (entry, sql) => ({ hash: digest(sql), created_at: entry.when });
 const legacySQL = entry => read(`${entry.idx < 18 ? '' : 'legacy-campaign-preview/'}${entry.tag}.sql`);
 export const legacyPreviewLedger = legacy.map(entry => ledgerRow(entry, legacySQL(entry)));
-// This bridge ends at 0023. Future migrations use the normal migrator after it;
+// This bridge ends at 0024. Future migrations use the normal migrator after it;
 // they must never silently expand this one-time, separately reviewed operation.
-export const canonicalCampaignLedger = journal.slice(0, 24).map(entry => ledgerRow(entry, read(`${entry.tag}.sql`)));
+export const canonicalCampaignLedger = journal.slice(0, 25).map(entry => ledgerRow(entry, read(`${entry.tag}.sql`)));
 
 export function campaignPreviewBridgeSQL() {
   if (digest(JSON.stringify(legacyPreviewLedger)) !== contract.legacyLedgerSHA256 ||
@@ -29,14 +29,14 @@ export function campaignPreviewBridgeSQL() {
   // Renumbered campaign SQL is byte-for-byte identical. A verified legacy ledger
   // proves it already ran; append aliases instead of replaying DDL or data updates.
   for (let i = 18; i <= 21; i++) {
-    if (digest(legacySQL(legacy[i])) !== canonicalCampaignLedger[i + 1].hash)
+    if (digest(legacySQL(legacy[i])) !== canonicalCampaignLedger[i + 2].hash)
       throw new Error('Legacy campaign SQL changed: review bridge before use');
   }
   const appended = canonicalCampaignLedger.slice(18);
   const complete = [...legacyPreviewLedger, ...appended].sort((a, b) => a.created_at - b.created_at);
   const commands = [];
-  for (const entry of journal.slice(18, 24)) {
-    if (entry.idx === 18 || entry.idx > 22) {
+  for (const entry of journal.slice(18, 25)) {
+    if (entry.idx === 18 || entry.idx === 19 || entry.idx > 23) {
       for (const statement of read(`${entry.tag}.sql`).split('--> statement-breakpoint').filter(s => s.trim()))
         commands.push(`EXECUTE ${quote(statement)};`);
     }

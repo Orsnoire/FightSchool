@@ -1,9 +1,104 @@
 {
-  "id": "5f15d1e2-8c65-443b-936c-d740f6fb6072",
+  "id": "21d0fd70-ac2c-4407-b02c-b326e85c0ea3",
   "prevId": "78df7c36-731a-4ad5-8c80-583d4472e84c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.aa_purchases": {
+      "name": "aa_purchases",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upgrade_id": {
+          "name": "upgrade_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rank": {
+          "name": "rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost": {
+          "name": "cost",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catalog_version": {
+          "name": "catalog_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "receipt": {
+          "name": "receipt",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "aa_purchases_student_id_students_id_fk": {
+          "name": "aa_purchases_student_id_students_id_fk",
+          "tableFrom": "aa_purchases",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "aa_purchases_student_id_request_id_pk": {
+          "name": "aa_purchases_student_id_request_id_pk",
+          "columns": [
+            "student_id",
+            "request_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "aa_purchases_cost_check": {
+          "name": "aa_purchases_cost_check",
+          "value": "\"aa_purchases\".\"cost\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.app_sessions": {
       "name": "app_sessions",
       "schema": "",
@@ -994,374 +1089,6 @@
           "value": "\"avatar_palettes\".\"version\" > 0"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.campaign_encounters": {
-      "name": "campaign_encounters",
-      "schema": "",
-      "columns": {
-        "session_id": {
-          "name": "session_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "campaign_id": {
-          "name": "campaign_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fight_snapshot": {
-          "name": "fight_snapshot",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "player_snapshot": {
-          "name": "player_snapshot",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "settled": {
-          "name": "settled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        }
-      },
-      "indexes": {
-        "campaign_encounters_player_idx": {
-          "name": "campaign_encounters_player_idx",
-          "columns": [
-            {
-              "expression": "campaign_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "student_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "campaign_encounters_session_id_live_combat_sessions_session_id_fk": {
-          "name": "campaign_encounters_session_id_live_combat_sessions_session_id_fk",
-          "tableFrom": "campaign_encounters",
-          "tableTo": "live_combat_sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "session_id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "campaign_encounters_campaign_id_campaigns_id_fk": {
-          "name": "campaign_encounters_campaign_id_campaigns_id_fk",
-          "tableFrom": "campaign_encounters",
-          "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "campaign_encounters_student_id_students_id_fk": {
-          "name": "campaign_encounters_student_id_students_id_fk",
-          "tableFrom": "campaign_encounters",
-          "tableTo": "students",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.campaign_players": {
-      "name": "campaign_players",
-      "schema": "",
-      "columns": {
-        "campaign_id": {
-          "name": "campaign_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "state": {
-          "name": "state",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "revision": {
-          "name": "revision",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "campaign_players_student_idx": {
-          "name": "campaign_players_student_idx",
-          "columns": [
-            {
-              "expression": "student_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "campaign_players_campaign_id_campaigns_id_fk": {
-          "name": "campaign_players_campaign_id_campaigns_id_fk",
-          "tableFrom": "campaign_players",
-          "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "campaign_players_student_id_students_id_fk": {
-          "name": "campaign_players_student_id_students_id_fk",
-          "tableFrom": "campaign_players",
-          "tableTo": "students",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "campaign_players_campaign_id_student_id_pk": {
-          "name": "campaign_players_campaign_id_student_id_pk",
-          "columns": [
-            "campaign_id",
-            "student_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.campaigns": {
-      "name": "campaigns",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "teacher_id": {
-          "name": "teacher_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "guild_id": {
-          "name": "guild_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fight_id": {
-          "name": "fight_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "dungeon_name": {
-          "name": "dungeon_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "theme": {
-          "name": "theme",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'normal_cave'"
-        },
-        "gates": {
-          "name": "gates",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "layout": {
-          "name": "layout",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fight_snapshot": {
-          "name": "fight_snapshot",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "revision": {
-          "name": "revision",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "campaigns_guild_idx": {
-          "name": "campaigns_guild_idx",
-          "columns": [
-            {
-              "expression": "guild_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "campaigns_teacher_idx": {
-          "name": "campaigns_teacher_idx",
-          "columns": [
-            {
-              "expression": "teacher_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "campaigns_teacher_id_teachers_id_fk": {
-          "name": "campaigns_teacher_id_teachers_id_fk",
-          "tableFrom": "campaigns",
-          "tableTo": "teachers",
-          "columnsFrom": [
-            "teacher_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "campaigns_guild_id_guilds_id_fk": {
-          "name": "campaigns_guild_id_guilds_id_fk",
-          "tableFrom": "campaigns",
-          "tableTo": "guilds",
-          "columnsFrom": [
-            "guild_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "campaigns_fight_id_fights_id_fk": {
-          "name": "campaigns_fight_id_fights_id_fk",
-          "tableFrom": "campaigns",
-          "tableTo": "fights",
-          "columnsFrom": [
-            "fight_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.combat_results": {
@@ -2914,6 +2641,33 @@
           "method": "btree",
           "with": {}
         },
+        "question_attempts_guild_recent_idx": {
+          "name": "question_attempts_guild_recent_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "recorded_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "question_attempts_session_round_idx": {
           "name": "question_attempts_session_round_idx",
           "columns": [
@@ -3416,6 +3170,200 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.student_activity_receipts": {
+      "name": "student_activity_receipts",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pulse_id": {
+          "name": "pulse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bucket_start": {
+          "name": "bucket_start",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "student_activity_receipts_retention_idx": {
+          "name": "student_activity_receipts_retention_idx",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "bucket_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "student_activity_receipts_student_id_students_id_fk": {
+          "name": "student_activity_receipts_student_id_students_id_fk",
+          "tableFrom": "student_activity_receipts",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "student_activity_receipts_student_id_pulse_id_pk": {
+          "name": "student_activity_receipts_student_id_pulse_id_pk",
+          "columns": [
+            "student_id",
+            "pulse_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_activity_samples": {
+      "name": "student_activity_samples",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bucket_start": {
+          "name": "bucket_start",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pulse_id": {
+          "name": "pulse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "student_activity_pulse_unique": {
+          "name": "student_activity_pulse_unique",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "pulse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "student_activity_samples_student_id_students_id_fk": {
+          "name": "student_activity_samples_student_id_students_id_fk",
+          "tableFrom": "student_activity_samples",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "student_activity_samples_student_id_bucket_start_pk": {
+          "name": "student_activity_samples_student_id_bucket_start_pk",
+          "columns": [
+            "student_id",
+            "bucket_start"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "student_activity_bucket_check": {
+          "name": "student_activity_bucket_check",
+          "value": "\"student_activity_samples\".\"bucket_start\" >= 0 AND \"student_activity_samples\".\"bucket_start\" % 30000 = 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.student_activity_tracking": {
+      "name": "student_activity_tracking",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_activity_tracking_student_id_students_id_fk": {
+          "name": "student_activity_tracking_student_id_students_id_fk",
+          "tableFrom": "student_activity_tracking",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.student_avatars": {
       "name": "student_avatars",
       "schema": "",
@@ -3699,6 +3647,33 @@
           "notNull": true,
           "default": 0
         },
+        "aa_points_spent": {
+          "name": "aa_points_spent",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "aa_ranks": {
+          "name": "aa_ranks",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "aa_revision": {
+          "name": "aa_revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "character_name": {
+          "name": "character_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "stamina_day": {
           "name": "stamina_day",
           "type": "text",
@@ -3818,6 +3793,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "cross_class_abilities": {
+          "name": "cross_class_abilities",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "inventory": {
           "name": "inventory",
           "type": "jsonb",
@@ -3862,39 +3843,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "aa_points_spent": {
-          "name": "aa_points_spent",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "aa_ranks": {
-          "name": "aa_ranks",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
-        },
-        "aa_revision": {
-          "name": "aa_revision",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "character_name": {
-          "name": "character_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cross_class_abilities": {
-          "name": "cross_class_abilities",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -4098,101 +4046,6 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.aa_purchases": {
-      "name": "aa_purchases",
-      "schema": "",
-      "columns": {
-        "student_id": {
-          "name": "student_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "request_id": {
-          "name": "request_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "upgrade_id": {
-          "name": "upgrade_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "rank": {
-          "name": "rank",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "cost": {
-          "name": "cost",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "catalog_version": {
-          "name": "catalog_version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "payload": {
-          "name": "payload",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "receipt": {
-          "name": "receipt",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "aa_purchases_student_id_students_id_fk": {
-          "name": "aa_purchases_student_id_students_id_fk",
-          "tableFrom": "aa_purchases",
-          "tableTo": "students",
-          "columnsFrom": [
-            "student_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "aa_purchases_student_id_request_id_pk": {
-          "name": "aa_purchases_student_id_request_id_pk",
-          "columns": [
-            "student_id",
-            "request_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "aa_purchases_cost_check": {
-          "name": "aa_purchases_cost_check",
-          "value": "\"aa_purchases\".\"cost\" >= 0"
-        }
-      },
       "isRLSEnabled": false
     }
   },

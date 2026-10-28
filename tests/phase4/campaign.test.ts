@@ -304,7 +304,7 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     const beforeUpgrade = (await call(path)).body;
     const oldLayout = { ...beforeUpgrade.layout, npcs: beforeUpgrade.layout.npcs.filter((n: any) => n.service !== 'items') };
     await db.update(s.campaigns).set({ layout: oldLayout }).where(eq(s.campaigns.id, created.body.id));
-    const upgrade = readFileSync(new URL('../../migrations/cloudflare/0021_campaign_consumables.sql', import.meta.url), 'utf8');
+    const upgrade = readFileSync(new URL('../../migrations/cloudflare/0022_campaign_consumables.sql', import.meta.url), 'utf8');
     await pg.exec(upgrade);
     const upgraded = (await call(path)).body;
     assert.deepEqual(upgraded.progress, beforeUpgrade.progress);

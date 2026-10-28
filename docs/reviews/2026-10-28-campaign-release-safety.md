@@ -1,7 +1,9 @@
 # Campaign release-safety review — October 28, 2026
 
 Starting PR #81 head: `634907fd7ff721fbeb7383c1ed2e258ae8cfc6a3`.
-Production integration baseline: `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`.
+Initial production integration baseline: `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`.
+Current main integrated: `b9d33b42117271bdb52d10ec037e37f317146830` (roster PR #87
+runtime `f34b49f` plus release evidence).
 Review and corrections only. No provider/database migration, deployment, merge,
 student reset, production change or C12 change is authorized by this review.
 
@@ -29,7 +31,7 @@ student reset, production change or C12 change is authorized by this review.
    timestamp corruption, and schema drift regressions. Deployment tests now
    exercise the whole mocked upload path and a binding change during upload.
    They run in ordinary PR CI, not only when a release request changes.
-4. **Operational improvements:** the bridge ends explicitly at 0023 and pins
+4. **Operational improvements:** the bridge ends explicitly at 0024 and pins
    the reviewed source histories, rather than automatically incorporating future
    journal entries. Lock wait (15 seconds) and statement execution (120 seconds)
    are bounded. Deployment now requires dependency readiness as well as liveness.
@@ -42,15 +44,24 @@ student reset, production change or C12 change is authorized by this review.
    runtime code are unchanged. This fixes reproducibility; it does not establish
    the cause of the separately observed gear-popup Escape timeout.
 
-No shipped SQL, active journal, historical ledger row, gameplay rule or release
-request was changed for these corrections. Canonical 0019–0022 remain identical
-to historical campaign SQL; production 0000–0018 remain unchanged.
+6. **Concurrent main migration:** PR #87 merged during review and owns roster
+   migration 0019. Preserved main 0000–0019 SQL/journal/snapshots and moved only
+   unshipped campaign migrations to 0020–0024. Rebuilt the combined snapshots and
+   strict bridge contract. Populated upgrades from both AA-only and roster
+   histories preserve AA purchases, player data, activity samples and retry
+   receipts; Drizzle generation remains a no-op.
+
+No shipped SQL, historical ledger row, gameplay rule or release request was
+changed. Canonical 0020–0023 remain byte-identical to historical campaign SQL;
+0024 retains the previously reviewed compatibility SQL. The old 28-row bridge
+was never authorized/applied in this review and is not an accepted history. Any
+provider reporting it requires separate investigation; never rewrite its ledger.
 
 ## What the protections establish
 
-- The exact production 19-row history and C12's 18-row history are rejected by
+- Both canonical AA 19-row and roster 20-row histories, and C12's 18-row history, are rejected by
   the bridge without changes. The legacy 22-row ledger alone is insufficient:
-  its catalog must also match. A bridged retry requires the exact 28-row ledger
+  its catalog must also match. A bridged retry requires the exact 29-row ledger
   and combined schema. Unknown histories are not guessed or marked applied.
 - The preview deployer targets only `questacademy-campaign-preview`, validates
   its environment/origin/cookie/R2 bindings, retains secrets and storage
@@ -70,7 +81,7 @@ to historical campaign SQL; production 0000–0018 remain unchanged.
   Provider/PostgreSQL catalog-format differences must be investigated on an
   authorized disposable copy, never bypassed by replacing a checksum blindly.
 - The transaction rolls back new AA tables/columns, cross-class backfills,
-  routines, aliases and 0023 on error. Existing IDs/rows remain unchanged.
+  roster tables/indexes, routines, aliases and 0024 on error. Existing IDs/rows remain unchanged.
   PostgreSQL sequence counters can advance on failed inserts; gaps in new ledger
   IDs are harmless and are not repaired. A lost response after COMMIT is handled
   by reading the ledger/catalog and using the idempotent bridge, never manual
@@ -103,10 +114,10 @@ to historical campaign SQL; production 0000–0018 remain unchanged.
    migrator first. On error, issue ROLLBACK on that connection or disconnect it,
    verify unchanged state and diagnose before retrying. On an uncertain response,
    inspect exact history/catalog first.
-5. Require 28 ledger rows, unchanged first 22 rows including IDs/hashes/timestamps,
+5. Require 29 ledger rows, unchanged first 22 rows including IDs/hashes/timestamps,
    combined catalog equality and unchanged saved gameplay/receipts. Account only
    for AA's additive columns and conversion of the two old cross-class slots.
-   The normal migrator is then a no-op at the reviewed 0023 head. Later migrations
+   The normal migrator is then a no-op at the reviewed 0024 head. Later migrations
    require their own review; the bridge does not absorb them automatically.
 6. With that evidence, set the three migration attestations and `mode: deploy`
    in the explicit preview request. Run only **Deploy Campaign Preview**. Verify
@@ -129,26 +140,32 @@ The owner selected **main site, gated beta** during this review. Prepare a
 server-enforced tester gate and visible Beta / Report a bug entry point before
 requesting consolidation into main. Preserve the isolated preview database;
 merging code does not import its saves into production. Production follows its
-own canonical forward-only 24-row migration path, never the preview bridge.
+own canonical forward-only 25-row migration path, never the preview bridge.
 C12 stays separate and untouched. Retire the campaign development branch only
 after the authorized merge/release/acceptance, then do future campaign fixes on
 short branches from main. Beta status does not waive migration or acceptance gates.
 
 ## Current decision
 
-**Conditional GO for a guarded, limited beta release after exact-head checks
-and explicit authorization; NO-GO for unapproved execution.**
-Main-site beta preparation is implemented. All 388 local tests (5 phase 2,
-7 phase 3, 360 phase 4, 16 rich content), five deployment tests, TypeScript and
-client/Worker builds pass. Local Chromium installation failed with a truncated
-archive; no local browser pass is claimed. Final published-head CI/browser
-evidence is recorded on [PR #81](https://github.com/Orsnoire/FightSchool/pull/81);
-it remains a release gate. CI passes at runtime head `cf64e9c` (40711090990) and
-fixture-only follow-up `5251565` (40711557288). The first browser run exposed
-an unhandled beta-availability route in the loading fixture; the follow-up
-models the disabled response without weakening its assertions. Report-dialog
-screenshots now wait for the opening animation. Main advanced during review only by the guild-roster
-PR #87 discovery pointer (`e3076fc`); the pointer is preserved without importing
-that feature implementation.
-A later release requires concrete authorization plus provider identity/backup/
-maintenance evidence. No live guardian-victory acceptance is claimed.
+**NO-GO for main-site beta release while the current production operational
+acceptance is blocked.** Main's [roster release record](../releases/2026-10-28-pr87.md)
+reports timeouts and Cloudflare error 1102 in classroom acceptance; resolving
+that existing baseline gate is required before enabling campaign beta. This
+review did not diagnose or modify that separate live deployment.
+
+Exact-head CI/browser checks, provider preflight and explicit authorization are
+also required. Main-site gated beta and the report
+UI are implemented, and current main's roster migration is reconciled on PR #81.
+All 399 tests pass locally (5 phase 2, 7 phase 3, 371 phase 4, 16 rich content),
+plus 5 deployment tests, TypeScript and client/Worker builds. The previous
+browser evidence predates this integration. Exact published-head results are recorded on
+[PR #81](https://github.com/Orsnoire/FightSchool/pull/81) and the active checkpoint.
+Local Chromium installation failed with a truncated archive; browser evidence
+comes from CI. Earlier browser evidence includes an unchanged phone gear-popup
+Escape timeout that passed on one unchanged retry; no runtime assertion was
+weakened. Playwright isolation corrects dependency reproducibility, not a proven
+cause of that timeout.
+
+After those gates, this is a conditional GO for the guarded limited beta
+sequence, not permission to execute it. No provider mutation, merge into main,
+deployment or live guardian-victory acceptance is claimed.

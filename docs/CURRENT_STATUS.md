@@ -1,18 +1,6 @@
-# Campaign reconciliation — October 27, 2026 (review only)
-
-PR #81 integrates production baseline `2d524df` (PRs #85/#86) with the campaign
-pilot. AA power, licensed gear, five saved cross-class slots, persistent resources
-and shared combat/rewards are reconciled. Canonical production migration 0018 is
-unchanged; campaign migrations now occupy 0019–0023 with a separately guarded,
-append-only bridge for the already-migrated isolated preview. **Ready for review:**
-385 tests, TypeScript/builds, four deployment boundary tests and all four Chromium
-jobs pass; desktop/phone campaign AA screenshots inspected.
-[evidence and upgrade procedure](reviews/2026-10-27-campaign-aa-reconciliation.md).
-No merge to main, deployment, database migration or playtester reset has occurred.
-The preview still runs `6de4263`; authenticated owner guardian-victory acceptance
-is pending. Production release status below and separate C12 work are unchanged.
-
 # Current status
+
+**October 28 teacher roster release:** [PR #87](https://github.com/Orsnoire/FightSchool/pull/87) is merged and deployed at `f34b49f`. All 12 job levels, lifetime AA earned, weekly active hours and daily guild accuracy are live. 374 tests, TypeScript/builds, four Chromium jobs and merged-main CI pass. Deployment 40714742768 applied additive migration 0019 and passed both hostname smoke checks; Worker `975be8fc-972e-4738-98e0-c36b7cb5f8d1` serves 100%. Canonical acceptance 40715425162 remains blocked after three attempts: timeouts followed by HTTP 503 / Cloudflare error 1102 during classroom-test character setup. Live combat and both storage checks passed in attempts 2 and 3; classroom concurrency is unaccepted. No reset. [Release evidence and limits](releases/2026-10-28-pr87.md).
 
 **October 26 Alternate Advancement release:** [PR #86](https://github.com/Orsnoire/FightSchool/pull/86) is complete, merged, deployed and accepted at `207b7bb`. Worker `edc96b23-6e74-4916-9330-ad5cbc3359a1` serves 100%. Includes the AA wallet/ranks/interface, five cross-class slots, paid recustomization and full wrong-answer CP reset with AA preservation. All 364 tests, TypeScript/builds, four Chromium jobs and merged-main CI pass. Deployment 40370834834 applied additive migration 0018 and passed both hostname smoke checks; canonical acceptance 40371373272 passed on its first attempt. 30-answer p50/p95/max: 1458/2767/2867 ms, a functional sample. No reset. [Release evidence and limits](releases/2026-10-26-pr86.md).
 

@@ -138,36 +138,43 @@
     {
       "idx": 19,
       "version": "7",
-      "when": 1793116800000,
-      "tag": "0019_campaign_pilot",
+      "when": 1793199709504,
+      "tag": "0019_teacher_roster_activity",
       "breakpoints": true
     },
     {
       "idx": 20,
       "version": "7",
-      "when": 1793116801000,
-      "tag": "0020_campaign_equipment",
+      "when": 1793199710504,
+      "tag": "0020_campaign_pilot",
       "breakpoints": true
     },
     {
       "idx": 21,
       "version": "7",
-      "when": 1793116802000,
-      "tag": "0021_campaign_consumables",
+      "when": 1793199712504,
+      "tag": "0021_campaign_equipment",
       "breakpoints": true
     },
     {
       "idx": 22,
       "version": "7",
-      "when": 1793116803000,
-      "tag": "0022_campaign_boss_stamina",
+      "when": 1793199715504,
+      "tag": "0022_campaign_consumables",
       "breakpoints": true
     },
     {
       "idx": 23,
       "version": "7",
-      "when": 1793116804000,
-      "tag": "0023_campaign_aa_compatibility",
+      "when": 1793199719504,
+      "tag": "0023_campaign_boss_stamina",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793199724504,
+      "tag": "0024_campaign_aa_compatibility",
       "breakpoints": true
     }
   ]
