@@ -4,9 +4,9 @@
 - Complete: all 12 permanent job levels (0 without progression), lifetime AA, rolling seven-day active game hours and 24-hour question-weighted guild accuracy. Missing/partial history, refresh, stale/error and empty states are explicit. Idle/hidden use is excluded and retries/concurrent tabs do not multiply time.
 - 374 tests, TypeScript/builds, final PR CI 40713238597 and all four Chromium jobs 40713238514 pass. Merged-main CI 40714376598 passes. Desktop/phone roster and actual idle/visibility behavior are covered. [Evidence and limits](releases/2026-10-28-pr87.md).
 - Deployment 40714742768 passed on the exact merge, applying additive migration 0019 and passing both hostname smoke checks. Worker `975be8fc-972e-4738-98e0-c36b7cb5f8d1` serves 100%, confirmed by Wrangler and Cloudflare. No data reset.
-- Canonical acceptance 40715425162 is running on the exact merged commit; acceptance is not yet claimed.
-- State: MERGED / DEPLOYED; live acceptance pending. Campaign #81 and C12 #75 remain separate. Campaign must reconcile its unmerged 0019 history before integration; the classroom migration is now applied and immutable. [Metric semantics](TEACHER_GUILD_ROSTER.md).
-- Next: finish the canonical acceptance workflow and record its outcome. Tracking starts with each player's first visit using the new client, with partial history until seven days have elapsed; previous active hours cannot be reconstructed.
+- Canonical acceptance 40715425162 did not pass after three unchanged attempts: playback timeout, session-creation HTTP timeout, then HTTP 503 / Cloudflare error 1102 during synthetic student character setup. Attempts 2 and 3 passed live combat and both storage checks. Classroom concurrency remains unaccepted; no further retry followed the resource-limit response. See the release record for provider evidence and limits.
+- State: MERGED / DEPLOYED / LIVE ACCEPTANCE BLOCKED. Campaign #81 and C12 #75 remain separate. Campaign must reconcile its unmerged 0019 history before integration; the classroom migration is now applied and immutable. [Metric semantics](TEACHER_GUILD_ROSTER.md).
+- Next: diagnose production resource/latency failures and rerun the original full canonical acceptance suite; do not claim acceptance or weaken its gates. Tracking starts with each player's first visit using the new client, with partial history until seven days have elapsed; previous active hours cannot be reconstructed.
 
 # Alternate Advancement — released October 26, 2026
 
