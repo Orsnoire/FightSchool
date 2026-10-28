@@ -72,10 +72,13 @@ try {
     await page.goto(`${origin}/teacher/campaigns`);
     await page.getByRole('button', { name: 'Report a bug', exact: true }).click();
     await page.getByRole('dialog').waitFor();
+    await page.getByRole('dialog').evaluate(async element => {
+      await Promise.all(element.getAnimations().map(animation => animation.finished));
+    });
     const reportLink = page.getByRole('link', { name: 'Open bug report on GitHub' });
     assert.equal(await reportLink.getAttribute('href'), 'https://github.com/Orsnoire/FightSchool/issues/new?template=campaign-beta-bug.yml');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    await page.screenshot({ path: `${output}/${viewport.width}-campaign-beta-report.png`, fullPage: true });
+    await page.screenshot({ path: `${output}/${viewport.width}-campaign-beta-report.png`, fullPage: true, animations: 'disabled' });
     await page.keyboard.press('Escape');
     await page.getByLabel('Campaign guild', { exact: true }).selectOption(guildId);
     assert.equal(await page.getByRole('button', { name: 'Reset campaign', exact: true }).count(), 0, 'personal reset is student-only');

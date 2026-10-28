@@ -128,12 +128,18 @@ short branches from main. Beta status does not waive migration or acceptance gat
 
 ## Current decision
 
-**NO-GO for migration/deployment now; implementation ready for CI/review.**
+**Conditional GO for a guarded, limited beta release after exact-head checks
+and explicit authorization; NO-GO for unapproved execution.**
 Main-site beta preparation is implemented. All 388 local tests (5 phase 2,
 7 phase 3, 360 phase 4, 16 rich content), five deployment tests, TypeScript and
 client/Worker builds pass. Local Chromium installation failed with a truncated
 archive; no local browser pass is claimed. Final published-head CI/browser
-evidence remains required. Main advanced during review only by the guild-roster
+evidence is recorded on [PR #81](https://github.com/Orsnoire/FightSchool/pull/81);
+it remains a release gate. CI passes at runtime head `cf64e9c` (40711090990) and
+fixture-only follow-up `5251565` (40711557288). The first browser run exposed
+an unhandled beta-availability route in the loading fixture; the follow-up
+models the disabled response without weakening its assertions. Report-dialog
+screenshots now wait for the opening animation. Main advanced during review only by the guild-roster
 PR #87 discovery pointer (`e3076fc`); the pointer is preserved without importing
 that feature implementation.
 A later release requires concrete authorization plus provider identity/backup/

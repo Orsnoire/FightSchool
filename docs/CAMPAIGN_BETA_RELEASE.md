@@ -8,7 +8,9 @@ implementation. C12's separate work is unchanged by this package.
 ## Beta access and reporting
 
 - `CAMPAIGN_BETA_GUILD_IDS` is an optional comma-separated list of guild UUIDs
-  configured on the canonical Worker. Missing, empty, malformed or wildcard
+  configured on the canonical Worker through reviewed release configuration.
+  Retain the selected allowlist in subsequent releases; do not rely on a dashboard
+  value that the next deployment may overwrite. Missing, empty, malformed or wildcard
   configuration enables nobody. Enroll a dedicated beta guild, not a classroom
   guild by default. Its owning teacher and current members gain access; archive
   or membership removal revokes access. An account with multiple guilds only

@@ -1,5 +1,7 @@
 # Campaign / October 26 production compatibility
 
+> Superseded release-safety guidance: use the [October 28 review and runbook](2026-10-28-campaign-release-safety.md) for schema validation, retry/rollback, provider preflight and the subsequent gated-beta release. The evidence below describes the October 27 head.
+
 ## Scope and release boundary
 
 Reconcile registered `feature/campaign-pilot` / PR #81, originally `d7c4a835`,
