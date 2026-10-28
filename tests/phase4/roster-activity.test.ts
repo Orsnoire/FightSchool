@@ -34,6 +34,8 @@ test('active-time sampling excludes idle, hidden, resumed and suspended interval
   sampler.interact(425_000);
   assert.equal(sampler.sample(451_000),false);
   assert.equal(sampler.sample(455_000),true);
+  const jitter = new ActivitySampler(0,true);
+  assert.deepEqual([30_005,59_999,90_003,119_998,149_999].map(time=>{jitter.interact(time);return jitter.sample(time);}),[true,false,true,true,true]);
   assert.equal(activityPulseInput.safeParse({pulseId:id(1),active:true,seconds:999999}).success,false);
 });
 

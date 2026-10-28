@@ -18,17 +18,19 @@ export async function handleStudentProgression(context: GameRouteContext): Promi
   if (sm) {
     const id = sm[1], tail = sm[2];
     ownStudent(id);
+    if (tail === "activity" && method(request, "POST")) {
+      const pulse = activityPulseInput.parse(await readJson(request));
+      const [exists] = await db.select({id:s.students.id}).from(s.students).where(eq(s.students.id,id));
+      if (!exists) throw new ApiError("Student not found",404);
+      await recordPlayerActivity(db, id, pulse);
+      return json({ recorded: true });
+    }
     const [student] = await db
       .select()
       .from(s.students)
       .where(eq(s.students.id, id));
     if (!student)
       throw new ApiError("Student not found", 404);
-    if (tail === "activity" && method(request, "POST")) {
-      const pulse = activityPulseInput.parse(await readJson(request));
-      await recordPlayerActivity(db, id, pulse);
-      return json({ recorded: true });
-    }
     const advancement = await handleAdvancement(context, student, tail);
     if (advancement) return advancement;
     if (tail === "guilds")

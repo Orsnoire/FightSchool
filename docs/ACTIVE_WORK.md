@@ -7,7 +7,8 @@
 - Local verification: 374 tests pass (373 full-suite tests plus the new rendered-component/DOM tracker integration test), TypeScript and client/Worker builds pass. Migrated SQL checks cover additive preservation, rolling boundaries, retries, guild scope and authentication. Rendered values and actual visibility/input-driven tracker behavior pass. Desktop/phone Chromium tests are added; local Chromium download failed, so browser execution remains pending.
 - New additive migration 0019 is unapplied. Campaign #81 has a separate unmerged 0019 history: reconcile before integrating both. No live database, merge or deployment changes. [Metric semantics and migration boundary](TEACHER_GUILD_ROSTER.md).
 - Final review fixed retry deduplication for the losing concurrent tab: every active pulse retains a receipt even if its time bucket was already counted. All 19 focused SQL/auth/migration checks, TypeScript and both builds pass after the correction. Main’s documentation pointer is reconciled; no merge conflict remains.
-- Next: verify GitHub CI and desktop/phone Chromium at the final published head, then review for release. No merge or deployment is authorized by the implementation request.
+- Browser evidence: all four Chromium jobs pass at `bb61ad8` (run 40711531386), including desktop/phone roster states and actual activity tracking. Final refinements retain sub-sample time under timer jitter and select only the student ID for frequent activity requests; focused SQL/HTTP/DOM tests, TypeScript and both builds pass.
+- Next: verify final-head CI/browser results, then review for release. No merge or deployment is authorized by the implementation request.
 
 # Alternate Advancement — released October 26, 2026
 

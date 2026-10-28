@@ -33,7 +33,8 @@ export class ActivitySampler {
       return false;
     }
     if (now - this.activeSince < ACTIVITY_SAMPLE_MS) return false;
-    this.activeSince = now;
+    // Retain sub-sample time so small timer jitter cannot repeatedly discard half the playtime.
+    this.activeSince += ACTIVITY_SAMPLE_MS;
     return true;
   }
 }
