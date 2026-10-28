@@ -1,3 +1,13 @@
+# Campaign visual pass — active October 28, 2026
+
+- Owner requested map/avatar and battle-scene graphics before beta access. Continue `feature/campaign-visual-pass` / [draft PR #90](https://github.com/Orsnoire/FightSchool/pull/90), claimed at `ef7f4962db14847b6da1c2cd2829bac2973f4c0f`. This branch and PR carry current implementation and verification details.
+- Use `/docs`, especially `CAMPAIGN_ART_DIRECTION.md`, `CAMPAIGN_DEVELOPMENT_ROADMAP.md` and `avatar-art-direction.md`. Scope: the exact equipped battle avatar at map scale, connected terrain, recognizable landmarks and coordinated original overworld/normal-cave battle backgrounds.
+- Preserve saved layouts, routes, collision/access rules, progress and avatar identity. No migration, reset, new enemy roster or beta enablement. C12 / PR #75 remains separate. The prior consolidation release below is complete.
+- State: CLAIMED / draft, before implementation. Next: create original assets with provenance, implement the presentation, verify desktop/phone and functional regression evidence, then review before beta access.
+- [Visual-pass checkpoint](reviews/2026-10-28-campaign-visual-pass.md).
+
+## Previous completed release
+
 # Campaign consolidation — merged, migrated and operationally accepted October 28, 2026
 
 - [PR #81](https://github.com/Orsnoire/FightSchool/pull/81) and safeguard [PR #88](https://github.com/Orsnoire/FightSchool/pull/88) are merged. Production serves exact reviewed PR #88 merge `b33bebee309c6828c1e3f44fc70ded7de6a43e85`. [PR #89](https://github.com/Orsnoire/FightSchool/pull/89) is merged at `7623af943a589018503b21d6faddd8f5deaac3a6`; it adds failure-only test diagnostics and changes no runtime. Continue development from main, using short registered branches for new implementation.
