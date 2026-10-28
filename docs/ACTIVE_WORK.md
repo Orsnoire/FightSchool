@@ -1,3 +1,11 @@
+# Teacher guild roster statistics — active October 28, 2026
+
+- Owner requests every job and its permanent level for each player ID (0 when never played), lifetime AAs earned, rolling seven-day active game hours, and accuracy across the past 24 hours of fights.
+- Owner selected active game time across fights, exploration and menus; hidden/idle tabs do not count. Existing records do not measure this reliably, so new tracking will identify partial history rather than fabricate past hours.
+- Branch: `feature/teacher-guild-roster-stats`, based on main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`. This is a separate owner-requested feature, not C12 or Campaign #81. Both registered branches and production remain unchanged.
+- State: claim/planning only, implementation and tests pending. Publish draft PR before code work. Add owner-only roster projections and authenticated, bounded, deduplicated activity tracking; preserve progression and current live data.
+- Next: implement contracts, activity persistence and tracking, roster UI, migrated-SQL/security and UI coverage; run TypeScript/tests/builds and publish reviewable checkpoints. No merge or deployment is included in this implementation task.
+
 # Alternate Advancement — released October 26, 2026
 
 - Owner authorized review, merge and production deployment. [PR #86](https://github.com/Orsnoire/FightSchool/pull/86) merged at `207b7bbdf9c0e8a1b0d6c8b169a2d452ead7ac6f`, with identical tree `fe41563ecf019cb17ceceb8e47112a353e5fd9ee` to reviewed head `56c6a1f7d741215fceef73629f93e151a0f0720d`. Focused release review found no blocking issues.
