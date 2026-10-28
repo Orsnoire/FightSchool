@@ -1,3 +1,10 @@
+# Campaign release-safety review — active October 28, 2026
+
+- Resume existing `feature/campaign-pilot` / [PR #81](https://github.com/Orsnoire/FightSchool/pull/81); reviewed starting head `634907fd7ff721fbeb7383c1ed2e258ae8cfc6a3`, current main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`.
+- Owner authorized focused bridge/schema/deployment/regression review and narrowly scoped corrections. Work IN PROGRESS: reproduce schema-guard gaps, test rejection/preservation/late rollback, and document a safe release sequence.
+- No merge, database/provider migration, deployment, production/C12 change or playtester reset is authorized. Keep `deploy/campaign-preview.json` unchanged. Existing preview runtime and live owner acceptance remain as recorded below.
+- Next: publish reviewed corrections and verification evidence on this same PR; separate authorization remains required before preview migration/deployment.
+
 # Campaign compatibility — active October 27, 2026
 
 - Resume `feature/campaign-pilot`, [PR #81](https://github.com/Orsnoire/FightSchool/pull/81). Owner authorized reconciliation and publication for review only.
