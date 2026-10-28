@@ -726,6 +726,32 @@ export const questionAttempts = pgTable('question_attempts', {
 }, t => ({
   pk: primaryKey({columns:[t.sessionId,t.studentId,t.round]}),
   teacherQuestion: index('question_attempts_teacher_question_idx').on(t.teacherId,t.questionId,t.sessionId),
+  guildRecent: index('question_attempts_guild_recent_idx').on(t.guildId,t.recordedAt,t.studentId),
   sessionRound: index('question_attempts_session_round_idx').on(t.sessionId,t.round),
   validOutcome: check('question_attempts_outcome_check',sql`${t.outcome} IN ('correct','incorrect','unanswered')`),
+}));
+
+// Availability marker is retained; samples are pruned on the student's next pulse.
+export const studentActivityTracking = pgTable('student_activity_tracking', {
+  studentId: uuid('student_id').primaryKey().references(() => students.id, {onDelete: 'cascade'}),
+  startedAt: bigint('started_at', {mode: 'number'}).notNull(),
+});
+export const studentActivitySamples = pgTable('student_activity_samples', {
+  studentId: uuid('student_id').notNull().references(() => students.id, {onDelete: 'cascade'}),
+  bucketStart: bigint('bucket_start', {mode: 'number'}).notNull(),
+  pulseId: uuid('pulse_id').notNull(),
+}, t => ({
+  pk: primaryKey({columns: [t.studentId, t.bucketStart]}),
+  pulse: uniqueIndex('student_activity_pulse_unique').on(t.studentId, t.pulseId),
+  bucketCheck: check('student_activity_bucket_check', sql`${t.bucketStart} >= 0 AND ${t.bucketStart} % 30000 = 0`),
+}));
+
+// Keep receipts even when another tab already claimed the sample bucket.
+export const studentActivityReceipts = pgTable('student_activity_receipts', {
+  studentId: uuid('student_id').notNull().references(() => students.id, {onDelete: 'cascade'}),
+  pulseId: uuid('pulse_id').notNull(),
+  bucketStart: bigint('bucket_start', {mode: 'number'}).notNull(),
+}, t => ({
+  pk: primaryKey({columns: [t.studentId,t.pulseId]}),
+  retention: index('student_activity_receipts_retention_idx').on(t.studentId,t.bucketStart),
 }));

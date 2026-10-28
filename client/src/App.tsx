@@ -1,3 +1,4 @@
+import { PlayerActivityTracker } from "./features/activity/PlayerActivityTracker";
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -70,6 +71,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <PlayerActivityTracker />
         <Router />
       </TooltipProvider>
     </QueryClientProvider>

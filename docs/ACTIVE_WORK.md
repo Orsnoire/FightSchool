@@ -1,8 +1,13 @@
 # Teacher guild roster statistics — active October 28, 2026
 
-- Owner requested per-player job levels (including 0 for unplayed jobs), lifetime AAs earned, seven-day active game hours and 24-hour fight accuracy.
-- Resume `feature/teacher-guild-roster-stats`, [draft PR #87](https://github.com/Orsnoire/FightSchool/pull/87), and its branch checkpoint. Initial claim `1f2562d1de307b1c869cdf1848d08fde75e246f1`; implementation/verification pending.
-- Separate from Campaign #81 and C12 #75. No merge, deployment or live-data reset is part of this task. The active branch and PR carry the latest verification state.
+- Owner requests every job and its permanent level for each player ID (0 when never played), lifetime AAs earned, rolling seven-day active game hours, and accuracy across the past 24 hours of fights.
+- Owner selected active game time across fights, exploration and menus; hidden/idle tabs do not count. Existing records do not measure this reliably, so new tracking will identify partial history rather than fabricate past hours.
+- Branch: `feature/teacher-guild-roster-stats`, based on main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`. This is a separate owner-requested feature, not C12 or Campaign #81. Both registered branches and production remain unchanged.
+- State: IMPLEMENTED / VERIFIED / READY FOR REVIEW in [PR #87](https://github.com/Orsnoire/FightSchool/pull/87). All 12 job levels, lifetime AA, seven-day active hours and 24-hour question-weighted guild accuracy are complete. Missing/partial history, refresh, stale/error and empty states are explicit.
+- Verified runtime: `f573869641e0d2d9f46a62398edb29a90dd2bffd`. [CI 40712509500](https://github.com/Orsnoire/FightSchool/actions/runs/40712509500) passes all 374 tests, TypeScript and both builds. All four [Chromium jobs 40712509357](https://github.com/Orsnoire/FightSchool/actions/runs/40712509357) pass, including desktop/phone roster rendering and actual idle/visibility behavior. Local rendered-component/DOM and migrated-SQL checks also pass. Local Chromium download failed; browser evidence is from CI.
+- Final review covers server-time bounds, timer jitter/suspension, concurrent tabs/devices, retries including the losing tab, recent guild accuracy and legacy fallback, teacher/student isolation, and narrow recurring reads. Migration tests preserve existing student data and verify a no-op Drizzle diff.
+- Additive migration 0019 remains UNAPPLIED. Campaign #81 has a separate unmerged 0019 history and must reconcile before combined integration. No live database changes, merge or deployment occurred. [Metric semantics and migration boundary](TEACHER_GUILD_ROSTER.md).
+- Next: release review and owner-authorized merge/deployment, applying the additive migration through the existing workflow. Tracking starts on each player's first visit using the new client; prior active hours cannot be reconstructed. This final checkpoint changes documentation only; the runtime above is the verified code.
 
 # Alternate Advancement — released October 26, 2026
 

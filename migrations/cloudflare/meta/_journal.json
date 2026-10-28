@@ -134,6 +134,13 @@
       "when": 1793030559086,
       "tag": "0018_alternate_advancement",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793199709504,
+      "tag": "0019_teacher_roster_activity",
+      "breakpoints": true
     }
   ]
 }
