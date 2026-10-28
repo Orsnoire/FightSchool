@@ -1,3 +1,37 @@
+# Campaign graphics and question-bank entry — review checkpoint
+
+Implemented on `feature/campaign-visual-pass`, [PR #90](https://github.com/Orsnoire/FightSchool/pull/90). The exact equipped battle avatar now appears on the map at a smaller size. Original landmarks, forest materials, all 47 mountain/cave-wall edge arrangements, a follow camera/overview and matching meadow/cave battle scenes replace the placeholders. Terrain samples a common world origin; block boundaries do not introduce texture seams. Adventure supplies/equipment/quests open from Menu.
+
+Each student explicitly chooses a fight assigned to the campaign's guild before entry. The chosen bank is saved per player, answers remain server-only, and new encounters freeze its questions and identity. Assignment, archive/nonempty status and guild ownership are enforced both by the application and under the atomic commit locks. Existing position/resources/equipment/unlocks and old active rooms are preserved; active encounters can finish if their bank is later removed. Classrooms and legacy snapshots retain their original field shape.
+
+**Verified:** 408 application tests, 11 deployment tests, TypeScript and both builds pass. CI [40764049194](https://github.com/Orsnoire/FightSchool/actions/runs/40764049194) and all four browser jobs [40764049323](https://github.com/Orsnoire/FightSchool/actions/runs/40764049323) pass at `861aba1`. The final terrain alignment/clipping follow-up passes local desktop/phone campaign and art browser tests, TypeScript and builds; the PR records its final exact-head CI. Local screenshots use Chromium 134; CI uses pinned Chromium 151. These are synthetic fixtures, not proof of an authenticated live owner victory.
+
+**Release state:** ready for review, unmerged and undeployed. Forward migration 0025 is authored/tested but has not run on a provider. No beta guild is enabled and no saved playtest has been reset. The first workshop covers the existing overworld and normal cave. Road/water transition art and other biomes remain later work. [Asset contract and full prompts](../campaign-art-v1.md).
+
+## Review images
+
+### Guild-assigned entry choice
+
+![Required fight selection on a phone](images/campaign-2026-10-28/entry-phone.png)
+
+### Overworld, desktop
+
+![Overworld with the equipped battle avatar, shops and connected border](images/campaign-2026-10-28/overworld-desktop.png)
+
+### Overworld, phone
+
+![Phone follow-camera and movement controls](images/campaign-2026-10-28/overworld-phone.png)
+
+### Cave battle
+
+![Cave combat with readable panels and matching scene art](images/campaign-2026-10-28/cave-battle.png)
+
+### Complete border vocabulary
+
+![47 valid adjacency arrangements for mountain, cave wall and forest materials](images/campaign-2026-10-28/border-vocabulary.png)
+
+## Earlier checkpoints
+
 # Campaign visual pass — October 28, 2026
 
 Owner requested map and battle-screen art updates before beta access. `/docs` is the art/design reference; use `CAMPAIGN_ART_DIRECTION.md`, `CAMPAIGN_DEVELOPMENT_ROADMAP.md`, `avatar-art-direction.md` and the source-of-truth hierarchy. Current baseline is main `63d61c58ad753ef09c66e464f400b591a873e689`; PRs #81/#88/#89 are merged and operationally accepted. Only C12 #75 remains open; it is separate.

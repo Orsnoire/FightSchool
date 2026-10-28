@@ -114,3 +114,7 @@ It distinguishes reproduced bugs, synthetic measurements, existing live timings
 and hypotheses requiring profiling. A smaller file or added cache is not itself
 evidence of improvement. Preserve existing safeguards and measure the work the
 change is intended to reduce.
+
+## Campaign beta visual/entry workshop — October 28, 2026
+
+`feature/campaign-visual-pass` / [PR #90](https://github.com/Orsnoire/FightSchool/pull/90): implemented and verified for review. Original map/battle art, 47 connected border cases, shared equipped avatar and mandatory per-player guild-assigned question-bank selection. 408 application tests, 11 deployment tests, TypeScript/builds and desktop/phone checks pass; exact-head CI is tracked in the PR. Migration 0025 is forward-only and locally rehearsed with preserved populated state. Exit gates remaining: visual review, isolated provider migration rehearsal, guarded release and dedicated-guild/guardian acceptance. Beta remains closed; C12 stays separate. See [review/screenshots](reviews/2026-10-28-campaign-visual-pass.md).
