@@ -1,3 +1,4 @@
+import { TeacherRosterStats } from "@/components/TeacherRosterStats";
 import type { TeacherRosterMember } from "@shared/contracts/guild-roster";
 import { ALL_CHARACTER_CLASSES } from "@shared/schema";
 import { JOB_TREE } from "@shared/jobSystem";
@@ -20,7 +21,7 @@ import { ArrowLeft, Users, Trophy, Swords, UserMinus, Copy, Save } from "lucide-
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type Guild, type GuildMember, type Fight } from "@shared/schema";
+import { type Guild, type Fight } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { z } from "zod";
 
@@ -42,10 +43,15 @@ export default function TeacherGuildDetail() {
     enabled: !!guildId,
   });
 
-  const { data: members } = useQuery<TeacherRosterMember[]>({
+  const roster = useQuery<TeacherRosterMember[]>({
     queryKey: [`/api/guilds/${guildId}/roster`],
     enabled: !!guildId,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
   });
+
+  const members = roster.data;
 
   const { data: assignedFights } = useQuery<Fight[]>({
     queryKey: [`/api/guilds/${guildId}/fights`],
@@ -237,7 +243,7 @@ export default function TeacherGuildDetail() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab")||"overview"} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6" data-testid="tabs-guild-management">
+          <TabsList className="flex w-full justify-start overflow-x-auto" data-testid="tabs-guild-management">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="members" data-testid="tab-members">Members</TabsTrigger>
             <TabsTrigger value="fights" data-testid="tab-fights">Assigned Fights</TabsTrigger>
@@ -327,13 +333,17 @@ export default function TeacherGuildDetail() {
           <TabsContent value="members" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Guild Roster</CardTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle>Guild Roster</CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => roster.refetch()} disabled={roster.isFetching}>Refresh roster</Button>
+                </div>
                 <CardDescription>
-                  {members?.length || 0} member{members?.length !== 1 ? 's' : ''} in this guild
+                  {members?.length || 0} member{members?.length !== 1 ? 's' : ''} in this guild. Active hours cover all game activity, sampled every 30 seconds; hidden tabs and inactivity beyond two minutes are excluded. Accuracy weights each recorded question in this guild equally, including unanswered questions.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {members && members.length > 0 ? (
+                {roster.isError && <p role="alert" className="mb-3 text-destructive">Could not refresh roster. {members ? 'Showing the last loaded values.' : 'Use Refresh roster to retry.'}</p>}
+                {roster.isPending ? <p role="status">Loading roster…</p> : members && members.length > 0 ? (
                   <div className="space-y-2">
                     {members.map((member) => (
                       <div
@@ -342,10 +352,11 @@ export default function TeacherGuildDetail() {
                         data-testid={`member-${member.studentId}`}
                       >
                         <div>
-                          <p className="font-medium" data-testid={`member-name-${member.studentId}`}>
-                            {member.nickname} · {member.studentId.slice(0, 8)}
+                          <p className="font-medium break-all" data-testid={`member-name-${member.studentId}`}>
+                            {member.nickname}
+                            <span className="block text-xs font-mono text-muted-foreground">Player ID: {member.studentId}</span>
                           </p>
-                          <p className="text-sm">Total AAs earned: {member.totalAAsEarned}</p>
+                          <TeacherRosterStats member={member} />
                           <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-1 my-2">
                             {ALL_CHARACTER_CLASSES.map(job => <div key={job} className="flex justify-between gap-2 text-sm"><dt>{JOB_TREE[job].name}</dt><dd className="font-semibold tabular-nums">{member.jobLevels[job]}</dd></div>)}
                           </dl>
@@ -366,7 +377,7 @@ export default function TeacherGuildDetail() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
+                  !roster.isError && <div className="text-center py-8">
                     <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">
                       No members yet. Share the guild code with students to let them join!

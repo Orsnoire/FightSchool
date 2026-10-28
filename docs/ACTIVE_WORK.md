@@ -3,8 +3,10 @@
 - Owner requests every job and its permanent level for each player ID (0 when never played), lifetime AAs earned, rolling seven-day active game hours, and accuracy across the past 24 hours of fights.
 - Owner selected active game time across fights, exploration and menus; hidden/idle tabs do not count. Existing records do not measure this reliably, so new tracking will identify partial history rather than fabricate past hours.
 - Branch: `feature/teacher-guild-roster-stats`, based on main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`. This is a separate owner-requested feature, not C12 or Campaign #81. Both registered branches and production remain unchanged.
-- State: INCOMPLETE implementation checkpoint in draft PR #87. Teacher-only roster now includes all 12 permanent job levels (missing progression records display 0), nickname/player ID and lifetime AA points including spent points. TypeScript and client/Worker builds pass; migrated SQL/HTTP roster tests cover zero defaults, levels, lifetime AA and owner/student/unauthenticated isolation. Weekly activity and daily accuracy remain unimplemented; no release is claimed.
-- Next: implement idle/visibility-aware active-time collection with server-bounded deduplication, additive migration and partial-history labeling; add rolling 24-hour question-weighted accuracy, then UI/browser and full regression verification. Current checkpoint has no migration and is not ready for merge or deployment.
+- State: implementation complete in draft PR #87; verification in progress. Adds seven-day sampled active hours, visibility/idle/suspension handling, tab/device/retry deduplication, partial-history states, and 24-hour question-weighted guild accuracy with legacy fallback. All job levels and lifetime AA remain included.
+- Local verification: TypeScript and full test suite pass; migrated SQL checks cover additive preservation, rolling boundaries, retries, guild scope and authentication. Browser test added for desktop/phone and actual tracker behavior; local Chromium download failed, so browser execution is pending. Build and final review still pending.
+- New additive migration 0019 is unapplied. Campaign #81 has a separate unmerged 0019 history: reconcile before integrating both. No live database, merge or deployment changes. [Metric semantics and migration boundary](TEACHER_GUILD_ROSTER.md).
+- Next: complete build and UI verification, inspect diff, publish final evidence and keep this draft unmerged pending release review.
 
 # Alternate Advancement — released October 26, 2026
 

@@ -111,6 +111,21 @@ test("leaderboard HTTP metrics use guild-scoped totals and preserve access contr
       assert.equal((await roster("")).status, 401);
     });
 
+    await t.test("activity pulses require the matching authenticated student and reject client durations", async () => {
+      const activity = async (auth: string, target=equal.id, body: unknown={active:true,pulseId:id(80)}, method="POST") => {
+        const url=new URL(`https://qa.example/api/student/${target}/activity`);
+        return (await handleGame(new Request(url,{method,headers:{Cookie:auth,"Content-Type":"application/json"},...(method==="POST"?{body:JSON.stringify(body)}:{})}),url,repository,config,db as unknown as GameDatabase))!;
+      };
+      assert.equal((await activity("")).status,401);
+      assert.equal((await activity(teacherCookie)).status,403);
+      assert.equal((await activity(memberCookie,fresh.id)).status,403);
+      assert.equal((await activity(memberCookie,equal.id,{active:true,pulseId:id(80),seconds:9000})).status,400);
+      assert.equal((await activity(memberCookie,equal.id,{},"GET")).status,404);
+      assert.equal((await activity(memberCookie)).status,200);
+      assert.equal((await activity(memberCookie)).status,200);
+      assert.equal((await db.select().from(s.studentActivitySamples)).length,1);
+    });
+
     await t.test("two 8/10 fights yield 80%, never a sum of percentages", async () => {
       const rows = await entries();
       assert.equal(rows.find(r => r.studentId === equal.id)!.value, 80);

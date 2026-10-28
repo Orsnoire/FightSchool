@@ -1,3 +1,6 @@
+import { activityPulseInput } from "../../shared/contracts/player-activity";
+import { recordPlayerActivity } from "../services/player-activity";
+import { readJson } from "../http/json";
 import { and, eq } from "drizzle-orm";
 import { mountainDay, nextMountainMidnight, STAMINA_TIME_ZONE, xpMultiplier } from "../../shared/combat/stamina";
 import * as s from "../db/schema";
@@ -21,6 +24,11 @@ export async function handleStudentProgression(context: GameRouteContext): Promi
       .where(eq(s.students.id, id));
     if (!student)
       throw new ApiError("Student not found", 404);
+    if (tail === "activity" && method(request, "POST")) {
+      const pulse = activityPulseInput.parse(await readJson(request));
+      await recordPlayerActivity(db, id, pulse);
+      return json({ recorded: true });
+    }
     const advancement = await handleAdvancement(context, student, tail);
     if (advancement) return advancement;
     if (tail === "guilds")
