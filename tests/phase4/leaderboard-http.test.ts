@@ -88,6 +88,29 @@ test("leaderboard HTTP metrics use guild-scoped totals and preserve access contr
       return response.body as Array<{ studentId: string; value: number; accuracy?: number; totalDamageDealt: number; fightsCompleted: number; [key: string]: unknown }>;
     };
 
+    await t.test("teacher roster exposes all permanent job levels and lifetime AA only to the owner", async () => {
+      await db.insert(s.studentJobLevels).values({studentId: equal.id, jobClass: "wizard", level: 7});
+      const { eq } = await import("drizzle-orm");
+      await db.update(s.students).set({aaExperience: 615, aaPointsSpent: 5}).where(eq(s.students.id, equal.id));
+      const roster = async (auth: string) => {
+        const url = new URL(`https://qa.example/api/guilds/${guild.id}/roster`);
+        return (await handleGame(new Request(url, {headers: {Cookie: auth}}), url, repository, config, db as unknown as GameDatabase))!;
+      };
+      const response = await roster(teacherCookie);
+      assert.equal(response.status, 200);
+      const rows = await response.json() as Array<Record<string, any>>;
+      const row = rows.find(r => r.studentId === equal.id)!;
+      assert.equal(rows.length, 5);
+      assert.equal(Object.keys(row.jobLevels).length, 12);
+      assert.equal(row.jobLevels.wizard, 7);
+      assert.equal(row.jobLevels.bard, 0);
+      assert.equal(row.totalAAsEarned, 10);
+      assert.equal("passwordHash" in row, false);
+      assert.equal((await roster(memberCookie)).status, 403);
+      assert.equal((await roster(await cookie("teacher", id(99)))).status, 403);
+      assert.equal((await roster("")).status, 401);
+    });
+
     await t.test("two 8/10 fights yield 80%, never a sum of percentages", async () => {
       const rows = await entries();
       assert.equal(rows.find(r => r.studentId === equal.id)!.value, 80);

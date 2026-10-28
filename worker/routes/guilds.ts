@@ -1,3 +1,4 @@
+import { teacherGuildRoster } from "../reporting/guild-roster";
 import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 import { guildAssignmentInput, guildInput, guildMemberInput, guildPatch, guildProgressionInput, guildSettingsInput, guildSoloInput } from "../../shared/contracts/guilds";
@@ -76,6 +77,10 @@ export async function handleGuilds(context: GameRouteContext): Promise<Response 
         throw new ApiError("Archived guilds are read-only.", 409);
       const input = guildProgressionInput.parse(await readJson(request));
       return json(await updateGuildProgression(db, id, input));
+    }
+    if (tail === "roster" && method(request, "GET")) {
+      requireTeacher();
+      return json(await teacherGuildRoster(db, id));
     }
     if (tail === "members" && method(request, "GET")) {
       const members = await db

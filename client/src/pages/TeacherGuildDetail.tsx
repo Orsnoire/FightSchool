@@ -1,3 +1,6 @@
+import type { TeacherRosterMember } from "@shared/contracts/guild-roster";
+import { ALL_CHARACTER_CLASSES } from "@shared/schema";
+import { JOB_TREE } from "@shared/jobSystem";
 import { apiQueries } from "@/lib/apiQueries";
 import { TeacherGuildShop } from "@/components/TeacherGuildShop";
 import { GuildAdministration } from "@/components/GuildAdministration";
@@ -39,8 +42,8 @@ export default function TeacherGuildDetail() {
     enabled: !!guildId,
   });
 
-  const { data: members } = useQuery<GuildMember[]>({
-    queryKey: [`/api/guilds/${guildId}/members`],
+  const { data: members } = useQuery<TeacherRosterMember[]>({
+    queryKey: [`/api/guilds/${guildId}/roster`],
     enabled: !!guildId,
   });
 
@@ -144,7 +147,7 @@ export default function TeacherGuildDetail() {
       return await apiRequest("DELETE", `/api/guilds/${guildId}/members/${studentId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/guilds/${guildId}/members`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/guilds/${guildId}/roster`] });
       toast({ title: "Member removed", description: "Student removed from guild" });
     },
     onError: () => {
@@ -334,14 +337,18 @@ export default function TeacherGuildDetail() {
                   <div className="space-y-2">
                     {members.map((member) => (
                       <div
-                        key={member.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
+                        key={member.studentId}
+                        className="flex flex-wrap items-start justify-between gap-4 p-3 rounded-lg border"
                         data-testid={`member-${member.studentId}`}
                       >
                         <div>
                           <p className="font-medium" data-testid={`member-name-${member.studentId}`}>
-                            Student {member.studentId.slice(0, 8)}
+                            {member.nickname} · {member.studentId.slice(0, 8)}
                           </p>
+                          <p className="text-sm">Total AAs earned: {member.totalAAsEarned}</p>
+                          <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-1 my-2">
+                            {ALL_CHARACTER_CLASSES.map(job => <div key={job} className="flex justify-between gap-2 text-sm"><dt>{JOB_TREE[job].name}</dt><dd className="font-semibold tabular-nums">{member.jobLevels[job]}</dd></div>)}
+                          </dl>
                           <p className="text-sm text-muted-foreground">
                             Joined {new Date(member.joinedAt).toLocaleDateString()}
                           </p>

@@ -3,8 +3,8 @@
 - Owner requests every job and its permanent level for each player ID (0 when never played), lifetime AAs earned, rolling seven-day active game hours, and accuracy across the past 24 hours of fights.
 - Owner selected active game time across fights, exploration and menus; hidden/idle tabs do not count. Existing records do not measure this reliably, so new tracking will identify partial history rather than fabricate past hours.
 - Branch: `feature/teacher-guild-roster-stats`, based on main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`. This is a separate owner-requested feature, not C12 or Campaign #81. Both registered branches and production remain unchanged.
-- State: claim/planning only, implementation and tests pending. Publish draft PR before code work. Add owner-only roster projections and authenticated, bounded, deduplicated activity tracking; preserve progression and current live data.
-- Next: implement contracts, activity persistence and tracking, roster UI, migrated-SQL/security and UI coverage; run TypeScript/tests/builds and publish reviewable checkpoints. No merge or deployment is included in this implementation task.
+- State: INCOMPLETE implementation checkpoint in draft PR #87. Teacher-only roster now includes all 12 permanent job levels (missing progression records display 0), nickname/player ID and lifetime AA points including spent points. TypeScript and client/Worker builds pass; migrated SQL/HTTP roster tests cover zero defaults, levels, lifetime AA and owner/student/unauthenticated isolation. Weekly activity and daily accuracy remain unimplemented; no release is claimed.
+- Next: implement idle/visibility-aware active-time collection with server-bounded deduplication, additive migration and partial-history labeling; add rolling 24-hour question-weighted accuracy, then UI/browser and full regression verification. Current checkpoint has no migration and is not ready for merge or deployment.
 
 # Alternate Advancement — released October 26, 2026
 
