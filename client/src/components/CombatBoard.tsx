@@ -5,8 +5,7 @@ import { isHypnosis, statusSummary } from "@shared/combat/status-effects";
 import { activeEnemies, enemyImage, hpLabel } from "@shared/combat/encounters";
 import { memo, useState, useRef, type CSSProperties } from "react";
 import type { CombatPlayer, CombatSnapshot } from "@shared/combat/model";
-import { initialAppearance } from "@shared/avatar/appearance";
-import { StaticAvatar } from "./StaticAvatar";
+import { EquippedPlayerAvatar } from "./EquippedPlayerAvatar";
 import { Crown, Star, XCircle } from "lucide-react";
 import { BattleScenery } from "./BattleScenery";
 import "./battlefield.css";
@@ -61,7 +60,7 @@ export const CombatBoard = memo(function CombatBoard({ state: sourceState, selfI
       {p.health < p.maxHealth && <Bar current={p.health} max={p.maxHealth} label={`${p.nickname} HP`} />}
       <button type="button" className="battle-avatar" aria-label={canRevive ? `Resurrect ${p.nickname} with 1 HP` : `${p.nickname}${isSelf ? " (you)" : ""}, ${p.isDead ? "knocked out" : `${p.health}/${p.maxHealth} HP`}${queued ? ", joining next round" : ""}`}
         onClick={() => { setSelected(selected === p.studentId ? null : p.studentId); if (canRevive) onResurrect(p.studentId); }}>
-        <StaticAvatar appearance={p.appearance || initialAppearance(null, p.gender === "B" ? "human-female-v1" : "human-male-v1", () => .35)} job={p.characterClass} loadout={p.equipmentLoadout} visuals={p.equipmentVisuals} className="battle-paperdoll" />
+        <EquippedPlayerAvatar player={p} className="battle-paperdoll" />
       </button>
       <span className="battle-name">{p.nickname}{isSelf ? " · You" : ""}{queued ? " · Next round" : p.isDead ? " · KO" : ""}</span>
       {!!p.statuses?.length && <span className="rounded bg-black/80 px-1 text-[10px] text-amber-200" title={statusSummary(p).join("; ")} aria-label={`${p.nickname}: ${statusSummary(p).join("; ")}`}>{p.statuses.some(isHypnosis) ? `Hypnotized ${p.statuses.find(isHypnosis)?.correctAnswers || 0}/3` : p.statuses.some(x => x.type === "stun" || x.type === "paralysis") ? `Recovery ${p.recoveryCorrectAnswers || 0}/2` : "Status effect"}</span>}
@@ -69,7 +68,7 @@ export const CombatBoard = memo(function CombatBoard({ state: sourceState, selfI
     </div>;
   };
   return <section ref={board} aria-label="Battlefield" className={`battlefield ${all.length > 12 ? "is-crowded" : ""}`} data-testid="battlefield">
-    <BattleScenery />
+    <BattleScenery environment={state.battleEnvironment} />
     <div className="combat-effects-layer" aria-hidden="true">{active.map(cue=><BattleEffect key={cue.event.id} cue={cue} board={board} onComplete={completeCue}/>)}</div>
     <div className="battle-scene-label"><span>THE PARTY</span><span>{state.currentPhase === "waiting" ? "GATHER YOUR PARTY" : `ROUND ${state.round}`}</span></div>
     <section className="battle-enemy-summary" aria-label="Enemy overview">

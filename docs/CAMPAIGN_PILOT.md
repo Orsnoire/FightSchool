@@ -1,5 +1,27 @@
 # One-dungeon campaign pilot
 
+## October 28, 2026 owner addition — required beta question bank
+
+For the next beta build, each player must explicitly choose a nonempty fight
+assigned to the campaign's guild before exploring. This choice is per student,
+not a default inherited from campaign creation. The server validates assignment,
+archive status and guild ownership, returning only IDs/titles/counts as options.
+The saved choice does not reset the map, resources, equipment or unlocks.
+
+Each new encounter snapshots the selected fight's questions and uses its fight
+identity for sessions/reporting. Editing the source or removing its assignment
+does not change an already-active encounter; future play requires a valid bank.
+The campaign's existing template still supplies its fixed pilot balance and gates.
+This supersedes the earlier creation-time-only question-bank description below.
+
+The same workshop introduces original map/battle art, all 47 mountain/cave-wall
+border combinations, forests and the exact equipped battle avatar at map scale.
+[PR #90](https://github.com/Orsnoire/FightSchool/pull/90) is verified for review,
+unmerged and undeployed; migration 0025 is forward-only and has not run live.
+[Review and screenshots](reviews/2026-10-28-campaign-visual-pass.md).
+
+## Earlier pilot specification
+
 > October 27 compatibility reconciliation is **review-only and not deployed**.
 > The preview still runs the October 21 build. Before a future authorized release,
 > follow the [current release-safety procedure](reviews/2026-10-28-campaign-release-safety.md).

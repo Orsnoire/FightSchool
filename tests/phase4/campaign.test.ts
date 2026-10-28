@@ -63,6 +63,7 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     for (const [i, id] of [fight.teacherId, outsider].entries()) await db.insert(s.teachers).values({ id, firstName: 'Campaign', lastName: 'Test', email: `campaign${i}@example.invalid`, emailNormalized: `campaign${i}@example.invalid`, passwordHash: 'unused', guildCode: `CAMP0${i}`, billingAddress: 'Test', schoolDistrict: 'Test', school: 'Test', subject: 'Math', gradeLevel: '5' });
     await db.insert(s.fights).values(fight);
     const [guild] = await db.insert(s.guilds).values({ teacherId: fight.teacherId, name: 'Adventurers', code: 'CAMP01', unlockedTier: 1 }).returning();
+    await db.insert(s.guildFights).values({ guildId: guild.id, fightId: fight.id });
     await db.insert(s.students).values({ ...student(), gold: 1000 });
     await db.insert(s.studentJobLevels).values({ studentId: student().id, jobClass: 'warrior', level: 4 });
     await db.insert(s.studentJobLevels).values({ studentId: student().id, jobClass: 'herbalist', level: 2 });
@@ -127,6 +128,54 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
       if (r.status === 200) view = r.body;
       return r;
     };
+    assert.equal(view.questionBankRequired, true, 'old and new saves require an explicit student choice');
+    const beforeChoice = structuredClone(view.progress);
+    assert.equal((await action({ type: 'move', dx: 1, dy: 0 })).status, 403, 'direct navigation cannot skip entry');
+    const choices = await call(`${path}/question-banks`);
+    assert.deepEqual(choices.body.map((b: any) => b.fightId), [fight.id]);
+    assert.equal(JSON.stringify(choices.body).includes('correctAnswer'), false);
+    assert.equal((await action({ type:'choose_question_bank', fightId:crypto.randomUUID() })).status,403);
+    const chosenId = crypto.randomUUID();
+    await db.insert(s.fights).values({ ...fight, id:chosenId, title:'Student-selected bank', questions: fight.questions.map(q => ({ ...q, id:'selected-question' })) });
+    assert.equal((await action({ type:'choose_question_bank', fightId:chosenId })).status,403,'owned but unassigned fights are excluded');
+    await db.insert(s.guildFights).values({ guildId:guild.id, fightId:chosenId });
+    const selectionCommand = crypto.randomUUID(), selectionRevision = view.progressRevision;
+    assert.equal((await action({ type:'choose_question_bank', fightId:chosenId }, selectionRevision, selectionCommand)).status,200);
+    assert.equal(view.questionBankRequired,false); assert.equal(view.questionBank.fightId,chosenId);
+    const selectedProgress = structuredClone(view.progress); delete selectedProgress.questionBankFightId;
+    selectedProgress.lastCommandId = beforeChoice.lastCommandId;
+    assert.deepEqual(selectedProgress,beforeChoice,'choosing preserves map position, resources, unlocks and progress');
+    const selectedRevision = view.progressRevision;
+    assert.equal((await action({ type:'choose_question_bank', fightId:chosenId }, selectionRevision, selectionCommand)).status,200);
+    assert.equal(view.progressRevision,selectedRevision,'selection retries are idempotent');
+    await db.delete(s.guildFights).where(and(eq(s.guildFights.guildId,guild.id),eq(s.guildFights.fightId,chosenId)));
+    assert.equal((await call(path)).body.questionBankRequired,true);
+    assert.equal((await action({type:'move',dx:1,dy:0})).status,403,'unassignment revokes new exploration');
+    await db.insert(s.guildFights).values({guildId:guild.id,fightId:chosenId});
+    await db.update(s.fights).set({isArchived:true}).where(eq(s.fights.id,chosenId));
+    assert.equal((await action({type:'choose_question_bank',fightId:chosenId})).status,403,'archived fights cannot be selected');
+    await db.update(s.fights).set({isArchived:false}).where(eq(s.fights.id,chosenId));
+    view=(await call(path)).body;
+    const anotherGuildId = crypto.randomUUID();
+    await db.insert(s.guilds).values({id:anotherGuildId,teacherId:fight.teacherId,name:'Other assignments',code:'BANK02'});
+    const anotherFightId=crypto.randomUUID();
+    await db.insert(s.fights).values({...fight,id:anotherFightId,title:'Other guild only'});
+    await db.insert(s.guildFights).values({guildId:anotherGuildId,fightId:anotherFightId});
+    await db.insert(s.guildMemberships).values({guildId:anotherGuildId,studentId:student().id});
+    assert.equal((await action({type:'choose_question_bank',fightId:anotherFightId})).status,403,'membership in another guild does not authorize its bank here');
+    assert.ok(!(await call(`${path}/question-banks`)).body.some((b:any)=>b.fightId===anotherFightId));
+    const secondStudentId=crypto.randomUUID();
+    await db.insert(s.students).values({...student(),id:secondStudentId,nickname:'Second bank tester',nicknameNormalized:'second bank tester'});
+    await db.insert(s.guildMemberships).values({guildId:guild.id,studentId:secondStudentId});
+    const secondCookie=(await issueSession(repository,config,'student',secondStudentId)).split(';')[0];
+    const secondView=(await call(path,'GET',undefined,secondCookie)).body;
+    assert.equal(secondView.questionBankRequired,true,'another player must make their own choice');
+    assert.equal((await call(`${path}/actions`,'POST',{revision:secondView.progressRevision,commandId:crypto.randomUUID(),action:{type:'choose_question_bank',fightId:fight.id}},secondCookie)).status,200);
+    assert.equal((await call(path)).body.questionBank.fightId,chosenId,'choices are per player');
+    const [commitActor]=await db.select().from(s.students).where(eq(s.students.id,student().id));
+    const forgedCommit=await db.execute(sql`SELECT apply_campaign_action(${JSON.stringify({campaign:created.body.id,student:student().id,revision:view.progressRevision,campaignRevision:view.revision,loadoutRevision:commitActor.loadoutRevision,aaRevision:commitActor.aaRevision,command:crypto.randomUUID(),requireQuestionBank:true,state:{...view.progress,questionBankFightId:anotherFightId}})}::jsonb) AS result`);
+    assert.match((forgedCommit.rows[0].result as any).error,/assigned to this guild/,'commit boundary independently validates assignment');
+    assert.equal((await call(path)).body.progressRevision,view.progressRevision,'failed commit changes no progress');
     const move = async (dx: number, dy: number) => { const r = await action({ type: 'move', dx, dy }); assert.equal(r.status, 200, JSON.stringify(r.body)); };
     assert.equal((await action({ type: 'move', dx: 1, dy: 1 })).status, 400);
     const start = view.progress.position, startSteps = view.progress.steps;
@@ -245,6 +294,12 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     assert.equal((await action({ type: 'reset' })).status, 409, 'reset cannot bypass an active encounter');
     assert.equal((await action({ type: 'equip', slot: 'armor', itemId: null })).status, 409, 'equipment frozen during encounter');
     const [encounter] = await db.select().from(s.campaignEncounters).where(eq(s.campaignEncounters.sessionId, sessionId));
+    assert.equal(encounter.fightSnapshot.id, chosenId);
+    assert.ok(encounter.fightSnapshot.questions.every(q => q.id === 'selected-question'), 'encounters use the chosen bank, not the teacher campaign default');
+    assert.equal(encounter.fightSnapshot.campaignContext.environment, 'normal_cave');
+    const [admitted] = await db.select().from(s.liveCombatSessions).where(eq(s.liveCombatSessions.sessionId, sessionId));
+    assert.equal(admitted.fightId, chosenId, 'session and reporting identity match the chosen bank');
+    assert.equal((await action({ type:'choose_question_bank', fightId:fight.id })).status,409,'active encounters freeze selection');
     const [actor] = await db.select().from(s.students).where(eq(s.students.id, student().id));
     const profile = await combatProfile(db as any, actor, sessionId);
     let state = addStudent(initialCombatState(sessionId, encounter.fightSnapshot), actor, profile);
@@ -255,7 +310,7 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     // Classroom entry retains its ordinary full starting resources.
     const classroom = addStudent(initialCombatState('CLASS', fight), actor);
     assert.equal(classroom.players[actor.id].health, classroom.players[actor.id].maxHealth);
-    await db.update(s.fights).set({ questions: [] }).where(eq(s.fights.id, fight.id));
+    await db.update(s.fights).set({ questions: [] }).where(eq(s.fights.id, chosenId));
     assert.equal(encounter.fightSnapshot.questions.length, 1, 'authored edits cannot mutate active pool');
     // Exercise the actual result pipeline, twice. Settlement preserves reduced resources.
     state.currentPhase = 'game_over'; state.victory = true; state.completedRounds = 1;
@@ -279,6 +334,9 @@ test('campaign HTTP, atomic shops, gates, frozen combat handoff and retry-safe s
     view = (await call(path)).body;
     assert.equal(view.gold, settled.gold); assert.equal(view.progressRevision, settled.progressRevision);
     assert.deepEqual(view.layout, initialLayout);
+    assert.equal(view.questionBankRequired,true,'empty bank prevents new entry without changing the completed encounter');
+    await db.update(s.fights).set({ questions: fight.questions.map(q => ({ ...q,id:'selected-question' })) }).where(eq(s.fights.id,chosenId));
+    view=(await call(path)).body;
     // A subsequent failed/abandoned run returns at zero HP. Departed solo players
     // still settle resources, although they receive no victory reward.
     await db.update(s.campaignPlayers).set({ state: { ...view.progress, cleared: false } }).where(eq(s.campaignPlayers.campaignId, created.body.id));

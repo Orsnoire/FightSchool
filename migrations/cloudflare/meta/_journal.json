@@ -176,6 +176,13 @@
       "when": 1793199724504,
       "tag": "0024_campaign_aa_compatibility",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793219700000,
+      "tag": "0025_campaign_question_bank",
+      "breakpoints": true
     }
   ]
 }

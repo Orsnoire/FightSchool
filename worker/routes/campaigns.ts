@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { campaignAction, campaignCreate, campaignGateUpdate } from '../../shared/contracts/campaigns';
 import { generateCampaignLayout, validateCampaignLayout } from '../../shared/campaign/generation';
 import { applyCampaignAction, campaignShop } from '../campaign/actions';
+import { campaignQuestionBanks } from '../campaign/question-banks';
 import { campaignView, requireCampaign } from '../campaign/state';
 import * as s from '../db/schema';
 import { json } from '../http/game-response';
@@ -58,7 +59,7 @@ export async function handleCampaigns(ctx: GameRouteContext): Promise<Response |
       return json({ id }, 201);
     }
   }
-  const match = url.pathname.match(/^\/api\/campaigns\/([^/]+)(?:\/(actions|gates|shop))?$/);
+  const match = url.pathname.match(/^\/api\/campaigns\/([^/]+)(?:\/(actions|gates|shop|question-banks))?$/);
   if (!match) return null;
   const campaign = await requireCampaign(db, z.string().uuid().parse(match[1]), actor);
   requireBetaGuild(campaign.guildId);
@@ -74,6 +75,7 @@ export async function handleCampaigns(ctx: GameRouteContext): Promise<Response |
   if (teacher) throw new GameError('Enter the adventure as a student.', 403);
   const [student] = await db.select().from(s.students).where(eq(s.students.id, actor.actorId));
   if (!student?.characterClass) throw new GameError('Choose a character first.');
+  if (match[2] === 'question-banks' && request.method === 'GET') return json(await campaignQuestionBanks(db, campaign));
   if (match[2] === 'shop' && request.method === 'GET') return json(await campaignShop(db, campaign));
   if (match[2] === 'actions' && request.method === 'POST') return json(await applyCampaignAction(db, campaign, student, campaignAction.parse(await readJson(request))));
   if (!match[2] && request.method === 'GET') return json(await campaignView(db, campaign, student));

@@ -1,7 +1,7 @@
 .battle-shell { position:relative; min-height:100dvh; background:#172c29; color:#18362c; isolation:isolate; }
 .battle-shell:fullscreen { overflow:auto; width:100%; height:100%; }
 .battlefield { position:relative; min-height:540px; height:calc(100dvh - 190px); overflow:hidden; background:#8eab75; }
-.battle-scenery { position:absolute; inset:0; width:100%; height:100%; }
+.battle-scenery { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; image-rendering:pixelated; pointer-events:none; }
 .battle-scene-label { position:absolute; top:24px; left:4%; right:4%; display:flex; justify-content:space-between; color:#274b43; font-size:10px; letter-spacing:.22em; font-weight:800; opacity:.75; }
 .battle-player { position:absolute; width:var(--avatar-size); transform:translate(-50%,-100%); transition:left .6s ease,top .6s ease,width .6s ease; text-align:center; }
 .battle-avatar { display:block; position:relative; width:100%; height:var(--avatar-size); border-radius:35%; outline-offset:3px; }
@@ -84,3 +84,5 @@
 .battle-student .battle-wait { left:20px; top:156px; transform:none; max-width:min(360px,calc(48% - 32px)); flex-wrap:wrap; }
 .battle-student .battle-roster { top:102px; }
 @media(max-width:760px){.battle-student .battle-wait{left:12px;max-width:calc(49% - 24px);}}
+/* Readable on both bright grassland and the darker cavern artwork. */
+.battle-student-top{color:#fff2cf;background:#142b25ee;border:1px solid #81947a;border-radius:4px;padding:7px 10px}.battle-scene-label{color:#f7e6be;opacity:1}.battle-scene-label>span{background:#142b25e8;border-radius:3px;padding:4px 7px}.battle-enemy-heading{color:#f7e6be;background:#142b25e8;border-radius:3px;padding:4px 7px;display:table}

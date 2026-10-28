@@ -1,3 +1,5 @@
+import { stableVisualKey } from '../../shared/avatar/render-budget.ts';
+import { avatarEquipment } from '../../shared/avatar/equipment-visuals.ts';
 import { CONSUMABLE_IDS, CONSUMABLES, consumeItem } from '../../shared/campaign/consumables.ts';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
@@ -32,10 +34,12 @@ try {
     let loadout = getStartingEquipment('herbalist');
     const equipment = () => ({ loadout, items: ownedEquipment(view.inventory).map(id => EQUIPMENT_ITEMS[id]).filter(i => i && !equipmentUnavailable(view.progress.job, i, 2, EQUIPMENT_ITEMS[loadout.weapon], EQUIPMENT_ITEMS[loadout.offhand], player.advancement?.ranks)).map(i => ({ ...i, stats: i.stats || {} })) });
     let moveDelay = 0, rejectReset = false, betaEnabled = true;
+    let bankOptions = [];
+    view.questionBankRequired = true; view.questionBank = null;
     const creations = [], commands = [];
     const stock = [{ id: 't1_fighter_sword', name: "Fighter's Sword", price: 150, shop: 'weapons', slot: 'weapon' }, { id: 't1_fighter_armor', name: "Fighter's Cuirass", price: 150, shop: 'armor', slot: 'armor' }];
     stock.push(...CONSUMABLE_IDS.map(id => ({ id, ...CONSUMABLES[id], shop: 'items', slot: 'consumable' })));
-    const currentPlayer = () => ({ ...player, health: view.progress.health, consumables: view.progress.consumables, itemProtections: view.progress.itemProtections });
+    const currentPlayer = () => ({ ...player, equipmentLoadout: loadout, health: view.progress.health, consumables: view.progress.consumables, itemProtections: view.progress.itemProtections });
     await page.addInitScript(({ teacherId, studentId }) => { localStorage.setItem('teacherId', teacherId); localStorage.setItem('studentId', studentId); }, { teacherId: fight.teacherId, studentId: student().id });
     await page.route('**/api/**', async route => {
       const request = route.request(), path = new URL(request.url()).pathname;
@@ -46,10 +50,12 @@ try {
       else if (path === '/api/campaigns' && request.method() === 'POST') { creations.push(request.postDataJSON()); result = { id }; }
       else if (path === '/api/campaigns') result = [view];
       else if (path.endsWith('/gates')) { view.gates = view.gates.map(g => ({ ...g, open: request.postDataJSON().gates.find(v => v.id === g.id).open })); view.revision++; result = { ok: true }; }
+      else if (path.endsWith('/question-banks')) result = bankOptions;
       else if (path.endsWith('/shop')) result = stock;
       else if (path.endsWith('/actions')) {
         const input = request.postDataJSON(), a = input.action; commands.push(input);
         assert.equal(input.revision, view.progressRevision);
+        if (a.type === 'choose_question_bank') { view.progress.questionBankFightId = a.fightId; view.questionBankRequired = false; view.questionBank = bankOptions.find(b => b.fightId === a.fightId); }
         if (a.type === 'reset' && rejectReset) { rejectReset = false; await route.fulfill({ status: 409, json: { error: 'Adventure changed. Refresh and try again.' } }); return; }
         if (a.type === 'reset') { view.progress = resetCampaignProgress(view.progress, view.layout); view.eligibleQuestionCount = 0; }
         if (a.type === 'move_path') { if (moveDelay) await new Promise(resolve => setTimeout(resolve, moveDelay)); view.progress = campaignPath(view, view.progress, a.steps).progress; }
@@ -94,22 +100,40 @@ try {
     await page.getByRole('button', { name: 'Close gate', exact: true }).waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: `${output}/${viewport.width}-campaign-teacher.png`, fullPage: true });
+    const openMenu = async () => { if (!await page.getByRole('dialog').count()) await page.getByRole('button', { name: 'Menu', exact: true }).click(); await page.getByRole('heading', { name: 'Adventure menu' }).waitFor(); };
+    const closeMenu = async () => { if (await page.getByRole('dialog').count()) { await page.keyboard.press('Escape'); await page.getByRole('dialog').waitFor({ state: 'hidden' }); } };
     await page.goto(`${origin}/student/campaign/${id}`);
-    await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
+    await page.getByText('No assigned fights with questions are available.', { exact:false }).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Move north',exact:true}).count(),0,'map stays gated without a question bank');
+    bankOptions = [{ fightId: fight.id, title: 'Fractions', questionCount: 10 }];
+    await page.reload();
+    await page.getByLabel('Assigned fight',{exact:true}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Enter campaign beta',exact:true}).isDisabled(),true,'selection is explicit');
+    await page.screenshot({path:`${output}/${viewport.width}-campaign-entry.png`,fullPage:true});
+    await page.getByLabel('Assigned fight',{exact:true}).selectOption(fight.id);
+    await page.getByRole('button',{name:'Enter campaign beta',exact:true}).click();
+    await page.locator('.campaign-map-avatar canvas[data-avatar-ready="true"]').waitFor();
+    assert.equal(view.progress.questionBankFightId,fight.id);
+    assert.ok((await page.locator('.campaign-map-viewport').boundingBox()).height >= 360);
+    await openMenu();
+    const menuPosition = { ...view.progress.position };
+    await page.keyboard.press('ArrowRight');
+    assert.deepEqual(view.progress.position, menuPosition, 'menu captures movement keys');
     await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: /Healing Potion/ }).click()]);
     assert.equal(view.progress.healingPotions, 4); assert.ok(view.progress.health > 1);
     const healedHP = view.progress.health;
-    await page.reload(); await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
+    await page.reload(); await openMenu();
     assert.equal(view.progress.health, healedHP);
-    const step = async direction => { const previous = view.progressRevision; await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: `Move ${direction}`, exact: true }).click()]); await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor(); assert.equal(view.progressRevision, previous + 1); };
+    const step = async direction => { await closeMenu(); const previous = view.progressRevision; await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: `Move ${direction}`, exact: true }).click()]); await page.locator('.campaign-map-panel [role="status"]').filter({ hasText: 'Progress saved' }).waitFor(); assert.equal(view.progressRevision, previous + 1); };
     // Hold the first response: movement must paint before acknowledgement and queue the next input.
+    await closeMenu();
     moveDelay = 700;
     const before = { ...view.progress.position };
     await page.getByRole('button', { name: 'Move east', exact: true }).click();
     await page.getByRole('button', { name: `You, ${before.x + 1}, ${before.y}`, exact: true }).waitFor({ timeout: 500 });
     assert.deepEqual(view.progress.position, before, 'marker moves before delayed server response');
     await page.getByRole('button', { name: 'Move west', exact: true }).click();
-    await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor();
+    await page.locator('.campaign-map-panel [role="status"]').filter({ hasText: 'Progress saved' }).waitFor();
     assert.deepEqual(view.progress.position, before); moveDelay = 0;
     await step('south'); await step('west');
     await page.getByRole('button', { name: 'Collect key', exact: true }).click();
@@ -130,13 +154,15 @@ try {
     await page.getByRole('button', { name: 'Buy', exact: true }).click();
     await page.getByRole('button', { name: 'Owned', exact: true }).waitFor();
     assert.equal(view.gold, 200); assert.equal(view.inventory.length, 2);
+    await openMenu();
     await page.getByRole('button', { name: 'Equipment', exact: true }).click();
     const armor = page.getByLabel('Adventure Chest', { exact: true });
     assert.ok((await armor.locator('option').allTextContents()).some(text => text.includes("Fighter's Cuirass")));
     assert.equal((await page.getByLabel('Adventure Weapon', { exact: true }).locator('option').allTextContents()).some(text => text.includes('Staff')), false);
     await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), armor.selectOption('t1_fighter_armor')]);
-    await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor();
+    await page.locator('.campaign-map-panel [role="status"]').filter({ hasText: 'Progress saved' }).waitFor();
     assert.equal(loadout.armor, 't1_fighter_armor');
+    await page.waitForFunction(expected => document.querySelector('.campaign-map-avatar')?.getAttribute('data-equipment') === expected, stableVisualKey([avatarEquipment(view.progress.job, loadout), player.equipmentVisuals]));
     await page.screenshot({ path: `${output}/${viewport.width}-campaign-equipment.png`, fullPage: true });
 
     await step('north');
@@ -144,11 +170,11 @@ try {
     assert.equal(await page.getByRole('button', { name: /^Buy / }).count(), 8);
     for (let i = 0; i < 2; i++) {
       await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: 'Buy Potion', exact: true }).click()]);
-      await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor();
+      await page.locator('.campaign-map-panel [role="status"]').filter({ hasText: 'Progress saved' }).waitFor();
     }
     assert.equal(view.progress.consumables.potion, 2); assert.equal(view.gold, 180);
     view.progress.health = 1;
-    await page.reload(); await page.getByTestId('consumable-bag').locator('summary').click();
+    await page.reload(); await openMenu(); await page.getByTestId('consumable-bag').locator('summary').click();
     await page.getByText('Potion ×2', { exact: true }).waitFor();
     await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: 'Use Potion', exact: true }).click()]);
     await page.getByText('Potion ×1', { exact: true }).waitFor();
@@ -157,6 +183,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     view.progress = { ...view.progress, zone: 'dungeon', position: layout.objective };
     await page.reload(); await page.getByRole('button', { name: 'Challenge guardian' }).waitFor();
+    await page.locator('.campaign-map-avatar canvas[data-avatar-ready="true"]').waitFor();
     await page.screenshot({ path: `${output}/${viewport.width}-campaign-cave.png`, fullPage: true });
     await page.getByRole('button', { name: 'Challenge guardian' }).click();
     await page.waitForURL('**/student/combat');
@@ -197,8 +224,8 @@ try {
     assert.equal(view.progress.cleared, false); assert.equal(view.progress.health, view.progress.maxHealth);
     assert.equal(view.gold, preservedGold); assert.deepEqual(view.progress.consumables, preservedBag);
     await page.getByRole('button', { name: 'Enter adventure' }).click();
-    await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
-    await page.getByText('Ready — visit its keeper (!)', { exact: false }).waitFor();
+    await openMenu();
+    await page.getByText('Ready — visit its key keeper', { exact: false }).waitFor();
     assert.deepEqual(view.progress.position, layout.overworld.spawn); assert.deepEqual(view.progress.claimedUnlocks, []);
     assert.ok(commands.every(c => c.commandId && !('health' in c.action)));
     // The server supplies a tier-1 AA projection, including licensed equipment.
@@ -212,14 +239,15 @@ try {
       crossClass: selections.slice(0, 2 + projection.advancement.extraSlots), ...projection,
     }).players[student().id];
     view.progress = normalizeResources({ ...view.progress, health: 1, mp: 1, consumables: { potion: 2 } }, player);
-    await page.reload(); await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
+    await page.reload(); await openMenu();
     await page.locator('.campaign-resources').getByText(`1/${player.maxHealth}`, { exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: /^Mend ·/ }).count(), 0, 'tier-suppressed borrowed heal is absent');
+    await openMenu();
     await page.getByRole('button', { name: 'Equipment', exact: true }).click();
     const weapon = page.getByLabel('Adventure Weapon', { exact: true });
     assert.ok((await weapon.locator('option').allTextContents()).some(text => text.includes('Staff')));
     await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), weapon.selectOption('basic_staff')]);
-    await page.getByRole('status').filter({ hasText: 'Progress saved' }).waitFor();
+    await page.locator('.campaign-map-panel [role="status"]').filter({ hasText: 'Progress saved' }).waitFor();
     assert.deepEqual(commands.at(-1).action, { type: 'equip', slot: 'weapon', itemId: 'basic_staff' });
     assert.equal(view.progress.health, 1); assert.equal(view.progress.mp, 1);
     await page.getByTestId('consumable-bag').locator('summary').click();
@@ -227,7 +255,7 @@ try {
     await Promise.all([page.waitForResponse(r => r.url().endsWith('/actions')), page.getByRole('button', { name: 'Use Potion', exact: true }).click()]);
     await page.getByText('Potion ×1', { exact: true }).waitFor();
     assert.equal(view.progress.health, 7);
-    await page.reload(); await page.getByRole('heading', { name: 'Adventure menu' }).waitFor();
+    await page.reload(); await openMenu();
     await page.locator('.campaign-resources').getByText(`7/${player.maxHealth}`, { exact: true }).waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: `${output}/${viewport.width}-campaign-aa.png`, fullPage: true });

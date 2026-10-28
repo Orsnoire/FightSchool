@@ -1,11 +1,34 @@
 # Campaign pilot playtest
 
-> October 27 compatibility reconciliation is **review-only and not deployed**.
-> The preview still runs the October 21 build. Before a future authorized release,
-> follow the [current release-safety procedure](reviews/2026-10-28-campaign-release-safety.md).
-> Legacy preview migration numbers below describe the historical release; canonical
-> campaign numbers are now 0020–0024 after production AA 0018 and roster 0019. Do not apply the
-> standard migrator to the legacy preview before its guarded bridge. No reset is needed.
+> The October 28 consolidation and compatibility upgrade are complete. See
+> [ACTIVE_WORK](ACTIVE_WORK.md) for exact live runtime and acceptance status.
+> The graphics/question-bank changes in [PR #90](https://github.com/Orsnoire/FightSchool/pull/90)
+> are verified for review and **not deployed**. Their forward migration 0025 has
+> not run on a provider. Existing playtest progress remains intact.
+
+## Reviewing the next beta build (PR #90)
+
+1. The teacher assigns at least one nonempty fight to the campaign's guild. A
+   teacher-owned but unassigned fight is not an entry option.
+2. The student opens the campaign and explicitly selects an **Assigned fight**,
+   then chooses **Enter campaign beta**. There is no automatic default. This
+   fight supplies that player's encounter questions, independently of other players.
+3. Walk using the arrows/WASD or adjacent map cells. The equipped battle avatar
+   appears at map scale. Use **World overview** to see the region, or follow the
+   adventurer. The inn/shops/cave use illustrated landmarks and name labels.
+4. Open **Menu** for healing, Items, Equipment and unlock quests. Movement keys
+   are captured while a menu/dialog is open. Nearby services appear below the map.
+5. Verify that choosing the bank, changing equipment and refreshing preserve the
+   saved map, position, resources and unlocks. New cave encounters show cave
+   scenery; overworld encounters show the meadow.
+6. Remove/archive/empty the chosen fight after starting an encounter: that fight
+   must finish with its frozen questions. Subsequent exploration requires another
+   valid selection, without resetting progress. If no options are available,
+   assign a fight to the guild and refresh the entry page.
+
+The next build retains the mechanics below. Letter markers in these historical
+steps correspond to the named illustrated landmarks in PR #90. See the
+[review screenshots and verification](reviews/2026-10-28-campaign-visual-pass.md).
 
 
 Preview: https://questacademy-campaign-preview.coxsonator.workers.dev/

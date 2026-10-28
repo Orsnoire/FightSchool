@@ -142,6 +142,8 @@ export interface CombatEvent {
   message: string;
 }
 export interface CombatSnapshot {
+  /** Presentation only; absent in older saved rooms. */
+  battleEnvironment?: "grassland" | "normal_cave";
   playback?: import("./presentation").PlaybackBatch;
   /** Server-only durable reporting outbox, removed after confirmed projection. */
   pendingAttempts?: import("./attempts").QuestionAttempt[];

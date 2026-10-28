@@ -8,7 +8,8 @@ const read = path => readFileSync(new URL(path,root),'utf8');
 const quote = value => `'${String(value).replaceAll("'","''")}'`;
 
 export function productionCampaignMigrationSQL() {
-  const journal=JSON.parse(read('meta/_journal.json')).entries;
+  // This reviewed historical upgrader ends at 0024. Later migrations run normally.
+  const journal=JSON.parse(read('meta/_journal.json')).entries.slice(0,25);
   const contract=JSON.parse(read('production-campaign-contract.json'));
   if (journal.length !== 25) throw Error('Review the production campaign upgrader before adding migrations');
   const checkSchema=stage=>`IF (${campaignSchemaFingerprintSQL}) IS DISTINCT FROM ${quote(JSON.stringify(contract[stage]))}::jsonb THEN

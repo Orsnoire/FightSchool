@@ -1,3 +1,4 @@
+import { campaignQuestionBank } from './question-banks';
 import { CONSUMABLES, CONSUMABLE_IDS, consumeItem } from '../../shared/campaign/consumables';
 import { and, eq, sql } from 'drizzle-orm';
 import type { z } from 'zod';
@@ -33,6 +34,8 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
   let { player, unlockedJobs } = context;
   let next = normalizeResources(row.state, player);
   const action = input.action;
+  const questionBank = action.type === 'reset' ? null : await campaignQuestionBank(db, campaign, action.type === 'choose_question_bank' ? action.fightId : next.questionBankFightId);
+  if (action.type !== 'reset' && !questionBank) throw new GameError('Choose a fight assigned to this guild before entering the campaign beta.', 403);
   const service = (kind: string) => {
     if (next.zone !== 'overworld' || !campaign.layout.npcs.some(n => n.service === kind && near(n, next.position)))
       throw new GameError('Walk to this service in town first.');
@@ -43,6 +46,7 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
   let purchase: { id: string; price: number; tier: number } | undefined;
   let itemPurchase: { id: string; price: number; quantity: number } | undefined;
   switch (action.type) {
+    case 'choose_question_bank': next.questionBankFightId = questionBank!.id; break;
     case 'reset': next = resetCampaignProgress(next, campaign.layout); break;
     case 'move':
     case 'move_path': {
@@ -129,21 +133,22 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
     const id = `CP${crypto.randomUUID().replaceAll('-', '').toUpperCase()}`;
     // The pilot has one unlocked quiz. Freeze a small sample per encounter; the
     // combat engine cycles it until the encounter ends, never adds locked content.
-    const pool = campaign.fightSnapshot.questions;
+    const pool = questionBank!.questions;
     const count = Math.min(objective ? 5 : 2, pool.length);
     const offset = next.steps % pool.length;
-    const fight: s.FightRecord = { ...campaign.fightSnapshot, encounterTier: 1,
+    const fight: s.FightRecord = { ...campaign.fightSnapshot, id: questionBank!.id, title: questionBank!.title, encounterTier: 1,
+      randomizeQuestions: questionBank!.randomizeQuestions, shuffleOptions: questionBank!.shuffleOptions,
       questions: Array.from({ length: count }, (_, i) => pool[(offset + i) % pool.length]),
       enemies: [{ id: 'campaign-slime', name: objective ? 'Cave Guardian' : 'Wild Slime', image: '/enemies/slime-v2.png', enemyType: 'slime', quantity: 1, role: objective ? 'boss' : 'normal', difficultyMultiplier: objective ? 1.5 : 1 }],
       enemyDisplayMode: 'consecutive', lootTable: [],
-      campaignContext: { campaignId: campaign.id, studentId: student.id, objective, fixedTier: 1 } };
+      campaignContext: { campaignId: campaign.id, studentId: student.id, objective, fixedTier: 1, environment: next.zone === 'dungeon' ? 'normal_cave' : 'grassland' } };
     Object.assign(player, { health: next.health, mp: next.mp, healingPotions: next.healingPotions, shieldPotions: next.shieldPotions, consumables: next.consumables, itemProtections: next.itemProtections, isDead: false });
     encounter = { id, fight, player };
     next = { ...next, activeSessionId: id };
   }
   const result = await db.execute(sql`SELECT apply_campaign_action(${JSON.stringify({ campaign: campaign.id, student: student.id,
     revision: input.revision, campaignRevision: campaign.revision, loadoutRevision: student.loadoutRevision, aaRevision: student.aaRevision,
-    command: input.commandId, state: next, ...(purchase ? { purchase } : {}), ...(itemPurchase ? { itemPurchase } : {}), ...(equipment ? { equipment } : {}), ...(encounter ? { encounter } : {}) })}::jsonb) AS result`);
+    command: input.commandId, state: next, requireQuestionBank: action.type !== 'reset', ...(purchase ? { purchase } : {}), ...(itemPurchase ? { itemPurchase } : {}), ...(equipment ? { equipment } : {}), ...(encounter ? { encounter } : {}) })}::jsonb) AS result`);
   const outcome = result.rows[0].result as { error?: string };
   if (outcome.error) throw new GameError(outcome.error, 409);
   const [fresh] = await db.select().from(s.students).where(eq(s.students.id, student.id));

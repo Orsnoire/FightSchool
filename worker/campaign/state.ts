@@ -1,3 +1,4 @@
+import { campaignQuestionBanks } from './question-banks';
 import { and, eq, inArray } from 'drizzle-orm';
 import { restoreLoadout } from '../../shared/job-loadouts';
 import { aaTier } from '../../shared/aa';
@@ -66,7 +67,8 @@ export async function campaignView(db: GameDatabase, campaign: CampaignRecord, s
   const progress = normalizeResources(record.state, player);
   Object.assign(player, { health: progress.health, mp: progress.mp, healingPotions: progress.healingPotions, shieldPotions: progress.shieldPotions, consumables: progress.consumables, itemProtections: progress.itemProtections, isDead: progress.health <= 0 });
   const [guild] = await db.select().from(s.guilds).where(eq(s.guilds.id, campaign.guildId));
-  return { id: campaign.id, name: campaign.name, dungeonName: campaign.dungeonName, theme: 'normal_cave', guildId: campaign.guildId, guildName: guild.name,
+  const questionBank = progress.questionBankFightId ? (await campaignQuestionBanks(db, campaign, progress.questionBankFightId))[0] || null : null;
+  return { questionBank, questionBankRequired: !questionBank, id: campaign.id, name: campaign.name, dungeonName: campaign.dungeonName, theme: 'normal_cave', guildId: campaign.guildId, guildName: guild.name,
     gates: campaign.gates, revision: campaign.revision, layout: campaign.layout, progress, progressRevision: record.revision,
     equipment: { loadout: snapshotEquipmentLoadout(loadout), items: owned.flatMap(id => {
       const item = catalog[id];
@@ -74,7 +76,7 @@ export async function campaignView(db: GameDatabase, campaign: CampaignRecord, s
       return [{ id: item.id, name: item.name, slot: item.slot, tier: item.tier ?? 1, stats: item.stats }];
     }) },
     player, unlockedJobs, gold: student.gold, inventory: safeStudent(student).inventory,
-    healingActions: healingActions(player), eligibleQuestionCount: dungeonAccessible(campaign.gates, progress) ? campaign.fightSnapshot.questions.length : 0 };
+    healingActions: healingActions(player), eligibleQuestionCount: dungeonAccessible(campaign.gates, progress) ? questionBank?.questionCount || 0 : 0 };
 }
 
 export async function requireCampaign(db: GameDatabase, id: string, actor: { actorId: string; actorType: string }) {

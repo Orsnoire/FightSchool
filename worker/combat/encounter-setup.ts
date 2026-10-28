@@ -34,6 +34,7 @@ export function initialCombatState(
   for (const c of sessionId)
     seed = Math.imul(seed ^ c.charCodeAt(0), 16777619) >>> 0;
   return {
+    ...(fight.campaignContext?.environment ? { battleEnvironment: fight.campaignContext.environment } : {}),
     enemyDisplayMode: fight.enemyDisplayMode as "simultaneous" | "consecutive",
     schemaVersion: 2,
     revision: 0,

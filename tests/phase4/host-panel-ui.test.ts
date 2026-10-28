@@ -33,7 +33,7 @@ test("host panel keeps controls with the code and updates attendance, eligibilit
   const root = createRoot(document.getElementById("root")!);
   try {
     const outfile = join(dir, "host.mjs");
-    await build({ entryPoints: ["client/src/pages/HostFight.tsx"], outfile, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", alias: { "@assets": join(process.cwd(), "attached_assets") }, loader: { ".png": "empty", ".css": "empty" },
+    await build({ entryPoints: ["client/src/pages/HostFight.tsx"], outfile, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", alias: { "@assets": join(process.cwd(), "attached_assets") }, loader: { ".png": "empty", ".webp": "empty", ".css": "empty" },
       plugins: [{ name: "styles", setup(build) {
         build.onResolve({ filter: /\.css$/ }, () => ({ path: "styles", namespace: "test" }));
         build.onLoad({ filter: /.*/, namespace: "test" }, () => ({ contents: "export {}", loader: "js" }));

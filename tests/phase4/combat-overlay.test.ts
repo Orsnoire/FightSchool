@@ -34,7 +34,7 @@ test("student selection uses focused overlays while waiting and resolution revea
   try {
     // Bundle the real page, including MathEditor. Stub only MathLive registration
     // (its browser rendering needs a real browser) and image/CSS imports in Node.
-    await build({ entryPoints: ["client/src/pages/Combat.tsx"], outfile, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", alias: { "@assets": join(process.cwd(), "attached_assets") }, loader: { ".css": "empty", ".png": "empty" },
+    await build({ entryPoints: ["client/src/pages/Combat.tsx"], outfile, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", alias: { "@assets": join(process.cwd(), "attached_assets") }, loader: { ".css": "empty", ".png": "empty", ".webp": "empty" },
       plugins: [{ name: "browser-assets", setup(build) {
         build.onResolve({ filter: /\.css$/ }, () => ({ path: "styles", namespace: "test" }));
         build.onResolve({ filter: /^mathlive$/ }, () => ({ path: "mathlive", namespace: "test" }));

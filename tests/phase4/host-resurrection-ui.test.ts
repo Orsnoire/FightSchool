@@ -18,7 +18,7 @@ test("only host boards expose clickable and keyboard-accessible resurrection on 
   const root = createRoot(document.getElementById("root")!);
   try {
     const outfile = join(dir, "board.mjs");
-    await build({ entryPoints: ["client/src/components/CombatBoard.tsx"], outfile, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", alias: { "@assets": join(process.cwd(), "attached_assets") }, loader: { ".png": "empty" } });
+    await build({ entryPoints: ["client/src/components/CombatBoard.tsx"], outfile, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", alias: { "@assets": join(process.cwd(), "attached_assets") }, loader: { ".png": "empty", ".webp": "empty" } });
     const { CombatBoard } = await import(pathToFileURL(outfile).href);
     const state = started();
     state.players[student().id].isDead = true;
