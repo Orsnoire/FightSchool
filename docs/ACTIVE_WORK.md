@@ -1,3 +1,9 @@
+# PR #90 deployed — release follow-up active
+
+Production is reopened at `d44995a109e8ca5549e29ba63c616b68d84e2ac3`, with migration 0025, every existing table and saved room preserved. Beta stays closed. Canonical acceptance [40769862238](https://github.com/Orsnoire/FightSchool/actions/runs/40769862238) is running. Continue `release/pr90-checkpoint` / [PR #91](https://github.com/Orsnoire/FightSchool/pull/91) for the current-ledger preflight and final evidence. No further app deployment or migration is needed. C12 and preview remain unchanged.
+
+## Earlier release checkpoint
+
 # PR #90 release — authorized and merged October 28, 2026
 
 - Owner explicitly authorized merge, migration and deployment. PR #90 merged at `d44995a109e8ca5549e29ba63c616b68d84e2ac3`; its tree equals reviewed head `7688151` exactly. All 408 application tests, 11 deployment tests and four Chromium acceptance jobs passed on that head.
