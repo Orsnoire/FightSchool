@@ -1,3 +1,12 @@
+# Live acceptance transport — PR #89 active October 28, 2026
+
+- Resume `fix/live-acceptance-transport` / [draft PR #89](https://github.com/Orsnoire/FightSchool/pull/89). PR #88 and both live migrations are complete; production remains reviewed runtime `b33bebe` with beta closed and all saved records/rooms preserved.
+- Canonical acceptance attempt 4 failed awaiting abilities. Provider alarms continued, but no subsequent action command was observed. Root cause is not yet established. A local diagnostic could not open WebSocket because direct DNS failed; it is not runtime evidence.
+- Added bounded failure-only transport diagnostics to the original live fixture: send callbacks, buffered amount, ready state, phase/revision, close codes and socket errors. No identities, cookies, answers, command fields or complete snapshots are included. Fixture, assertions and deadlines remain unchanged; no runtime change.
+- Validation: JavaScript syntax and diff checks pass. Production read-only post-upgrade preflight 40739839531 passes. Next: publish this checkpoint and run the instrumented full canonical suite from this branch; diagnose any concrete failure before changing runtime or retrying. [Scope/evidence](releases/2026-10-28-live-transport.md). C12 stays untouched.
+
+## Completed migration checkpoint
+
 # Campaign release — upgraded and reopened October 28, 2026
 
 - Owner-authorized [PR #81](https://github.com/Orsnoire/FightSchool/pull/81) and safeguard [PR #88](https://github.com/Orsnoire/FightSchool/pull/88) are merged. PR #88 merge/runtime `b33bebee309c6828c1e3f44fc70ded7de6a43e85` has the exact reviewed tree from head `93458a8`. Final [CI 40735200143](https://github.com/Orsnoire/FightSchool/actions/runs/40735200143) and all four [browser jobs 40735200368](https://github.com/Orsnoire/FightSchool/actions/runs/40735200368) pass: 405 application tests, eleven deployment tests, TypeScript and both builds.

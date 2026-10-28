@@ -6,4 +6,4 @@ Canonical acceptance 40715425162 attempt 4 timed out awaiting the abilities phas
 
 Registered branch: `fix/live-acceptance-transport`. Scope: capture sanitized socket send/receive/close/phase diagnostics with the exact existing fixture and deadlines, identify the observed failure, implement only a supported fix, and rerun the full original classroom acceptance. Preserve authentication, progress, migration history, maintenance windows and all storage. Do not weaken acceptance thresholds or enable beta during diagnosis. C12 remains untouched.
 
-State: CLAIMED; no runtime change. Next: publish the draft PR and diagnostic checkpoint, then run it against the canonical hostname.
+State: DIAGNOSTIC CHECKPOINT on draft PR #89; no runtime change. Bounded failure-only socket diagnostics record sends/callbacks, ready state, buffered bytes, received phase/revision, close codes and error presence. They omit identities, cookies, answers, command fields and full snapshots. All fixtures, assertions and deadlines remain unchanged. Syntax/diff checks pass. Production post-upgrade preflight 40739839531 passes. Next: run the full canonical suite from this branch.

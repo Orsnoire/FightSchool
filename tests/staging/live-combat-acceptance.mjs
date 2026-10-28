@@ -8,6 +8,7 @@ const origin = (
 const suffix = Date.now().toString(36) + randomUUID().slice(0, 6),
   password = `Acceptance-${randomUUID()}!`;
 const sockets = [];
+const actors = [];
 async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
   const response = await fetch(origin + path, {
     method,
@@ -29,14 +30,28 @@ async function api(path, { method = "GET", cookie, body, status = 200 } = {}) {
 class Actor {
   constructor(cookie, sessionId) {
     this.messages = [];
+    this.label = `actor-${actors.length + 1}`;
+    this.trace = [];
+    actors.push(this);
     this.socket = new WebSocket(
       origin.replace(/^http/, "ws") + `/ws?sessionId=${sessionId}`,
       { headers: { Cookie: cookie }, origin },
     );
     sockets.push(this.socket);
-    this.socket.on("message", (b) =>
-      this.messages.push(JSON.parse(b.toString())),
-    );
+    this.socket.on("message", (b) => {
+      const message = JSON.parse(b.toString());
+      this.messages.push(message);
+      this.record({ received: message.type, phase: message.state?.currentPhase,
+        round: message.state?.round, revision: message.state?.revision });
+    });
+    this.socket.on("close", code => this.record({ closed: code }));
+    this.socket.on("error", () => this.record({ socketError: true }));
+  }
+  record(event) {
+    // Diagnostics contain transport/phase metadata only, never identities,
+    // cookies, answers, command fields or full player snapshots.
+    this.trace.push({ at: new Date().toISOString(), ...event });
+    this.trace = this.trace.slice(-100);
   }
   async open() {
     await new Promise((resolve, reject) => {
@@ -45,7 +60,10 @@ class Actor {
     });
   }
   send(type, fields = {}, commandId = randomUUID()) {
-    this.socket.send(JSON.stringify({ type, commandId, ...fields }));
+    this.record({ sending: type, readyState: this.socket.readyState,
+      bufferedAmount: this.socket.bufferedAmount });
+    this.socket.send(JSON.stringify({ type, commandId, ...fields }), error =>
+      this.record({ sent: type, failed: !!error, bufferedAmount: this.socket.bufferedAmount }));
     return commandId;
   }
   async wait(predicate, timeout = 30000) {
@@ -463,6 +481,10 @@ try {
     "PASS: live damage, atomic action/ready, Fireball MP deductions, wrong answers, enemy AI, cycling, reconnect deadlines, stale/retried commands, durable XP, guilds, quests, shop, reward claims, solo hosting, history, and owner isolation",
   );
 } catch (error) {
+  console.error(JSON.stringify({ transportDiagnostics: actors.map(actor => ({
+    actor: actor.label, readyState: actor.socket.readyState,
+    bufferedAmount: actor.socket.bufferedAmount, trace: actor.trace,
+  })) }));
   console.error(error);
   process.exitCode = 1;
 } finally {
