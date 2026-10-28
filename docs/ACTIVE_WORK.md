@@ -1,3 +1,9 @@
+# Teacher guild roster statistics — active October 28, 2026
+
+- Owner requested per-player job levels (including 0 for unplayed jobs), lifetime AAs earned, seven-day active game hours and 24-hour fight accuracy.
+- Resume `feature/teacher-guild-roster-stats`, [draft PR #87](https://github.com/Orsnoire/FightSchool/pull/87), and its branch checkpoint. Initial claim `1f2562d1de307b1c869cdf1848d08fde75e246f1`; implementation/verification pending.
+- Separate from Campaign #81 and C12 #75. No merge, deployment or live-data reset is part of this task. The active branch and PR carry the latest verification state.
+
 # Alternate Advancement — released October 26, 2026
 
 - Owner authorized review, merge and production deployment. [PR #86](https://github.com/Orsnoire/FightSchool/pull/86) merged at `207b7bbdf9c0e8a1b0d6c8b169a2d452ead7ac6f`, with identical tree `fe41563ecf019cb17ceceb8e47112a353e5fd9ee` to reviewed head `56c6a1f7d741215fceef73629f93e151a0f0720d`. Focused release review found no blocking issues.
