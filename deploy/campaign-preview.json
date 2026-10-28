@@ -1,8 +1,8 @@
 {
   "mode": "preflight",
-  "sourceSha": "811ff45bf30d1c07d6eb2b158282f3722a0b9831",
-  "expectedPreviousSha": "6de42632f4953e408b566bf60978cfe482a11f10",
+  "sourceSha": "c8ac5ec75e0fb7a24193c787a29c1fdefc673dd9",
+  "expectedPreviousSha": "c8ac5ec75e0fb7a24193c787a29c1fdefc673dd9",
   "migration0020Applied": true,
   "migration0021Applied": true,
-  "campaignAACompatibilityApplied": false
+  "campaignAACompatibilityApplied": true
 }

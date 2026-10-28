@@ -3,7 +3,7 @@ name: Deploy Campaign Preview
 on:
   workflow_dispatch:
   push:
-    branches: [feature/campaign-pilot]
+    branches: [release/campaign-safe-upgrade]
     paths: [deploy/campaign-preview.json]
 
 permissions:
@@ -35,19 +35,19 @@ jobs:
           appendFileSync(process.env.GITHUB_OUTPUT, `mode=${request.mode}\nsource=${request.sourceSha}\n`);
           JS
       - uses: actions/checkout@v7
-        if: steps.request.outputs.mode == 'deploy'
+        if: (steps.request.outputs.mode == 'deploy' || steps.request.outputs.mode == 'pause')
         with:
           ref: ${{ steps.request.outputs.source }}
           path: runtime
           fetch-depth: 0
       - name: Reject runtimes predating AA compatibility
-        if: steps.request.outputs.mode == 'deploy'
+        if: (steps.request.outputs.mode == 'deploy' || steps.request.outputs.mode == 'pause')
         working-directory: runtime
         run: |
           test "$(git rev-parse HEAD)" = '${{ steps.request.outputs.source }}'
           git merge-base --is-ancestor bcf2c4c251c24f2d5a4cbcc5a62aac97149bb3af HEAD
       - name: Verify and build the exact requested source
-        if: steps.request.outputs.mode == 'deploy'
+        if: (steps.request.outputs.mode == 'deploy' || steps.request.outputs.mode == 'pause')
         working-directory: runtime
         run: |
           npm ci
@@ -55,7 +55,7 @@ jobs:
           npm test
           npm run build:cloudflare
       - name: Verify campaign UI before preview deployment
-        if: steps.request.outputs.mode == 'deploy'
+        if: (steps.request.outputs.mode == 'deploy' || steps.request.outputs.mode == 'pause')
         working-directory: runtime
         shell: bash
         run: |
@@ -72,7 +72,7 @@ jobs:
           node --import tsx tests/browser/campaign.mjs
           node --import tsx tests/browser/combat-ui.mjs
       - name: Preserve campaign UI evidence
-        if: always() && steps.request.outputs.mode == 'deploy'
+        if: always() && (steps.request.outputs.mode == 'deploy' || steps.request.outputs.mode == 'pause')
         uses: actions/upload-artifact@v6
         with:
           name: campaign-preview-browser
@@ -80,7 +80,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - uses: actions/upload-artifact@v6
-        if: steps.request.outputs.mode == 'deploy'
+        if: (steps.request.outputs.mode == 'deploy' || steps.request.outputs.mode == 'pause')
         with:
           name: campaign-preview-build
           path: runtime/dist
@@ -99,7 +99,7 @@ jobs:
         with:
           node-version: 22
       - uses: actions/download-artifact@v6
-        if: needs.prepare.outputs.mode == 'deploy'
+        if: (needs.prepare.outputs.mode == 'deploy' || needs.prepare.outputs.mode == 'pause')
         with:
           name: campaign-preview-build
           path: runtime/dist
@@ -108,3 +108,11 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Preserve release verification receipt
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: campaign-release-receipt
+          path: artifacts/release
+          if-no-files-found: ignore
+          retention-days: 30

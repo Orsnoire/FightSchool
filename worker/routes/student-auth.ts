@@ -130,10 +130,12 @@ export async function handleStudentAuth(
       if (!current) return json({ error: "Student not found" }, 404);
       if (current.characterClass && current.gender !== input.gender)
         return json({ error: 'Use Advancement to change your character appearance for 5 AA.' }, 409);
-      const profile = await repository.getCombatProfile?.(current);
+      const levels = repository.getStudentJobLevels
+        ? await repository.getStudentJobLevels(current.id)
+        : (await repository.getCombatProfile?.(current))?.levels || {};
       if (
         !getUnlockedJobs(
-          (profile?.levels || {}) as Record<CharacterClass, number>, current.grantedJobs || [],
+          levels as Record<CharacterClass, number>, current.grantedJobs || [],
         ).includes(input.characterClass)
       )
         return json({ error: "Job is not unlocked" }, 403);

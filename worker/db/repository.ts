@@ -28,6 +28,7 @@ import {
   guildFights,
   liveCombatSessions,
   students,
+  studentJobLevels,
   teachers,
   type FightRecord,
   type NewFightRecord,
@@ -42,6 +43,7 @@ export interface IdentityRepository extends SessionRepository {
   isActiveGuildMember?(studentId: string, guildId: string, teacherId: string): Promise<boolean>;
   validateLoot?(teacherId: string, itemIds: string[]): Promise<boolean>;
   getCombatProfile?(student: StudentRecord, sessionId?: string): Promise<CombatProfile>;
+  getStudentJobLevels?(studentId: string): Promise<Record<string, number>>;
   recordSessionReporting?(state: CombatSnapshot, fight: FightRecord): Promise<void>;
   recordQuestEvidence?(state: CombatSnapshot, fight: FightRecord): Promise<void>;
   persistResults?(
@@ -98,6 +100,11 @@ export function createIdentityRepository(
   const database = gameDatabase(databaseUrl);
 
   return {
+    async getStudentJobLevels(studentId) {
+      const rows = await database.select({ job: studentJobLevels.jobClass, level: studentJobLevels.level })
+        .from(studentJobLevels).where(eq(studentJobLevels.studentId, studentId));
+      return Object.fromEntries(rows.map(row => [row.job, row.level]));
+    },
     isActiveGuildMember: (studentId, guildId, teacherId) => isActiveGuildMember(database, studentId, guildId, teacherId),
     async validateLoot(teacherId, itemIds) {
       itemIds = itemIds.filter(id => !Object.hasOwn(EQUIPMENT_ITEMS,id));
