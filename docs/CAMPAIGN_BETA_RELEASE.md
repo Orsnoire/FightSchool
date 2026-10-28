@@ -1,5 +1,7 @@
 # Campaign beta: one development line
 
+**Release state October 28, 2026:** campaign consolidation and both protected upgrades are complete. Production `b33bebe` passes canonical acceptance 40740564094 with original fixtures/deadlines; preview saves and all production records/rooms are preserved. PRs #81, #88 and diagnostic-only #89 are merged. The remaining handoff is selection of a dedicated production beta guild, scoped access verification and authenticated owner guardian/stamina acceptance. No guild is selected and beta remains closed. [Release evidence](releases/2026-10-28-pr88.md).
+
 The owner selected **main site, gated beta** on October 28, 2026. The goal is to
 finish PR #81, merge its reviewed code into main when authorized, then do campaign
 fixes on short branches from main. Do not maintain a second long-lived campaign
@@ -37,9 +39,9 @@ implementation. C12's separate work is unchanged by this package.
    all four Chromium jobs, including desktop/phone beta-report UI. Review
    [release safety](reviews/2026-10-28-campaign-release-safety.md). Resolve any
    GitHub mergeability disagreement from fresh refs without overwriting work.
-   Main's roster release is deployed but its classroom acceptance is blocked
-   by timeouts/Cloudflare 1102; resolve and pass that original operational gate
-   before enabling the main-site beta. See [current baseline evidence](releases/2026-10-28-pr87.md).
+   The original classroom operational gate has now passed in run 40740564094;
+   retain that gate for future runtime releases. Earlier failures remain in the
+   [historical roster record](releases/2026-10-28-pr87.md).
 2. Obtain authorization for the concrete merge, **canonical additive database
    migration**, production deployment and limited beta acceptance. No production
    release is implied by a preview attestation. Select the dedicated beta guild
