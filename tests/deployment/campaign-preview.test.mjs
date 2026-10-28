@@ -24,6 +24,16 @@ test('preflight uses only GET and does not require a build or database credentia
     fetcher: async (url, options) => { calls.push([url, options.method]); return Response.json({ success: true, result: settings() }); } });
   assert.deepEqual(calls, [[`https://api.cloudflare.com/client/v4/accounts/${'c'.repeat(32)}/workers/scripts/${WORKER}/settings`, 'GET']]);
 });
+test('a delayed pause can be verified with GET only and no redeployment', async () => {
+  const s=settings();s.bindings.find(b=>b.name==='RELEASE_SHA').text=request.sourceSha;
+  s.bindings.push({name:'RELEASE_WINDOWS',type:'plain_text',text:JSON.stringify(windows)},{name:'RELEASE_PROBE',type:'plain_text',text:release.probeToken});
+  const receipt=await run({request:{...request,...release,mode:'verify'},accountId:'c'.repeat(32),token:'test',runtimeDir:'/nonexistent',log(){},
+    fetcher:async(url,options)=>{assert.ok(!options.method||options.method==='GET');
+      if(url.endsWith('/settings'))return Response.json({success:true,result:s});
+      if(url.includes('/api/health/release?'))return Response.json({source:request.sourceSha,valid:true,paused:true,fingerprint:release.databaseFingerprint,ledger:[],windows,rooms:[]});
+      return Response.json({status:'maintenance'},{status:503});}});
+  assert.equal(receipt.ledgerDigest,release.ledgerDigest);
+});
 test('wrong environment, storage, source and secret configuration stop before any write', async () => {
   for (const change of [
     s => { s.bindings.find(b => b.name === 'ENVIRONMENT').text = 'staging'; },

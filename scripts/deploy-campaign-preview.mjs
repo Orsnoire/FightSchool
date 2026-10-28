@@ -16,7 +16,7 @@ const expectedTypes = {
 };
 function requireThat(condition, message) { if (!condition) throw new Error(message); }
 export function validateRequest(request) {
-  requireThat(['preflight', 'pause', 'deploy'].includes(request.mode), 'Invalid preview release mode');
+  requireThat(['preflight', 'pause', 'verify', 'deploy'].includes(request.mode), 'Invalid preview release mode');
   requireThat(shaPattern.test(request.sourceSha) && shaPattern.test(request.expectedPreviousSha), 'Release SHAs must be full commit hashes');
   requireThat(request.mode !== 'deploy' || request.migration0020Applied === true, 'Preview migration 0020 must be verified before deployment');
   requireThat(request.mode !== 'deploy' || request.migration0021Applied === true, 'Preview migration 0021 must be verified before deployment');
@@ -160,10 +160,24 @@ export async function run({ request, accountId, token, runtimeDir, fetcher = fet
   }
   const settings = await api(`${scriptPath}/settings`);
   const bindings = validateSettings(settings, request);
+  async function verifyPublicPause() {
+    for (const path of ['/api/health/ready', '/api/student/login', '/ws?sessionId=release-probe']) {
+      const response = await fetcher(`${ORIGIN}${path}`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
+      requireThat(response.status === 503 && (await response.json()).status === 'maintenance', 'Public maintenance gate failed');
+    }
+  }
   log(`Preview preflight passed; current release ${bindings.RELEASE_SHA.text}.`);
   if (request.mode === 'preflight') {
     log('Read-only preflight complete. No database or Worker changes made.');
     return;
+  }
+  if (request.mode === 'verify') {
+    const windows = JSON.parse(bindings.RELEASE_WINDOWS?.text ?? '[]');
+    requireThat(windows.at(-1)?.id === request.pauseId && windows.at(-1)?.resumedAt === null, 'Expected active pause missing');
+    const receipt = await verifyRelease(request, fetcher, true, windows);
+    await verifyPublicPause();
+    log(`Read-only pause verification succeeded: ${JSON.stringify(receipt)}`);
+    return receipt;
   }
   // Resume is forbidden until the already paused runtime observes the new ledger.
   const beforeWindows = JSON.parse(bindings.RELEASE_WINDOWS?.text ?? '[]');
@@ -204,10 +218,7 @@ export async function run({ request, accountId, token, runtimeDir, fetcher = fet
   const windows = JSON.parse(nextBindings[0].text);
   const receipt = await verifyRelease(request, fetcher, request.mode === 'pause', windows);
   if (request.mode === 'pause') {
-    for (const path of ['/api/health/ready', '/api/student/login', '/ws?sessionId=release-probe']) {
-      const response = await fetcher(`${ORIGIN}${path}`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
-      requireThat(response.status === 503 && (await response.json()).status === 'maintenance', 'Public maintenance gate failed');
-    }
+    await verifyPublicPause();
     log(`Preview paused; source ${receipt.source}; database ${receipt.fingerprint}; ledger ${receipt.ledgerDigest}; ${Object.keys(receipt.roomDigests).length} rooms verified.`);
     return receipt;
   }

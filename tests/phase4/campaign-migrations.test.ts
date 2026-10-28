@@ -7,6 +7,7 @@ import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
 import { campaignPreviewBridgeSQL, legacyPreviewLedger, canonicalCampaignLedger } from '../../scripts/campaign-preview-migration-bridge.mjs';
 import { campaignSchemaFingerprintSQL } from '../../scripts/campaign-preview-schema.mjs';
+import { productionCampaignMigrationSQL } from '../../scripts/production-campaign-migration.mjs';
 import * as s from '../../worker/db/schema';
 import { generateCampaignLayout } from '../../shared/campaign/generation';
 import { initialCombatState, addStudent } from '../../worker/combat/engine';
@@ -39,6 +40,24 @@ async function migrateHistory(pg: PGlite, preview: boolean, c12 = false, withRos
 
 const ledger = async (pg: PGlite) => (await pg.query('SELECT * FROM drizzle.__drizzle_migrations ORDER BY id')).rows;
 const snapshot = async (pg: PGlite, table: string) => (await pg.query(`SELECT to_jsonb(t) AS row FROM ${table} t ORDER BY to_jsonb(t)::text`)).rows;
+
+test('guarded production upgrade preserves populated records, is atomic and rejects preview history', async () => {
+  const pg=new PGlite();
+  try {
+    await migrateHistory(pg,false,false,true);await seed(pg,false);
+    const tables=['students','aa_purchases','student_job_levels','combat_results','student_activity_samples'];
+    const before=await Promise.all(tables.map(t=>snapshot(pg,t))), oldLedger=await ledger(pg);
+    const sql=productionCampaignMigrationSQL();
+    await assert.rejects(pg.exec(sql.replace('END $production_campaign$;', "RAISE EXCEPTION 'late failure'; END $production_campaign$;")),/late failure/);
+    await pg.exec('ROLLBACK');assert.deepEqual(await Promise.all(tables.map(t=>snapshot(pg,t))),before);assert.deepEqual(await ledger(pg),oldLedger);
+    await pg.exec(sql);const after=await Promise.all(tables.map(t=>snapshot(pg,t)));
+    for(const item of after[0] as any[]){assert.equal(item.row.stamina_recovery,0);delete item.row.stamina_recovery;}
+    for(const item of after[3] as any[]){assert.equal(item.row.stamina_restored,0);delete item.row.stamina_restored;}
+    assert.deepEqual(after,before);assert.deepEqual((await ledger(pg)).slice(0,20),oldLedger);assert.equal((await ledger(pg)).length,25);
+    const once=await Promise.all(tables.map(t=>snapshot(pg,t)));await pg.exec(sql);assert.deepEqual(await Promise.all(tables.map(t=>snapshot(pg,t))),once);
+  } finally {await pg.close();}
+  const preview=new PGlite();try {await migrateHistory(preview,true);await assert.rejects(preview.exec(productionCampaignMigrationSQL()),/canonical 20-row/);await preview.exec('ROLLBACK');assert.equal((await ledger(preview)).length,22);}finally{await preview.close();}
+});
 
 async function seed(pg: PGlite, preview: boolean) {
   const db = drizzle(pg, { schema: s });

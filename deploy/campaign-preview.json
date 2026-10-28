@@ -1,5 +1,5 @@
 {
-  "mode": "pause",
+  "mode": "verify",
   "sourceSha": "c8ac5ec75e0fb7a24193c787a29c1fdefc673dd9",
   "expectedPreviousSha": "6de42632f4953e408b566bf60978cfe482a11f10",
   "migration0020Applied": true,
