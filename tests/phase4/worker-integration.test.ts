@@ -15,6 +15,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
   const pg = new PGlite();
   const previousFetch = neonConfig.fetchFunction;
   const databaseErrors: string[] = [];
+  const queries: string[] = [];
   let subrequests = 0;
   let beforeLoadoutWrite: (() => Promise<void>) | undefined;
   try {
@@ -48,6 +49,7 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
         throw new Error("Worker external subrequest budget exceeded");
       }
       const { query, params } = JSON.parse(init!.body as string);
+      queries.push(query);
       try {
         if (beforeLoadoutWrite && query.startsWith('update "students"') && query.includes('"loadout_revision"')) {
           const hook = beforeLoadoutWrite;
@@ -137,7 +139,11 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     await api("/api/teacher/login", "POST", undefined, { email: "teacher@example.invalid", password: "wrong" }, 401);
     const student = await api("/api/student/login", "POST", undefined, { nickname: "Test student", password });
     assert.equal(student.payload.passwordHash, undefined);
+    const beforeCharacter = queries.length;
     await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "wizard", gender: "A" });
+    const characterQueries = queries.slice(beforeCharacter);
+    assert.ok(characterQueries.some(query => query.includes('select "job_class", "level" from "student_job_levels"')));
+    assert.ok(characterQueries.every(query => !query.includes('student_avatars')), 'job authorization does not construct an avatar/combat profile');
     await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "paladin", gender: "A" }, 403);
     // Appearance is independently persisted, own-student only, and never rerolled by reads or job changes.
     const avatarPath = `/api/student/${student.payload.id}/avatar`;

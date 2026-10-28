@@ -1,4 +1,5 @@
 import { studentCanAccessSession } from "../services/combat-access";
+import { maintenanceResponse, releaseState, resumeRoomClocks, type ReleaseEnv } from '../release/maintenance';
 import type { StoredRoom } from "./room-state";
 import { recoverRoom } from "./room-recovery";
 import { saveRoom, completeRoom, roomAlarmAt } from "./room-persistence";
@@ -20,7 +21,7 @@ import { initialCombatState, startQuestion, scaleEncounter } from "./encounter-s
 import { advancePhase } from "./phases";
 import { resurrectPlayer, eliminateEnemy, nextWave, endFight } from "./host-controls";
 import { deterministicShuffle } from "./random";
-interface CombatEnv {
+interface CombatEnv extends ReleaseEnv {
   DATABASE_URL: string;
   SESSION_COOKIE_NAME?: string;
   SESSION_SECRET?: string;
@@ -101,6 +102,10 @@ export class CombatSessionObject {
     try { room=await this.state.storage.get<StoredRoom>(ROOM_KEY); }
     finally { if(costs){costs.storageReads++;costs.storageReadMs+=performance.now()-readStarted;} }
     if (!room) return room;
+    if (resumeRoomClocks(room, releaseState(this.env).windows)) {
+      await this.checkpoint(room);
+      await this.syncAlarm(room);
+    }
     return recoverRoom(room, {
       repository: this.repository, save: room => this.save(room), syncAlarm: room => this.syncAlarm(room),
     });
@@ -172,6 +177,16 @@ export class CombatSessionObject {
   }
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === '/release-probe' && this.env.RELEASE_PROBE &&
+      request.headers.get('x-questacademy-release-probe') === this.env.RELEASE_PROBE) {
+      return this.serialized(async () => {
+        const room = await this.state.storage.get<StoredRoom>(ROOM_KEY);
+        const bytes = new TextEncoder().encode(JSON.stringify(room ?? null));
+        const digest = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(x => x.toString(16).padStart(2, '0')).join('');
+        return Response.json({ ...releaseState(this.env), source: this.env.RELEASE_SHA, digest });
+      });
+    }
+    if (releaseState(this.env).paused) return maintenanceResponse();
     if (
       url.pathname === "/ready" &&
       request.headers.get("x-questacademy-internal") === "1"
@@ -290,6 +305,11 @@ export class CombatSessionObject {
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    if (releaseState(this.env).paused) {
+      this.send(ws, { type: 'error', message: 'QuestAcademy is being updated. Please reconnect shortly.' });
+      try { ws.close(1012, 'Service update'); } catch {}
+      return;
+    }
     const queuedAt=performance.now();
     const requestId=crypto.randomUUID();
     return this.serialized(async () => {
@@ -654,6 +674,7 @@ export class CombatSessionObject {
     await this.advance(room);return true;
   }
   async webSocketClose(ws:WebSocket) {
+    if (releaseState(this.env).paused) return;
     return this.serialized(async()=>{
       const room=await this.room();if(!room?.playbackGate)return;
       const a=ws.deserializeAttachment() as SocketAttachment,key=rendererKey(a.role,a.actorId);
@@ -674,6 +695,10 @@ export class CombatSessionObject {
     else if(!await this.finishPlayback(room)) await this.publish(room);
   }
   async alarm() {
+    if (releaseState(this.env).paused) {
+      await this.state.storage.setAlarm(Date.now() + 30000);
+      return;
+    }
     return this.serialized(async () => {
       const room = await this.room();
       if (!room) return;

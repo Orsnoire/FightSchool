@@ -7,6 +7,7 @@ export interface StoredRoom {
   fight: FightRecord;
   snapshot: CombatSnapshot;
   receipts: string[];
+  releaseWindows?: string[];
   results?: unknown[];
   resultsPersisted?: boolean;
   playbackGate?: PlaybackGate;

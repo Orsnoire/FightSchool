@@ -14,8 +14,10 @@ import { CombatSessionObject } from "./combat/session-object.ts";
 
 import { isAllowedOrigin } from "./auth/origin.ts";
 import { campaignBetaPolicy } from './campaign/beta';
+import { maintenanceResponse, releaseState, type ReleaseEnv } from './release/maintenance';
+import { releaseProbe } from './release/probe';
 
-interface Env {
+interface Env extends ReleaseEnv {
   OBJECTS?: R2Bucket;
   ASSETS: Fetcher;
   COMBAT_SESSIONS: DurableObjectNamespace;
@@ -161,7 +163,8 @@ async function handleWebSocket(
 
 async function dispatch(request: Request, env: Env, currentRequestId:string):Promise<Response> {
     const url = new URL(request.url);
-
+    if (url.pathname === '/api/health/release') return releaseProbe(request, env);
+    if (releaseState(env).paused) return maintenanceResponse();
 
     if (url.pathname === "/api/health/live") {
       return json(
