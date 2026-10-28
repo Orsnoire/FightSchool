@@ -16,7 +16,7 @@ test("battlefield uses waiting/estimated/actual HP in visible text, tooltips and
   const dir = await mkdtemp(join(process.cwd(), ".hp-preview-ui-"));
   try {
     const outfile = join(dir, "CombatBoard.mjs");
-    await build({ entryPoints: ["client/src/components/CombatBoard.tsx"], outfile, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", loader: { ".css": "empty", ".png": "empty" } });
+    await build({ entryPoints: ["client/src/components/CombatBoard.tsx"], outfile, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", loader: { ".css": "empty", ".png": "empty", ".webp": "empty" } });
     const { CombatBoard } = await import(pathToFileURL(outfile).href);
     const render = (state: ReturnType<typeof initialCombatState>) => JSDOM.fragment(renderToStaticMarkup(createElement(CombatBoard, { state })));
     const empty = initialCombatState("ABC234", fight);

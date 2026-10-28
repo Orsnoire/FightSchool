@@ -10,6 +10,7 @@ import './campaign.css';
 import { BetaNotice } from '@/features/campaign/BetaNotice';
 import { ConsumableBag } from '@/components/ConsumableBag';
 import { bagWeight } from '@shared/campaign/consumables';
+import { QuestionBankEntry } from '@/features/campaign/QuestionBankEntry';
 import { CampaignMap } from '@/features/campaign/CampaignMap';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 type ShopItem = { id: string; name: string; slot: string; price: number; shop: string; description?: string; weight?: number };
@@ -42,7 +43,7 @@ export default function CampaignAdventure() {
   const move = (dx: number, dy: number) => controller.move({ dx, dy });
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
-      if (menuOpen || document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
+      if (menuOpen || view?.questionBankRequired || document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
       if ((e.target as HTMLElement).closest('input,select,textarea,button,a') || e.altKey || e.ctrlKey || e.metaKey) return;
       const moves: Record<string, [number, number]> = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
       if (moves[e.key] && !view?.progress.activeSessionId) { e.preventDefault(); move(moves[e.key][0], moves[e.key][1]); }
@@ -55,10 +56,12 @@ export default function CampaignAdventure() {
   const disabled = busy || recovering || !!p.activeSessionId;
   const movementDisabled = (busy && !moving) || recovering || !!p.activeSessionId;
   const open = dungeonAccessible(view.gates, p);
+  if (view.questionBankRequired) return <main className="campaign-shell campaign-adventure"><Link href="/student/campaigns">← Campaigns</Link><BetaNotice /><header className="campaign-heading"><span className="campaign-eyebrow">{view.guildName} · Campaign Beta</span><h1>{view.name}</h1></header>{(error || query.error) && <p role="alert" className="campaign-error">{error || query.error?.message}</p>}<QuestionBankEntry view={view} busy={busy || recovering} choose={fightId => act({ type: 'choose_question_bank', fightId })} resume={() => resume(p.activeSessionId!)} /></main>;
   return <main className="campaign-shell campaign-adventure">
     <Link href="/student/campaigns" className="campaign-back">← Campaigns</Link>
     <BetaNotice />
     <header className="campaign-heading"><span className="campaign-eyebrow">{view.guildName} · Solo adventure</span><h1>{view.name}</h1><p>{town ? 'Hearthlight & the wilds' : view.dungeonName} · {p.cleared ? 'Dungeon cleared' : open ? 'The cave is open' : 'Find the key keepers in town'}</p></header>
+    <p className="campaign-note">Question bank: {view.questionBank?.title || 'Campaign questions'}</p>
     <div className="campaign-resources" aria-live="polite"><strong className="capitalize">{p.job}</strong><span>HP <b>{p.health}/{p.maxHealth}</b></span><span>MP <b>{p.mp}/{p.maxMp}</b></span><span>Healing charges <b>{p.healingPotions}/5</b></span><span>Bag weight <b>{bagWeight(p.consumables)}</b></span><span>Gold <b>{view.gold}</b></span><Button variant="outline" onClick={() => setMenuOpen(true)}>Menu</Button></div>
     {(error || query.error) && <p role="alert" className="campaign-error">{error || query.error?.message}</p>}
     {p.activeSessionId && <div className="campaign-panel campaign-warning" role="status"><h2>Encounter in progress</h2><p>Finish or leave this encounter to resume exploring. Your saved HP will return with you.</p><Button onClick={() => resume(p.activeSessionId!)}>Resume encounter</Button><Button variant="outline" onClick={() => query.refetch()}>Refresh results</Button></div>}

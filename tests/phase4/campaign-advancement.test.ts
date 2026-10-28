@@ -29,6 +29,7 @@ test('campaign AA cap, licensed equipment, five saved slots, resources, frozen e
     await db.insert(s.teachers).values({ id: fight.teacherId, firstName: 'Campaign', lastName: 'AA', email: 'campaign-aa@example.invalid', emailNormalized: 'campaign-aa@example.invalid', passwordHash: 'unused', guildCode: 'CAMPAA', billingAddress: 'Test', schoolDistrict: 'Test', school: 'Test', subject: 'Math', gradeLevel: '5' });
     await db.insert(s.fights).values({ ...fight, encounterTier: 4 });
     const [guild] = await db.insert(s.guilds).values({ teacherId: fight.teacherId, name: 'Advanced guild', code: 'CAA001', limitTier: 4 }).returning();
+    await db.insert(s.guildFights).values({ guildId:guild.id,fightId:fight.id });
     const choices = ['fireball_crossclass', 'healing_potion_crossclass', 'hex_crossclass', 'mend_crossclass', 'fortify_crossclass'];
     const highGearId = crypto.randomUUID();
     await db.insert(s.equipmentItems).values({ id: highGearId, teacherId: fight.teacherId, name: 'High tier test armor', itemType: 'armor', quality: 'common', tier: 4, slot: 'armor', armorCategory: 'heavy_armor', stats: { def: 99 } });
@@ -58,6 +59,7 @@ test('campaign AA cap, licensed equipment, five saved slots, resources, frozen e
       const result = await applyCampaignAction(db, campaign, record, { action, revision: view.progressRevision, commandId: crypto.randomUUID() });
       view = result; return result;
     };
+    await action({ type:'choose_question_bank',fightId:fight.id });
     // Persist wounded resources; neither equipment, AA purchases nor class changes refill them.
     await db.update(s.campaignPlayers).set({ state: { ...view.progress, health: 2, mp: 1, consumables: { potion: 2 } } });
     view = await path();

@@ -84,3 +84,5 @@
 .battle-student .battle-wait { left:20px; top:156px; transform:none; max-width:min(360px,calc(48% - 32px)); flex-wrap:wrap; }
 .battle-student .battle-roster { top:102px; }
 @media(max-width:760px){.battle-student .battle-wait{left:12px;max-width:calc(49% - 24px);}}
+/* Readable on both bright grassland and the darker cavern artwork. */
+.battle-student-top{color:#fff2cf;background:#142b25ee;border:1px solid #81947a;border-radius:4px;padding:7px 10px}.battle-scene-label{color:#f7e6be;opacity:1}.battle-scene-label>span{background:#142b25e8;border-radius:3px;padding:4px 7px}.battle-enemy-heading{color:#f7e6be;background:#142b25e8;border-radius:3px;padding:4px 7px;display:table}

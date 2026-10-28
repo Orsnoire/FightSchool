@@ -12,6 +12,7 @@ export const campaignGateUpdate = z.object({ revision: z.number().int().nonnegat
 export const campaignAction = z.object({
   commandId: z.string().uuid(), revision: z.number().int().nonnegative(),
   action: z.discriminatedUnion('type', [
+    z.object({ type: z.literal('choose_question_bank'), fightId: z.string().uuid() }).strict(),
     z.object({ type: z.literal('move'), dx: z.number().int().min(-1).max(1), dy: z.number().int().min(-1).max(1) }).strict(),
     z.object({ type: z.literal('move_path'), steps: z.array(z.object({ dx: z.number().int().min(-1).max(1), dy: z.number().int().min(-1).max(1) }).strict()).min(1).max(MAX_CAMPAIGN_PATH) }).strict(),
     z.object({ type: z.literal('equip'), slot: z.enum(EQUIPMENT_SLOTS), itemId: z.string().min(1).max(100).nullable() }).strict(),

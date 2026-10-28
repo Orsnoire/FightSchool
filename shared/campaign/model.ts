@@ -14,6 +14,8 @@ export interface CampaignLayout {
   entrance: CampaignPoint; dungeonExit: CampaignPoint; objective: CampaignPoint; npcs: CampaignNpc[];
 }
 export interface CampaignProgress {
+  /** Per-student choice; absent in pre-entry saves. No questions or answers here. */
+  questionBankFightId?: string;
   consumables?: import('./consumables').ConsumableBag;
   itemProtections?: import('./consumables').ItemProtections;
   version: 1; zone: CampaignZone; position: CampaignPoint; job: CharacterClass;
@@ -24,6 +26,8 @@ export interface CampaignProgress {
 }
 export interface CampaignSummary { id: string; name: string; guildId: string; guildName: string; dungeonName: string; gates: CampaignGate[]; theme: 'normal_cave'; revision: number }
 export interface CampaignView extends CampaignSummary {
+  questionBankRequired?: boolean;
+  questionBank?: { fightId: string; title: string; questionCount: number } | null;
   layout: CampaignLayout; progress: CampaignProgress; progressRevision: number;
   player: CombatPlayer; unlockedJobs: CharacterClass[]; gold: number; inventory: string[];
   healingActions: Array<{ id: string; name: string; amount: number; mp: number; potions: number }>;

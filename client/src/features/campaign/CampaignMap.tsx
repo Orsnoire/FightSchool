@@ -43,7 +43,7 @@ export function CampaignMap({ view, disabled, move }: { view: CampaignView; disa
   const y = overview ? (size.height - height * scale) / 2 : offset(size.height, height, p.position.y);
   return <>
     <div className="campaign-map-toolbar"><span>{town ? 'Hearthlight & the wilds' : view.dungeonName}</span><button type="button" aria-pressed={overview} onClick={() => setOverview(value => !value)}>{overview ? 'Follow adventurer' : 'World overview'}</button></div>
-    <div ref={viewport} className={`campaign-map-viewport ${town ? '' : 'campaign-cave'}`}>
+    <div ref={viewport} style={{ maxWidth: width, marginInline: 'auto' }} className={`campaign-map-viewport ${town ? '' : 'campaign-cave'}`}>
       <div className="campaign-world" role="group" aria-label={town ? 'Overworld map' : 'Cave map'} style={{ width, height, gridTemplateColumns: `repeat(${map.width}, ${MAP_TILE_SIZE}px)`, transform: `translate(${x}px,${y}px) scale(${scale})` }}>
         {map.tiles.map((_, index) => {
           const pos = { x: index % map.width, y: Math.floor(index / map.width) }, here = samePoint(pos, p.position);

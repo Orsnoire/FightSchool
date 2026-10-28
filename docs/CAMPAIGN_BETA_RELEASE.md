@@ -77,3 +77,9 @@ runtime containing AA compatibility and paid-appearance guards; never roll back
 to a free-appearance runtime or remove/replay historical migrations. Restoring a
 backup over newer player progress requires separate authorization and a recovery
 plan; it is not an automatic deployment rollback.
+
+## October 28 entry prerequisite — PR #90
+
+Each student must explicitly choose a fight assigned to this campaign's guild before beta exploration. This per-player choice supplies encounter questions; the teacher's original campaign source is not silently used as the student's selection. The server checks current guild assignment, ownership, archive status and a nonempty question bank. Options expose metadata only. Existing players choose once without losing progress. Active encounters retain their frozen bank until they finish; removed/empty banks require a replacement before further exploration.
+
+Before releasing PR #90, rehearse forward migration `0025_campaign_question_bank` against the already-upgraded catalog. It changes only the atomic command routine, preserving all rows and the existing 25/29-row ledger prefix; final lengths are 26/30 respectively. The old bridge/upgrader must not be replayed on a later catalog. Keep maintenance history, use the protected deployment transport, inspect desktop/phone art, then perform the dedicated-guild access/guardian acceptance already required above. No live migration or deployment is part of this draft checkpoint.
