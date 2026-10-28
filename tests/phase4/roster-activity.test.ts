@@ -64,9 +64,9 @@ test('roster windows, deduplication, historical accuracy and additive activity m
     });
     await t.test('same bucket across devices and retried pulse across buckets count only once', async () => {
       await Promise.all([recordPlayerActivity(db,p.id,{active:true,pulseId:id(51)},now-30_000),recordPlayerActivity(db,p.id,{active:true,pulseId:id(52)},now-30_000)]);
-      // Determine which concurrent ID won, then replay that exact request in the next bucket.
-      const [sample] = await db.select().from(s.studentActivitySamples);
-      await recordPlayerActivity(db,p.id,{active:true,pulseId:sample.pulseId},now);
+      // Replay BOTH requests, including the tab that lost the bucket conflict.
+      await recordPlayerActivity(db,p.id,{active:true,pulseId:id(51)},now);
+      await recordPlayerActivity(db,p.id,{active:true,pulseId:id(52)},now);
       assert.equal((await db.select().from(s.studentActivitySamples)).length,1);
       assert.equal((await row()).weeklyActiveHours,30/3600);
       await recordPlayerActivity(db,p.id,{active:true,pulseId:id(53)},now);

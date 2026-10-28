@@ -13,7 +13,13 @@ export async function recordPlayerActivity(db: GameDatabase, studentId: string, 
   ), prune AS (
     DELETE FROM student_activity_samples WHERE student_id=${studentId}::uuid
       AND bucket_start < ${now - ACTIVITY_WEEK_MS - 86400000}::bigint
-  ) INSERT INTO student_activity_samples(student_id,bucket_start,pulse_id)
+  ), prune_receipts AS (
+    DELETE FROM student_activity_receipts WHERE student_id=${studentId}::uuid
+      AND bucket_start < ${now - ACTIVITY_WEEK_MS - 86400000}::bigint
+  ), receipt AS (
+    INSERT INTO student_activity_receipts(student_id,bucket_start,pulse_id)
     SELECT ${studentId}::uuid,${start}::bigint,${pulse.pulseId}::uuid WHERE ${pulse.active}
-    ON CONFLICT DO NOTHING`);
+    ON CONFLICT DO NOTHING RETURNING student_id,bucket_start,pulse_id
+  ) INSERT INTO student_activity_samples(student_id,bucket_start,pulse_id)
+    SELECT student_id,bucket_start,pulse_id FROM receipt ON CONFLICT DO NOTHING`);
 }

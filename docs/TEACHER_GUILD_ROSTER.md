@@ -17,8 +17,8 @@ and daily academic accuracy. Student roster responses remain unchanged.
   under 30 seconds are not saved; there is no unload backfill.
 - The server assigns each successful active pulse to its most recent completed
   30-second bucket using server time. Buckets are unique per player, preventing
-  simultaneous tabs/devices from multiplying hours. Pulse IDs also deduplicate
-  retries. Sampling can shift an interval by up to 30 seconds; this is engagement
+  simultaneous tabs/devices from multiplying hours. Separate pulse receipts deduplicate
+  retries, including requests from a tab whose bucket was already counted. Sampling can shift an interval by up to 30 seconds; this is engagement
   telemetry, not an anti-cheat or exact billing clock.
 - Tracking begins with the player's first visit using the new client. Until
   seven days have elapsed the roster labels partial history. A player with no
@@ -42,11 +42,11 @@ ID and active boolean, never client timestamps, duration or another player ID.
 No key values, page contents or input details are collected. Failure to record
 telemetry never interrupts gameplay. Data uses the existing Postgres driver.
 
-Additive migration 0019 adds tracking markers, samples and a recent-guild-attempt
+Additive migration 0019 adds tracking markers, samples, retry receipts and a recent-guild-attempt
 index; it does not rewrite progression, rewards or applied migrations. Per-player
 samples older than eight days are pruned on that player's next pulse; inactive
 players retain at most their bounded final sample window until return or account
-deletion. Deleting a player cascades both new tables. Rollback can retain these
+deletion. Deleting a player cascades all activity tables. Rollback can retain these
 additive tables while restoring a compatible earlier runtime.
 
 The unmerged campaign branch also uses migration numbers beginning at 0019.

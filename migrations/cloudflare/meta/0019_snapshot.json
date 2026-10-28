@@ -1,5 +1,5 @@
 {
-  "id": "8d887f9c-aec2-4e61-907f-5a2528eeb53b",
+  "id": "21d0fd70-ac2c-4407-b02c-b326e85c0ea3",
   "prevId": "78df7c36-731a-4ad5-8c80-583d4472e84c",
   "version": "7",
   "dialect": "postgresql",
@@ -3162,6 +3162,81 @@
           "columns": [
             "session_id",
             "student_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_activity_receipts": {
+      "name": "student_activity_receipts",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pulse_id": {
+          "name": "pulse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bucket_start": {
+          "name": "bucket_start",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "student_activity_receipts_retention_idx": {
+          "name": "student_activity_receipts_retention_idx",
+          "columns": [
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "bucket_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "student_activity_receipts_student_id_students_id_fk": {
+          "name": "student_activity_receipts_student_id_students_id_fk",
+          "tableFrom": "student_activity_receipts",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "student_activity_receipts_student_id_pulse_id_pk": {
+          "name": "student_activity_receipts_student_id_pulse_id_pk",
+          "columns": [
+            "student_id",
+            "pulse_id"
           ]
         }
       },

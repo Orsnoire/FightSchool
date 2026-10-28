@@ -745,3 +745,13 @@ export const studentActivitySamples = pgTable('student_activity_samples', {
   pulse: uniqueIndex('student_activity_pulse_unique').on(t.studentId, t.pulseId),
   bucketCheck: check('student_activity_bucket_check', sql`${t.bucketStart} >= 0 AND ${t.bucketStart} % 30000 = 0`),
 }));
+
+// Keep receipts even when another tab already claimed the sample bucket.
+export const studentActivityReceipts = pgTable('student_activity_receipts', {
+  studentId: uuid('student_id').notNull().references(() => students.id, {onDelete: 'cascade'}),
+  pulseId: uuid('pulse_id').notNull(),
+  bucketStart: bigint('bucket_start', {mode: 'number'}).notNull(),
+}, t => ({
+  pk: primaryKey({columns: [t.studentId,t.pulseId]}),
+  retention: index('student_activity_receipts_retention_idx').on(t.studentId,t.bucketStart),
+}));
