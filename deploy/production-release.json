@@ -1,7 +1,7 @@
 {
-  "mode": "pause",
+  "mode": "preflight",
   "sourceSha": "b33bebee309c6828c1e3f44fc70ded7de6a43e85",
-  "expectedPreviousSha": "f34b49fab143f23d971e09dd53c6f83814e3595d",
+  "expectedPreviousSha": "b33bebee309c6828c1e3f44fc70ded7de6a43e85",
   "pauseId": "production-campaign-20261028",
-  "schemaStage": "before"
+  "schemaStage": "after"
 }
