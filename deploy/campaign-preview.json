@@ -1,8 +1,12 @@
 {
-  "mode": "preflight",
-  "sourceSha": "811ff45bf30d1c07d6eb2b158282f3722a0b9831",
+  "mode": "pause",
+  "sourceSha": "c8ac5ec75e0fb7a24193c787a29c1fdefc673dd9",
   "expectedPreviousSha": "6de42632f4953e408b566bf60978cfe482a11f10",
   "migration0020Applied": true,
   "migration0021Applied": true,
-  "campaignAACompatibilityApplied": false
+  "campaignAACompatibilityApplied": false,
+  "pauseId": "campaign-aa-20261028",
+  "probeToken": "005308f968d3db35ab9d4f9d6cd061c47e25d2deec50be90eddc0606fb2883e2",
+  "databaseFingerprint": "3bd28a6499b1d643644ecf658bf4d49e281f80d9c6e04d6220d7c1196acba5f8",
+  "ledgerDigest": "dc4dd2b4dd8242787722673edc25d5b2d85cced04ba0e4d62dc941329d7d5ec0"
 }
