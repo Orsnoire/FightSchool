@@ -1,3 +1,14 @@
+# Campaign release started — October 28, 2026
+
+- Owner authorized starting the merge/migration process. Authorization exists; do not request it again for this sequence. Resets, overwriting newer progress and bypassing technical gates are not authorized.
+- [PR #81](https://github.com/Orsnoire/FightSchool/pull/81) is **MERGED** at `811ff45bf30d1c07d6eb2b158282f3722a0b9831`, using expected head `f93388d90ca8adc98b0d042ad76df4e5ccde1666`. Both trees are `6938275442855b6f6060f899a608ca153ae82ea9`. Future campaign work starts from main.
+- Reviewed-head CI/all four Chromium jobs and [merged-main CI 40721153952](https://github.com/Orsnoire/FightSchool/actions/runs/40721153952) pass: 399 tests, five deployment tests, TypeScript and builds.
+- Fresh provider reads confirm the old preview runtime/bindings and exact 22-row legacy history/catalog. A recovery snapshot and isolated rehearsal child are created. The bridge succeeds on the child: 29 ledger rows, original 22 unchanged, all 32 old table digests preserved after excluding only additive AA student columns, canonical catalog matches. [Release evidence](releases/2026-10-28-pr81.md).
+- Preview request is **preflight only**, pins the merge and leaves live AA compatibility unattested. No live migration or deployment occurred. Production still serves roster runtime `f34b49f`; its operational acceptance blocker remains. Beta stays closed; C12 is untouched.
+- Next: complete GitHub preflight, independently verify Worker/database identity, and establish/test a checkpoint-preserving pause for HTTP/socket/alarm/reward writers before live preview migration. Production needs its own target/backup/ledger checks and canonical additive path. Resolve original classroom acceptance before enabling beta; owner guardian victory is pending.
+
+## Previous review checkpoint (superseded by release state above)
+
 # Campaign beta — current-main integration October 28, 2026
 
 - Continue `feature/campaign-pilot` / [PR #81](https://github.com/Orsnoire/FightSchool/pull/81). Owner selected main-site gated beta and visible bug reporting to finish this work stream and use main for future development.
