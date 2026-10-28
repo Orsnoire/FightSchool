@@ -3,10 +3,11 @@
 > The October 28 consolidation and compatibility upgrade are complete. See
 > [ACTIVE_WORK](ACTIVE_WORK.md) for exact live runtime and acceptance status.
 > The graphics/question-bank changes in [PR #90](https://github.com/Orsnoire/FightSchool/pull/90)
-> are verified for review and **not deployed**. Their forward migration 0025 has
-> not run on a provider. Existing playtest progress remains intact.
+> are **deployed to production**, including forward migration 0025. Beta access
+> remains closed pending dedicated-guild selection. The separate preview is
+> unchanged, and existing playtest progress remains intact.
 
-## Reviewing the next beta build (PR #90)
+## Production beta entry and play flow (PR #90)
 
 1. The teacher assigns at least one nonempty fight to the campaign's guild. A
    teacher-owned but unassigned fight is not an entry option.
@@ -26,7 +27,7 @@
    valid selection, without resetting progress. If no options are available,
    assign a fight to the guild and refresh the entry page.
 
-The next build retains the mechanics below. Letter markers in these historical
+The production build retains the mechanics below. Letter markers in these historical
 steps correspond to the named illustrated landmarks in PR #90. See the
 [review screenshots and verification](reviews/2026-10-28-campaign-visual-pass.md).
 

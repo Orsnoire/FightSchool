@@ -4,7 +4,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { canonicalCampaignLedger } from './campaign-preview-migration-bridge.mjs';
+import { productionReleaseLedger } from './production-release-ledger.mjs';
 import { ledgerDigest } from './deploy-campaign-preview.mjs';
 
 export const PRODUCTION_WORKER = 'questacademy-staging';
@@ -31,7 +31,7 @@ export async function inspectProduction({ request, databaseUrl, accountId, token
   const sql = query ?? neon(databaseUrl);
   const [identity] = await sql('SELECT current_database() AS database, current_user AS role, version() AS version', []);
   const ledger = await sql('SELECT hash, created_at::text AS created_at FROM drizzle.__drizzle_migrations ORDER BY id', []);
-  if (ledgerDigest(ledger) !== ledgerDigest(canonicalCampaignLedger.slice(0,20))) throw Error('Production must have the exact canonical 20-row history');
+  if (ledgerDigest(ledger) !== ledgerDigest(productionReleaseLedger(request.schemaStage ?? 'before'))) throw Error('Production must have the exact requested canonical migration history');
   const counts = await sql('SELECT (SELECT count(*) FROM students)::text AS students, (SELECT count(*) FROM aa_purchases)::text AS aa_purchases, (SELECT count(*) FROM live_combat_sessions)::text AS combat_sessions', []);
   const fingerprint = createHash('sha256').update(JSON.stringify([request.challenge ?? randomBytes(32).toString('hex'),host,identity.database,identity.role])).digest('hex');
   return { worker:PRODUCTION_WORKER,origin:PRODUCTION_ORIGIN,version:request.expectedVersion,host,database:identity.database,role:identity.role,
