@@ -1,3 +1,9 @@
+# Campaign beta — PR #87 integration in progress October 28, 2026
+
+- Main advanced to `f34b49fab143f23d971e09dd53c6f83814e3595d` by merging roster PR #87 during this review. It owns migration 0019. The previous campaign release assessment is superseded for current-main integration; **NO-GO pending reconciliation and verification**.
+- Continue this same PR #81. Preserve main 0000–0019; move unshipped canonical campaign history to 0020–0024, update the strict bridge/catalog contract and populated preservation tests, and retain the gated beta/report UI. Existing preview history and saves remain unchanged.
+- No merge into main, provider migration, deployment, C12 mutation or reset is authorized. Last published checkpoint `5c388d5` is recoverable; its runtime passed 388 tests, 5 deploy tests, checks/builds and four browser jobs at `c2244fe` (browser retry passed). The latest workflow-only dependency-isolation correction awaits combined-head CI.
+
 # Campaign release-safety review — active October 28, 2026
 
 - Resume existing `feature/campaign-pilot` / [PR #81](https://github.com/Orsnoire/FightSchool/pull/81); reviewed starting head `634907fd7ff721fbeb7383c1ed2e258ae8cfc6a3`, current main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`.
