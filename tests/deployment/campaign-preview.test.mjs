@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { run, validateRequest, validateSettings, uploadMetadata, ORIGIN, WORKER } from '../../scripts/deploy-campaign-preview.mjs';
 const request = { mode: 'preflight', sourceSha: 'b'.repeat(40), expectedPreviousSha: 'a'.repeat(40), migration0020Applied: false };
 function settings() {
@@ -52,4 +55,48 @@ test('upload preserves resource identities and secrets without resubmitting valu
   assert.ok(metadata.keep_bindings.includes('durable_object_namespace'));
   assert.ok(metadata.keep_bindings.includes('r2_bucket'));
   assert.equal(metadata.migrations, undefined);
+});
+
+test('full deploy rechecks bindings, retains resources and requires database/combat readiness', async () => {
+  for (const scenario of ['success', 'binding-drift', 'not-ready']) {
+    const runtimeDir = mkdtempSync(join(tmpdir(), 'campaign-deploy-'));
+    try {
+      mkdirSync(join(runtimeDir, 'dist/worker'), { recursive: true });
+      mkdirSync(join(runtimeDir, 'dist/public'), { recursive: true });
+      writeFileSync(join(runtimeDir, 'dist/worker/index.js'), 'export default {}');
+      writeFileSync(join(runtimeDir, 'dist/public/index.html'), '<main>Test build</main>');
+      let reads = 0, writes = 0, readiness = 0;
+      const operation = run({ request: { ...request, mode: 'deploy', migration0020Applied: true,
+        migration0021Applied: true, campaignAACompatibilityApplied: true },
+        accountId: 'c'.repeat(32), token: 'test', runtimeDir, log() {},
+        fetcher: async (url, options) => {
+          assert.equal(options.redirect, 'error');
+          if (url.endsWith('/settings')) {
+            const s = settings(); reads++;
+            if (scenario === 'binding-drift' && reads === 2) s.bindings.find(b => b.name === 'COMBAT_SESSIONS').namespace_id = 'changed';
+            if (writes) s.bindings.find(b => b.name === 'RELEASE_SHA').text = request.sourceSha;
+            return Response.json({ success: true, result: s });
+          }
+          if (url.endsWith('/assets-upload-session')) return Response.json({ success: true, result: { buckets: [], jwt: 'complete' } });
+          if (options.method === 'PUT') {
+            writes++;
+            assert.ok(url.endsWith(`/workers/scripts/${WORKER}`));
+            const metadata = JSON.parse(await options.body.get('metadata').text());
+            assert.ok(metadata.keep_bindings.includes('secret_text'));
+            assert.equal(metadata.migrations, undefined);
+            return Response.json({ success: true, result: {} });
+          }
+          if (url === `${ORIGIN}/api/health/live`) return Response.json({ status: 'ok', environment: 'campaign-preview' });
+          if (url === `${ORIGIN}/api/health/ready`) {
+            readiness++;
+            return Response.json({ status: scenario === 'not-ready' ? 'not_ready' : 'ready', environment: 'campaign-preview' }, { status: scenario === 'not-ready' ? 503 : 200 });
+          }
+          throw new Error(`Unexpected request ${url}`);
+        } });
+      if (scenario === 'success') await operation;
+      else await assert.rejects(operation, scenario === 'binding-drift' ? /bindings changed/ : /readiness/);
+      assert.equal(writes, scenario === 'binding-drift' ? 0 : 1);
+      assert.equal(readiness, scenario === 'binding-drift' ? 0 : 1);
+    } finally { rmSync(runtimeDir, { recursive: true, force: true }); }
+  }
 });

@@ -1,0 +1,20 @@
+{
+  "legacyLedgerSHA256": "295229fd632152d9bca11d2b07dfb9c373a8f453d5baa6cea1b9bd237e4f2a93",
+  "canonicalLedgerSHA256": "f632e8fee679b54fa6e9e0dd7a674477db1a53baaec52baa7b08568cfe35ff29",
+  "legacy": {
+    "tables": "44c1bfaf7db15b175eb60718bf5d6f99",
+    "columns": "be89365a4bd3e72f5e0d5d28cbcecc16",
+    "indexes": "5192f6345f4f61ddc79da25900a58a3b",
+    "routines": "2fe4dbeee9ca8e1a7d381d1629d69823",
+    "triggers": "d751713988987e9331980363e24189ce",
+    "constraints": "0a7be4b26f442435aabb02cee98f1460"
+  },
+  "canonical": {
+    "tables": "dfdc44dd939e30c239a7bcf1bbcaaaf9",
+    "columns": "be26183319478fee439e26cd151a5217",
+    "indexes": "0de698e918953620f505f924d4d38e2e",
+    "routines": "11f1a554b6684bf1a4818405a8081344",
+    "triggers": "a6db39fd506f0c5546aadfcfca4744f3",
+    "constraints": "f7c57ceb99cdb09b21b241f206e3f960"
+  }
+}

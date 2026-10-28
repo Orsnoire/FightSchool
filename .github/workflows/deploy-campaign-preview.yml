@@ -39,6 +39,13 @@ jobs:
         with:
           ref: ${{ steps.request.outputs.source }}
           path: runtime
+          fetch-depth: 0
+      - name: Reject runtimes predating AA compatibility
+        if: steps.request.outputs.mode == 'deploy'
+        working-directory: runtime
+        run: |
+          test "$(git rev-parse HEAD)" = '${{ steps.request.outputs.source }}'
+          git merge-base --is-ancestor bcf2c4c251c24f2d5a4cbcc5a62aac97149bb3af HEAD
       - name: Verify and build the exact requested source
         if: steps.request.outputs.mode == 'deploy'
         working-directory: runtime

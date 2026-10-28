@@ -6,6 +6,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { migrate } from 'drizzle-orm/pglite/migrator';
 import { campaignPreviewBridgeSQL, legacyPreviewLedger, canonicalCampaignLedger } from '../../scripts/campaign-preview-migration-bridge.mjs';
+import { campaignSchemaFingerprintSQL } from '../../scripts/campaign-preview-schema.mjs';
 import * as s from '../../worker/db/schema';
 import { generateCampaignLayout } from '../../shared/campaign/generation';
 import { initialCombatState, addStudent } from '../../worker/combat/engine';
@@ -16,14 +17,19 @@ const read = (path: string) => readFileSync(`${root}/${path}`, 'utf8');
 const journal = JSON.parse(read('meta/_journal.json'));
 const legacy = JSON.parse(read('legacy-campaign-preview/_journal.json'));
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
+const contract = JSON.parse(read('legacy-campaign-preview/schema-contract.json'));
+const fingerprint = async (pg: PGlite) => {
+  await pg.exec('SET search_path TO public, pg_catalog');
+  return (await pg.query(campaignSchemaFingerprintSQL)).rows[0].fingerprint;
+};
 
 // Exercise Drizzle's real timestamp-based ledger, not only a loop over SQL files.
-async function migrateHistory(pg: PGlite, preview: boolean) {
+async function migrateHistory(pg: PGlite, preview: boolean, c12 = false) {
   // Historical 0008 contains multi-statement chunks supported by the deployment
   // driver but not PGlite prepared queries. Seed those exact bytes/ledger rows via
   // exec; the forward upgrade and no-op below use the actual Drizzle migrator.
   await pg.exec('CREATE SCHEMA drizzle; CREATE TABLE drizzle.__drizzle_migrations(id SERIAL PRIMARY KEY, hash text NOT NULL, created_at bigint)');
-  const selected = preview ? legacy.entries : journal.entries.slice(0, 19);
+  const selected = preview ? legacy.entries : journal.entries.slice(0, c12 ? 18 : 19);
   for (const entry of selected) {
     const source = read(`${preview && entry.idx >= 18 ? 'legacy-campaign-preview/' : ''}${entry.tag}.sql`);
     await pg.exec(source);
@@ -93,6 +99,7 @@ test('production history upgrades forward without altering AA purchases, saved s
     assert.deepEqual((await ledger(pg)).slice(0, 19), oldLedger);
     assert.equal((await ledger(pg)).length, 24);
     assert.equal((await snapshot(pg, 'campaign_players')).length, 0, 'no playtest records seeded');
+    assert.deepEqual(await fingerprint(pg), contract.canonical, 'contract matches independently migrated canonical history');
   } finally { await pg.close(); }
 });
 
@@ -100,6 +107,7 @@ test('legacy preview bridges atomically, retains playtest/active snapshots and l
   const pg = new PGlite();
   try {
     await migrateHistory(pg, true); await seed(pg, true);
+    assert.deepEqual(await fingerprint(pg), contract.legacy);
     const tables = ['students', 'student_job_levels', 'combat_results', 'campaigns', 'campaign_players', 'campaign_encounters', 'live_combat_sessions'];
     const before = await Promise.all(tables.map(t => snapshot(pg, t))), oldLedger = await ledger(pg);
     // Normal Drizzle cannot safely infer divergent histories. Its transaction rolls back.
@@ -115,26 +123,85 @@ test('legacy preview bridges atomically, retains playtest/active snapshots and l
     }
     assert.deepEqual(after, before, 'all existing state, including active resources, is preserved');
     const bridged = await ledger(pg);
+    assert.deepEqual(await fingerprint(pg), contract.canonical, 'bridge and normal forward path have identical tables/routines/triggers');
     assert.deepEqual(bridged.slice(0, 22), oldLedger, 'never renumber, replace or delete preview ledger rows');
     assert.equal(bridged.length, 28, '22 old rows + AA + four aliases + compatibility migration');
+    // A retry after the new runtime has been used must preserve paid AA state.
+    await pg.query(`SELECT purchase_aa($1,$2,'stat:str',1,2,1,60,'{"request":"post-bridge"}')`, [student().id, crypto.randomUUID()]);
+    await pg.query(`UPDATE students SET cross_class_abilities='["a","b","c","d","e"]',character_name='Paid Name' WHERE id=$1`, [student().id]);
+    const paidTables = [...tables, 'aa_purchases'];
+    const paidState = await Promise.all(paidTables.map(t => snapshot(pg, t)));
+    assert.equal((paidState.at(-1) as any[]).length, 1);
     await pg.exec(campaignPreviewBridgeSQL());
     await migrate(drizzle(pg), { migrationsFolder: root });
     assert.deepEqual(await ledger(pg), bridged, 'bridge and normal migrate are idempotent');
+    assert.deepEqual(await Promise.all(paidTables.map(t => snapshot(pg, t))), paidState, 'retry preserves AA wallet/receipt, slots, appearance and campaign progress');
   } finally { await pg.close(); }
 });
 
 test('bridge rejects production, unknown or corrupt history and rolls back an interrupted schema upgrade', async () => {
-  for (const scenario of ['production', 'corrupt', 'partial-ddl']) {
+  for (const scenario of ['production', 'c12', 'corrupt', 'partial-ddl', 'missing-row', 'extra-row', 'wrong-time', 'duplicate-row']) {
     const pg = new PGlite();
     try {
-      await migrateHistory(pg, scenario !== 'production');
+      await migrateHistory(pg, !['production', 'c12'].includes(scenario), scenario === 'c12');
       if (scenario === 'corrupt') await pg.exec(`UPDATE drizzle.__drizzle_migrations SET hash='tampered' WHERE created_at=${legacyPreviewLedger.at(-1)!.created_at}`);
       if (scenario === 'partial-ddl') await pg.exec('ALTER TABLE students ADD COLUMN aa_ranks jsonb');
+      if (scenario === 'missing-row') await pg.exec('DELETE FROM drizzle.__drizzle_migrations WHERE id=22');
+      if (scenario === 'extra-row') await pg.exec("INSERT INTO drizzle.__drizzle_migrations(hash,created_at) VALUES('unknown',9999999999999)");
+      if (scenario === 'wrong-time') await pg.exec('UPDATE drizzle.__drizzle_migrations SET created_at=created_at+1 WHERE id=22');
+      if (scenario === 'duplicate-row') await pg.exec('INSERT INTO drizzle.__drizzle_migrations(hash,created_at) SELECT hash,created_at FROM drizzle.__drizzle_migrations WHERE id=22');
       const before = await ledger(pg);
+      const schemaBefore = await fingerprint(pg);
       await assert.rejects(pg.exec(campaignPreviewBridgeSQL()));
       await pg.exec('ROLLBACK');
       assert.deepEqual(await ledger(pg), before);
+      assert.deepEqual(await fingerprint(pg), schemaBefore);
       if (scenario !== 'production') assert.equal((await pg.query(`SELECT to_regclass('public.aa_purchases') AS name`)).rows[0].name, null);
     } finally { await pg.close(); }
   }
+});
+
+test('bridge rejects schema drift before aliasing and on completed-history retries', async () => {
+  for (const [complete, damage] of [
+    [false, 'ALTER TABLE campaign_players DROP COLUMN state'],
+    [false, 'ALTER TABLE campaign_encounters ALTER COLUMN player_snapshot DROP NOT NULL'],
+    [false, 'DROP FUNCTION settle_campaign_encounter(jsonb)'],
+    [false, 'ALTER TABLE students DROP CONSTRAINT students_stamina_recovery_check'],
+    [true, 'DROP FUNCTION purchase_aa(uuid,uuid,text,integer,integer,integer,integer,jsonb)'],
+    [true, 'ALTER TABLE students DISABLE TRIGGER students_cross_class_sync'],
+  ] as const) {
+    const pg = new PGlite();
+    try {
+      await migrateHistory(pg, true); await seed(pg, true);
+      if (complete) await pg.exec(campaignPreviewBridgeSQL());
+      await pg.exec(damage);
+      const before = await ledger(pg), schemaBefore = await fingerprint(pg);
+      const playersBefore = await snapshot(pg, 'campaign_players');
+      await assert.rejects(pg.exec(campaignPreviewBridgeSQL()), /schema differs/);
+      await pg.exec('ROLLBACK');
+      assert.deepEqual(await ledger(pg), before);
+      assert.deepEqual(await fingerprint(pg), schemaBefore);
+      assert.deepEqual(await snapshot(pg, 'campaign_players'), playersBefore);
+    } finally { await pg.close(); }
+  }
+});
+
+test('failure after all bridge DDL/backfills/aliases rolls back rows and routines; retry succeeds', async () => {
+  const pg = new PGlite();
+  try {
+    await migrateHistory(pg, true); await seed(pg, true);
+    const tables = ['students', 'student_job_levels', 'combat_results', 'campaigns', 'campaign_players', 'campaign_encounters', 'live_combat_sessions'];
+    const before = await Promise.all(tables.map(t => snapshot(pg, t)));
+    const oldLedger = await ledger(pg), schemaBefore = await fingerprint(pg);
+    const interrupted = campaignPreviewBridgeSQL().replace('END $campaign_bridge$;', "RAISE EXCEPTION 'injected after final compatibility migration';\nEND $campaign_bridge$;");
+    await assert.rejects(pg.exec(interrupted), /injected after final/);
+    await pg.exec('ROLLBACK');
+    assert.deepEqual(await ledger(pg), oldLedger);
+    assert.deepEqual(await fingerprint(pg), schemaBefore);
+    assert.deepEqual(await Promise.all(tables.map(t => snapshot(pg, t))), before);
+    await pg.exec(campaignPreviewBridgeSQL());
+    assert.equal((await ledger(pg)).length, 28);
+    assert.deepEqual((await ledger(pg)).slice(0, 22), oldLedger);
+    assert.deepEqual(await fingerprint(pg), contract.canonical);
+  } finally { await pg.close(); }
 });

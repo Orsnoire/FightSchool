@@ -1,9 +1,9 @@
 # Campaign release-safety review — active October 28, 2026
 
 - Resume existing `feature/campaign-pilot` / [PR #81](https://github.com/Orsnoire/FightSchool/pull/81); reviewed starting head `634907fd7ff721fbeb7383c1ed2e258ae8cfc6a3`, current main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`.
-- Owner authorized focused bridge/schema/deployment/regression review and narrowly scoped corrections. Work IN PROGRESS: reproduce schema-guard gaps, test rejection/preservation/late rollback, and document a safe release sequence.
+- Owner authorized focused bridge/schema/deployment/regression review and narrowly scoped corrections. Safety fixes IMPLEMENTED: strict legacy/completed catalog validation, reviewed history pinning, compatible-runtime deployment ancestry, readiness and expanded rejection/preservation/late rollback coverage. Nine focused migration/schema tests and five deployment tests pass; TypeScript passes; full suite is running. See [safety review/runbook](reviews/2026-10-28-campaign-release-safety.md).
 - No merge, database/provider migration, deployment, production/C12 change or playtester reset is authorized. Keep `deploy/campaign-preview.json` unchanged. Existing preview runtime and live owner acceptance remain as recorded below.
-- Next: publish reviewed corrections and verification evidence on this same PR; separate authorization remains required before preview migration/deployment.
+- Owner selected main-site gated beta with visible bug reporting to consolidate campaign development into main. Next: implement/test the beta gate and report entry point on this same PR, then complete verification. No merge/deployment is authorized; preview saves must remain intact.
 
 # Campaign compatibility — active October 27, 2026
 

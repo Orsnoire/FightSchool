@@ -140,6 +140,10 @@ export async function run({ request, accountId, token, runtimeDir, fetcher = fet
   requireThat(response.ok, `Preview health check failed (HTTP ${response.status})`);
   const health = await response.json();
   requireThat(health.status === 'ok' && health.environment === 'campaign-preview', 'Preview health response is incorrect');
+  const readyResponse = await fetcher(`${ORIGIN}/api/health/ready`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
+  requireThat(readyResponse.ok, `Preview readiness check failed (HTTP ${readyResponse.status})`);
+  const ready = await readyResponse.json();
+  requireThat(ready.status === 'ready' && ready.environment === 'campaign-preview', 'Preview readiness response is incorrect');
   log(`Deployed campaign preview source ${request.sourceSha}. ${ORIGIN}`);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

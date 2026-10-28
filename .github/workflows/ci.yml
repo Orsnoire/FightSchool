@@ -20,6 +20,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: node --test tests/deployment/*.test.mjs
       - run: npm run check
       - run: npm test
       - run: npm run build:cloudflare
