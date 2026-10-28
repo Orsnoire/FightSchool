@@ -1,3 +1,14 @@
+# PR #90 — merged, migrated, deployed and operationally accepted
+
+- Production serves exact reviewed merge `d44995a109e8ca5549e29ba63c616b68d84e2ac3` at 100%, Worker `3c55150b-5deb-40bd-a8d2-feeabe9e5e43`. The new art and per-player guild-assigned question banks are live. All five art files match the tested build byte-for-byte.
+- Migration 0025 is complete: canonical 26-row history, original prefix and every existing public-table row preserved. Isolated rehearsal and final paused recovery copy are retained. Every saved combat room matched its pre-migration checkpoint; maintenance history, secrets and storage identities remain intact. The site is reopened and the release probe removed. Both public domains pass readiness.
+- [Canonical acceptance 40769862238](https://github.com/Orsnoire/FightSchool/actions/runs/40769862238) passes combat/progression and all eight operational checks, including 30 simultaneous players/answers, reconnect, exactly-once results, storage, moderation and revocation. This is functional acceptance, not C12 performance signoff.
+- PR #91 release-tooling follow-up is merged at `a5e234233eb706cbd3e6e6c9b8193ef7d51b746f`; tree equals tested head `2eaba05`. All 408 app tests, 12 deployment tests, TypeScript/builds and four browser jobs pass. [Post-release read-only preflight 40771213932](https://github.com/Orsnoire/FightSchool/actions/runs/40771213932) passes. Release requests are read-only and explicitly recognize 0025 while preserving historical stage guards. No second app deployment occurred.
+- **Remaining beta handoff:** owner selects a dedicated production beta guild; then verify authorized/denied entry and authenticated guardian victory/stamina restoration. Beta stays closed. Preview and C12/PR #75 are unchanged; no progress reset or preview-save import occurred.
+- No release engineering blocker remains. Future implementation starts from current main on a newly registered branch. [Release evidence and limits](releases/2026-10-28-pr90.md).
+
+## Historical release checkpoints
+
 # PR #90 deployed — final acceptance and release tooling
 
 - PR #90 merged at `d44995a109e8ca5549e29ba63c616b68d84e2ac3`, matching tested head `7688151` exactly. Merged-main CI 40767932864 passes.

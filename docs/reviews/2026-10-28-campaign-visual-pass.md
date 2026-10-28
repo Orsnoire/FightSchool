@@ -1,3 +1,5 @@
+> **Released October 28:** PR #90 is merged, production migration 0025 and deployment are complete, and canonical live acceptance passes. Beta remains closed. [Release evidence](../releases/2026-10-28-pr90.md) controls current status; earlier checkpoints below are historical.
+
 # Campaign graphics and question-bank entry — review checkpoint
 
 Implemented on `feature/campaign-visual-pass`, [PR #90](https://github.com/Orsnoire/FightSchool/pull/90). The exact equipped battle avatar now appears on the map at a smaller size. Original landmarks, forest materials, all 47 mountain/cave-wall edge arrangements, a follow camera/overview and matching meadow/cave battle scenes replace the placeholders. Terrain samples a common world origin; block boundaries do not introduce texture seams. Adventure supplies/equipment/quests open from Menu.
