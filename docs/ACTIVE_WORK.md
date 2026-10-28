@@ -1,3 +1,12 @@
+# Campaign release blockers — active October 28, 2026
+
+- Owner explicitly requested resolving the remaining release blockers and continuing the already authorized release. Work from `release/campaign-safe-upgrade`, a short branch from main `e22fed2`, replacing no existing implementation. PR #81 is merged; C12 #75 remains untouched.
+- Scope: verified preview maintenance across HTTP/socket/alarm/reward writers; independent database identity evidence; recoverable backups and preservation checks; diagnose production CPU/latency failures; run original live acceptance before enabling beta. Keep gameplay, academic records, AA purchases, playtest progress and room checkpoints intact.
+- State: CLAIM / INVESTIGATION. No new runtime/migration/deployment yet. Preview bridge rehearsal and backup from the preceding checkpoint remain available. Root cause and effective CPU quota remain under investigation; billing API is unavailable to the current Cloudflare OAuth connection.
+- Next: publish this claim and draft PR, implement/test narrowly scoped release safeguards, then resume the ordered migration/deployment sequence. General authorization exists; do not ask for it again. Financial plan changes or destructive data recovery are not implied.
+
+## Previous release checkpoint
+
 # Campaign release started — October 28, 2026
 
 - Owner authorized starting the merge/migration process. Authorization exists; do not request it again for this sequence. Resets, overwriting newer progress and bypassing technical gates are not authorized.
