@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { run, validateRequest, validateSettings, uploadMetadata, releaseBindings, verifyRelease, ledgerDigest, ORIGIN, WORKER } from '../../scripts/deploy-campaign-preview.mjs';
+import { run, validateRequest, validateSettings, uploadMetadata, releaseBindings, verifyRelease, verifyReleaseEventually, ledgerDigest, ORIGIN, WORKER } from '../../scripts/deploy-campaign-preview.mjs';
 const request = { mode: 'preflight', sourceSha: 'b'.repeat(40), expectedPreviousSha: 'a'.repeat(40), migration0020Applied: false };
 const release = { pauseId: 'test-release-01', probeToken: '1'.repeat(64), databaseFingerprint: '2'.repeat(64), ledgerDigest: ledgerDigest([]), roomDigest: ledgerDigest([]) };
 const windows = [{ id: release.pauseId, startedAt: 1, resumedAt: null }];
@@ -100,6 +100,13 @@ test('release verification refuses wrong database, history, old objects and chan
       assert.equal(JSON.stringify(receipt).includes('ABC234'),false,'saved receipt contains only hashed room IDs');
     } else await assert.rejects(operation,/verification|identity|paused/);
   }
+});
+test('deployment propagation retries reads, while database mismatch stops immediately', async () => {
+  let reads=0,waits=0;
+  const probe={source:request.sourceSha,valid:true,paused:true,fingerprint:release.databaseFingerprint,ledger:[],windows,rooms:[]};
+  await verifyReleaseEventually({...request,...release},async(_url,options)=>{reads++;assert.equal(options.method,undefined);return reads===1?new Response(null,{status:404}):Response.json(probe);},true,windows,async()=>{waits++;});
+  assert.equal(reads,2);assert.equal(waits,1);
+  await assert.rejects(verifyReleaseEventually({...request,...release},async()=>Response.json({...probe,fingerprint:'wrong'}),true,windows,async()=>{throw Error('Must not retry wrong target');}),/identity/);
 });
 
 test('full deploy rechecks bindings, retains resources and requires database/combat readiness', async () => {

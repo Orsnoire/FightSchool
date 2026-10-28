@@ -118,6 +118,17 @@ export async function verifyRelease(request, fetcher, paused, expectedWindows) {
   return { source: probe.source, fingerprint: probe.fingerprint, ledgerDigest: ledgerDigest(probe.ledger), windows: probe.windows,
     roomDigests, roomDigest: createHash('sha256').update(JSON.stringify(Object.entries(roomDigests).sort())).digest('hex') };
 }
+export async function verifyReleaseEventually(request, fetcher, paused, windows, wait = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+  for (let attempt=0; ; attempt++) {
+    try { return await verifyRelease(request,fetcher,paused,windows); }
+    catch (error) {
+      // A 100% deployment can still be propagating to a POP or Durable Object.
+      // Retry reads only; identity/ledger mismatches always stop immediately.
+      if (attempt>=11 || !/Release probe failed \(HTTP (401|404|503)\)|Runtime or maintenance verification failed|Combat room has not reached the paused runtime|Maintenance history mismatch/.test(error.message)) throw error;
+      await wait(2500);
+    }
+  }
+}
 const mimeTypes = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css',
   '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml',
   '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf',
@@ -216,7 +227,7 @@ export async function run({ request, accountId, token, runtimeDir, fetcher = fet
   requireThat(after.COMBAT_SESSIONS.namespace_id === bindings.COMBAT_SESSIONS.namespace_id, 'Combat namespace identity changed');
   for (const binding of nextBindings) requireThat(after[binding.name]?.text === binding.text, 'Release controls changed during deployment');
   const windows = JSON.parse(nextBindings[0].text);
-  const receipt = await verifyRelease(request, fetcher, request.mode === 'pause', windows);
+  const receipt = await verifyReleaseEventually(request, fetcher, request.mode === 'pause', windows);
   if (request.mode === 'pause') {
     await verifyPublicPause();
     log(`Preview paused; source ${receipt.source}; database ${receipt.fingerprint}; ledger ${receipt.ledgerDigest}; ${Object.keys(receipt.roomDigests).length} rooms verified.`);
