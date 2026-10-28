@@ -1,3 +1,13 @@
+# PR #90 release — authorized and merged October 28, 2026
+
+- Owner explicitly authorized merge, migration and deployment. PR #90 merged at `d44995a109e8ca5549e29ba63c616b68d84e2ac3`; its tree equals reviewed head `7688151` exactly. All 408 application tests, 11 deployment tests and four Chromium acceptance jobs passed on that head.
+- Isolated production-child rehearsal of forward migration 0025 passes: exact 25-row prefix becomes 26, all public table contents unchanged, final catalog matches the question-bank contract, and a second execution is a no-op. Recovery/rehearsal copies remain outside public Git records.
+- Active release: prepare the exact merged runtime through Production Release Maintenance, verify paused HTTP/socket/alarm/reward writers and every saved room, create a final paused database recovery copy, apply the rehearsed atomic forward change, verify rows/ledger/catalog/rooms and reopen. Retain completed maintenance windows. No resets, preview imports, beta enrollment or C12 changes.
+- Beta remains closed. Dedicated-guild access and authenticated guardian/stamina acceptance remain separate handoff requirements; no production beta guild has been selected.
+- State: MERGED / PROVIDER REHEARSAL PASSED / LIVE MIGRATION AND DEPLOYMENT PENDING. Latest release workflow and evidence will be recorded below and in PR #90.
+
+## Previous implementation checkpoint
+
 # Campaign visual pass — active October 28, 2026
 
 - Owner requested map/avatar and battle-scene graphics before beta access. Continue `feature/campaign-visual-pass` / [draft PR #90](https://github.com/Orsnoire/FightSchool/pull/90), claimed at `ef7f4962db14847b6da1c2cd2829bac2973f4c0f`. This branch and PR carry current implementation and verification details.
