@@ -1,0 +1,82 @@
+name: Production Release Maintenance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, release/campaign-safe-upgrade]
+    paths: [deploy/production-release.json]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-staging
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      mode: ${{ steps.request.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: node --test tests/deployment/*.test.mjs
+      - id: request
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const request=JSON.parse(readFileSync('deploy/production-release.json','utf8'));
+          if(!['preflight','pause','verify'].includes(request.mode)||!/^[a-f0-9]{40}$/.test(request.sourceSha))throw Error('Invalid maintenance request');
+          appendFileSync(process.env.GITHUB_OUTPUT,`mode=${request.mode}\nsource=${request.sourceSha}\n`);
+          JS
+      - uses: actions/checkout@v7
+        if: steps.request.outputs.mode == 'pause'
+        with:
+          ref: ${{ steps.request.outputs.source }}
+          path: runtime
+          fetch-depth: 0
+      - name: Verify and build reviewed compatible runtime
+        if: steps.request.outputs.mode == 'pause'
+        working-directory: runtime
+        run: |
+          test "$(git rev-parse HEAD)" = '${{ steps.request.outputs.source }}'
+          git merge-base --is-ancestor 811ff45bf30d1c07d6eb2b158282f3722a0b9831 HEAD
+          npm ci
+          npm run check
+          npm test
+          npm run build:cloudflare
+      - uses: actions/upload-artifact@v6
+        if: steps.request.outputs.mode == 'pause'
+        with:
+          name: production-maintenance-build
+          path: runtime/dist
+          if-no-files-found: error
+          retention-days: 7
+  maintenance:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v6
+        if: needs.prepare.outputs.mode == 'pause'
+        with:
+          name: production-maintenance-build
+          path: runtime/dist
+      - name: Verify target and pause all writers
+        run: node scripts/pause-production-release.mjs
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

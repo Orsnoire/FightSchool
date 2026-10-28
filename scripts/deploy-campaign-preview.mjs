@@ -1,4 +1,4 @@
-// Preview-only deployment. Never import classroom wrangler/database configuration.
+// Fixed-target release transport. Never import ambient Wrangler configuration.
 import { readFileSync, readdirSync, appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, relative, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -6,6 +6,12 @@ import { createHash } from 'node:crypto';
 
 export const WORKER = 'questacademy-campaign-preview';
 export const ORIGIN = 'https://questacademy-campaign-preview.coxsonator.workers.dev';
+export const PRODUCTION = { worker: 'questacademy-staging', origin: 'https://questacademy.bookwyrminteractive.studio',
+  environment: 'staging', cookie: 'qa_staging_session', bucket: 'questacademy-objects' };
+function targetInfo(target) {
+  requireThat(['preview','production'].includes(target),'Unknown release target');
+  return target === 'production' ? PRODUCTION : {worker:WORKER,origin:ORIGIN,environment:'campaign-preview',cookie:'qa_campaign_preview_session',bucket:WORKER};
+}
 const shaPattern = /^[a-f0-9]{40}$/;
 const expectedTypes = {
   ENVIRONMENT: 'plain_text', PUBLIC_ORIGIN: 'plain_text', SESSION_COOKIE_NAME: 'plain_text',
@@ -15,13 +21,16 @@ const expectedTypes = {
   OBJECTS: 'r2_bucket', ASSETS: 'assets', CF_VERSION_METADATA: 'version_metadata',
 };
 function requireThat(condition, message) { if (!condition) throw new Error(message); }
-export function validateRequest(request) {
+export function validateRequest(request, target = 'preview') {
+  targetInfo(target);
   requireThat(['preflight', 'pause', 'verify', 'deploy'].includes(request.mode), 'Invalid preview release mode');
   requireThat(shaPattern.test(request.sourceSha) && shaPattern.test(request.expectedPreviousSha), 'Release SHAs must be full commit hashes');
+  if(target==='preview') {
   requireThat(request.mode !== 'deploy' || request.migration0020Applied === true, 'Preview migration 0020 must be verified before deployment');
   requireThat(request.mode !== 'deploy' || request.migration0021Applied === true, 'Preview migration 0021 must be verified before deployment');
   requireThat(request.mode !== 'deploy' || request.campaignAACompatibilityApplied === true,
     'Preview AA compatibility bridge and canonical migration 0024 must be verified before deployment');
+  } else requireThat(request.mode !== 'deploy' || request.canonicalMigrationApplied === true, 'Canonical production migration must be verified');
   if (request.mode !== 'preflight') {
     requireThat(/^[a-zA-Z0-9_-]{8,80}$/.test(request.pauseId ?? ''), 'A maintenance window ID is required');
     for (const field of ['probeToken', 'databaseFingerprint', 'ledgerDigest'])
@@ -30,29 +39,34 @@ export function validateRequest(request) {
   }
   return request;
 }
-export function validateSettings(settings, request) {
+export function validateSettings(settings, request, target = 'preview') {
+  const config=targetInfo(target);
+  const types={...expectedTypes};
+  if(target==='production'){delete types.RELEASE_SHA;delete types.CF_VERSION_METADATA;types.ADDITIONAL_PUBLIC_ORIGINS='plain_text';}
   const bindings = settings.bindings ?? [];
   const byName = Object.fromEntries(bindings.map(b => [b.name, b]));
-  const optional = ['RELEASE_WINDOWS', 'RELEASE_PROBE'];
+  const optional = ['RELEASE_WINDOWS', 'RELEASE_PROBE', ...(target==='production'?['RELEASE_SHA']:[])];
   requireThat(new Set(bindings.map(b => b.name)).size === bindings.length &&
-    bindings.every(b => Object.hasOwn(expectedTypes, b.name) || optional.includes(b.name) && b.type === 'plain_text'),
+    bindings.every(b => Object.hasOwn(types, b.name) || optional.includes(b.name) && b.type === 'plain_text'),
     'Unexpected preview bindings; inspect configuration before retrying');
-  for (const [name, type] of Object.entries(expectedTypes)) {
+  for (const [name, type] of Object.entries(types)) {
     requireThat(byName[name]?.type === type, `Missing or changed preview binding: ${name}`);
   }
-  requireThat(byName.ENVIRONMENT.text === 'campaign-preview', 'Refusing non-preview environment');
-  requireThat(byName.PUBLIC_ORIGIN.text === ORIGIN, 'Refusing non-preview origin');
-  requireThat(byName.SESSION_COOKIE_NAME.text === 'qa_campaign_preview_session', 'Refusing shared session cookie');
-  requireThat(byName.OBJECTS.bucket_name === WORKER, 'Refusing non-preview object storage');
+  requireThat(byName.ENVIRONMENT.text === config.environment, 'Refusing changed environment');
+  requireThat(byName.PUBLIC_ORIGIN.text === config.origin, 'Refusing changed origin');
+  requireThat(byName.SESSION_COOKIE_NAME.text === config.cookie, 'Refusing shared session cookie');
+  requireThat(byName.OBJECTS.bucket_name === config.bucket, 'Refusing changed object storage');
+  if(target==='production')requireThat(byName.ADDITIONAL_PUBLIC_ORIGINS.text==='https://questacademy-staging.coxsonator.workers.dev','Changed production secondary origin');
   const combat = byName.COMBAT_SESSIONS;
   requireThat(combat.class_name === 'CombatSession' && combat.namespace_id &&
-    (!combat.script_name || combat.script_name === WORKER) && !combat.environment,
+    (!combat.script_name || combat.script_name === config.worker) && !combat.environment,
     'Refusing changed combat namespace binding');
-  requireThat([request.expectedPreviousSha, request.sourceSha].includes(byName.RELEASE_SHA.text),
+  requireThat(target==='production' && !byName.RELEASE_SHA || [request.expectedPreviousSha, request.sourceSha].includes(byName.RELEASE_SHA?.text),
     'Preview release advanced unexpectedly; review before retrying');
   return byName;
 }
 export function uploadMetadata(settings, sourceSha, jwt, releaseBindings = []) {
+  if(!settings.bindings.some(b=>b.name==='RELEASE_SHA')) releaseBindings=[...releaseBindings,{name:'RELEASE_SHA',type:'plain_text',text:sourceSha}];
   return {
     main_module: 'index.js', compatibility_date: settings.compatibility_date,
     ...(settings.compatibility_flags ? { compatibility_flags: settings.compatibility_flags } : {}),
@@ -64,7 +78,7 @@ export function uploadMetadata(settings, sourceSha, jwt, releaseBindings = []) {
     exports: { CombatSession: { type: 'durable-object', storage: 'sqlite' } },
     observability: settings.observability ?? { enabled: true },
     ...(settings.tags ? { tags: settings.tags } : {}),
-    annotations: { 'workers/message': `Campaign preview only; source ${sourceSha}; PR88.` },
+    annotations: { 'workers/message': `Verified campaign release; source ${sourceSha}; PR88.` },
     assets: { jwt, config: {
       not_found_handling: 'single-page-application',
       run_worker_first: ['/api', '/api/*', '/ws', '/objects', '/objects/*'],
@@ -93,8 +107,8 @@ export function releaseBindings(bindings, request, now = Date.now()) {
 export function ledgerDigest(rows) {
   return createHash('sha256').update(JSON.stringify(rows.map(row => [row.hash, String(row.created_at)]))).digest('hex');
 }
-export async function verifyRelease(request, fetcher, paused, expectedWindows) {
-  const probeUrl = `${ORIGIN}/api/health/release?challenge=${request.probeToken}`;
+export async function verifyRelease(request, fetcher, paused, expectedWindows, origin = ORIGIN) {
+  const probeUrl = `${origin}/api/health/release?challenge=${request.probeToken}`;
   async function read(url) {
     const response = await fetcher(url, { redirect: 'error', signal: AbortSignal.timeout(30000) });
     requireThat(response.ok, `Release probe failed (HTTP ${response.status})`);
@@ -107,7 +121,7 @@ export async function verifyRelease(request, fetcher, paused, expectedWindows) {
   requireThat(JSON.stringify(probe.windows) === JSON.stringify(expectedWindows), 'Maintenance history mismatch');
   requireThat(Array.isArray(probe.rooms), 'Missing combat room inventory');
   const roomDigests = {};
-  if (paused) for (const id of probe.rooms) {
+  async function verifyRoom(id) {
     requireThat(/^[A-Za-z0-9_-]{1,64}$/.test(id), 'Invalid combat room ID');
     const room = await read(`${probeUrl}&room=${encodeURIComponent(id)}`);
     requireThat(room.source === request.sourceSha && room.valid && room.paused &&
@@ -115,12 +129,14 @@ export async function verifyRelease(request, fetcher, paused, expectedWindows) {
       'Combat room has not reached the paused runtime');
     roomDigests[createHash('sha256').update(id).digest('hex')] = room.digest;
   }
+  // Bound read concurrency for large classroom histories; no room writes occur.
+  if(paused)for(let index=0;index<probe.rooms.length;index+=8)await Promise.all(probe.rooms.slice(index,index+8).map(verifyRoom));
   return { source: probe.source, fingerprint: probe.fingerprint, ledgerDigest: ledgerDigest(probe.ledger), windows: probe.windows,
     roomDigests, roomDigest: createHash('sha256').update(JSON.stringify(Object.entries(roomDigests).sort())).digest('hex') };
 }
-export async function verifyReleaseEventually(request, fetcher, paused, windows, wait = ms => new Promise(resolve => setTimeout(resolve, ms))) {
+export async function verifyReleaseEventually(request, fetcher, paused, windows, wait = ms => new Promise(resolve => setTimeout(resolve, ms)), origin = ORIGIN) {
   for (let attempt=0; ; attempt++) {
-    try { return await verifyRelease(request,fetcher,paused,windows); }
+    try { return await verifyRelease(request,fetcher,paused,windows,origin); }
     catch (error) {
       // A 100% deployment can still be propagating to a POP or Durable Object.
       // Retry reads only; identity/ledger mismatches always stop immediately.
@@ -153,11 +169,12 @@ function assetManifest(root) {
   requireThat(manifest['/index.html'], 'Client build is missing index.html');
   return { manifest, files };
 }
-export async function run({ request, accountId, token, runtimeDir, fetcher = fetch, log = console.log }) {
-  validateRequest(request);
+export async function run({ request, accountId, token, runtimeDir, fetcher = fetch, log = console.log, target = 'preview' }) {
+  validateRequest(request,target);
+  const config=targetInfo(target);
   requireThat(/^[a-f0-9]{32}$/.test(accountId ?? '') && token, 'GitHub Cloudflare deployment credentials are unavailable');
   const apiRoot = `https://api.cloudflare.com/client/v4/accounts/${accountId}`;
-  const scriptPath = `/workers/scripts/${WORKER}`;
+  const scriptPath = `/workers/scripts/${config.worker}`;
   async function api(path, { method = 'GET', body, bearer = token } = {}) {
     const response = await fetcher(`${apiRoot}${path}`, {
       method, headers: { Authorization: `Bearer ${bearer}`,
@@ -170,14 +187,21 @@ export async function run({ request, accountId, token, runtimeDir, fetcher = fet
     return result.result;
   }
   const settings = await api(`${scriptPath}/settings`);
-  const bindings = validateSettings(settings, request);
+  const bindings = validateSettings(settings, request,target);
+  let productionVersion;
+  if(target==='production') {
+    const versions=(await api(`${scriptPath}/deployments`)).deployments[0]?.versions;
+    const alreadyPaused=bindings.RELEASE_SHA?.text===request.sourceSha && JSON.parse(bindings.RELEASE_WINDOWS?.text??'[]').at(-1)?.id===request.pauseId;
+    requireThat(versions?.length===1&&versions[0].percentage===100&&(alreadyPaused||versions[0].version_id===request.expectedVersion),'Production runtime changed before release');
+    productionVersion=versions[0].version_id;
+  }
   async function verifyPublicPause() {
     for (const path of ['/api/health/ready', '/api/student/login', '/ws?sessionId=release-probe']) {
-      const response = await fetcher(`${ORIGIN}${path}`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
+      const response = await fetcher(`${config.origin}${path}`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
       requireThat(response.status === 503 && (await response.json()).status === 'maintenance', 'Public maintenance gate failed');
     }
   }
-  log(`Preview preflight passed; current release ${bindings.RELEASE_SHA.text}.`);
+  log('Provider target and release settings verified.');
   if (request.mode === 'preflight') {
     log('Read-only preflight complete. No database or Worker changes made.');
     return;
@@ -185,15 +209,15 @@ export async function run({ request, accountId, token, runtimeDir, fetcher = fet
   if (request.mode === 'verify') {
     const windows = JSON.parse(bindings.RELEASE_WINDOWS?.text ?? '[]');
     requireThat(windows.at(-1)?.id === request.pauseId && windows.at(-1)?.resumedAt === null, 'Expected active pause missing');
-    const receipt = await verifyRelease(request, fetcher, true, windows);
+    const receipt = await verifyRelease(request, fetcher, true, windows,config.origin);
     await verifyPublicPause();
-    log(`Read-only pause verification succeeded: ${JSON.stringify(receipt)}`);
+    log('Read-only pause verification succeeded; private receipt retained in memory.');
     return receipt;
   }
   // Resume is forbidden until the already paused runtime observes the new ledger.
   const beforeWindows = JSON.parse(bindings.RELEASE_WINDOWS?.text ?? '[]');
   if (request.mode === 'deploy') {
-    const before = await verifyRelease(request, fetcher, true, beforeWindows);
+    const before = await verifyRelease(request, fetcher, true, beforeWindows,config.origin);
     requireThat(before.roomDigest === request.roomDigest, 'Saved combat rooms changed during the migration pause');
   }
   releaseBindings(bindings, request); // Validate the transition before any provider write.
@@ -214,41 +238,45 @@ export async function run({ request, accountId, token, runtimeDir, fetcher = fet
   requireThat(completion, 'Cloudflare did not return an asset completion token');
   // Check again after asset upload, before replacing the Worker.
   const latest = await api(`${scriptPath}/settings`);
-  validateSettings(latest, request);
+  validateSettings(latest, request,target);
   requireThat(JSON.stringify(latest.bindings) === JSON.stringify(settings.bindings), 'Preview bindings changed during upload');
+  if(target==='production') {
+    const versions=(await api(`${scriptPath}/deployments`)).deployments[0]?.versions;
+    requireThat(versions?.length===1&&versions[0].percentage===100&&versions[0].version_id===productionVersion,'Production runtime changed during upload');
+  }
   const form = new FormData();
   const nextBindings = releaseBindings(bindings, request);
   form.append('metadata', new Blob([JSON.stringify(uploadMetadata(latest, request.sourceSha, completion, nextBindings))], { type: 'application/json' }));
   form.append('index.js', new Blob([worker], { type: 'application/javascript+module' }), 'index.js');
   await api(scriptPath, { method: 'PUT', body: form });
   const deployed = await api(`${scriptPath}/settings`);
-  const after = validateSettings(deployed, request);
+  const after = validateSettings(deployed, request,target);
   requireThat(after.RELEASE_SHA.text === request.sourceSha, 'Deployed source verification failed');
   requireThat(after.COMBAT_SESSIONS.namespace_id === bindings.COMBAT_SESSIONS.namespace_id, 'Combat namespace identity changed');
   for (const binding of nextBindings) requireThat(after[binding.name]?.text === binding.text, 'Release controls changed during deployment');
   const windows = JSON.parse(nextBindings[0].text);
-  const receipt = await verifyReleaseEventually(request, fetcher, request.mode === 'pause', windows);
+  const receipt = await verifyReleaseEventually(request, fetcher, request.mode === 'pause', windows,undefined,config.origin);
   if (request.mode === 'pause') {
     await verifyPublicPause();
-    log(`Preview paused; source ${receipt.source}; database ${receipt.fingerprint}; ledger ${receipt.ledgerDigest}; ${Object.keys(receipt.roomDigests).length} rooms verified.`);
+    log('Maintenance and every persisted room verified; private receipt retained in memory.');
     return receipt;
   }
-  const response = await fetcher(`${ORIGIN}/api/health/live`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
+  const response = await fetcher(`${config.origin}/api/health/live`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
   requireThat(response.ok, `Preview health check failed (HTTP ${response.status})`);
   const health = await response.json();
-  requireThat(health.status === 'ok' && health.environment === 'campaign-preview', 'Preview health response is incorrect');
-  const readyResponse = await fetcher(`${ORIGIN}/api/health/ready`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
+  requireThat(health.status === 'ok' && health.environment === config.environment, 'Health response is incorrect');
+  const readyResponse = await fetcher(`${config.origin}/api/health/ready`, { redirect: 'error', signal: AbortSignal.timeout(30000) });
   requireThat(readyResponse.ok, `Preview readiness check failed (HTTP ${readyResponse.status})`);
   const ready = await readyResponse.json();
-  requireThat(ready.status === 'ready' && ready.environment === 'campaign-preview', 'Preview readiness response is incorrect');
-  log(`Deployed campaign preview source ${request.sourceSha}. ${ORIGIN}`);
+  requireThat(ready.status === 'ready' && ready.environment === config.environment, 'Readiness response is incorrect');
+  log(`Deployed verified source ${request.sourceSha}.`);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const request = JSON.parse(readFileSync('deploy/campaign-preview.json', 'utf8'));
     const receipt = await run({ request, accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
       token: process.env.CLOUDFLARE_API_TOKEN, runtimeDir: resolve('runtime') });
-    if (receipt) { mkdirSync('artifacts/release', { recursive: true }); writeFileSync('artifacts/release/preview-pause-receipt.json', JSON.stringify(receipt, null, 2) + '\n'); }
+    if (receipt) { mkdirSync('artifacts/release', { recursive: true }); writeFileSync('artifacts/release/preview-pause-receipt.json', JSON.stringify({ verified: true }, null, 2) + '\n'); }
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,
       `Campaign preview **${request.mode}** succeeded. Source: \`${request.sourceSha}\`.\n\n${ORIGIN}\n`);
   } catch (error) { console.error(error.message); process.exitCode = 1; }
