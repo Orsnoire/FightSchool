@@ -136,7 +136,7 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
       questions: Array.from({ length: count }, (_, i) => pool[(offset + i) % pool.length]),
       enemies: [{ id: 'campaign-slime', name: objective ? 'Cave Guardian' : 'Wild Slime', image: '/enemies/slime-v2.png', enemyType: 'slime', quantity: 1, role: objective ? 'boss' : 'normal', difficultyMultiplier: objective ? 1.5 : 1 }],
       enemyDisplayMode: 'consecutive', lootTable: [],
-      campaignContext: { campaignId: campaign.id, studentId: student.id, objective, fixedTier: 1 } };
+      campaignContext: { campaignId: campaign.id, studentId: student.id, objective, fixedTier: 1, environment: next.zone === 'dungeon' ? 'normal_cave' : 'grassland' } };
     Object.assign(player, { health: next.health, mp: next.mp, healingPotions: next.healingPotions, shieldPotions: next.shieldPotions, consumables: next.consumables, itemProtections: next.itemProtections, isDead: false });
     encounter = { id, fight, player };
     next = { ...next, activeSessionId: id };
