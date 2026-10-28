@@ -4,9 +4,9 @@
 - Owner selected active game time across fights, exploration and menus; hidden/idle tabs do not count. Existing records do not measure this reliably, so new tracking will identify partial history rather than fabricate past hours.
 - Branch: `feature/teacher-guild-roster-stats`, based on main `2d524dff1ff7ac784d37b02fb48a4ec530e9b666`. This is a separate owner-requested feature, not C12 or Campaign #81. Both registered branches and production remain unchanged.
 - State: implementation complete in draft PR #87; verification in progress. Adds seven-day sampled active hours, visibility/idle/suspension handling, tab/device/retry deduplication, partial-history states, and 24-hour question-weighted guild accuracy with legacy fallback. All job levels and lifetime AA remain included.
-- Local verification: TypeScript and full test suite pass; migrated SQL checks cover additive preservation, rolling boundaries, retries, guild scope and authentication. Browser test added for desktop/phone and actual tracker behavior; local Chromium download failed, so browser execution is pending. Build and final review still pending.
+- Local verification: 374 tests pass (373 full-suite tests plus the new rendered-component/DOM tracker integration test), TypeScript and client/Worker builds pass. Migrated SQL checks cover additive preservation, rolling boundaries, retries, guild scope and authentication. Rendered values and actual visibility/input-driven tracker behavior pass. Desktop/phone Chromium tests are added; local Chromium download failed, so browser execution remains pending.
 - New additive migration 0019 is unapplied. Campaign #81 has a separate unmerged 0019 history: reconcile before integrating both. No live database, merge or deployment changes. [Metric semantics and migration boundary](TEACHER_GUILD_ROSTER.md).
-- Next: complete build and UI verification, inspect diff, publish final evidence and keep this draft unmerged pending release review.
+- Next: verify GitHub CI and desktop/phone Chromium at the final published head, then review for release. Reconcile main’s documentation pointer in this branch to clear the PR merge conflict. No merge or deployment is authorized by the implementation request.
 
 # Alternate Advancement — released October 26, 2026
 
