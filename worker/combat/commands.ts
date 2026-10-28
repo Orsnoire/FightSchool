@@ -3,6 +3,7 @@ import { CombatRuleError } from '../../shared/combat/errors';
 import type { CombatSnapshot } from '../../shared/combat/model';
 import type { FightRecord } from '../db/schema';
 import { applyAnswer, selectAction, setReady } from './choices';
+import { useCombatItem } from './consumables';
 
 /** Keep frame validation separate so expiry, rate limits and authentication retain their order. */
 export function assertCommandText(message: string | ArrayBuffer): asserts message is string {
@@ -33,6 +34,10 @@ export function applyStudentCommand(state: CombatSnapshot, fight: FightRecord, a
       throw new CombatRuleError('Invalid action');
     const selected = selectAction(state, actorId, command.ability, command.targetId);
     return command.ready === true ? setReady(selected, actorId) : selected;
+  }
+  if (command.type === 'use_item') {
+    if (!fight.campaignContext) throw new CombatRuleError('Campaign items are unavailable in this encounter');
+    return useCombatItem(state, actorId, command.itemId);
   }
   if (command.type === 'ready') return setReady(state, actorId);
   throw new CombatRuleError('Unsupported command');

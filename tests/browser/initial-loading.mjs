@@ -42,6 +42,7 @@ try {
   await p.route('**/api/**', async route => {
     const request = route.request(), url = new URL(request.url()), path = url.pathname;
     if (path === '/api/teacher/login' || path.endsWith('/check-session')) return route.fulfill({ json: { id: fight.teacherId, email: 'fixture@example.invalid', guildCode: 'FIXTURE' } });
+    if (path === '/api/campaigns/availability') return route.fulfill({ json: { enabled: false } });
     if (path === `/api/teacher/${fight.teacherId}/fights`) {
       assert.equal(url.searchParams.get('view'), 'summary', 'dashboard never downloads the full bank');
       listReads++;

@@ -1,0 +1,110 @@
+name: Deploy Campaign Preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/campaign-pilot]
+    paths: [deploy/campaign-preview.json]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: campaign-preview
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      mode: ${{ steps.request.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Validate release request and preview safeguards
+        id: request
+        run: |
+          node --test tests/deployment/campaign-preview.test.mjs
+          node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          import { validateRequest } from './scripts/deploy-campaign-preview.mjs';
+          const request = validateRequest(JSON.parse(readFileSync('deploy/campaign-preview.json', 'utf8')));
+          appendFileSync(process.env.GITHUB_OUTPUT, `mode=${request.mode}\nsource=${request.sourceSha}\n`);
+          JS
+      - uses: actions/checkout@v7
+        if: steps.request.outputs.mode == 'deploy'
+        with:
+          ref: ${{ steps.request.outputs.source }}
+          path: runtime
+          fetch-depth: 0
+      - name: Reject runtimes predating AA compatibility
+        if: steps.request.outputs.mode == 'deploy'
+        working-directory: runtime
+        run: |
+          test "$(git rev-parse HEAD)" = '${{ steps.request.outputs.source }}'
+          git merge-base --is-ancestor bcf2c4c251c24f2d5a4cbcc5a62aac97149bb3af HEAD
+      - name: Verify and build the exact requested source
+        if: steps.request.outputs.mode == 'deploy'
+        working-directory: runtime
+        run: |
+          npm ci
+          npm run check
+          npm test
+          npm run build:cloudflare
+      - name: Verify campaign UI before preview deployment
+        if: steps.request.outputs.mode == 'deploy'
+        working-directory: runtime
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/campaign-browser-tools" --no-save --package-lock=false playwright@1.62.1
+          ln -s "$RUNNER_TEMP/campaign-browser-tools/node_modules/playwright" node_modules/playwright
+          node "$RUNNER_TEMP/campaign-browser-tools/node_modules/playwright/cli.js" install chromium
+          npx vite preview --host 127.0.0.1 --port 4173 > "$RUNNER_TEMP/campaign-preview-vite.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node --import tsx tests/browser/campaign.mjs
+          node --import tsx tests/browser/combat-ui.mjs
+      - name: Preserve campaign UI evidence
+        if: always() && steps.request.outputs.mode == 'deploy'
+        uses: actions/upload-artifact@v6
+        with:
+          name: campaign-preview-browser
+          path: runtime/artifacts/combat-ui
+          if-no-files-found: ignore
+          retention-days: 7
+      - uses: actions/upload-artifact@v6
+        if: steps.request.outputs.mode == 'deploy'
+        with:
+          name: campaign-preview-build
+          path: runtime/dist
+          if-no-files-found: error
+          retention-days: 7
+
+  preview:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Existing credential store only. The script hardcodes the isolated preview target.
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v6
+        if: needs.prepare.outputs.mode == 'deploy'
+        with:
+          name: campaign-preview-build
+          path: runtime/dist
+      - name: Check or deploy isolated campaign preview
+        run: node scripts/deploy-campaign-preview.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

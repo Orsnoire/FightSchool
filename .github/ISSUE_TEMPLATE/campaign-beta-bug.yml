@@ -1,0 +1,35 @@
+name: Campaign beta bug
+description: Report a problem in the QuestAcademy campaign beta.
+title: "[Campaign beta] "
+body:
+  - type: markdown
+    attributes:
+      value: "Reports are public. Do not include student names, quiz answers, passwords or personal screenshots."
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we reproduce it?
+      description: Include the steps leading up to the problem. Avoid names and private content.
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where were you playing?
+      options:
+        - Main site campaign beta
+        - Isolated campaign preview
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: Chromebook / Chrome, phone / Safari, etc.

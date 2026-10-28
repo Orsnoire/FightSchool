@@ -1,3 +1,4 @@
+import { CONSUMABLE_IDS } from '../../shared/campaign/consumables.ts';
 import { EQUIPMENT_ITEMS } from "../../shared/schema.ts";
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
@@ -72,6 +73,22 @@ try {
     await emit();
     await page.locator('[data-testid="rich-content"] .katex').waitFor();
     await screenshot('question');
+    // Campaign self-cures remain usable while status effects block ordinary actions.
+    state.players[id].consumables = Object.fromEntries(CONSUMABLE_IDS.map(id => [id, 2]));
+    state.players[id].statuses = [{ type: 'stun', sourceId: 'e1', appliedRound: 0 }];
+    await emit();
+    await page.getByTestId('consumable-bag').locator('summary').click();
+    await page.getByRole('button', { name: 'Use Silver Knife', exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `${output}/${viewport.width}-combat-full-bag.png` });
+    await page.getByRole('button', { name: 'Use Ennervator', exact: true }).click();
+    assert.equal(await page.evaluate(() => window.combatTest.sent.at(-1).itemId), 'ennervator');
+    state.players[id].consumables = { potion: 2 }; state.players[id].itemUsedRound = state.round;
+    state.players[id].statuses = []; state.players[id].health = 1;
+    await emit();
+    assert.equal(await page.getByRole('button', { name: 'Use Potion', exact: true }).isDisabled(), true);
+    await page.screenshot({ path: `${output}/${viewport.width}-combat-items.png` });
+    delete state.players[id].consumables; delete state.players[id].itemUsedRound;
+    await emit();
     // Solo-host exit describes earned EXP before confirmation, and cancellation is harmless.
     state.soloHostId = id;
     await emit();
@@ -221,7 +238,11 @@ try {
       return route.fulfill({json:{}});
     });
     state.currentPhase='game_over';state.victory=true;
-    await page.evaluate(({state,id})=>window.combatTest.sockets.filter(s=>s.url.includes('sessionId=ABC234')).at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,results:[{id:'comparison-result',studentId:id,xpEarned:10,goldReward:10,lootTable:[{itemId:'t1_fighter_claymore'}]}]})}),{state,id});
+    // Check the pilot's no-loot boss result before the separate hover comparison scenario.
+    await page.evaluate(({state,id})=>window.combatTest.sockets.filter(s=>s.url.includes('sessionId=ABC234')).at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,results:[{id:'boss-stamina-result',studentId:id,xpEarned:10,goldReward:10,staminaRestored:0.2,lootTable:[]}]})}),{state,id});
+    await page.getByText('Campaign boss reward: +20% stamina restored.', { exact: true }).waitFor();
+    await screenshot('boss-stamina-reward');
+    await page.evaluate(({state,id})=>window.combatTest.sockets.filter(s=>s.url.includes('sessionId=ABC234')).at(-1).onmessage({data:JSON.stringify({type:'combat_state',state,results:[{id:'comparison-result',studentId:id,xpEarned:10,goldReward:10,staminaRestored:0.2,lootTable:[{itemId:'t1_fighter_claymore'}]}]})}),{state,id});
     const compare=page.getByRole('button',{name:"Compare Fighter's Claymore",exact:true});
     await compare.waitFor();
     if(viewport.width>600)await page.getByRole('article',{name:"Fighter's Claymore",exact:true}).hover();

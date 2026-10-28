@@ -45,6 +45,9 @@ export interface CombatAction {
   targetId: string;
 }
 export interface CombatPlayer {
+  consumables?: import('../campaign/consumables').ConsumableBag;
+  itemProtections?: import('../campaign/consumables').ItemProtections;
+  itemUsedRound?: number;
   /** Frozen effective ranks and effects; missing means a historical room with no AA. */
   advancement?: import('../aa').AAEffects;
   /** Persisted one-round roll; does not cure the underlying control effect. */

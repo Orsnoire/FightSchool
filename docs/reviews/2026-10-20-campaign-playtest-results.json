@@ -1,0 +1,64 @@
+{
+  "origin": "https://questacademy-campaign-preview.coxsonator.workers.dev",
+  "source": "a688e8f18d2c539612cb87d0360f92fe8f5cbf18",
+  "startedAt": "2026-10-20T16:25:07.198Z",
+  "checks": [
+    "Closed gate blocks key, cave entry and overworld question pool",
+    "Teacher opening plus key collection unlocks all ten quiz questions; replay is idempotent",
+    "Teacher can close an already claimed gate and remove its question pool",
+    "Weapon and armor purchases persist, charge exact gold and reject duplicate ownership",
+    "Inn switches campaign job independently and restores HP, MP and potions",
+    "Leaving an existing encounter settles and releases exploration",
+    "WebSocket reconnect retains encounter HP and question deadline",
+    "Wild encounter completes and persists reduced HP across return and refresh",
+    "Exploration reaches and enters the generated cave",
+    "Field healing restores HP and spends its defined resources",
+    "Guardian victory settles and permanently marks dungeon cleared",
+    "Refresh preserves explored tiles, dungeon clear and resources",
+    "User playtester remains fresh in town with 500 gold and unclaimed key"
+  ],
+  "encounters": [
+    {
+      "boss": false,
+      "startHP": 10,
+      "mode": "auto",
+      "result": "victory",
+      "rounds": 3,
+      "savedHP": 9
+    },
+    {
+      "boss": false,
+      "startHP": 10,
+      "mode": "auto",
+      "result": "left"
+    },
+    {
+      "boss": false,
+      "startHP": 10,
+      "mode": "auto",
+      "result": "left"
+    },
+    {
+      "boss": true,
+      "startHP": 10,
+      "mode": "boss",
+      "result": "victory",
+      "savedHP": 6,
+      "rounds": 28
+    }
+  ],
+  "previousAttempt": {
+    "status": "failed",
+    "encounters": [
+      {
+        "boss": false,
+        "startHP": 10,
+        "mode": "auto"
+      }
+    ],
+    "error": "Timed out waiting for first answer feedback transition; retesting on a fresh encounter."
+  },
+  "harnessCorrection": "The guardian can skip an empty enemy-animation phase; acceptance now follows saved state transitions instead of requiring that phase.",
+  "status": "passed",
+  "finishedAt": "2026-10-20T16:29:19.019Z"
+}

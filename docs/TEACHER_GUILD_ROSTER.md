@@ -50,9 +50,11 @@ deletion. Deleting a player cascades all activity tables. Rollback can retain th
 additive tables while restoring a compatible earlier runtime.
 
 Roster migration 0019 was applied by the October 28 production deployment.
-The unmerged campaign branch also uses migration numbers beginning at 0019 and
-must reconcile its unapplied history and regenerate its snapshots; do not rewrite any migration already applied to an
-environment or run the classroom migration against the campaign preview.
+Campaign PR #81 incorporates this main migration unchanged and moves its
+unshipped canonical migrations to 0020–0024. Its existing isolated preview has
+a divergent historical ledger and requires the separately reviewed atomic bridge.
+Never renumber shipped main history, rewrite preview rows, reset either
+environment or run the classroom migration against the legacy campaign preview.
 
 The roster refreshes every minute while visible, on window focus and manually.
 Failures are visible and retained values are explicitly labeled stale.

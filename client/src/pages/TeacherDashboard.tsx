@@ -1,4 +1,5 @@
 import { apiQueries } from "@/lib/apiQueries";
+import { CampaignBetaLink } from '@/features/campaign/BetaNotice';
 import { useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -117,6 +118,7 @@ export default function TeacherDashboard() {
             Quest Master
           </h1>
           <div className="flex flex-wrap gap-2">
+            <CampaignBetaLink teacher />
             <Link href="/teacher/items">
               <Button variant="outline" size="default" data-testid="button-manage-items">
                 <Swords className="mr-2 h-5 w-5" />

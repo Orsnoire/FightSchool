@@ -13,12 +13,14 @@ import { handleCombatSessions } from "./routes/combat-sessions.ts";
 import { CombatSessionObject } from "./combat/session-object.ts";
 
 import { isAllowedOrigin } from "./auth/origin.ts";
+import { campaignBetaPolicy } from './campaign/beta';
 
 interface Env {
   OBJECTS?: R2Bucket;
   ASSETS: Fetcher;
   COMBAT_SESSIONS: DurableObjectNamespace;
   ENVIRONMENT: string;
+  CAMPAIGN_BETA_GUILD_IDS?: string;
   PUBLIC_ORIGIN: string;
   ADDITIONAL_PUBLIC_ORIGINS?: string;
   DATABASE_URL: string;
@@ -230,6 +232,7 @@ async function dispatch(request: Request, env: Env, currentRequestId:string):Pro
             repository,
             config,
             gameDatabase(env.DATABASE_URL),
+            campaignBetaPolicy(env.ENVIRONMENT, env.CAMPAIGN_BETA_GUILD_IDS),
           ));
         if (response) {
           response.headers.set("X-Request-Id", currentRequestId);

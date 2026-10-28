@@ -1,4 +1,5 @@
 import { effectiveLevels, limitLevel } from "../../shared/quests";
+import { aaTier } from '../../shared/aa';
 import { crossClassSelections } from '../../shared/job-loadouts';
 import { projectCombatLoadout } from '../../shared/combat/loadout';
 import { questionKey } from "../progression/question-key";
@@ -26,6 +27,7 @@ export async function combatProfile(
   db: GameDatabase,
   student: s.StudentRecord,
   sessionId?: string,
+  campaignPower?: { guildId: string; guildTier: number; campaignTier: number },
 ): Promise<CombatProfile> {
   const jobs = await db
     .select()
@@ -41,8 +43,17 @@ export async function combatProfile(
     context={...membership,limitTier:room.guildLimitTier||membership.limitTier};
    }
    levels=effectiveLevels(levels,context?.limitTier||1);
+   const [campaign]=await db.select().from(s.campaignEncounters).where(eq(s.campaignEncounters.sessionId,sessionId));
+   if(campaign){
+    if(campaign.studentId!==student.id || campaign.settled)throw new Error('Campaign encounter unavailable.');
+    return {levels:campaign.playerSnapshot.jobLevels,campaignPlayer:campaign.playerSnapshot};
+   }
   }
-  const aaLimit = sessionId ? context?.limitTier || 1 : 4;
+  if (campaignPower) {
+    context = { guildId: campaignPower.guildId, limitTier: aaTier(campaignPower) };
+    levels = effectiveLevels(levels, context.limitTier);
+  }
+  const aaLimit = sessionId || campaignPower ? context?.limitTier || 1 : 4;
   const ids = EQUIPMENT_SLOTS.map(slot => student[slot]).filter((id): id is string => !!id);
   const custom = await db
     .select()
@@ -59,7 +70,7 @@ export async function combatProfile(
   const appearance = avatar && { modelId: avatar.modelId, hairColorId: avatar.hairColorId, eyeColorId: avatar.eyeColorId, skinColorId: avatar.skinColorId };
   return {
     advancement,
-    ...(sessionId ? {questGuildId:context?.guildId||null,limitTier:context?.limitTier||1} : {}),
+    ...(sessionId || campaignPower ? {questGuildId:context?.guildId||null,limitTier:context?.limitTier||1} : {}),
     appearance: validAppearance(appearance) ? appearance : null,
     levels,
     equipment,
@@ -130,6 +141,7 @@ export async function persistCombatResults(
       survived: !p.isDead, is_solo_mode: !!live?.soloStudentId, totals: p.totals,
       base_xp: xp, gold_reward: gold, loot_table: eligibleLoot,
       reward_claim: !eligibleLoot.length ? "automatic" : null,
+      campaign_boss: fight.campaignContext?.objective === true,
       participated: participation > 0, level_cap:p.limitTier ? limitLevel(p.limitTier):null, eligible_progression:p.questGuildId===undefined || !!earnedGuildId });
   }
   // The database serializes each student's daily counter and result/reward receipt
@@ -163,6 +175,14 @@ export async function persistCombatResults(
   });
   // Earned job levels are character-wide; academic evidence remains hosting-guild scoped.
   await evaluateStudentLevels(db, studentIds);
+  if (fight.campaignContext) {
+    const p = { ...state.departedPlayers, ...state.pendingPlayers, ...state.players }[fight.campaignContext.studentId];
+    if (!p) throw new Error('Campaign result has no participant');
+    await db.execute(sql`SELECT settle_campaign_encounter(${JSON.stringify({ session: state.sessionId,
+      consumables: p.consumables, itemProtections: p.itemProtections,
+      health: Math.floor(p.health), mp: Math.floor(p.mp), healingPotions: p.healingPotions, shieldPotions: p.shieldPotions,
+      victory: !!state.victory && !!state.players[p.studentId] })}::jsonb)`);
+  }
   return results;
 }
 /** Persist progress after resolved questions, including departed players; no answer text leaves the server. */

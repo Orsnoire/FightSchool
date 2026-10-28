@@ -72,9 +72,12 @@ export async function dataCostFixture(
       code: "C06TWO",
     },
   ]);
-  // Historical migration fixtures must not use today's expanded Drizzle INSERT columns.
-  for (const student of students) await pg.query(`INSERT INTO students(id,nickname,nickname_normalized,password_hash,character_class,gender,guild_id)
-    VALUES($1,$2,$3,$4,$5,$6,$7)`, [student.id, student.nickname, student.nicknameNormalized, student.passwordHash, student.characterClass, student.gender, student.guildId]);
+  // Explicit historical columns keep the pre-0017 migration fixture independent
+  // of columns added to today's ORM schema (such as campaign stamina recovery).
+  await pg.query(`INSERT INTO students(id,nickname,nickname_normalized,password_hash,character_class,gender,guild_id,inventory,gold,created_at)
+    SELECT x.id,x.nickname,x.nickname,x.password_hash,'warrior','A',x.guild_id,'[]'::jsonb,0,to_timestamp(0)
+    FROM jsonb_to_recordset($1::jsonb) AS x(id uuid,nickname text,password_hash text,guild_id uuid)`,
+    [JSON.stringify(students.map(s => ({ id: s.id, nickname: s.nickname, password_hash: s.passwordHash, guild_id: s.guildId })))]);
   await db.insert(schema.guildMemberships).values(
     students.flatMap((s) => [
       { guildId, studentId: s.id },

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CONSUMABLE_IDS } from '../campaign/consumables';
 import type { CombatSnapshot, CombatPlayer, CombatEnemy } from '../combat/model';
 
 const commandId = z.string().regex(/^[A-Za-z0-9_-]{8,100}$/);
@@ -8,6 +9,7 @@ const simple = <T extends string>(type: T) => z.object({ type:z.literal(type), c
 export const combatCommandSchema = z.discriminatedUnion('type', [
   simple('host'), simple('join'), simple('start_fight'), simple('end_fight'), simple('leave_fight'),
   simple('ready').extend({round}),
+  simple('use_item').extend({round,itemId:z.enum(CONSUMABLE_IDS)}),
   simple('playback_complete').extend({round,batchId:z.string().min(1).max(240)}),
   simple('answer').extend({round,questionId:targetId,answer:z.string().max(5000)}),
   simple('action').extend({round,ability:z.string().min(1).max(200),targetId,ready:z.boolean().optional()}),
@@ -22,7 +24,7 @@ export type CombatCommandType = CombatCommand['type'];
 export type CommandPayload<T extends CombatCommandType> = Omit<Extract<CombatCommand,{type:T}>, 'type'|'commandId'|'round'>;
 // Explicit top-level allowlists. New internal fields are private by default.
 export const snapshotFields = ['schemaVersion','revision','sessionId','fightId','enemyDisplayMode','currentQuestionIndex','round','currentPhase','questionStartTime','phaseStartTime','phaseDeadline','threatLeaderId','damageLeaderId','victory','endReason','encounterRules','encounterTier','activeWave','autoAdvanceWaves','completedRounds','endedByHost','soloHostId'] as const;
-export const playerFields = ['studentId','nickname','characterClass','gender','health','maxHealth','mp','maxMp','comboPoints','maxComboPoints','consecutiveCorrectAnswers','threat','isDead','hasAnswered','ready','healingPotions','shieldPotions','joinOrder','limitTier','roundsParticipated','recoveryCorrectAnswers','controlImmuneThroughRound'] as const;
+export const playerFields = ['studentId','nickname','characterClass','gender','health','maxHealth','mp','maxMp','comboPoints','maxComboPoints','consecutiveCorrectAnswers','threat','isDead','hasAnswered','ready','healingPotions','shieldPotions','joinOrder','limitTier','roundsParticipated','recoveryCorrectAnswers','controlImmuneThroughRound','consumables','itemProtections','itemUsedRound'] as const;
 export const enemyFields = ['id','name','image','difficultyMultiplier','health','maxHealth','enemyType','attackPower','defense','magicDefense','role','templateId','quantity','wave','species'] as const;
 export type PublicCombatPlayer = Pick<CombatPlayer,typeof playerFields[number] | 'advancement' | 'agilityAttack' | 'statuses' | 'actionBlocked' | 'equipmentVisuals' | 'equipmentLoadout' | 'equipmentEffects' | 'appearance' | 'stats' | 'jobLevels' | 'availableAbilities' | 'questionAction' | 'supportActions' | 'cooldowns' | 'ultimatesUsed' | 'buffs' | 'totals'> & {currentAnswer:null;lastAnswerCorrect?:boolean;answerOutcome?:import('../combat/answer-feedback').AnswerOutcome};
 export type PublicCombatEnemy = Pick<CombatEnemy,typeof enemyFields[number] | 'palette' | 'effects' | 'aiState'>;
@@ -30,7 +32,7 @@ export type PublicCombatSnapshot = Pick<CombatSnapshot,typeof snapshotFields[num
 
 export interface EarnedResult {
   id:string;studentId:string;xpEarned:number;baseXp?:number;xpMultiplier?:number;
-  staminaFightNumber?:number|null;goldReward:number;lootTable:Array<{itemId:string}>;
+  staminaFightNumber?:number|null;staminaRestored?:number;goldReward:number;lootTable:Array<{itemId:string}>;
 }
 export type CombatServerMessage =
   | {type:'combat_state';state:PublicCombatSnapshot;question:import('../combat/model').PublicQuestion|null;serverTime:number;results?:EarnedResult[];rejoinRequests?:Array<{studentId:string;nickname:string}>}

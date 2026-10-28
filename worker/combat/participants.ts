@@ -8,6 +8,7 @@ import { availableAbilities } from "../../shared/combat/abilities.ts";
 import { leader } from "./state-events";
 
 export interface CombatProfile {
+  campaignPlayer?: CombatPlayer;
   advancement?: CombatPlayer['advancement'];
   questGuildId?: string | null;
   limitTier?: number;
@@ -31,6 +32,10 @@ export function addStudent(
   if (state.currentPhase === "game_over") throw new CombatRuleError("Fight has ended");
   const returning = state.departedPlayers?.[student.id];
   if (returning) return admitStudent(state, structuredClone(returning));
+  if (profile.campaignPlayer) {
+    if (profile.campaignPlayer.studentId !== student.id) throw new CombatRuleError('Campaign participant mismatch');
+    return admitStudent(state, structuredClone(profile.campaignPlayer));
+  }
   const job = (student.characterClass || "warrior") as CharacterClass;
   const levels = { ...profile.levels, [job]: profile.levels[job] || 1 };
   const starting = getStartingEquipment(job);

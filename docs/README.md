@@ -6,6 +6,9 @@ Cleanup Phases 1–2 are complete. **C01 and C02 are COMPLETE: merged, deployed 
 cleanup exit gates. The separately authorized [swarm, previous-tier gear and host controls](combat/swarm-scaling.md) are deployed and accepted in PR #61.
 The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. It adds teacher reports, question editing, combat placeholders/completion and recoloring while retaining selection clocks.
 Read [active work](ACTIVE_WORK.md) before editing.
+The separately authorized [one-dungeon campaign pilot](CAMPAIGN_PILOT.md) is
+implemented and verified in PR #81, awaiting review/release; it adds exploration,
+persistent resources and town services. It is not deployed.
 
 ## Start here
 
@@ -79,3 +82,13 @@ dated; move remaining scope into the active plans instead of leaving competing
 [Source of Truth](Source_of_Truth.md).
 
 C05 [room-cost methods and measurements](cloudflare/room-costs.md) are complete and released; their documented measurement limits remain.
+
+- [Campaign pilot playtest](CAMPAIGN_PLAYTEST.md): preview access, student walkthrough, teacher gates and scope.
+- [Campaign art direction](CAMPAIGN_ART_DIRECTION.md): owner-supplied FF/DQ references and the exploration UI workshop brief.
+
+## October 21 consumables and responsiveness follow-up
+
+The owner accepted movement responsiveness and requested a weighted item inventory,
+an item shop with eight consumables, and investigation of combat pauses. Read
+[consumable rules and prototype defaults](CAMPAIGN_CONSUMABLES.md) and
+[active work](ACTIVE_WORK.md) for implementation and verification status.

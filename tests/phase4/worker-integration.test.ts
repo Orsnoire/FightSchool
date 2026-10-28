@@ -35,10 +35,11 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     assert.equal(migrated.loadout_revision, 0);
     assert.deepEqual(migrated.granted_jobs, []);
     assert.equal(migrated.aa_experience, 0);
+    assert.equal(migrated.stamina_recovery, 0);
     assert.equal(migrated.aa_points_spent, 0);
     assert.deepEqual(migrated.aa_ranks, {});
     assert.deepEqual(migrated.cross_class_abilities, [null, null]);
-    const { aa_points_spent:_spent,aa_ranks:_ranks,aa_revision:_aaRevision,character_name:_characterName,cross_class_abilities:_abilities,granted_jobs:_grants,aa_experience:_aa,arms: _arms, job_loadouts: _saved, loadout_revision: _revision, ...preserved } = migrated;
+    const { stamina_recovery:_recovery,aa_points_spent:_spent,aa_ranks:_ranks,aa_revision:_aaRevision,character_name:_characterName,cross_class_abilities:_abilities,granted_jobs:_grants,aa_experience:_aa,arms: _arms, job_loadouts: _saved, loadout_revision: _revision, ...preserved } = migrated;
     assert.deepEqual(preserved, legacyLoadout, 'arms migration preserves every existing student field');
     await pg.query('DELETE FROM students WHERE id=$1', [legacyId]);
     neonConfig.fetchFunction = async (_url, init) => {

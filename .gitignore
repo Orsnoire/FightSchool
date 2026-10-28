@@ -15,3 +15,6 @@ workshop/site/previews/
 
 artifacts/c08/
 artifacts/c08-browser/
+
+# Transient browser-like fixture bundles
+.host-ui-test-*/

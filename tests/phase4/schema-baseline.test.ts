@@ -96,8 +96,9 @@ test('all migrations match the declared catalog and explicitly owned SQL routine
       FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
       WHERE n.nspname='public' ORDER BY signature`)).rows;
     assert.deepEqual(routines.map(row => row.signature), [
+      'apply_campaign_action(jsonb)',
       'award_combat_results_with_stamina(jsonb)', 'award_quest_batch(uuid,jsonb)',
-      'purchase_aa(uuid,uuid,text,integer,integer,integer,integer,jsonb)', 'sync_cross_class_abilities()', 'sync_initial_avatar_gender()',
+      'purchase_aa(uuid,uuid,text,integer,integer,integer,integer,jsonb)', 'settle_campaign_encounter(jsonb)', 'sync_cross_class_abilities()', 'sync_initial_avatar_gender()',
     ], 'SQL-owned routines must have explicit ownership; update docs with intentional changes');
   } finally {
     await migrated.close();

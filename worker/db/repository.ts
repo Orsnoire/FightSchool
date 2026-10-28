@@ -22,6 +22,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import type { SessionRepository } from "../auth/session.ts";
 import {
   appSessions,
+  campaignEncounters,
   fights,
   equipmentItems,
   guildFights,
@@ -53,6 +54,7 @@ export interface IdentityRepository extends SessionRepository {
   listTeacherFights(teacherId: string): Promise<FightRecord[]>;
   listTeacherFightSummaries(teacherId: string): Promise<FightSummary[]>;
   findFightById(id: string): Promise<FightRecord | null>;
+  findCombatFight?(sessionId: string, fightId: string): Promise<FightRecord | null>;
   createFight(fight: NewFightRecord): Promise<FightRecord>;
   updateFight(
     id: string,
@@ -162,6 +164,13 @@ export function createIdentityRepository(
         .from(fights)
         .where(and(eq(fights.id, id), eq(fights.isArchived, false)))
         .limit(1);
+      return fight || null;
+    },
+
+    async findCombatFight(sessionId, fightId) {
+      const [campaign] = await database.select().from(campaignEncounters).where(eq(campaignEncounters.sessionId, sessionId));
+      if (campaign) return campaign.fightSnapshot;
+      const [fight] = await database.select().from(fights).where(and(eq(fights.id, fightId), eq(fights.isArchived, false)));
       return fight || null;
     },
 

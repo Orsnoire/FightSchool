@@ -19,13 +19,15 @@ test('AA migration, atomic spending, appearance updates and HTTP ownership prese
   const gameDb = db as any;
   const journal = JSON.parse(readFileSync(new URL('../../migrations/cloudflare/meta/_journal.json', import.meta.url), 'utf8'));
   try {
-    for (const { tag } of journal.entries.filter((x: any) => !x.tag.includes('alternate_advancement')))
+    for (const { tag } of journal.entries.filter((x: any) => x.idx < 18))
       await pg.exec(readFileSync(new URL(`../../migrations/cloudflare/${tag}.sql`, import.meta.url), 'utf8'));
     // Seed an actual pre-AA row so the migration cannot pass by only testing new users.
     const id = student().id;
     await pg.query(`INSERT INTO students(id,nickname,nickname_normalized,password_hash,character_class,gender,aa_experience,xp_remainder,cross_class_ability_1,cross_class_ability_2)
       VALUES($1,'Original login','original login','never valid','warrior','A',125,0.625,'first','second')`, [id]);
     await pg.exec(readFileSync(new URL('../../migrations/cloudflare/0018_alternate_advancement.sql', import.meta.url), 'utf8'));
+    for (const { tag } of journal.entries.filter((x: any) => x.idx > 18))
+      await pg.exec(readFileSync(new URL(`../../migrations/cloudflare/${tag}.sql`, import.meta.url), 'utf8'));
     const current = async () => (await db.select().from(s.students).where(eq(s.students.id, id)))[0];
     const buy = (upgradeId: string, rank = 1, requestId = crypto.randomUUID()) => ({ upgradeId, rank, requestId, catalogVersion: 1 as const });
 

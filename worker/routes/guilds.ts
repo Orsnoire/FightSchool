@@ -179,7 +179,9 @@ export async function handleGuilds(context: GameRouteContext): Promise<Response 
         .innerJoin(s.fights, eq(s.fights.id, s.guildFights.fightId))
         .innerJoin(s.liveCombatSessions, eq(s.liveCombatSessions.fightId, s.fights.id))
         .leftJoin(s.students, eq(s.students.id, s.liveCombatSessions.soloStudentId))
+        .leftJoin(s.campaignEncounters, eq(s.campaignEncounters.sessionId, s.liveCombatSessions.sessionId))
         .where(and(eq(s.guildFights.guildId, id), eq(s.liveCombatSessions.teacherId,g.teacherId),
+          isNull(s.campaignEncounters.sessionId),
           or(eq(s.liveCombatSessions.guildId, id), isNull(s.liveCombatSessions.guildId)),
           ...(teacher ? [] : [or(eq(s.liveCombatSessions.guildId,id), isNull(s.liveCombatSessions.soloStudentId), eq(s.liveCombatSessions.soloStudentId, actor.actorId))]),
           inArray(s.liveCombatSessions.status, ["waiting", "active"])))

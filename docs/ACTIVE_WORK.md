@@ -1,3 +1,37 @@
+# Campaign beta — current-main integration October 28, 2026
+
+- Continue `feature/campaign-pilot` / [PR #81](https://github.com/Orsnoire/FightSchool/pull/81). Owner selected main-site gated beta and visible bug reporting to finish this work stream and use main for future development.
+- Integrated main `b9d33b42117271bdb52d10ec037e37f317146830` (roster PR #87 runtime `f34b49f` plus release evidence). Preserve main 0000–0019; unshipped campaign migrations are now 0020–0024. The legacy preview remains 22 rows until an authorized strict bridge reaches 29; ordinary canonical migration reaches 25. No existing row is renumbered or replayed.
+- Implemented: server-enforced guild beta gate (default closed), prominent Beta / Report a bug dialog, strict legacy/completed schema and ledger guards, compatible-runtime deployment ancestry/readiness, dependency-isolated browser tools, populated AA/campaign/roster preservation and late rollback/retry tests. See [safety review/runbook](reviews/2026-10-28-campaign-release-safety.md) and [beta release plan](CAMPAIGN_BETA_RELEASE.md).
+- All 399 combined-tree tests pass locally (5 phase 2, 7 phase 3, 371 phase 4, 16 rich content), plus 5 deployment tests, TypeScript and client/Worker builds. Exact published-head CI/browser evidence is maintained in the live PR. Local Chromium installation failed with a truncated archive; no local browser pass is claimed.
+- **NO-GO for live release:** main now reports classroom acceptance blocked by timeouts/Cloudflare 1102; that operational gate must be resolved before enabling the main-site beta. Exact-head CI/browser gates, provider identity/backup/writer-quiescence evidence and explicit authorization also remain required. No merge into main, provider migration, deployment, C12 mutation or reset occurred. The release-request file is unchanged. Existing preview runtime `6de42632f4953e408b566bf60978cfe482a11f10` and its saves remain untouched; authenticated owner guardian victory/stamina acceptance is still pending.
+- Next: publish and verify combined-head CI/browser gates; resolve main's recorded operational acceptance blocker before requesting concrete beta release authorization. Retain preview progress even when consolidating development; code consolidation does not import preview saves into production.
+
+# Campaign compatibility — active October 27, 2026
+
+- Resume `feature/campaign-pilot`, [PR #81](https://github.com/Orsnoire/FightSchool/pull/81). Owner authorized reconciliation and publication for review only.
+- Starting campaign head `d7c4a835f4ccc7169452c492d5b7262d9fb6ad0e`; main baseline `2d524dff1ff7ac784d37b02fb48a4ec530e9b666` (33 behind / 29 ahead), including released PRs #85/#86.
+- Scope: merge main, integrate AA power context/five cross-class slots/current combat/resource calculations, preserve campaign mechanics, reconcile migration 0018 and preview history, and verify deterministic/migrated database/browser regressions.
+- State: IMPLEMENTED / VERIFIED / READY FOR REVIEW, not merged to main or deployed. Integration `bcf2c4c251c24f2d5a4cbcc5a62aac97149bb3af` incorporates main as a parent. **385 tests**, TypeScript and both builds pass locally and in [CI 40535793500](https://github.com/Orsnoire/FightSchool/actions/runs/40535793500); **4 deployment boundary tests** pass locally. All four [Chromium jobs 40535793069](https://github.com/Orsnoire/FightSchool/actions/runs/40535793069) pass, including campaign and AA desktop/phone acceptance; campaign AA screenshots inspected. Populated production/legacy-preview upgrades, immutable ledgers, preserved active play, idempotence and rollback pass. Local Chromium download failed; browser evidence is CI, not a local pass. This final checkpoint is documentation only. See [reconciliation evidence](reviews/2026-10-27-campaign-aa-reconciliation.md).
+- Exact next action: review PR #81 and the guarded preview migration bridge. Any later migration/deployment requires separate authorization, followed by authenticated owner guardian-victory acceptance. No further implementation is currently pending in this reconciliation.
+- No deployment, production/C12 mutation, existing playtest reset or disruptive provider test is authorized. Keep `deploy/campaign-preview.json` unchanged. Historical preview runtime and owner-acceptance limits remain below.
+
+# Campaign boss stamina — released October 21, 2026
+
+- Continue `feature/campaign-pilot`, [PR #81](https://github.com/Orsnoire/FightSchool/pull/81), open/unmerged. Owner requested 20% stamina for every campaign boss victory, including first clears and matchmaking.
+- **Implemented, verified and deployed to the isolated preview.** Runtime `6de42632f4953e408b566bf60978cfe482a11f10`; [release run 39671999772](https://github.com/Orsnoire/FightSchool/actions/runs/39671999772) passed. The application code is unchanged from source `7cb58951570c5290ead3a4b2c171a86720130992`; the last change separates two browser screenshot scenarios.
+- Each participating campaign-boss winner receives 20 percentage points of post-fight XP stamina, capped at 100%, once per session/result. The winning fight uses its ordinary XP/stamina cost first. Actual daily fight counts, old results and other progression remain intact; subsequent encounters use the recovered decay-curve position, with the existing Mountain-midnight refresh.
+- First/repeat wins and knocked-out participating winners qualify. Ordinary fights, losses, nonparticipants, intentional departures and progression-ineligible participants do not. The victory screen shows the actual amount restored; the stamina API includes recovery. Resetting the campaign cannot replay old rewards.
+- **Verification:** all 340 tests, TypeScript, client/Worker builds, four deployment boundary tests and campaign/combat desktop/phone browser gates pass. Reward screenshots were inspected. Migrated HTTP/SQL tests cover eight participants, repeated/capped wins, duplicate/concurrent results, midnight, permissions and data preservation. [Evidence and limits](reviews/2026-10-21-campaign-boss-stamina.md).
+- Migration 0021 is applied only to the isolated preview: 22 ledger entries; existing student, result and campaign-progress digests unchanged. A separate temporary Neon validation branch is retained with synthetic probe records for reproduction. No classroom/C12 database was changed.
+- **Next: owner refreshes the preview and defeats the guardian to check the reward.** Use the existing Reset campaign control for another complete solo run. Matchmaking remains future CAM-05/06 work; its per-player boss stamina rule is recorded in the roadmap. No owner's playtester was reset or otherwise modified; authenticated live boss acceptance remains pending.
+- The earlier [reset](reviews/2026-10-21-campaign-reset.md), [consumables/combat](reviews/2026-10-21-campaign-consumables.md) and [movement/equipment](reviews/2026-10-20-campaign-movement-equipment.md) changes remain included. See the [play guide](CAMPAIGN_PLAYTEST.md), [deployment procedure](CAMPAIGN_PREVIEW_DEPLOYMENT.md), [art direction](CAMPAIGN_ART_DIRECTION.md) and [roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md).
+- Use the fixed-target GitHub preview workflow. **Never use Deploy Cloudflare Staging for this branch.** Classroom merge/deployment, C12/PR #75, math display/PR #83 and short-domain routing remain separate. UI workshop, bestiaries, herbalist balance, multiplayer, transport and assigned loot remain roadmap work.
+
+Earlier checkpoints are preserved in [Git history](https://github.com/Orsnoire/FightSchool/commits/feature/campaign-pilot/docs/ACTIVE_WORK.md).
+
+## Other registered work — retained from current main
+
 # Teacher guild roster statistics — deployed October 28, 2026
 
 - Owner authorized merge and production deployment. [PR #87](https://github.com/Orsnoire/FightSchool/pull/87) merged at `f34b49fab143f23d971e09dd53c6f83814e3595d`; tree `d2ff6112a6c20ebda2ee342de03006ea3b1dd93c` matches reviewed head `c40825d62ea6a9345c3f6b4677b21467dc694d27` exactly.
@@ -7,6 +41,9 @@
 - Canonical acceptance 40715425162 did not pass after three unchanged attempts: playback timeout, session-creation HTTP timeout, then HTTP 503 / Cloudflare error 1102 during synthetic student character setup. Attempts 2 and 3 passed live combat and both storage checks. Classroom concurrency remains unaccepted; no further retry followed the resource-limit response. See the release record for provider evidence and limits.
 - State: MERGED / DEPLOYED / LIVE ACCEPTANCE BLOCKED. Campaign #81 and C12 #75 remain separate. Campaign must reconcile its unmerged 0019 history before integration; the classroom migration is now applied and immutable. [Metric semantics](TEACHER_GUILD_ROSTER.md).
 - Next: diagnose production resource/latency failures and rerun the original full canonical acceptance suite; do not claim acceptance or weaken its gates. Tracking starts with each player's first visit using the new client, with partial history until seven days have elapsed; previous active hours cannot be reconstructed.
+
+
+## Production baseline incorporated in this reconciliation
 
 # Alternate Advancement — released October 26, 2026
 

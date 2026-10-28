@@ -48,13 +48,19 @@ test('roster windows, deduplication, historical accuracy and additive activity m
     const journal = JSON.parse(readFileSync(new URL('../../migrations/cloudflare/meta/_journal.json',import.meta.url),'utf8'));
     for (const {tag} of journal.entries.filter((e: {idx:number}) => e.idx < 19)) await pg.exec(readFileSync(new URL(`../../migrations/cloudflare/${tag}.sql`,import.meta.url),'utf8'));
     await db.insert(s.teachers).values({id: fight.teacherId,firstName:'Test',lastName:'Teacher',email:'activity@example.invalid',emailNormalized:'activity@example.invalid',passwordHash:'unused',guildCode:'ACTIVE',billingAddress:'Test',schoolDistrict:'Test',school:'Test',subject:'Math',gradeLevel:'9'});
-    await db.insert(s.students).values([p,{...student('wizard',id(31)),nickname:'Fresh',nicknameNormalized:'fresh'}]);
+    // Seed the historical schema explicitly; current Drizzle columns include
+    // later campaign additions that did not exist before roster migration 0019.
+    for (const player of [p,{...student('wizard',id(31)),nickname:'Fresh',nicknameNormalized:'fresh'}])
+      await pg.query('INSERT INTO students(id,nickname,nickname_normalized,password_hash,character_class,gender) VALUES($1,$2,$3,$4,$5,$6)',
+        [player.id,player.nickname,player.nicknameNormalized,player.passwordHash,player.characterClass,player.gender]);
     await db.insert(s.fights).values(fight);
     await db.insert(s.guilds).values([{id:id(40),teacherId:fight.teacherId,name:'Ours',code:'OURS01'},{id:id(41),teacherId:fight.teacherId,name:'Other',code:'OTHER1'}]);
     await db.insert(s.guildMemberships).values([{guildId:id(40),studentId:p.id},{guildId:id(40),studentId:id(31)}]);
-    const before = await db.select().from(s.students);
+    const historicalStudents = (await pg.query('SELECT * FROM students ORDER BY id')).rows;
     await pg.exec(readFileSync(new URL('../../migrations/cloudflare/0019_teacher_roster_activity.sql',import.meta.url),'utf8'));
-    assert.deepEqual(await db.select().from(s.students),before);
+    assert.deepEqual((await pg.query('SELECT * FROM students ORDER BY id')).rows,historicalStudents);
+    for (const {tag} of journal.entries.filter((e: {idx:number}) => e.idx > 19)) await pg.exec(readFileSync(new URL(`../../migrations/cloudflare/${tag}.sql`,import.meta.url),'utf8'));
+    const before = await db.select().from(s.students);
     const roster = () => teacherGuildRoster(db,id(40),now);
     const row = async () => (await roster()).find(r=>r.studentId===p.id)!;
     await t.test('untracked, tracked zero and partial histories remain distinguishable', async () => {

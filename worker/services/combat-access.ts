@@ -14,6 +14,8 @@ export async function isActiveGuildMember(db: GameDatabase, studentId: string, g
 /** Student-created guild battles admit active guildmates; legacy private rooms stay owner-only. */
 export async function studentCanAccessSession(repository: IdentityRepository, room: LiveCombatSessionRecord, studentId: string) {
   if (!room.soloStudentId) return true;
+  const fight = await repository.findCombatFight?.(room.sessionId, room.fightId);
+  if (fight?.campaignContext) return room.soloStudentId === studentId;
   if (!room.guildId) return room.soloStudentId === studentId;
   return !!(await repository.isActiveGuildMember?.(studentId, room.guildId, room.teacherId));
 }

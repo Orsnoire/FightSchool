@@ -1,0 +1,160 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790013600000,
+      "tag": "0000_phase3_teacher_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790017600000,
+      "tag": "0001_phase3_teacher_fights",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790046000000,
+      "tag": "0002_phase4_student_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790779641710,
+      "tag": "0003_progression_guilds_results",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790780443569,
+      "tag": "0004_quest_seed_uniqueness",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790781987899,
+      "tag": "0005_history_preservation",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790802059448,
+      "tag": "0006_avatar_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790803828610,
+      "tag": "0007_human_recolor_masks",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790866800000,
+      "tag": "0008_daily_combat_stamina",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791228000000,
+      "tag": "0009_starter_wardrobe",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791406800000,
+      "tag": "0010_fractional_participation_xp",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791410400000,
+      "tag": "0011_equipment_arms",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791426000000,
+      "tag": "0012_remembered_job_loadouts",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791428400000,
+      "tag": "0013_spellbook_offhand",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791464400000,
+      "tag": "0014_guild_quests",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791836291397,
+      "tag": "0015_usability_patch_1",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791836465888,
+      "tag": "0016_equipment_color_variants",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792274362502,
+      "tag": "0017_c06_data_cost_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792509048751,
+      "tag": "0018_campaign_pilot",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792516168947,
+      "tag": "0019_campaign_equipment",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792596588481,
+      "tag": "0020_campaign_consumables",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792614215635,
+      "tag": "0021_campaign_boss_stamina",
+      "breakpoints": true
+    }
+  ]
+}
