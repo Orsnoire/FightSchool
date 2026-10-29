@@ -4,7 +4,8 @@
 > [ACTIVE_WORK](ACTIVE_WORK.md) for exact live runtime and acceptance status.
 > The graphics/question-bank changes in [PR #90](https://github.com/Orsnoire/FightSchool/pull/90)
 > are **deployed to production**, including forward migration 0025. Beta access
-> remains closed pending dedicated-guild selection. The separate preview is
+> is enabled for AP Precalc 2027 and AP Calculus. Create one campaign per guild
+> under **Campaigns · Beta** before student entry. The separate preview is
 > unchanged, and existing playtest progress remains intact.
 
 ## Production beta entry and play flow (PR #90)

@@ -118,3 +118,7 @@ change is intended to reduce.
 ## Campaign beta visual/entry workshop — October 28, 2026
 
 [PR #90](https://github.com/Orsnoire/FightSchool/pull/90) is merged, migrated and deployed. Original map/battle art, 47 connected border cases, shared equipped avatar and mandatory per-player guild-assigned question-bank selection are live. 408 application tests, 11 original deployment tests, TypeScript/builds and all browser jobs passed. Provider rehearsal, recovery copy and paused row/room preservation checks pass. [PR #91](https://github.com/Orsnoire/FightSchool/pull/91) closes release evidence and explicit current-ledger preflight (12 deployment tests pass). Canonical live combat and all eight operational checks pass (40769862238); release-only PR #91 is merged and read-only preflight passes (40771213932). Beta remains closed pending dedicated-guild/guardian handoff; preview and C12 stay unchanged. See [release evidence](releases/2026-10-28-pr90.md) and [screenshots](reviews/2026-10-28-campaign-visual-pass.md).
+
+## AP guild beta enrollment — October 29, 2026
+
+Owner selected AP Precalc 2027 and AP Calculus; access is enabled for exactly those production guilds. PR #92 retains enrollment across releases and updates the settings-version preflight pin, with thirteen deployment tests passing. No runtime-code or database changes. The next owner step is campaign creation per guild and authenticated guardian/stamina acceptance; preview and C12 remain separate. [Evidence](releases/2026-10-29-ap-beta.md).

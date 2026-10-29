@@ -45,7 +45,7 @@ export function validateSettings(settings, request, target = 'preview') {
   if(target==='production'){delete types.RELEASE_SHA;delete types.CF_VERSION_METADATA;types.ADDITIONAL_PUBLIC_ORIGINS='plain_text';}
   const bindings = settings.bindings ?? [];
   const byName = Object.fromEntries(bindings.map(b => [b.name, b]));
-  const optional = ['RELEASE_WINDOWS', 'RELEASE_PROBE', ...(target==='production'?['RELEASE_SHA']:[])];
+  const optional = ['RELEASE_WINDOWS', 'RELEASE_PROBE', ...(target==='production'?['RELEASE_SHA', 'CAMPAIGN_BETA_GUILD_IDS']:[])];
   requireThat(new Set(bindings.map(b => b.name)).size === bindings.length &&
     bindings.every(b => Object.hasOwn(types, b.name) || optional.includes(b.name) && b.type === 'plain_text'),
     'Unexpected preview bindings; inspect configuration before retrying');
