@@ -1,19 +1,12 @@
-# Campaign tile correction — merged; release active October 29, 2026
+# Campaign tiles and AP beta — complete October 29, 2026
 
-- [PR #93](https://github.com/Orsnoire/FightSchool/pull/93) merged at `236ea0f37bba5f798ff2e48ced56d938017c7a2c`, with exactly the tested `95fbba2` tree. Terrain repeats each full material at the 48px cell size. Existing 47 border masks, icons, equipped avatar, camera and saved layouts remain intact.
-- CI 40884245454 and all four Chromium jobs 40884245486 pass. Desktop/phone overworld, cave and overview screenshots from that exact head were inspected. Local TypeScript/builds and all three campaign-art tests pass; local browser download was unavailable, so browser verification comes from CI.
-- Authorized protected release is starting against current production settings version `d3ea3a25-5ff3-42f4-a34e-9ca21d49b7a0`, previous runtime `d44995a`. Build the pinned merge, retain both AP guilds and all bindings/storage, verify paused rooms/current 26-row ledger, then reopen with completed maintenance history retained. No database migration, content creation or reset is required. Preview/C12 remain unchanged.
-- Next: inspect maintenance workflow and provider verification, reopen after complete checks, verify live assets/readiness and canonical acceptance, then record final release state. AP beta is already live for AP Precalc 2027 and AP Calculus; both still need teacher-created campaigns.
+- [PR #93](https://github.com/Orsnoire/FightSchool/pull/93) is merged and deployed at `236ea0f37bba5f798ff2e48ced56d938017c7a2c`, with exactly the reviewed `95fbba2` tree. Terrain repeats at 48px per tile; connected mountain/cave/forest borders, icons, equipped avatar, camera, traversal and saves remain intact. No migration or reset.
+- CI 40884245454, all four Chromium jobs 40884245486 and merged-main CI 40885069405 pass. The browser regression checks both zones/camera modes at desktop and phone sizes; the exact-head screenshots were inspected. Local TypeScript/builds and three campaign-art tests pass. Local browser installation was unavailable; browser evidence comes from CI.
+- Protected release 40885240111 and canonical live acceptance 40886432975 pass, including all eight operational checks. Production serves Worker `beae082d-7dc0-415a-8648-3990a0673928` at 100%. Both domains are ready; live campaign JS/CSS match the tested build byte-for-byte. The canonical 26-row ledger and all paused rooms verify; a second full read confirms rooms unchanged during the pause. Completed maintenance windows, bindings/secrets and storage identities are retained; the release probe is removed.
+- [PR #92](https://github.com/Orsnoire/FightSchool/pull/92) is merged at `24df089`; beta access remains enabled for **AP Precalc 2027** and **AP Calculus** only. Both still need a teacher-created campaign under **Campaigns · Beta**. Each player must choose a guild-assigned fight on entry. Authenticated owner guardian/stamina playtest and C12 performance signoff remain distinct; neither is claimed by these automated checks.
+- State: MERGED / DEPLOYED / OPERATIONALLY ACCEPTED. Release requests return to read-only preflight and pin the resumed provider version. Preview and C12/PR #75 are untouched. No engineering task remains in this package; future implementation starts from current main with a new claim. [Release evidence](releases/2026-10-29-campaign-tiles.md) and [beta enrollment](releases/2026-10-29-ap-beta.md).
 
-## Earlier checkpoint
-
-# Campaign terrain tile correction — October 29, 2026
-
-Owner corrected the screenshot rendering: repeat each material at the 48px map tile size instead of stretching it over the world. Active branch: `fix/campaign-terrain-tiles`; [draft PR #93](https://github.com/Orsnoire/FightSchool/pull/93). Scope: tile-local atlas sampling for grass, path, water, floor, mountain, forest and cave walls; retain the 47 adjacency masks, equipped avatar, landmarks, camera, traversal and saved layouts. No migration or campaign content creation. AP beta remains enabled for the two selected guilds.
-
-State: CLAIMED / IMPLEMENTATION PENDING. Next: replace world-sized sampling, add a focused browser regression for repeated tiles and both camera modes, inspect desktop/phone overworld/cave screenshots, and publish verification before merge/release. The owner's correction supersedes the previous world-aligned texture instruction in the asset manifest. C12 and preview remain separate.
-
-## Completed beta enablement
+## Previous beta checkpoint
 
 # AP campaign beta — enabled October 29, 2026
 
