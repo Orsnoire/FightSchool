@@ -1,7 +1,7 @@
 {
-  "mode": "preflight",
-  "sourceSha": "778772258c64f44dc805edecbea9b266cafa3a76",
+  "mode": "pause",
+  "sourceSha": "a603f094239153772ed780c35ed0355cc083a7e0",
   "expectedPreviousSha": "778772258c64f44dc805edecbea9b266cafa3a76",
-  "pauseId": "production-fight-validation-20261029",
+  "pauseId": "production-student-join-20261029",
   "schemaStage": "question-bank"
 }
