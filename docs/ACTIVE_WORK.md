@@ -1,6 +1,10 @@
-# AP campaign beta access — authorized October 29, 2026
+# AP campaign beta — enabled October 29, 2026
 
-Owner selected the existing AP Precalc 2027 and AP Calculus production guilds for beta access, superseding the earlier dedicated-guild default. Continue `release/ap-campaign-beta`. Verify exact production guild ownership, enable only those UUIDs, retain the allowlist in Wrangler/protected release configuration and verify scope/readiness. No campaign creation, progress reset, migration, preview or C12 change. Both selected guilds have valid assigned fights but no campaigns yet. State: CLAIMED; configuration and checks pending.
+- Owner explicitly selected the existing **AP Precalc 2027** and **AP Calculus** guilds. Their active production identities and ownership were verified. Only those two guild UUIDs are allowed; Math 3 and all other guilds remain excluded. This supersedes the earlier dedicated-test-guild default.
+- Production settings are updated at 100%, version `d3ea3a25-5ff3-42f4-a34e-9ca21d49b7a0`. App source remains reviewed `d44995a`; all other bindings, secrets, resource identities and maintenance history are unchanged. No database write, migration, reset, campaign creation or preview/C12 change occurred.
+- `release/ap-campaign-beta` / [PR #92](https://github.com/Orsnoire/FightSchool/pull/92) persists the exact allowlist in Wrangler and permits the existing protected transport to retain it. The production preflight pin follows the new settings version. Thirteen deployment tests pass, including allowlist retention and binding-type drift rejection. Existing campaign HTTP tests cover authorized/denied guild access, current membership and selected question banks. Exact-head CI status is maintained in the PR.
+- Both selected guilds have valid assigned fights, but neither has a campaign yet. The owner can create one per guild under **Campaigns · Beta**. Students then explicitly choose a guild-assigned fight on entry. Authenticated owner guardian/stamina acceptance remains pending; no claim of student play-through is made from configuration checks.
+- State: LIVE ACCESS ENABLED / REPOSITORY CONFIGURATION VERIFICATION IN PROGRESS. [Enrollment evidence](releases/2026-10-29-ap-beta.md).
 
 ## Previous completed release
 

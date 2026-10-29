@@ -1,3 +1,5 @@
+> **October 29 enrollment:** the owner enabled AP Precalc 2027 and AP Calculus. The exact production allowlist is retained in Wrangler and protected deployment settings. Other guilds remain excluded. Neither selected guild has a campaign yet; create one per guild under Campaigns · Beta. [Enrollment evidence](releases/2026-10-29-ap-beta.md) supersedes older closed-beta and dedicated-guild defaults below.
+
 > **October 28 PR #90 release complete:** merged, migrated to canonical 26-row history and deployed. Live combat and all eight operational checks pass. Beta is still closed pending dedicated-guild selection and guardian/stamina handoff. Preview is unchanged. [Release evidence](releases/2026-10-28-pr90.md) supersedes historical pending-release statements below.
 
 # Campaign beta: one development line

@@ -1,6 +1,6 @@
 import {test}from'node:test';import assert from'node:assert/strict';
 import{mkdtempSync,mkdirSync,writeFileSync,rmSync}from'node:fs';import{tmpdir}from'node:os';import{join}from'node:path';
-import{run,PRODUCTION,ledgerDigest,validateSettings}from'../../scripts/deploy-campaign-preview.mjs';
+import{run,PRODUCTION,ledgerDigest,validateSettings,uploadMetadata}from'../../scripts/deploy-campaign-preview.mjs';
 const request={mode:'pause',sourceSha:'b'.repeat(40),expectedPreviousSha:'a'.repeat(40),expectedVersion:'11111111-1111-4111-8111-111111111111',
   pauseId:'production-test',probeToken:'1'.repeat(64),databaseFingerprint:'2'.repeat(64),ledgerDigest:ledgerDigest([])};
 function settings(){return{compatibility_date:'2026-09-21',bindings:[
@@ -27,4 +27,14 @@ test('production pause retains all resources, never migrates, and checks version
    else{await assert.rejects(task,/runtime changed|origin/);assert.equal(writes,0);}
   }finally{rmSync(dir,{recursive:true,force:true});}
  }
+});
+
+test('production releases preserve the explicit guild beta allowlist',()=>{
+ const current=settings(),ids='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+ current.bindings.push({name:'CAMPAIGN_BETA_GUILD_IDS',type:'plain_text',text:ids});
+ assert.equal(validateSettings(current,request,'production').CAMPAIGN_BETA_GUILD_IDS.text,ids);
+ const metadata=uploadMetadata(current,request.sourceSha,'fixture-assets');
+ assert.equal(metadata.bindings.find(b=>b.name==='CAMPAIGN_BETA_GUILD_IDS').text,ids);
+ current.bindings.find(b=>b.name==='CAMPAIGN_BETA_GUILD_IDS').type='secret_text';
+ assert.throws(()=>validateSettings(current,request,'production'),/Unexpected/);
 });

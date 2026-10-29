@@ -42,7 +42,8 @@
     "PUBLIC_ORIGIN": "https://questacademy.bookwyrminteractive.studio",
     "ADDITIONAL_PUBLIC_ORIGINS": "https://questacademy-staging.coxsonator.workers.dev",
     "SESSION_COOKIE_NAME": "qa_staging_session",
-    "SESSION_TTL_SECONDS": "28800"
+    "SESSION_TTL_SECONDS": "28800",
+    "CAMPAIGN_BETA_GUILD_IDS": "bb36f3a2-c116-475c-b2d6-e33a57f08023,f124596d-4153-494b-8bd5-8c66042e5fa8"
   },
   "secrets": {
     "required": [
