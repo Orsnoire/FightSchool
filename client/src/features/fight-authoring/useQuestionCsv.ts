@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import Papa from "papaparse";
 
 import { questionsFromCsvRows } from "./csv";
+import { questionImportValidationMessages, validationSummary } from "./validation";
 
 export function useQuestionCsv(questions: Question[], onChange: (questions: Question[]) => void) {
   const { toast } = useToast();
@@ -32,11 +33,23 @@ export function useQuestionCsv(questions: Question[], onChange: (questions: Ques
             return;
           }
 
+          const updatedQuestions = [...questions, ...parsedQuestions];
+          const validationMessages = questionImportValidationMessages(updatedQuestions);
+          if (validationMessages.length) {
+            setIsUploadingCSV(false);
+            toast({
+              title: "CSV could not be imported",
+              description: "No questions were added. " + validationSummary(validationMessages),
+              variant: "destructive",
+            });
+            if (csvInputRef.current) csvInputRef.current.value = "";
+            return;
+          }
+
           // Use setTimeout to allow the browser to process the parsed questions
           // This prevents blocking the main thread with large CSV files
           setTimeout(() => {
             try {
-              const updatedQuestions = [...questions, ...parsedQuestions];
               onChange(updatedQuestions);
 
               setIsUploadingCSV(false);

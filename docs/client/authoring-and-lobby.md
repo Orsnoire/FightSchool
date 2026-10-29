@@ -32,6 +32,16 @@ The loot selector is a controlled empty selection after each add. This permits
 re-adding a removed item without switching tabs; the pinned C10 browser fixture
 records the previous failure. Saved loot payloads and API validation are unchanged.
 
+The October 29 authoring-validation repair uses the same question collection
+schema for CSV preflight and fight saves. An oversized imported question or
+answer, or an excessive question count, rejects the import without changing the
+existing draft. The message identifies the question and limit; the same filename
+can be retried after correction. Existing CSV dialect and incomplete-row skipping
+remain unchanged. Resolver failures on Save now produce both a toast and an inline
+error summary instead of silently preventing submission. No content is truncated,
+and server limits and ownership checks are unchanged. See the
+[verification record](../reviews/2026-10-29-fight-validation.md) for publication status.
+
 Eight reference-proven legacy calculation helpers and four unused feedback types
 were removed from shared schema. `CombatState` and its `PlayerState` dependency
 remain because the guild lobby still references that contract. Both saved-room

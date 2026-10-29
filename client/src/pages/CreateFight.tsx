@@ -7,6 +7,7 @@ import { LootPanel } from "@/features/fight-authoring/LootPanel";
 import { QuestionsPanel } from "@/features/fight-authoring/QuestionsPanel";
 import { useEnemyAuthoring } from "@/features/fight-authoring/useEnemyAuthoring";
 import { useQuestionAuthoring } from "@/features/fight-authoring/useQuestionAuthoring";
+import { fightValidationMessages, validationSummary } from "@/features/fight-authoring/validation";
 import { useToast } from "@/hooks/use-toast";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -33,6 +34,7 @@ export default function CreateFight() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [lootTable, setLootTable] = useState<LootItem[]>([]);
+  const [saveErrors, setSaveErrors] = useState<string[]>([]);
 
   const teacherId = localStorage.getItem("teacherId") || "";
 
@@ -125,6 +127,7 @@ export default function CreateFight() {
   });
 
   const onSubmit = (data: InsertFight) => {
+    setSaveErrors([]);
     if (questionEditor.editingQuestionId) { toast({ title: "Save or cancel your question changes before saving the fight", variant: "destructive" }); return; }
     if (enemies.some(e => (e.enemyType || inferEnemyType(e.image)) === "basic")) {
       toast({ title: "Choose a supported type for each retired enemy before saving", variant: "destructive" }); return;
@@ -138,6 +141,17 @@ export default function CreateFight() {
       return;
     }
     saveMutation.mutate({ ...data, teacherId, questions, enemies, lootTable });
+  };
+
+  const onInvalidSubmit = () => {
+    const messages = fightValidationMessages(form.getValues());
+    if (!messages.length) messages.push("Check the fight settings, questions and enemies before saving.");
+    setSaveErrors(messages);
+    toast({
+      title: "Fight could not be saved",
+      description: validationSummary(messages),
+      variant: "destructive",
+    });
   };
 
   if (isChecking) {
@@ -169,7 +183,7 @@ export default function CreateFight() {
         </h1>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)} className="space-y-6">
             <FightSettings form={form} encounterTier={encounterTier} changeTier={changeTier} />
 
             <Tabs defaultValue="questions" className="w-full">
@@ -184,6 +198,16 @@ export default function CreateFight() {
                 enemyDisplayMode={form.watch('enemyDisplayMode')} changeTier={changeTier} editor={enemyEditor} />
               <LootPanel lootTable={lootTable} teacherEquipment={teacherEquipment} equipmentLoading={equipmentLoading} onChange={changeLoot} />
             </Tabs>
+
+            {saveErrors.length > 0 && (
+              <div role="alert" className="rounded-md border border-destructive bg-card p-4 text-sm" data-testid="fight-validation-errors">
+                <p className="font-semibold">Fix these issues, then save again:</p>
+                <ul className="mt-2 list-disc pl-5">
+                  {saveErrors.slice(0, 10).map((message, index) => <li key={index}>{message}</li>)}
+                </ul>
+                {saveErrors.length > 10 && <p className="mt-2">{saveErrors.length - 10} more issues need attention.</p>}
+              </div>
+            )}
 
             <Button
               type="submit"

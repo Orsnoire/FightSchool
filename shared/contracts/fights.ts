@@ -13,6 +13,8 @@ export const questionSchema = z.object({
   timeLimit: z.number().int().min(5).max(300),
 });
 
+export const fightQuestionsSchema = z.array(questionSchema).min(1).max(1_000);
+
 export const enemySchema = z.object({
   palette: paletteSchema.optional(),
   enemyType: z.enum(ENEMY_TYPES).optional(),
@@ -33,7 +35,7 @@ export const insertFightSchema = z.object({
   teacherId: z.string().uuid(),
   title: z.string().trim().min(1).max(200),
   guildCode: z.string().max(100).optional().nullable(),
-  questions: z.array(questionSchema).min(1).max(1_000),
+  questions: fightQuestionsSchema,
   enemies: z.array(enemySchema).min(1).max(100),
   baseXP: z.number().int().min(1).max(100).default(10),
   baseEnemyDamage: z.number().int().min(1).max(10).default(1),
