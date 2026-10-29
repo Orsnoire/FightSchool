@@ -2,7 +2,7 @@
 
 - Owner direction: ordinary fights must not load campaign context. Retain only guild admission checks, the room's frozen power cap and guild identity for quest/reward attribution.
 - Registered branch `fix/student-join-context`, [draft PR #95](https://github.com/Orsnoire/FightSchool/pull/95), initial checkpoint `87d3844`. Scope: separate campaign resolution and reuse the server-loaded session while preserving campaign snapshots, membership, caps and reconnect behavior.
-- State: IMPLEMENTED / LOCALLY VERIFIED / CI PENDING. Campaign resolution is scoped by the existing server-allocated session kind; joins reuse loaded session context. All 419 application tests, TypeScript/builds and 13 deployment tests pass. Next: verify published-head CI and review PR #95 before any release. The PR #94 student-join timeout remains unconfirmed; this package does not claim it resolved. No migration or deployment is included. C12/PR #75 and mathematics design work remain separate.
+- State: IMPLEMENTED / CI VERIFIED / UNMERGED. Campaign resolution is scoped by the existing server-allocated session kind; joins reuse loaded session context. All 419 application tests, TypeScript/builds, 13 deployment tests and all four browser jobs pass for published code head `889bc5515910383c1322c65177dce4482871fa11`. Next: review PR #95; any future release must pass the unchanged live acceptance suite. The PR #94 student-join timeout remains unconfirmed; this package does not claim it resolved. No migration or deployment is included. C12/PR #75 and mathematics design work remain separate.
 - [Package scope](https://github.com/Orsnoire/FightSchool/blob/fix/student-join-context/docs/reviews/2026-10-29-student-join-context.md).
 
 ## Previous package

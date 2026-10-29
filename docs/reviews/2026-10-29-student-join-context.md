@@ -1,6 +1,6 @@
 # Student join context isolation — October 29, 2026
 
-Status: IMPLEMENTED / LOCALLY VERIFIED / CI PENDING. Branch: `fix/student-join-context`, [draft PR #95](https://github.com/Orsnoire/FightSchool/pull/95).
+Status: IMPLEMENTED / CI VERIFIED / UNMERGED. Branch: `fix/student-join-context`, [draft PR #95](https://github.com/Orsnoire/FightSchool/pull/95).
 
 Owner direction: load campaign context only for campaign fights. Ordinary fights should use only the guild context required for admission, frozen power caps and reward attribution. This package follows the unresolved student-join acceptance failure recorded in PR #94; unnecessary lookups are confirmed, but the timeout's root cause is not yet established.
 
@@ -24,6 +24,6 @@ Join passes its already-loaded session to profile resolution. Profile loading st
 
 - 31 targeted tests pass, including a real-database regression that temporarily makes campaign encounter storage unavailable while ordinary fight lookup and profile loading still succeed.
 - The regressions cover six-character `CP` codes, session reuse, guildless joins, membership revocation/archive rejection, saved level/AA caps, guild reward identity, campaign ownership, frozen HP/MP/consumables, settled/missing snapshots and reconnect behavior.
-- All 419 application tests, TypeScript, client/Worker builds and all 13 deployment tests pass. Published-head CI is pending.
+- All 419 application tests, TypeScript, client/Worker builds and all 13 deployment tests pass locally and in [CI](https://github.com/Orsnoire/FightSchool/actions/runs/40909668732). All four [browser jobs](https://github.com/Orsnoire/FightSchool/actions/runs/40909668736) pass. These results cover code head `889bc5515910383c1322c65177dce4482871fa11` (tree `b73074371c0cf38572054079511b8fc6f143ea1e`). The following checkpoint changes documentation only.
 
 The earlier live timeout is not proven to originate in the removed reads. This change is not deployed and does not claim a live acceptance pass.
