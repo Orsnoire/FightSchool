@@ -67,3 +67,7 @@ That enemy selection is independent of the unlocked-dungeon academic question po
 ## October 28, 2026 workshop implementation
 
 The owner approved the original landmark icon direction and requested forests and a complete edge/corner vocabulary. For this pass, mountains frame the overworld and cave walls frame the cavern. Exact 47-case adjacency geometry covers straight edges, outer/inner corners, isolated blocks and narrow connections; original material fills provide the artwork. Existing interior blocked terrain displays forest, without regenerating maps or altering traversal. Grass/path/water transitions remain later work. See [asset contract and prompts](campaign-art-v1.md) and [PR #90](https://github.com/Orsnoire/FightSchool/pull/90). The final assembled screens still need visual review before beta.
+
+## October 29, 2026 terrain correction
+
+The owner clarified that terrain is a tileset, not a texture stretched over the whole map. Repeat each complete material swatch at the map's 48px tile size for grass, paths, water, cave floor, mountains, forests and cave walls. Retain the existing 47 edge/corner masks; connectivity changes the silhouette, not the texture scale. Follow mode and overview must use the same tiled world. Landmarks and the equipped avatar retain their approved rendering.

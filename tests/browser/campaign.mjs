@@ -19,6 +19,32 @@ const output = 'artifacts/combat-ui';
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE });
 const errors = [];
+// A material quadrant fills each logical cell, independent of world size,
+// coordinates or camera zoom. This catches accidental map-sized stretching.
+async function assertTileRepetition(page) {
+  const cells = await page.locator('.campaign-tile').evaluateAll(tiles => tiles.map(tile => {
+    const base = getComputedStyle(tile), art = getComputedStyle(tile.querySelector('.terrain-art>span'));
+    return { kind: tile.dataset.terrain, width: base.width, height: base.height,
+      baseSize: base.backgroundSize, artSize: art.backgroundSize, position: art.backgroundPosition };
+  }));
+  assert.ok(cells.length > 1);
+  const positions = { grass:'0% 0%', path:'100% 0%', water:'0% 100%', floor:'100% 100%', mountain:'0% 0%', wall:'100% 0%', forest:'0% 100%' };
+  for (const cell of cells) {
+    assert.equal(cell.width, '48px'); assert.equal(cell.height, '48px');
+    assert.equal(cell.baseSize, '200% 200%', 'underlay quadrant fills one tile');
+    assert.equal(cell.artSize, '200% 200%', `${cell.kind} quadrant fills one tile`);
+    assert.equal(cell.position, positions[cell.kind], `${cell.kind} repeats at every coordinate`);
+  }
+}
+
+async function reviewMap(page, width, zone) {
+  await assertTileRepetition(page);
+  await page.screenshot({ path:`${output}/${width}-campaign-${zone}-tiles.png`,fullPage:true,animations:'disabled' });
+  await page.getByRole('button', { name:'World overview',exact:true }).click();
+  await assertTileRepetition(page);
+  await page.screenshot({ path:`${output}/${width}-campaign-${zone}-overview.png`,fullPage:true,animations:'disabled' });
+  await page.getByRole('button', { name:'Follow adventurer',exact:true }).click();
+}
 try {
   for (const viewport of [{ width: 1366, height: 900 }, { width: 390, height: 844 }]) {
     const page = await browser.newPage({ viewport });
@@ -115,6 +141,7 @@ try {
     await page.locator('.campaign-map-avatar canvas[data-avatar-ready="true"]').waitFor();
     assert.equal(view.progress.questionBankFightId,fight.id);
     assert.ok((await page.locator('.campaign-map-viewport').boundingBox()).height >= 360);
+    await reviewMap(page, viewport.width, 'overworld');
     await openMenu();
     const menuPosition = { ...view.progress.position };
     await page.keyboard.press('ArrowRight');
@@ -185,6 +212,7 @@ try {
     await page.reload(); await page.getByRole('button', { name: 'Challenge guardian' }).waitFor();
     await page.locator('.campaign-map-avatar canvas[data-avatar-ready="true"]').waitFor();
     await page.screenshot({ path: `${output}/${viewport.width}-campaign-cave.png`, fullPage: true });
+    await reviewMap(page, viewport.width, 'cave');
     await page.getByRole('button', { name: 'Challenge guardian' }).click();
     await page.waitForURL('**/student/combat');
     assert.equal(await page.evaluate(() => localStorage.getItem('sessionId')), 'CPBROWSERTEST');

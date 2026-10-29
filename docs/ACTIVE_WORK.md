@@ -1,8 +1,8 @@
 # Campaign terrain tile correction — October 29, 2026
 
-Owner corrected the screenshot rendering: repeat each material at the 48px map tile size instead of stretching it over the world. Active branch: `fix/campaign-terrain-tiles`; draft PR registration follows this claim. Scope: tile-local atlas sampling for grass, path, water, floor, mountain, forest and cave walls; retain the 47 adjacency masks, equipped avatar, landmarks, camera, traversal and saved layouts. No migration or campaign content creation. AP beta remains enabled for the two selected guilds.
+Owner corrected the screenshot rendering: repeat each material at the 48px map tile size instead of stretching it over the world. Active branch: `fix/campaign-terrain-tiles`; [draft PR #93](https://github.com/Orsnoire/FightSchool/pull/93). Scope: tile-local atlas sampling for grass, path, water, floor, mountain, forest and cave walls; retain the 47 adjacency masks, equipped avatar, landmarks, camera, traversal and saved layouts. No migration or campaign content creation. AP beta remains enabled for the two selected guilds.
 
-State: CLAIMED / IMPLEMENTATION PENDING. Next: replace world-sized sampling, add a focused browser regression for repeated tiles and both camera modes, inspect desktop/phone overworld/cave screenshots, and publish verification before merge/release. The owner's correction supersedes the previous world-aligned texture instruction in the asset manifest. C12 and preview remain separate.
+State: IMPLEMENTED / LOCAL TYPECHECK, BUILDS AND TWO BORDER TESTS PASS / BROWSER CI PENDING. World-sized sampling is removed; each material quadrant fills one tile using the existing 200% atlas scale. The browser regression checks every cell in both zones and both camera modes at desktop/phone sizes, with eight new review screenshots. Local Chromium download was unavailable; no local browser pass or visual acceptance is claimed. Next: inspect exact-head CI and its screenshots, resolve any failures, then merge/release. The owner's correction supersedes the previous world-aligned texture instruction in the asset manifest. C12 and preview remain separate.
 
 ## Completed beta enablement
 
