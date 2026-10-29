@@ -122,3 +122,9 @@ change is intended to reduce.
 ## AP guild beta enrollment — October 29, 2026
 
 Owner selected AP Precalc 2027 and AP Calculus; access is enabled for exactly those production guilds. PR #92 retains enrollment across releases and updates the settings-version preflight pin, with thirteen deployment tests passing. No runtime-code or database changes. The next owner step is campaign creation per guild and authenticated guardian/stamina acceptance; preview and C12 remain separate. [Evidence](releases/2026-10-29-ap-beta.md).
+
+## October 29 campaign tile correction
+
+PR #92 is merged at `24df089`; AP Precalc 2027 and AP Calculus beta access is live, with CI and all four browser jobs passing. Both guilds still need teacher-created campaigns.
+
+The owner identified map-wide terrain stretching in screenshots. `fix/campaign-terrain-tiles` / [PR #93](https://github.com/Orsnoire/FightSchool/pull/93) restores one complete material per 48px tile, preserving connected borders and saved layouts. Gate: TypeScript/builds, existing 47-mask tests, desktop/phone follow/overview repetition checks and screenshot review. No migration; C12 is separate. Current implementation and verification state are in [active work](ACTIVE_WORK.md).
