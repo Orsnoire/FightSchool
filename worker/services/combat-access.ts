@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm';
+import { isCampaignSessionId } from '../combat/session-kind';
 import type { GameDatabase } from '../db/database';
 import type { IdentityRepository } from '../db/repository';
 import { guildMemberships, guilds, type LiveCombatSessionRecord } from '../db/schema';
@@ -14,8 +15,6 @@ export async function isActiveGuildMember(db: GameDatabase, studentId: string, g
 /** Student-created guild battles admit active guildmates; legacy private rooms stay owner-only. */
 export async function studentCanAccessSession(repository: IdentityRepository, room: LiveCombatSessionRecord, studentId: string) {
   if (!room.soloStudentId) return true;
-  const fight = await repository.findCombatFight?.(room.sessionId, room.fightId);
-  if (fight?.campaignContext) return room.soloStudentId === studentId;
-  if (!room.guildId) return room.soloStudentId === studentId;
+  if (isCampaignSessionId(room.sessionId) || !room.guildId) return room.soloStudentId === studentId;
   return !!(await repository.isActiveGuildMember?.(studentId, room.guildId, room.teacherId));
 }

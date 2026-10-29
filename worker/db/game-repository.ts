@@ -1,4 +1,5 @@
 import { effectiveLevels, limitLevel } from "../../shared/quests";
+import { isCampaignSessionId } from '../combat/session-kind';
 import { aaTier } from '../../shared/aa';
 import { crossClassSelections } from '../../shared/job-loadouts';
 import { projectCombatLoadout } from '../../shared/combat/loadout';
@@ -23,32 +24,34 @@ import type { GameDatabase } from "./database";
 // Compatibility exports for existing integrations; new domain code imports its owner.
 export { gameDatabase, type GameDatabase } from "./database";
 export { claimReward, RewardError } from "../services/rewards";
+export type CombatProfileSession = string | s.LiveCombatSessionRecord;
 export async function combatProfile(
   db: GameDatabase,
   student: s.StudentRecord,
-  sessionId?: string,
+  session?: CombatProfileSession,
   campaignPower?: { guildId: string; guildTier: number; campaignTier: number },
 ): Promise<CombatProfile> {
-  const jobs = await db
-    .select()
-    .from(s.studentJobLevels)
-    .where(eq(s.studentJobLevels.studentId, student.id));
-  let levels = Object.fromEntries(jobs.map((j) => [j.jobClass, j.level]));
+  const sessionId = typeof session === 'string' ? session : session?.sessionId;
   let context: {guildId:string;limitTier:number} | undefined;
   if(sessionId){
-   const [room]=await db.select().from(s.liveCombatSessions).where(eq(s.liveCombatSessions.sessionId,sessionId));
+   // Join already loaded and authenticated this server-owned record. Recovery
+   // and callers with only an ID still resolve it once here.
+   const room = typeof session === 'object' ? session
+     : (await db.select().from(s.liveCombatSessions).where(eq(s.liveCombatSessions.sessionId,sessionId)))[0];
    if(room?.guildId){
     const [membership]=await db.select({guildId:s.guilds.id,limitTier:s.guilds.limitTier}).from(s.guildMemberships).innerJoin(s.guilds,eq(s.guilds.id,s.guildMemberships.guildId)).where(and(eq(s.guildMemberships.studentId,student.id),eq(s.guilds.id,room.guildId),eq(s.guilds.isArchived,false)));
     if(!membership)throw new Error('Join the hosting guild before entering this fight.');
     context={...membership,limitTier:room.guildLimitTier||membership.limitTier};
    }
-   levels=effectiveLevels(levels,context?.limitTier||1);
-   const [campaign]=await db.select().from(s.campaignEncounters).where(eq(s.campaignEncounters.sessionId,sessionId));
-   if(campaign){
-    if(campaign.studentId!==student.id || campaign.settled)throw new Error('Campaign encounter unavailable.');
+   if(isCampaignSessionId(sessionId)){
+    const [campaign]=await db.select().from(s.campaignEncounters).where(eq(s.campaignEncounters.sessionId,sessionId));
+    if(!campaign || !room || room.soloStudentId!==student.id || campaign.studentId!==student.id || campaign.settled)throw new Error('Campaign encounter unavailable.');
     return {levels:campaign.playerSnapshot.jobLevels,campaignPlayer:campaign.playerSnapshot};
    }
   }
+  const jobs = await db.select().from(s.studentJobLevels).where(eq(s.studentJobLevels.studentId, student.id));
+  let levels = Object.fromEntries(jobs.map((j) => [j.jobClass, j.level]));
+  if (sessionId) levels = effectiveLevels(levels, context?.limitTier || 1);
   if (campaignPower) {
     context = { guildId: campaignPower.guildId, limitTier: aaTier(campaignPower) };
     levels = effectiveLevels(levels, context.limitTier);

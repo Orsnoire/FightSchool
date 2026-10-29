@@ -1,4 +1,5 @@
 import { campaignQuestionBank } from './question-banks';
+import { newCampaignSessionId } from '../combat/session-kind';
 import { CONSUMABLES, CONSUMABLE_IDS, consumeItem } from '../../shared/campaign/consumables';
 import { and, eq, sql } from 'drizzle-orm';
 import type { z } from 'zod';
@@ -130,7 +131,7 @@ export async function applyCampaignAction(db: GameDatabase, campaign: CampaignRe
   next.explored = [...new Set([...next.explored, pointKey(next.zone, next.position)])];
   let encounter;
   if (startEncounter) {
-    const id = `CP${crypto.randomUUID().replaceAll('-', '').toUpperCase()}`;
+    const id = newCampaignSessionId();
     // The pilot has one unlocked quiz. Freeze a small sample per encounter; the
     // combat engine cycles it until the encounter ends, never adds locked content.
     const pool = questionBank!.questions;

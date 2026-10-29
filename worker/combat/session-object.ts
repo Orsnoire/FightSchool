@@ -466,7 +466,7 @@ export class CombatSessionObject {
           const student = established ? null : await this.repository.findStudentById(actor.actorId);
           if (!established) {
             if (!student) throw new CombatRuleError("Student unavailable");
-            room.snapshot = addStudent(room.snapshot, student, await this.repository.getCombatProfile?.(student,actor.sessionId));
+            room.snapshot = addStudent(room.snapshot, student, await this.repository.getCombatProfile?.(student,live || actor.sessionId));
           }
           if(established && !live?.soloStudentId) {
             this.send(ws,snapshotMessage(room,actor.role));return;
