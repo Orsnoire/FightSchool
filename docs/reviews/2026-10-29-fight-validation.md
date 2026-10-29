@@ -50,3 +50,10 @@ production records were created. The actual rich-content renderer processes all
 - Automatic approval review rejected a direct main-branch discovery-note write.
   The documentation is therefore kept in PR #94, with main unchanged. Merge and
   deployment are separate from publication; no production release is claimed.
+
+## Deployment follow-up
+
+The owner subsequently authorized deployment. PR #94 is merged and its exact
+runtime is live; publication-only restrictions above describe the earlier stage.
+See the [release record](../releases/2026-10-29-fight-validation.md) for current
+provider, verification and live acceptance status.
