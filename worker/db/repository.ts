@@ -1,4 +1,5 @@
 import { isActiveGuildMember } from "../services/combat-access";
+import { isCampaignSessionId } from '../combat/session-kind';
 import { gameDatabase } from "./database";
 import { evaluateFightQuests } from "../progression/quests.ts";
 import { listTeacherFightSummaries } from "./fight-summaries";
@@ -11,6 +12,7 @@ import {
 } from "../../shared/schema.ts";
 import {
   combatProfile,
+  type CombatProfileSession,
   persistCombatResults,
   recordQuestEvidence,
 } from "./game-repository.ts";
@@ -42,7 +44,7 @@ import {
 export interface IdentityRepository extends SessionRepository {
   isActiveGuildMember?(studentId: string, guildId: string, teacherId: string): Promise<boolean>;
   validateLoot?(teacherId: string, itemIds: string[]): Promise<boolean>;
-  getCombatProfile?(student: StudentRecord, sessionId?: string): Promise<CombatProfile>;
+  getCombatProfile?(student: StudentRecord, session?: CombatProfileSession): Promise<CombatProfile>;
   getStudentJobLevels?(studentId: string): Promise<Record<string, number>>;
   recordSessionReporting?(state: CombatSnapshot, fight: FightRecord): Promise<void>;
   recordQuestEvidence?(state: CombatSnapshot, fight: FightRecord): Promise<void>;
@@ -96,8 +98,8 @@ export interface IdentityRepository extends SessionRepository {
 
 export function createIdentityRepository(
   databaseUrl: string,
+  database = gameDatabase(databaseUrl),
 ): IdentityRepository {
-  const database = gameDatabase(databaseUrl);
 
   return {
     async getStudentJobLevels(studentId) {
@@ -122,8 +124,8 @@ export function createIdentityRepository(
     },
     async recordSessionReporting(state, fight) { await recordSessionReporting(database, state, fight); },
     async recordQuestEvidence(state, fight) { await recordQuestEvidence(gameDatabase(databaseUrl), state, fight); },
-    async getCombatProfile(student, sessionId) {
-      return combatProfile(gameDatabase(databaseUrl), student, sessionId);
+    async getCombatProfile(student, session) {
+      return combatProfile(database, student, session);
     },
     async persistResults(state, fight) {
       return persistCombatResults(gameDatabase(databaseUrl), state, fight);
@@ -175,8 +177,10 @@ export function createIdentityRepository(
     },
 
     async findCombatFight(sessionId, fightId) {
-      const [campaign] = await database.select().from(campaignEncounters).where(eq(campaignEncounters.sessionId, sessionId));
-      if (campaign) return campaign.fightSnapshot;
+      if (isCampaignSessionId(sessionId)) {
+        const [campaign] = await database.select().from(campaignEncounters).where(eq(campaignEncounters.sessionId, sessionId));
+        return campaign?.fightSnapshot || null;
+      }
       const [fight] = await database.select().from(fights).where(and(eq(fights.id, fightId), eq(fights.isArchived, false)));
       return fight || null;
     },

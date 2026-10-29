@@ -393,7 +393,10 @@ test('guildmates can open and join solo rooms, recover without duplicates, and c
     findActiveSession:async()=>({actorId:peer,actorType:'student',expiresAt:new Date(Date.now()+100000)}),
     findStudentById:async()=>student(), findFightById:async()=>({...structuredClone(fight),enemies:fight.enemies.map(e=>({...e,quantity:1}))}),
     findLiveCombatSession:async()=>live, isActiveGuildMember:async()=>member,
-    getCombatProfile:async()=>({levels:{warrior:2},questGuildId:live.guildId,limitTier:2}),
+    getCombatProfile:async(_student:unknown,context:unknown)=>{
+      assert.equal(context,live,'join reuses the server-loaded session');
+      return {levels:{warrior:2},questGuildId:live.guildId,limitTier:2};
+    },
     updateLiveCombatSessionStatus:async(_id:string,status:string)=>{live.status=status;},
   };
   h.object.setRepository(repo);
