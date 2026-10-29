@@ -1,3 +1,14 @@
+# Fight-authoring validation feedback — active October 29, 2026
+
+- Owner reports that new fights cannot be created. The supplied rational-expression CSV reproduces the failure: questions 49 and 50 contain 25,704 and 24,661 characters, exceeding the existing 20,000-character question contract. The CSV importer accepts them; the form resolver blocks submission without displaying the nested validation errors. Both paths predate the campaign release.
+- Owner authorized publishing this patch on October 29. Branch: `fix/fight-authoring-validation`; draft PR registration and remote CI/browser verification are next. Current main and open work were refreshed before publication; C12 is the only other open PR.
+- Scope: show actionable save-validation feedback and reject oversized CSV imports before changing the existing draft. Preserve the current content bounds, supported formats, correct-answer identity, teacher ownership and server validation. No campaign, database or deployment changes.
+- The corrected user CSV retains all 60 questions and both graphs, with a 10,266-character maximum question. The real importer, complete fight schema and authenticated local POST handler accept it (201); the old CSV reproduces schema rejection and POST 400. No production records were created.
+- State: IMPLEMENTED / LOCALLY VERIFIED / PUBLICATION AUTHORIZED. All 412 application tests, TypeScript, client/Worker builds and whitespace checks pass. Regression coverage exercises oversized graphs, exact content/count bounds, missing required fields and the real CSV hook's atomic refusal/corrected retry. The complete corrected bank renders 293 equations and both SVG graphs through the actual shared renderer.
+- Next: register the draft PR/main pointer and run exact-head CI/browser checks. A desktop/phone recovery scenario is wired into the authoring browser job but has not run: local Chromium download returns a truncated archive. No merge or deployment occurred. C12/PR #75 remains separate. [Verification evidence](reviews/2026-10-29-fight-validation.md).
+
+## Previous completed package
+
 # Campaign tiles and AP beta — complete October 29, 2026
 
 - [PR #93](https://github.com/Orsnoire/FightSchool/pull/93) is merged and deployed at `236ea0f37bba5f798ff2e48ced56d938017c7a2c`, with exactly the reviewed `95fbba2` tree. Terrain repeats at 48px per tile; connected mountain/cave/forest borders, icons, equipped avatar, camera, traversal and saves remain intact. No migration or reset.
