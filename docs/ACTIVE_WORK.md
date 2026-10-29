@@ -6,6 +6,17 @@
 - [PR #92](https://github.com/Orsnoire/FightSchool/pull/92) is merged at `24df089`; beta access remains enabled for **AP Precalc 2027** and **AP Calculus** only. Both still need a teacher-created campaign under **Campaigns · Beta**. Each player must choose a guild-assigned fight on entry. Authenticated owner guardian/stamina playtest and C12 performance signoff remain distinct; neither is claimed by these automated checks.
 - State: MERGED / DEPLOYED / OPERATIONALLY ACCEPTED. Release requests return to read-only preflight and pin the resumed provider version. Preview and C12/PR #75 are untouched. No engineering task remains in this package; future implementation starts from current main with a new claim. [Release evidence](releases/2026-10-29-campaign-tiles.md) and [beta enrollment](releases/2026-10-29-ap-beta.md).
 
+## Queued design project — mathematics authoring, October 29, 2026
+
+The owner requested the [MATH project](MATH_QUESTION_ENGINE_PROJECT.md) be
+recorded and linked from ongoing design direction. Its brief and
+[expansion-backlog entry](EXPANSION_PLAN.md) capture approved direction,
+requested scope, proposed packages, acceptance gates and open decisions.
+Status: **DOCUMENTED / IMPLEMENTATION NOT STARTED**. No implementation branch
+or PR is claimed; C12 / PR #75 and the completed release checkpoint above retain
+their existing status. Next for this project: select a bounded first package
+and register its branch/PR when implementation is authorized.
+
 ## Previous beta checkpoint
 
 # AP campaign beta — enabled October 29, 2026

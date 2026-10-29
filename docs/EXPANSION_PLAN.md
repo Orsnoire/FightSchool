@@ -1,6 +1,6 @@
 # Expansion plan after cleanup
 
-**FUTURE — updated October 20, 2026. No further expansion implementation is started by this plan.**
+**FUTURE — updated October 29, 2026. No further expansion implementation is started by this plan.**
 
 New feature development follows the [cleanup exit gates](CLEANUP_PLAN.md#exit-gates-before-expansion-resumes).
 This is the current backlog of remaining product direction, not a claim that
@@ -15,6 +15,7 @@ is deployed; it does not start another cleanup or expansion package.
 
 | Item | Current state | Decisions / prerequisites before implementation |
 | --- | --- | --- |
+| Mathematics question engine and quiz authoring | October 29 owner direction and requested scope recorded in the [MATH project](MATH_QUESTION_ENGINE_PROJECT.md); implementation not started | Teacher-approved templates; live variants with an independent intended session length; equivalent-expression grading; arithmetic through calculus plus matrices/linear algebra; searchable bank and staged PDF/visual authoring. Select the first families, grading/runtime contracts, count/completion policy and recognition approach before claiming an implementation package. |
 | Campaigns and cooperative exploration | October 20 owner design recorded in the [campaign development roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md); CAM packages not started | Quiz selection with guild/name filters; fixed generated maps; access gates and named keys; 13 themes; one chest per assigned loot entry; leader-controlled parties; 3–8-player boss queues with tank/healer/DPS; level caps 4/8/12/15 and encounter-tier gear with duplicate-to-gold. Resolve recorded policy questions and scope one complete pilot before implementation. |
 | Team race | Feasibility and design direction recorded; no race implementation | Persistent coordinator and assignments, one public join code with two private child rooms, shared immutable content/seed, synchronized controls and durable retries, split host view, scoring/ties, late-entry and recovery tests with 30–60 players |
 | Classroom balance refinements | Initial tier presets and enemy AI are released; classroom observation still needed | Gather evidence for tier scaling, large-party hypnosis, vampire healing, poison and enemy composition; approve individual rule changes separately from cleanup |

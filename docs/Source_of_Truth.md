@@ -289,6 +289,22 @@ They should guide:
 
 Content specifications should remain portable and should not be unnecessarily coupled to a particular hosting provider or database implementation.
 
+## Mathematics question engine and authoring — October 29, 2026
+
+The [mathematics question engine project](MATH_QUESTION_ENGINE_PROJECT.md)
+records the owner's direction for teacher-approved problem templates, validated
+variants generated during fights, an intended session length independent of bank
+size, and mathematical-equivalence grading. Requested coverage spans elementary
+arithmetic through calculus and computational linear algebra/matrices, with a
+searchable template bank and staged PDF, graph and geometry authoring.
+
+This is a **DESIGN RECORD / FUTURE WORK** entry in the
+[expansion plan](EXPANSION_PLAN.md), not an implementation or release claim.
+The project separates agreed requirements from proposed packages and open
+policies. Read it before changing math recognition, generated-question contracts,
+grading, session question budgets or authoring. Keep these content capabilities
+separate from combat and preserve support for other academic subjects.
+
 ## Character Art and Appearance
 
 The [October 7 battlefield and participation approval](combat-facelift.md#october-7-battlefield-and-participation-approval)
