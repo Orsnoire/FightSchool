@@ -1,3 +1,9 @@
+# AP campaign beta access — authorized October 29, 2026
+
+Owner selected the existing AP Precalc 2027 and AP Calculus production guilds for beta access, superseding the earlier dedicated-guild default. Continue `release/ap-campaign-beta` / [PR #92](https://github.com/Orsnoire/FightSchool/pull/92). Verify exact production guild ownership, enable only those UUIDs, retain the allowlist in Wrangler/protected release configuration and verify scope/readiness. No campaign creation, progress reset, migration, preview or C12 change. Both selected guilds have valid assigned fights but no campaigns yet. State: CLAIMED; configuration and checks pending.
+
+## Previous completed release
+
 # PR #90 — merged, migrated, deployed and operationally accepted
 
 - Production serves exact reviewed merge `d44995a109e8ca5549e29ba63c616b68d84e2ac3` at 100%, Worker `3c55150b-5deb-40bd-a8d2-feeabe9e5e43`. The new art and per-player guild-assigned question banks are live. All five art files match the tested build byte-for-byte.
