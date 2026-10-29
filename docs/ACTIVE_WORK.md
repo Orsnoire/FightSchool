@@ -1,10 +1,18 @@
+# Campaign terrain tile correction — October 29, 2026
+
+Owner corrected the screenshot rendering: repeat each material at the 48px map tile size instead of stretching it over the world. Active branch: `fix/campaign-terrain-tiles`; [draft PR #93](https://github.com/Orsnoire/FightSchool/pull/93). Scope: tile-local atlas sampling for grass, path, water, floor, mountain, forest and cave walls; retain the 47 adjacency masks, equipped avatar, landmarks, camera, traversal and saved layouts. No migration or campaign content creation. AP beta remains enabled for the two selected guilds.
+
+State: CLAIMED / IMPLEMENTATION PENDING. Next: replace world-sized sampling, add a focused browser regression for repeated tiles and both camera modes, inspect desktop/phone overworld/cave screenshots, and publish verification before merge/release. The owner's correction supersedes the previous world-aligned texture instruction in the asset manifest. C12 and preview remain separate.
+
+## Completed beta enablement
+
 # AP campaign beta — enabled October 29, 2026
 
 - Owner explicitly selected the existing **AP Precalc 2027** and **AP Calculus** guilds. Their active production identities and ownership were verified. Only those two guild UUIDs are allowed; Math 3 and all other guilds remain excluded. This supersedes the earlier dedicated-test-guild default.
 - Production settings are updated at 100%, version `d3ea3a25-5ff3-42f4-a34e-9ca21d49b7a0`. App source remains reviewed `d44995a`; all other bindings, secrets, resource identities and maintenance history are unchanged. No database write, migration, reset, campaign creation or preview/C12 change occurred.
 - `release/ap-campaign-beta` / [PR #92](https://github.com/Orsnoire/FightSchool/pull/92) persists the exact allowlist in Wrangler and permits the existing protected transport to retain it. The production preflight pin follows the new settings version. Thirteen deployment tests pass, including allowlist retention and binding-type drift rejection. Existing campaign HTTP tests cover authorized/denied guild access, current membership and selected question banks. Exact-head CI status is maintained in the PR.
 - Both selected guilds have valid assigned fights, but neither has a campaign yet. The owner can create one per guild under **Campaigns · Beta**. Students then explicitly choose a guild-assigned fight on entry. Authenticated owner guardian/stamina acceptance remains pending; no claim of student play-through is made from configuration checks.
-- State: LIVE ACCESS ENABLED / REPOSITORY CONFIGURATION VERIFICATION IN PROGRESS. [Enrollment evidence](releases/2026-10-29-ap-beta.md).
+- State: LIVE ACCESS ENABLED / CONFIGURATION VERIFIED AND MERGED in PR #92 at `24df089`. CI 40882360484 and all four Chromium jobs 40882360305 pass on exact head `84638ea`. [Enrollment evidence](releases/2026-10-29-ap-beta.md).
 
 ## Previous completed release
 
