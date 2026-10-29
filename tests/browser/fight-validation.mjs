@@ -41,7 +41,7 @@ try {
     await page.getByTestId('input-title').fill('Validation recovery');
     await page.getByTestId('input-csv-upload').setInputFiles({ name: 'oversized.csv', mimeType: 'text/csv', buffer: csv([question, oversized]) });
     await page.getByText('CSV could not be imported', { exact: true }).waitFor();
-    await page.getByText(/No questions were added. Question 2: use at most 20,000 characters/).waitFor();
+    await page.getByText('No questions were added. Question 2: use at most 20,000 characters (including graph markup).', { exact: true }).waitFor();
     assert.equal(await page.locator('[data-testid^="question-item-"]').count(), 0, 'a failed import leaves the draft unchanged');
     assert.equal(writes.length, 0);
     assert.equal(await page.getByTestId('input-csv-upload').inputValue(), '', 'the file input can retry the same filename');

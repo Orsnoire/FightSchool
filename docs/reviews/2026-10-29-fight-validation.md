@@ -38,9 +38,15 @@ production records were created. The actual rich-content renderer processes all
 - A browser scenario is included for desktop and phone: rejected import, retry,
   missing enemy, oversized manual edit, visible feedback and successful creation
   with preserved question/answer contents. It is wired into the existing authoring
-  CI job, but **browser execution is pending** because local Chromium downloads
-  returned truncated archives.
-- The owner authorized GitHub publication on October 29. Current main and open
-  work were refreshed before publication. Register the claim and draft PR, then
-  run exact-head CI and browser checks. Merge and deployment are separate from
-  publishing the patch; no production release is claimed here.
+  CI job. Local Chromium downloads returned truncated archives; remote browser
+  verification follows the exact PR head.
+- [PR #94](https://github.com/Orsnoire/FightSchool/pull/94) is published with owner
+  authorization. Its first head `25dd900` matches the locally verified tree.
+  Browser run `40898711173` passed the pinned baseline and current authoring/lobby
+  scenarios before the new scenario encountered a partial-text selector matching
+  both the visible toast and its accessibility announcement. The test now selects
+  the complete visible message exactly; application behavior and assertions are
+  unchanged. Updated-head verification is pending and tracked in the PR.
+- Automatic approval review rejected a direct main-branch discovery-note write.
+  The documentation is therefore kept in PR #94, with main unchanged. Merge and
+  deployment are separate from publication; no production release is claimed.
