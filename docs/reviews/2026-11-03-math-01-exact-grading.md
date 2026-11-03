@@ -1,6 +1,6 @@
 # MATH-01: exact rational grading, first slice
 
-Status: **IMPLEMENTED / FOCUSED TESTS PASS / FULL VERIFICATION IN PROGRESS / UNMERGED**.
+Status: **IMPLEMENTED / VERIFIED LOCALLY / CI PENDING / UNMERGED**.
 Branch `feature/math-01-exact-grading`, [PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
 Inspected baseline: `d8233a2d94fe0c11f56b960cb4b677dcffab4609`.
 The November 3 owner request authorizes this bounded slice of the
@@ -134,5 +134,17 @@ fixed-question combat results, authentication and HTTP body validation.
 
 The real Worker integration regression additionally exercises all grading outcomes,
 teacher/student/origin authorization and read-only SQL against a disposable PGlite
-database; no production data is involved. Full-suite, build and CI results will
-be recorded before review readiness. No live acceptance is claimed.
+database; no production data is involved.
+
+Local verification on implementation `91fd2a9`:
+
+- `npm test`: **433 tests pass** (5 phase2, 7 phase3, 405 phase4, 16 rich-content).
+- A separate phase4 run with `--test-concurrency=2`: **405 pass**.
+- `node --test tests/deployment/*.test.mjs`: **13 pass**.
+- `npm run check`, `npm run build:cloudflare` and `git diff --check`: pass.
+
+GitHub CI/browser results for the final documentation checkpoint are tracked in
+[PR #96](https://github.com/Orsnoire/FightSchool/pull/96). Source publication is
+verified against the local Git tree; only this registration/evidence documentation
+changes after the tested implementation. No merge, deployment or live acceptance
+is claimed.
