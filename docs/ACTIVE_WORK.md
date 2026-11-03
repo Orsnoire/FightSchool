@@ -4,9 +4,9 @@
 - Baseline: current main `d8233a2d94fe0c11f56b960cb4b677dcffab4609`. No competing MATH implementation PR was found. PR #95 is actually merged; its live PR carries newer release evidence than the historical checkpoint below. C12 / PR #75 remains separate.
 - Scope: versioned rational-answer contract; bounded exact arithmetic; explicit numerical domain and required-form checks; distinct unsupported/indeterminate results; teacher-only, non-persisting grading preview boundary and regressions. Existing fixed questions, CSV and combat grading stay compatible.
 - Excluded: changes to existing student data, migrations, generated sessions, template bank, PDF recognition, symbolic-library/curriculum selection and live indeterminate-answer policy.
-- State: MERGED / DEPLOYED / LIVE ACCEPTANCE RUNNING. All 433 application tests (including 14 focused grading tests and the real Worker boundary), 13 deployment safeguards, TypeScript, both builds, final-head CI/browser jobs and merged-main CI pass. No dependencies or migrations added. [Contract, dependencies and decisions](reviews/2026-11-03-math-01-exact-grading.md).
+- State: MERGED / DEPLOYED / OPERATIONALLY ACCEPTED. All 433 application tests (including 14 focused grading tests and the real Worker boundary), 13 deployment safeguards, TypeScript, both builds, final-head CI/browser jobs and merged-main CI pass. No dependencies or migrations added. [Contract, dependencies and decisions](reviews/2026-11-03-math-01-exact-grading.md).
 - Production serves source `b408f9b` at 100%, version `321d7d83-d9cf-4754-b13a-f9e3a2f13871`; both domains are ready. Protected read-only verification [41669392372](https://github.com/Orsnoire/FightSchool/actions/runs/41669392372) passed after initial release verification stopped. Repeated complete paused-room digests match, the canonical 26-row ledger is unchanged, completed maintenance windows remain, and the temporary release probe is removed. Other bindings, secrets and storage identities are unchanged. No migration/reset or existing student-data edit occurred.
-- Live grading preview smoke passed all nine outcomes plus authentication, origin and cache checks using a dedicated teacher fixture. Canonical live acceptance [41670592264](https://github.com/Orsnoire/FightSchool/actions/runs/41670592264) is running with unchanged fixtures/deadlines. Next: inspect its result and publish final release evidence; do not yet claim operational acceptance. Exact mathematics is available only through the teacher preview API; fixed-question combat grading remains unchanged.
+- Live grading preview smoke passed all nine outcomes plus authentication, origin and cache checks using a dedicated teacher fixture. Canonical live acceptance [41670592264](https://github.com/Orsnoire/FightSchool/actions/runs/41670592264) attempt 1 passed teacher/student combat and seven operational checks but failed 30-player completion after a participant socket closed with code 1006. Cause unconfirmed; attempt 2 passed teacher/student combat and all eight operational checks with unchanged source/runtime/fixtures/deadlines. [Release evidence](releases/2026-11-03-math-01.md). No engineering task remains in this bounded slice; register the next package before implementation. Exact mathematics is available only through the teacher preview API; fixed-question combat grading remains unchanged.
 
 ## Previous checkpoint (historical; see live PR #95 for later status)
 
@@ -43,8 +43,8 @@ The owner requested the [MATH project](MATH_QUESTION_ENGINE_PROJECT.md) be
 recorded and linked from ongoing design direction. Its brief and
 [expansion-backlog entry](EXPANSION_PLAN.md) capture approved direction,
 requested scope, proposed packages, acceptance gates and open decisions.
-Status: **MATH-01 EXACT GRADING SLICE IN PROGRESS**, authorized November 3 on
-`feature/math-01-exact-grading` / [PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
+Status: **MATH-01 EXACT GRADING SLICE MERGED / DEPLOYED**, authorized November 3;
+[PR #96](https://github.com/Orsnoire/FightSchool/pull/96) and [release evidence](releases/2026-11-03-math-01.md).
 See the current checkpoint above. Other packages and broader MATH-01 scope remain
 unstarted; C12 / PR #75 and historical release checkpoints retain their separate status.
 

@@ -1,7 +1,7 @@
 # MATH-01: exact rational grading, first slice
 
-Status: **IMPLEMENTED / VERIFIED LOCALLY / UNMERGED (latest CI status in PR #96)**.
-Branch `feature/math-01-exact-grading`, [PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
+Status: **MERGED / DEPLOYED / OPERATIONALLY ACCEPTED**. See the [release record](../releases/2026-11-03-math-01.md), including retained failures and the unchanged-suite pass.
+Merged [PR #96](https://github.com/Orsnoire/FightSchool/pull/96), source `b408f9be70c8458cc8012b327cb8058210276bbf`.
 Inspected baseline: `d8233a2d94fe0c11f56b960cb4b677dcffab4609`.
 The November 3 owner request authorizes this bounded slice of the
 [mathematics project](../MATH_QUESTION_ENGINE_PROJECT.md), independently of C12.
@@ -116,8 +116,9 @@ bounds, not classroom latency guarantees or final curriculum policies.
   structural validation uses existing Zod; tests use existing Node/tsx/PGlite.
 - No CAS/parser dependency or recognition provider is selected. This small parser
   implements only the documented numerical grammar.
-- No database migration, production connection, student-data access, deployment,
-  generated combat session, PDF recognition or curriculum family selection.
+- The implementation adds no database migration, student-data access, generated
+  combat session, PDF recognition or curriculum family selection. The subsequent
+  owner-authorized deployment is recorded separately in the release evidence.
 - Only the answer-contract part of MATH-01 is implemented. Template/instance
   provenance contracts and broader bounded symbolic grading remain deferred.
 - Live indeterminate handling, frozen/persisted grading policies, replay, answer
@@ -143,8 +144,8 @@ Local verification on implementation `91fd2a9`:
 - `node --test tests/deployment/*.test.mjs`: **13 pass**.
 - `npm run check`, `npm run build:cloudflare` and `git diff --check`: pass.
 
-GitHub CI/browser results for the final documentation checkpoint are tracked in
-[PR #96](https://github.com/Orsnoire/FightSchool/pull/96). Source publication is
-verified against the local Git tree; only this registration/evidence documentation
-changes after the tested implementation. No merge, deployment or live acceptance
-is claimed.
+Final-head CI and all four browser jobs pass; merged-main CI also passes. Source
+publication was verified against the local Git tree. Only registration/evidence
+documentation changed after the tested implementation. The owner subsequently
+authorized merge and deployment; see the [release record](../releases/2026-11-03-math-01.md)
+for provider state, live checks and retained failure evidence.
