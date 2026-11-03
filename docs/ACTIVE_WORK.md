@@ -1,3 +1,13 @@
+# MATH-01 — exact grading foundation, active November 3, 2026
+
+- Owner authorized a narrow exact numerical/fractional grading foundation. Branch: `feature/math-01-exact-grading`; [draft PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
+- Baseline: current main `d8233a2d94fe0c11f56b960cb4b677dcffab4609`. No competing MATH implementation PR was found. PR #95 is actually merged; its live PR carries newer release evidence than the historical checkpoint below. C12 / PR #75 remains separate.
+- Scope: versioned rational-answer contract; bounded exact arithmetic; explicit numerical domain and required-form checks; distinct unsupported/indeterminate results; teacher-only, non-persisting grading preview boundary and regressions. Existing fixed questions, CSV and combat grading stay compatible.
+- Excluded: production data, migration/deployment, generated sessions, template bank, PDF recognition, symbolic-library/curriculum selection and live indeterminate-answer policy.
+- State: CLAIMED / IMPLEMENTATION NOT STARTED. Next: implement and test the bounded grader and server preview; publish coherent checkpoints, dependencies and decisions for review.
+
+## Previous checkpoint (historical; see live PR #95 for later status)
+
 # Student join context isolation — active October 29, 2026
 
 - Owner direction: ordinary fights must not load campaign context. Retain only guild admission checks, the room's frozen power cap and guild identity for quest/reward attribution.
