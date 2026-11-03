@@ -1,6 +1,6 @@
 # MATH-01: exact rational grading, first slice
 
-Status: **IMPLEMENTED / VERIFIED LOCALLY / CI PENDING / UNMERGED**.
+Status: **IMPLEMENTED / VERIFIED LOCALLY / UNMERGED (latest CI status in PR #96)**.
 Branch `feature/math-01-exact-grading`, [PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
 Inspected baseline: `d8233a2d94fe0c11f56b960cb4b677dcffab4609`.
 The November 3 owner request authorizes this bounded slice of the

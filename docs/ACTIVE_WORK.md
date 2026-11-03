@@ -4,7 +4,7 @@
 - Baseline: current main `d8233a2d94fe0c11f56b960cb4b677dcffab4609`. No competing MATH implementation PR was found. PR #95 is actually merged; its live PR carries newer release evidence than the historical checkpoint below. C12 / PR #75 remains separate.
 - Scope: versioned rational-answer contract; bounded exact arithmetic; explicit numerical domain and required-form checks; distinct unsupported/indeterminate results; teacher-only, non-persisting grading preview boundary and regressions. Existing fixed questions, CSV and combat grading stay compatible.
 - Excluded: production data, migration/deployment, generated sessions, template bank, PDF recognition, symbolic-library/curriculum selection and live indeterminate-answer policy.
-- State: IMPLEMENTED / VERIFIED LOCALLY / CI PENDING / UNMERGED. Implementation `91fd2a9` passes all 433 application tests (including 14 focused grading tests and the real Worker boundary), 13 deployment safeguards, TypeScript and client/Worker builds. No dependencies or migrations added. Next: review final-head CI and PR #96; live mathematics grading is not enabled. [Contract, dependencies and decisions](reviews/2026-11-03-math-01-exact-grading.md).
+- State: IMPLEMENTED / VERIFIED LOCALLY / UNMERGED (latest CI status in PR #96). Implementation `91fd2a9` passes all 433 application tests (including 14 focused grading tests and the real Worker boundary), 13 deployment safeguards, TypeScript and client/Worker builds. No dependencies or migrations added. Next: review final-head CI and PR #96; live mathematics grading is not enabled. [Contract, dependencies and decisions](reviews/2026-11-03-math-01-exact-grading.md).
 
 ## Previous checkpoint (historical; see live PR #95 for later status)
 
