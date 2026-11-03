@@ -1,4 +1,5 @@
 import { readJson, bodyErrorResponse } from "../http/json";
+import { previewMathGrade } from "./math-preview";
 import { insertFightSchema as fightSchema } from "../../shared/contracts/fights";
 import { enemyTuning } from "../../shared/encounter-tiers";
 import { z } from "zod";
@@ -65,6 +66,11 @@ export async function handleFights(
     sessionConfig,
     "teacher",
   );
+
+  if (request.method === "POST" && url.pathname === "/api/fights/math/grade-preview") {
+    if (!session) return json({ error: "Authentication required" }, 401);
+    return previewMathGrade(request);
+  }
 
   const teacherList =
     request.method === "GET" &&
