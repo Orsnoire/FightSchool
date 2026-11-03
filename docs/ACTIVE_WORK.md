@@ -1,3 +1,16 @@
+# MATH-01 — exact grading foundation, active November 3, 2026
+
+- Owner authorized a narrow exact numerical/fractional grading foundation. Branch: `feature/math-01-exact-grading`; draft PR registration follows this claim.
+- Baseline: current main `d8233a2d94fe0c11f56b960cb4b677dcffab4609`. No competing MATH implementation PR was found. PR #95 is actually merged; its live PR carries newer release evidence than the historical checkpoint below. C12 / PR #75 remains separate.
+- Scope: versioned rational-answer contract; bounded exact arithmetic; explicit numerical domain and required-form checks; distinct unsupported/indeterminate results; teacher-only, non-persisting grading preview boundary and regressions. Existing fixed questions, CSV and combat grading stay compatible.
+- Excluded: production data, migration/deployment, generated sessions, template bank, PDF recognition, symbolic-library/curriculum selection and live indeterminate-answer policy.
+- State: CLAIMED / IMPLEMENTATION NOT STARTED. Next: implement and test the bounded grader and server preview; publish coherent checkpoints, dependencies and decisions for review.
+
+## Previous checkpoint (historical; see live PR #95 for later status)
+
+Warning: truncated output (original token count: 19433)
+Total output lines: 377
+
 # Student join context isolation — active October 29, 2026
 
 - Owner direction: ordinary fights must not load campaign context. Retain only guild admission checks, the room's frozen power cap and guild identity for quest/reward attribution.
@@ -189,36 +202,7 @@ Earlier checkpoints are preserved in [Git history](https://github.com/Orsnoire/F
 # Solo exit EXP and periodic effects — released October 26, 2026
 
 - Owner authorized merge and production deployment. [PR #85](https://github.com/Orsnoire/FightSchool/pull/85) merged at `5530459101438eb525c5a4c77ccc30d2b44b552e`, with identical tree `fade1156b8a2173bf7bd975577f109a3cb0258f7` to reviewed head `801fd82ea576fb3bdd6e79efaea927abffc15c63`.
-- Complete: solo-host exit shares both teacher-end controls' completion transition and EXP formula; correct answers, actual damage, blocking and healing contribute with existing proration/stamina/receipts. Hex has MAT-based initial and full subsequent ticks, MDF, refresh without lost ticks and shared previews. Hemorrhage has its own two-round duration. No player HoT exists in the current catalog. [Specification](combat/solo-exit-xp-and-periodic-effects.md).
-- Verification: **347 tests**, TypeScript and both builds pass in exact-head CI 40341730244 and merged-main CI 40344121605; all four Chromium jobs 40341730018 pass. A one-millisecond wall-clock mismatch in the new recovery test was fixed with an injected clock while retaining full-snapshot comparison.
-- **Deployment passed:** [40344349000](https://github.com/Orsnoire/FightSchool/actions/runs/40344349000), exact merged runtime. Cloudflare confirms Worker `b984a444-6bc3-45f0-a94e-d6af64767f1a` serving 100% on the canonical domain. Both hostname smoke checks pass.
-- **Canonical acceptance passed:** [40345280239](https://github.com/Orsnoire/FightSchool/actions/runs/40345280239), first attempt. Test source `453925f7158b2ad3e1241b612aa014357570d491` corrects the legacy live EXP assertion to total damage; no runtime change, redeployment or weakened assertion. Its CI 40344912433 passes. Combat/progression and all eight operational checks pass, including fractional host-ended rewards and exactly-once results; 30-answer p50/p95/max **1368/2527/2628 ms**. Functional sample only, not C12 signoff.
-- State: **COMPLETE / MERGED / DEPLOYED / ACCEPTED**. No new migration or data reset. [Release evidence and limits](releases/2026-10-26-pr85.md). Campaign #81 and C12 #75 remain separate and unchanged.
-- Next: resume any further Campaign/C12 work through its own registered branch checkpoint; this focused release is complete.
-
-# Vampire, guild shop and battle joining — released October 22, 2026
-
-- Owner authorized merge and deployment. [PR #84](https://github.com/Orsnoire/FightSchool/pull/84) merged at `a6659482ea75b7eab8a83f96795d3001d8280ff7`, with the identical tree to reviewed head `646948cdb5ad84d52f24fa9ef628d9972a8c3001`.
-- Complete: Bite heals actual HP drained; common T1–T4 prices 100/1,000/5,000/10,000g; all 24 owner-specified Tier 2 armor pieces and recolors; visible current battles and Join/Rejoin with authenticated hosting-guild entry. Existing unlocks, teacher controls and legacy nonguild solo privacy remain. [Equipment specification](combat/tier-two-equipment.md).
-- Exact-head CI 39813326322, all four Chromium jobs 39813326343, Avatar Workshop 39813326139 and merged-main CI 39819337831 pass: **339 tests**, TypeScript and both builds. Phone header overflow is corrected and the unchanged no-overflow assertion passes.
-- **Deployment passed:** [39819733897](https://github.com/Orsnoire/FightSchool/actions/runs/39819733897), exact merge. Fresh provider read confirms Worker `dc43a5bc-ec62-4a12-aeb5-88837d410c4b` serves 100% on the canonical domain. Both hostname health/readiness checks pass.
-- **Canonical acceptance passed:** [39820153872](https://github.com/Orsnoire/FightSchool/actions/runs/39820153872), first attempt, exact runtime. Combat/progression and all eight operational checks pass; 30-answer p50/p95/max **1966/3733/3834 ms**. Functional sample only, not C12 performance signoff.
-- No new migration or data reset. A supplementary custom live probe and public screenshot upload were blocked by automatic approval review; neither contributes acceptance evidence. [Full release record and limits](releases/2026-10-22-pr84.md).
-- State: **COMPLETE / MERGED / DEPLOYED / ACCEPTED**. Owner next requested a read-only audit of canonical versus historical Replit functionality and resource/cost use. Use recorded baseline measurements and provider evidence; distinguish resource reductions from unverified dollar savings. Separate Campaign #81 and C12 #75 checkpoints remain unchanged.
-
-# Math display repair — released October 21, 2026
-
-- Owner-authorized review, merge and production deployment: [PR #83](https://github.com/Orsnoire/FightSchool/pull/83), merge `2ca741ff28a81d75c75de59c51d784415c7e418a`, identical tree to reviewed head `684b4c8d3174e07bbb92b24b6be2b41b37da7e72`.
-- Exact-head CI 39637847126 and all four Chromium jobs 39637847160 pass (334 tests, TypeScript and both builds); merged-main CI 39695413818 passes.
-- **Deployment passed:** [39695583585](https://github.com/Orsnoire/FightSchool/actions/runs/39695583585), exact merge commit. Fresh provider read: Worker `3e87099c-a7b6-4c18-b023-75262acd44ac` serves 100%; canonical domain targets the historical staging-named production Worker.
-- **Math acceptance passed:** original 48 questions / 264 equations verified against the deployed renderer; canonical save/reload preserves every question, option, key and timer. Live correct/distractor answers in both quizzes grade correctly; feedback retains the original mathematical answer. Only synthetic fixtures were used.
-- **Canonical acceptance passed:** [39695893872, attempt 2](https://github.com/Orsnoire/FightSchool/actions/runs/39695893872/attempts/2), with unchanged tests. Combat/progression and all eight operational checks pass; 30-answer p50/p95/max 1857/3564/3664 ms. Attempt 1 timed out awaiting the abilities phase; its cause remains unconfirmed.
-- No migration, stored-question rewrite, grading/gameplay rule change or student-data reset. [Release evidence and precise limits](releases/2026-10-21-pr83.md).
-- Campaign #81 and C12 #75 remain separate, open and conflicted with unfinished acceptance gates. Their isolated deployments were not changed. Next: continue each registered branch checkpoint separately; do not infer production readiness from an open PR.
-
-# Campaign pilot — active October 20, 2026
-
-- Owner authorized development of a one-dungeon test campaign with unlocks, exploration, persistent campaign HP, a healing/consumable menu, an inn for job changes, separate weapon/armor shops, and generated unlock quest givers.
+- Complete: solo-host exit shares both teacher-end controls' completion transition and EXP formula; correct answers, actual damage, blocking and healing contribute with existing proration/stamina/receipts. Hex has MAT-based initial and full subsequent ticks, MDF, refresh without los…1433 tokens truncated…separate weapon/armor shops, and generated unlock quest givers.
 - Branch: `feature/campaign-pilot`; [draft PR #81](https://github.com/Orsnoire/FightSchool/pull/81). Scope and acceptance: [campaign pilot](https://github.com/Orsnoire/FightSchool/blob/feature/campaign-pilot/docs/CAMPAIGN_PILOT.md); broader decisions: [campaign roadmap](CAMPAIGN_DEVELOPMENT_ROADMAP.md).
 - State: planning/claim only; no campaign runtime, migration, or deployment yet. Current production and separate C12 work are unchanged.
 - Next: implement the scoped pilot, keep this branch checkpoint and draft PR current, and verify before proposing release.
