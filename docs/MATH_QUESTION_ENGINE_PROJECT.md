@@ -1,7 +1,11 @@
 # Mathematics question engine and quiz authoring project
 
 **DESIGN RECORD / FUTURE WORK — October 29, 2026.**
-**Project ID: MATH. Implementation has not started.**
+**Project ID: MATH. MATH-01 exact rational grading slice in progress (November 3, 2026).**
+
+The owner authorized a narrow first implementation in [PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
+See the [contract, dependencies, decisions and test evidence](reviews/2026-11-03-math-01-exact-grading.md).
+This does not authorize the remaining packages or enable live mathematics grading.
 
 The owner requested this project be recorded after the mathematics feasibility
 discussion. It captures the agreed direction and requested scope; the proposed
@@ -237,7 +241,9 @@ This project does not select a symbolic library or require a provider change.
 
 ## 10. Proposed work packages
 
-All packages are **NOT STARTED**. IDs are planning identifiers, not PR numbers.
+MATH-01's bounded exact rational grading slice is **IN PROGRESS**; its template/
+instance contracts and broader symbolic checks remain deferred. MATH-02 through
+MATH-06 are **NOT STARTED**. IDs are planning identifiers, not PR numbers.
 The order is a proposed dependency sequence; choose a bounded first slice and
 register it in active work before implementation.
 

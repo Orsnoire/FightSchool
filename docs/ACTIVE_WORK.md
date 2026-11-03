@@ -4,7 +4,7 @@
 - Baseline: current main `d8233a2d94fe0c11f56b960cb4b677dcffab4609`. No competing MATH implementation PR was found. PR #95 is actually merged; its live PR carries newer release evidence than the historical checkpoint below. C12 / PR #75 remains separate.
 - Scope: versioned rational-answer contract; bounded exact arithmetic; explicit numerical domain and required-form checks; distinct unsupported/indeterminate results; teacher-only, non-persisting grading preview boundary and regressions. Existing fixed questions, CSV and combat grading stay compatible.
 - Excluded: production data, migration/deployment, generated sessions, template bank, PDF recognition, symbolic-library/curriculum selection and live indeterminate-answer policy.
-- State: CLAIMED / IMPLEMENTATION NOT STARTED. Next: implement and test the bounded grader and server preview; publish coherent checkpoints, dependencies and decisions for review.
+- State: IMPLEMENTED / FOCUSED TESTS PASS / FULL VERIFICATION IN PROGRESS / UNMERGED. The versioned rational contract, bounded grader, authenticated preview and 14 focused regressions are implemented. Full application and Worker integration checks are running. Next: complete verification and publish evidence in PR #96. [Contract, dependencies and decisions](reviews/2026-11-03-math-01-exact-grading.md).
 
 ## Previous checkpoint (historical; see live PR #95 for later status)
 
@@ -41,10 +41,10 @@ The owner requested the [MATH project](MATH_QUESTION_ENGINE_PROJECT.md) be
 recorded and linked from ongoing design direction. Its brief and
 [expansion-backlog entry](EXPANSION_PLAN.md) capture approved direction,
 requested scope, proposed packages, acceptance gates and open decisions.
-Status: **DOCUMENTED / IMPLEMENTATION NOT STARTED**. No implementation branch
-or PR is claimed; C12 / PR #75 and the completed release checkpoint above retain
-their existing status. Next for this project: select a bounded first package
-and register its branch/PR when implementation is authorized.
+Status: **MATH-01 EXACT GRADING SLICE IN PROGRESS**, authorized November 3 on
+`feature/math-01-exact-grading` / [PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
+See the current checkpoint above. Other packages and broader MATH-01 scope remain
+unstarted; C12 / PR #75 and historical release checkpoints retain their separate status.
 
 ## Previous beta checkpoint
 

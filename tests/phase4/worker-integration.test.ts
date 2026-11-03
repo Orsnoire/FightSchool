@@ -139,6 +139,36 @@ test("Worker integrates migrated auth, guilds, rooms, equipment, uploads, and re
     await api("/api/teacher/login", "POST", undefined, { email: "teacher@example.invalid", password: "wrong" }, 401);
     const student = await api("/api/student/login", "POST", undefined, { nickname: "Test student", password });
     assert.equal(student.payload.passwordHash, undefined);
+    // MATH-01 is an authenticated, non-persisting preview; live fight grading is unchanged.
+    const previewPath = "/api/fights/math/grade-preview";
+    const answerContract = { version: 1, kind: "exact_rational", expected: "1/2" };
+    const beforePreview = queries.length;
+    const roomCount = combatObjects.size;
+    await api(previewPath, "POST", undefined, { answerContract, submitted: "2/4" }, 401);
+    await api(previewPath, "POST", student.cookie, { answerContract, submitted: "2/4" }, 401);
+    for (const [submitted, result] of [
+      ["2/4", { status: "correct" }],
+      ["1/3", { status: "incorrect", reason: "not_equal" }],
+      ["1+", { status: "incorrect", reason: "malformed_expression" }],
+      ["1/0", { status: "incorrect", reason: "undefined_value" }],
+      ["x/x", { status: "indeterminate", reason: "unsupported_notation" }],
+    ] as const) {
+      assert.deepEqual((await api(previewPath, "POST", teacher.cookie, { answerContract, submitted })).payload, result);
+    }
+    for (const [extra, submitted, result] of [
+      [{ requiredForm: "reduced_fraction" }, "2/4", { status: "incorrect", reason: "required_form" }],
+      [{ domain: { excluded: ["1/3"] } }, "2/6", { status: "incorrect", reason: "outside_domain" }],
+      [{ domain: { excluded: ["1/2"] } }, "1/2", { status: "indeterminate", reason: "invalid_contract" }],
+    ] as const) {
+      assert.deepEqual((await api(previewPath, "POST", teacher.cookie, { answerContract: { ...answerContract, ...extra }, submitted })).payload, result);
+    }
+    const forbiddenPreview = await worker.fetch(new Request(env.PUBLIC_ORIGIN + previewPath, {
+      method: "POST", headers: { Cookie: teacher.cookie!, Origin: "https://untrusted.example" },
+      body: JSON.stringify({ answerContract, submitted: "2/4" }),
+    }), env as any);
+    assert.equal(forbiddenPreview.status, 403);
+    assert.ok(queries.slice(beforePreview).every(query => /^select\b/i.test(query)), "preview only reads authentication; no student/content/result writes");
+    assert.equal(combatObjects.size, roomCount, "preview never opens a combat room");
     const beforeCharacter = queries.length;
     await api(`/api/student/${student.payload.id}/character`, "PATCH", student.cookie, { characterClass: "wizard", gender: "A" });
     const characterQueries = queries.slice(beforeCharacter);
