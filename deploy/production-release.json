@@ -1,5 +1,5 @@
 {
-  "mode": "pause",
+  "mode": "verify",
   "sourceSha": "b408f9be70c8458cc8012b327cb8058210276bbf",
   "expectedPreviousSha": "a603f094239153772ed780c35ed0355cc083a7e0",
   "pauseId": "production-math-01-20261103",
