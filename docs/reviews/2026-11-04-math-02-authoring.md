@@ -1,14 +1,18 @@
 # MATH-02 missing-exponent authoring pilot
 
-Status: **IMPLEMENTED AND TESTED LOCALLY / NOT PUBLISHED / NOT MERGED / NOT DEPLOYED**.
+Status: **IMPLEMENTED AND TESTED LOCALLY / DRAFT PR PUBLISHED / CI PENDING / NOT MERGED / NOT DEPLOYED**.
 Base: `326dd08004b145fea5a25472a3a5b854818a621d`; branch: `feature/math-02-authoring`.
-Complete implementation checkpoint: `e1f11a1e24449fc8a618711f95df115c20a574d8`.
+[Draft PR #97](https://github.com/Orsnoire/FightSchool/pull/97), authorized November 5.
+Published implementation checkpoint: `32fa766593364a9eb5610b73839cd8c431dd0b42`.
+Initial published head `eac51e02389dfdc58dbf7d926a3a3185e0e24999` has exactly the
+same Git tree as local reviewed `9b5d640`; publication reconstructed the commits
+through GitHub after direct Git push was unavailable. No code changed in transit.
 
 The owner approved the scoped missing-integer-exponent pilot and the proposed
-versioned teacher-owned storage on November 4, 2026. Publication, consequential
-dependencies, merging, production migration and deployment still require explicit
-approval. The local-only checkpoint follows that instruction rather than the
-usual draft-PR-first procedure. C12 / PR #75 remains separate.
+versioned teacher-owned storage on November 4, 2026, then draft publication on
+November 5. Consequential dependencies, merging, production migration and deployment
+still require explicit approval. The earlier local-only checkpoint followed the
+owner's publication boundary. C12 / PR #75 remains separate.
 
 ## Result and instructional boundary
 
@@ -135,7 +139,7 @@ schema metadata. Historical migration SQL and campaign bridge contracts are inta
 | Deployment safeguards | All 13 existing deployment tests pass; no safeguard relaxed |
 | Compile/build | TypeScript and client/Worker production builds pass |
 | Desktop/phone browser acceptance | Test and CI integration prepared, **not passed locally**. Chromium fails before launch with `socket() failed: Operation not permitted`; no rendered screenshot or browser usability pass is claimed |
-| Publication/release | Not published, merged, migrated in production, deployed or operationally accepted |
+| Publication/release | Draft PR #97 published; CI/browser evidence is tracked in its live description. Not merged, migrated in production, deployed or operationally accepted |
 
 The full application suite passed, followed by a focused DOM rerun, TypeScript and
 build after the final UI feedback/read-only polish. Initial migration-suite failures
@@ -165,9 +169,9 @@ remain open gates; DOM tests do not substitute for them.
 
 ## Next approval and release decisions
 
-The next action is owner approval to publish the local branch as a **draft PR**,
-then run CI, inspect desktop/phone screenshots and resolve any findings. That
-approval must not be treated as authorization to merge, migrate or deploy.
+Draft publication is approved and complete. Next: run CI on the final PR head,
+inspect desktop/phone screenshots and resolve any findings, retaining draft status.
+Publication approval is not authorization to merge, migrate or deploy.
 
 The production release adapter deliberately still pins the existing 26-row
 question-bank schema. A future release must explicitly add/review a MATH-02 schema

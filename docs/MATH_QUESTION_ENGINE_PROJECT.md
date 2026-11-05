@@ -2,7 +2,7 @@
 
 **DESIGN RECORD / FUTURE WORK — October 29, 2026.**
 **Project ID: MATH. MATH-01 exact rational grading slice merged and deployed (November 3, 2026).**
-**MATH-02 missing-exponent authoring pilot: approved and implemented locally, unpublished (November 4, 2026).**
+**MATH-02 missing-exponent authoring pilot: draft PR #97 published (November 5, 2026).**
 
 The owner authorized a narrow first implementation in [PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
 See the [contract, dependencies, decisions and test evidence](reviews/2026-11-03-math-01-exact-grading.md).
@@ -61,7 +61,7 @@ The October 29 conversation establishes these requirements:
 The original October 29 task authorized recording this project and linking it into
 design direction. The subsequent bounded MATH-01 and MATH-02 authorizations above
 supersede that documentation-only boundary for their stated slices. New packages,
-subscriptions/model hosting and MATH-02 publication, production migration, merge
+subscriptions/model hosting and MATH-02 production migration, merge
 or deployment are not authorized by this project record.
 
 ## 3. Teacher workflow
@@ -250,7 +250,7 @@ This project does not select a symbolic library or require a provider change.
 MATH-01's bounded exact rational grading slice is **MERGED / DEPLOYED**
 ([release evidence](releases/2026-11-03-math-01.md)); its template/
 instance contracts and broader symbolic checks remain deferred. MATH-02's bounded
-missing-exponent authoring pilot is **IMPLEMENTED / LOCALLY TESTED / UNPUBLISHED**;
+missing-exponent authoring pilot is **IMPLEMENTED / DRAFT PUBLISHED / CI PENDING**;
 CI/browser acceptance and release gates remain open. MATH-03 through MATH-06 are
 **NOT STARTED**. IDs are planning identifiers, not PR numbers.
 The order is a proposed dependency sequence; choose a bounded first slice and

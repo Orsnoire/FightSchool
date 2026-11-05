@@ -1,12 +1,12 @@
-# MATH-02 — authoring pilot, local implementation November 4, 2026
+# MATH-02 — authoring pilot, draft PR published November 5, 2026
 
 - Owner approved the missing-integer-exponent authoring scope and proposed versioned teacher-owned storage. Base: `326dd08004b145fea5a25472a3a5b854818a621d`.
-- Local branch: `feature/math-02-authoring`. No PR or remote claim published: the owner explicitly requires separate approval before publication, consequential dependencies, merge, migration or deployment. This overrides the normal draft-PR-first checkpoint procedure for this task.
+- Branch: `feature/math-02-authoring`, [draft PR #97](https://github.com/Orsnoire/FightSchool/pull/97). The owner explicitly approved draft publication on November 5. Consequential dependencies, merge, production migration and deployment still require separate approval. The earlier local-only implementation followed that explicit publication boundary.
 - Scope: searchable product/quotient/power templates, bounded parameters, deterministic preview, exact integer answer trials, teacher approval and immutable saved revisions. Additive migration proposal tested only against disposable local Postgres.
 - Excludes symbolic answer grading, generated combat sessions, fixed-question/CSV contract changes, reward changes, new dependencies and production changes. C12 / PR #75 is separate.
-- State: IMPLEMENTED / LOCALLY TESTED / UNPUBLISHED. Core/API checkpoint `375afbc`; complete implementation checkpoint `e1f11a1e24449fc8a618711f95df115c20a574d8`. 448 application tests, 13 deployment safeguards, TypeScript and both builds pass. The proposed migration preserves all existing public-table rows in disposable Postgres. [Scope, code map, acceptance and limitations](reviews/2026-11-04-math-02-authoring.md).
+- State: IMPLEMENTED / DRAFT PUBLISHED / CI PENDING. Published code checkpoint `eac51e02389dfdc58dbf7d926a3a3185e0e24999` has the identical tree to locally tested `9b5d640`; complete runtime checkpoint is `32fa766593364a9eb5610b73839cd8c431dd0b42`. 448 application tests, 13 deployment safeguards, TypeScript and both builds pass locally. The proposed migration preserves all existing public-table rows in disposable Postgres. [Scope, code map, acceptance and limitations](reviews/2026-11-04-math-02-authoring.md).
 - Browser acceptance is not claimed: local Chromium fails before launch because the environment denies a required socket call. Real Worker/Postgres DOM interaction coverage passes; desktop/phone browser tests and screenshots are added to the existing authoring CI job.
-- Exact next action: obtain explicit approval to publish the draft PR, run CI/browser acceptance, inspect screenshots and address findings. No merge, production migration or deployment is authorized. The protected release adapter still pins the old schema; a future release needs a separately reviewed MATH-02 migration stage.
+- Exact next action: finish CI/browser acceptance for the latest PR head, inspect screenshots and address findings; the live PR carries subsequent run evidence. Keep the PR draft. No merge, production migration or deployment is authorized. The protected release adapter still pins the old schema; a future release needs a separately reviewed MATH-02 migration stage.
 
 ## Previous package
 
