@@ -9,6 +9,23 @@ const fixture = () => ({ id: 'prediction', layout: generateCampaignLayout('predi
 }) as unknown as CampaignView;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
+test('keeper availability updates on teacher-only gate revision without changing student progress', () => {
+  const view = { ...fixture(), gates: [{ id: 'key', name: 'Cave Key', open: false }] };
+  const controller = createCampaignController({ cancelPoll: async () => {}, committed: () => {},
+    encounter: () => assert.fail('poll cannot start combat'), read: async () => view,
+    send: async () => assert.fail('poll cannot mutate progress') });
+  controller.observe(view);
+  const opened = { ...view, revision: 1, gates: [{ ...view.gates[0], open: true }] };
+  controller.observe(opened);
+  assert.equal(controller.getSnapshot().view!.gates[0].open, true);
+  assert.deepEqual(controller.getSnapshot().view!.progress, view.progress);
+  controller.observe(view);
+  assert.equal(controller.getSnapshot().view!.gates[0].open, true, 'late closed-gate poll is ignored');
+  controller.observe({ ...opened, revision: 2, gates: view.gates });
+  assert.equal(controller.getSnapshot().view!.gates[0].open, false);
+  assert.deepEqual(controller.getSnapshot().view!.progress, view.progress);
+});
+
 test('campaign paths stop at the first encounter and validate each step', () => {
   const world = fixture();
   const p = { ...world.progress, zone: 'dungeon', position: world.layout.dungeon.spawn } as CampaignProgress;
