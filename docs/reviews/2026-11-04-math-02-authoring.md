@@ -1,8 +1,9 @@
 # MATH-02 missing-exponent authoring pilot
 
-Status: **IMPLEMENTED / CI VERIFIED / RELEASE PREPARATION AUTHORIZED / NOT MERGED / NOT DEPLOYED**.
+Status: **MERGED / MIGRATED / DEPLOYED — live authoring acceptance pending fixture approval**.
+[November 5 release evidence](../releases/2026-11-05-math-02.md).
 Base: `326dd08004b145fea5a25472a3a5b854818a621d`; branch: `feature/math-02-authoring`.
-[Draft PR #97](https://github.com/Orsnoire/FightSchool/pull/97), authorized November 5.
+[PR #97](https://github.com/Orsnoire/FightSchool/pull/97), authorized November 5.
 Published implementation checkpoint: `32fa766593364a9eb5610b73839cd8c431dd0b42`.
 Initial published head `eac51e02389dfdc58dbf7d926a3a3185e0e24999` has exactly the
 same Git tree as local reviewed `9b5d640`; publication reconstructed the commits
@@ -136,12 +137,12 @@ schema metadata. Historical migration SQL and campaign bridge contracts are inta
 | Mathematical correctness and bounds | Five generator tests pass, including all 507 parameter combinations, independent exact oracle, sign/identity constraints, empty pools, deduplication and unsupported answers |
 | Authenticated storage and approval | Nine API tests pass using the real Worker against disposable PGlite through the Neon HTTP transport boundary; owner isolation, tampered hashes, retries, concurrent saves, insert rollback and unsupported versions covered |
 | Teacher interaction | DOM integration test passes with real React components, Worker, Postgres and KaTeX; tab draft retention, previews, grading, lost-response retry, approvals, historical drafts, conflicts and reopen after remount covered |
-| Existing application | `npm test`: **448 passed, zero failed/skipped** (5 phase 2, 7 phase 3, 420 phase 4, 16 rich-content); includes existing CSV, fixed-question, answer secrecy, combat and reward regressions |
+| Existing application | `npm test`: **449 passed, zero failed/skipped** (5 phase 2, 7 phase 3, 421 phase 4, 16 rich-content); includes existing CSV, fixed-question, answer secrecy, combat and reward regressions |
 | Migration/data preservation | All eight campaign migration tests pass; schema baseline/generation checks pass. Dedicated fixture snapshots every existing public table before 0026 and verifies unchanged rows afterward. Existing ledger prefixes stay intact; new canonical history has 27 rows |
 | Deployment safeguards | All 13 existing deployment tests pass; no safeguard relaxed |
 | Compile/build | TypeScript and client/Worker production builds pass |
-| Desktop/phone browser acceptance | Test and CI integration prepared, **not passed locally**. Chromium fails before launch with `socket() failed: Operation not permitted`; no rendered screenshot or browser usability pass is claimed |
-| Publication/release | Draft PR #97 published; CI/browser evidence is tracked in its live description. Not merged, migrated in production, deployed or operationally accepted |
+| Desktop/phone browser acceptance | All four final-head browser jobs pass; desktop/phone screenshots inspected. Local Chromium still cannot launch (`socket() failed: Operation not permitted`); CI supplies the browser evidence |
+| Publication/release | PR #97 merged, additive production migration and deployment verified; canonical live combat acceptance passes. New live authoring smoke awaits explicit production-fixture approval |
 
 The full application suite passed, followed by a focused DOM rerun, TypeScript and
 build after the final UI feedback/read-only polish. Initial migration-suite failures
@@ -172,10 +173,10 @@ UI_ORIGIN=http://127.0.0.1:4177 node --import tsx tests/browser/math-authoring.m
 The browser command requires a running production preview and installed Playwright
 Chromium, as configured in the existing authoring CI job. Its acceptance assertions
 include full fixed-fight/CSV save and reopen, both viewport sizes, horizontal
-overflow, errors and screenshots. CI/browser review and teacher usability review
-remain open gates; DOM tests do not substitute for them.
+overflow, errors and screenshots. CI/browser review is complete; the new live authoring smoke remains an open gate
+because automatic approval review blocked creating its production QA fixtures.
 
-## Next approval and release decisions
+## Release decisions and remaining gate
 
 Draft publication and CI/browser review are complete at `234f645`:
 [CI](https://github.com/Orsnoire/FightSchool/actions/runs/42042381980),
@@ -197,3 +198,11 @@ recovery copy; then post-migration verification, resume and live acceptance.
 Symbolic grammar/libraries, fraction or rational-expression expansion, generated
 sessions, live indeterminate policy, sharing, student response UI, and completion/
 reward rules remain separate decisions. Selecting this family settles none of them.
+
+The final release-tooling head `378f40c` passed CI and all browser jobs before
+merge. Production now serves merge `7562485` with the verified 27-entry ledger and
+all 958 saved rooms preserved across migration. Canonical combat acceptance passed.
+The new authoring smoke was blocked by automatic approval review; it has not been
+retried or moved to another executor. Explicit approval for two QA teachers and
+three sample templates remains necessary. See the release evidence for the exact
+production state and prepared test.
