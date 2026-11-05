@@ -4,7 +4,9 @@
 - Local branch: `feature/math-02-authoring`. No PR or remote claim published: the owner explicitly requires separate approval before publication, consequential dependencies, merge, migration or deployment. This overrides the normal draft-PR-first checkpoint procedure for this task.
 - Scope: searchable product/quotient/power templates, bounded parameters, deterministic preview, exact integer answer trials, teacher approval and immutable saved revisions. Additive migration proposal tested only against disposable local Postgres.
 - Excludes symbolic answer grading, generated combat sessions, fixed-question/CSV contract changes, reward changes, new dependencies and production changes. C12 / PR #75 is separate.
-- State: IMPLEMENTING LOCALLY. Next: finish contracts/generator, persistence and UI; run mathematical, ownership, migration, CSV/fixed-question and browser regressions; present the tested diff for publication approval.
+- State: IMPLEMENTED / LOCALLY TESTED / UNPUBLISHED. Core/API checkpoint `375afbc`; complete implementation checkpoint `e1f11a1e24449fc8a618711f95df115c20a574d8`. 448 application tests, 13 deployment safeguards, TypeScript and both builds pass. The proposed migration preserves all existing public-table rows in disposable Postgres. [Scope, code map, acceptance and limitations](reviews/2026-11-04-math-02-authoring.md).
+- Browser acceptance is not claimed: local Chromium fails before launch because the environment denies a required socket call. Real Worker/Postgres DOM interaction coverage passes; desktop/phone browser tests and screenshots are added to the existing authoring CI job.
+- Exact next action: obtain explicit approval to publish the draft PR, run CI/browser acceptance, inspect screenshots and address findings. No merge, production migration or deployment is authorized. The protected release adapter still pins the old schema; a future release needs a separately reviewed MATH-02 migration stage.
 
 ## Previous package
 
@@ -55,8 +57,10 @@ recorded and linked from ongoing design direction. Its brief and
 requested scope, proposed packages, acceptance gates and open decisions.
 Status: **MATH-01 EXACT GRADING SLICE MERGED / DEPLOYED**, authorized November 3;
 [PR #96](https://github.com/Orsnoire/FightSchool/pull/96) and [release evidence](releases/2026-11-03-math-01.md).
-See the current checkpoint above. Other packages and broader MATH-01 scope remain
-unstarted; C12 / PR #75 and historical release checkpoints retain their separate status.
+See the current checkpoint above. MATH-02's missing-exponent authoring slice is
+approved and implemented locally; publication/browser gates remain open. Other
+packages and broader MATH-01 scope remain unstarted; C12 / PR #75 and historical
+release checkpoints retain their separate status.
 
 ## Previous beta checkpoint
 
