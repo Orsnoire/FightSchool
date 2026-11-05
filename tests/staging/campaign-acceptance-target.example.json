@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://replace-isolated-worker.example.invalid",
+  "environment": "isolated-campaign-acceptance",
+  "providerIsolationReviewed": false,
+  "executionApproved": false,
+  "sourceSha": "8605097b13179f77d020a1cd3c1426ef1043aca8",
+  "workerVersion": "REPLACE-after-provider-verification",
+  "databaseBranch": "REPLACE-isolated-schema-only-branch",
+  "durableObjectNamespace": "REPLACE-isolated-namespace",
+  "r2Bucket": "REPLACE-isolated-bucket",
+  "reviewedBy": "REPLACE-owner-approval-reference"
+}
