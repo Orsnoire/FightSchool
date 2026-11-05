@@ -1,11 +1,12 @@
-# MATH-02 — merged, migrated and deployed November 5, 2026
+# MATH-02 — operationally accepted November 5, 2026
 
 - Owner authorized merge, migration and deployment after draft review. [PR #97](https://github.com/Orsnoire/FightSchool/pull/97) merged at `7562485586160e1c321f21bda902713690159e23`, exactly matching the reviewed tree.
 - Scope: searchable missing-integer-exponent product/quotient/power templates; bounded deterministic previews, exact integer answer trials, teacher approval and immutable personal revisions. Existing fixed questions, CSV and combat grading remain unchanged; symbolic grading and generated sessions remain deferred.
 - All 449 application tests, 13 deployment safeguards, TypeScript/builds, final-head CI and all four browser jobs pass. Desktop/phone authoring screenshots were inspected. The guarded migration passed isolated native rehearsal and production, preserving every existing row and ledger prefix.
 - Production serves the pinned merge at 100%, Worker `fd7b8c4b-de13-4132-9fb6-992f9cc445ee`. The canonical ledger has 27 entries. All 958 paused rooms matched before/after migration; recovery copy retained; completed maintenance history and ordinary bindings/secrets/storage identities preserved; temporary probe removed.
-- State: MERGED / MIGRATED / DEPLOYED; live authoring acceptance remains pending. [Release evidence and exact remaining gate](releases/2026-11-05-math-02.md). Canonical acceptance [42048941277](https://github.com/Orsnoire/FightSchool/actions/runs/42048941277) passed teacher/student combat and all eight operational checks. C12 / PR #75 and preview remain separate.
-- Owner explicitly approved dedicated production QA teachers, templates and test students on November 5 after the earlier automatic approval rejection. Resume the prepared smoke with two teachers, three templates and twelve students; exercise parallel role/ownership checks and conflicting saves, then log out all fixture sessions and record results. Existing classroom records are not targets. No further migration or application deployment is needed.
+- State: MERGED / MIGRATED / DEPLOYED / OPERATIONALLY ACCEPTED. [Release evidence](releases/2026-11-05-math-02.md). Canonical acceptance [42048941277](https://github.com/Orsnoire/FightSchool/actions/runs/42048941277) passed teacher/student combat and all eight operational checks. C12 / PR #75 and preview remain separate.
+- Following explicit owner approval, live authoring acceptance passed all ten check groups with two QA teachers, three templates and twelve QA students. Thirty generated answers, ownership/student authorization, immutable approvals, retries and conflicting parallel saves passed. All fixture sessions were logged out. [Acceptance evidence](releases/2026-11-05-math-02-acceptance.md).
+- Exact next action: none for this bounded release. Register the next package before further implementation. Symbolic answer grading, generated sessions and broader template families remain separate decisions.
 
 ## Previous package
 

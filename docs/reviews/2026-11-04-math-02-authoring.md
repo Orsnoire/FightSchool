@@ -1,6 +1,6 @@
 # MATH-02 missing-exponent authoring pilot
 
-Status: **MERGED / MIGRATED / DEPLOYED — live authoring acceptance pending fixture approval**.
+Status: **MERGED / MIGRATED / DEPLOYED / OPERATIONALLY ACCEPTED**.
 [November 5 release evidence](../releases/2026-11-05-math-02.md).
 Base: `326dd08004b145fea5a25472a3a5b854818a621d`; branch: `feature/math-02-authoring`.
 [PR #97](https://github.com/Orsnoire/FightSchool/pull/97), authorized November 5.
@@ -142,7 +142,7 @@ schema metadata. Historical migration SQL and campaign bridge contracts are inta
 | Deployment safeguards | All 13 existing deployment tests pass; no safeguard relaxed |
 | Compile/build | TypeScript and client/Worker production builds pass |
 | Desktop/phone browser acceptance | All four final-head browser jobs pass; desktop/phone screenshots inspected. Local Chromium still cannot launch (`socket() failed: Operation not permitted`); CI supplies the browser evidence |
-| Publication/release | PR #97 merged, additive production migration and deployment verified; canonical live combat acceptance passes. New live authoring smoke awaits explicit production-fixture approval |
+| Publication/release | PR #97 merged, additive production migration and deployment verified; canonical live combat acceptance passes. Approved live authoring smoke passed, including parallel student/owner access and competing saves |
 
 The full application suite passed, followed by a focused DOM rerun, TypeScript and
 build after the final UI feedback/read-only polish. Initial migration-suite failures
@@ -173,8 +173,8 @@ UI_ORIGIN=http://127.0.0.1:4177 node --import tsx tests/browser/math-authoring.m
 The browser command requires a running production preview and installed Playwright
 Chromium, as configured in the existing authoring CI job. Its acceptance assertions
 include full fixed-fight/CSV save and reopen, both viewport sizes, horizontal
-overflow, errors and screenshots. CI/browser review is complete; the new live authoring smoke remains an open gate
-because automatic approval review blocked creating its production QA fixtures.
+overflow, errors and screenshots. CI/browser review and approved live authoring acceptance are complete.
+The initial automatic approval rejection was resolved by explicit owner approval for QA fixtures.
 
 ## Release decisions and remaining gate
 
@@ -202,7 +202,7 @@ reward rules remain separate decisions. Selecting this family settles none of th
 The final release-tooling head `378f40c` passed CI and all browser jobs before
 merge. Production now serves merge `7562485` with the verified 27-entry ledger and
 all 958 saved rooms preserved across migration. Canonical combat acceptance passed.
-The new authoring smoke was blocked by automatic approval review; it has not been
-retried or moved to another executor. Explicit approval for two QA teachers and
-three sample templates remains necessary. See the release evidence for the exact
-production state and prepared test.
+The initial authoring-smoke approval block was resolved by explicit owner approval
+for QA teachers, templates and students. The test passed all ten check groups with
+two teachers, three templates and twelve students; all fixture sessions were logged
+out. [Acceptance evidence](../releases/2026-11-05-math-02-acceptance.md).
