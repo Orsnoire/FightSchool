@@ -146,6 +146,12 @@ build after the final UI feedback/read-only polish. Initial migration-suite fail
 were outdated expected forward-history lengths (26/30); those now expect 27/31
 and the new schema fingerprint. Historical ledger assertions were retained.
 
+First published browser run [42041629366](https://github.com/Orsnoire/FightSchool/actions/runs/42041629366)
+passed existing authoring/CSV checks, then stopped at the new exact `Answer sign`
+label lookup. Explicit accessible names now identify the template dropdowns;
+browser assertions remain unchanged, and failure screenshots are retained. See the
+live PR for verification of the corrected head.
+
 Exploratory local Node/PGlite measurements: 100 maximum-pool preview operations
 after 10 warmups gave p50 3.05 ms / p95 11.24 ms; 30 simultaneous authenticated
 preview requests gave p50 119.67 ms / p95 126.94 ms. These measurements include no

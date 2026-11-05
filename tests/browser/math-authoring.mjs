@@ -113,6 +113,9 @@ try {
       await page.getByRole('heading', { name: 'Math templates', exact: true }).scrollIntoViewIfNeeded();
       await page.screenshot({ path: `${output}/${viewport.width}-templates.png`, fullPage: true });
       assert.equal(f.roomCalls(), 0);
+    } catch (error) {
+      await page.screenshot({ path: `${output}/${viewport.width}-failure.png`, fullPage: true }).catch(() => {});
+      throw error;
     } finally { await page.close(); await f.close(); }
   }
   assert.deepEqual(errors, []);
