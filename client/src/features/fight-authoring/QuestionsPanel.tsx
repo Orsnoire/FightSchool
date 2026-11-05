@@ -16,15 +16,17 @@ import { Edit, PlusCircle, Trash2, Upload } from "lucide-react";
 import type { useQuestionAuthoring } from "./useQuestionAuthoring";
 
 interface QuestionsPanelProps {
+  mathAuthoring?: React.ReactNode;
   questions: Question[];
   onChange: (questions: Question[]) => void;
   editor: ReturnType<typeof useQuestionAuthoring>;
 }
-export function QuestionsPanel({ questions, onChange, editor }: QuestionsPanelProps) {
+export function QuestionsPanel({ questions, onChange, editor, mathAuthoring }: QuestionsPanelProps) {
   const { toast } = useToast();
   const { editingQuestionId, currentQuestion, setCurrentQuestion, selectedOptionIndex, setSelectedOptionIndex, questionEditorRef, addQuestion, cancelQuestionEdit, editQuestion, isUploadingCSV, csvInputRef, handleCSVUpload } = editor;
   return (
     <TabsContent value="questions" className="space-y-4"><div ref={questionEditorRef} className="scroll-mt-24" />
+      {mathAuthoring}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
