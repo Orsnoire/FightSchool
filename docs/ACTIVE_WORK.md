@@ -1,3 +1,13 @@
+# MATH-02 — authoring pilot, local implementation November 4, 2026
+
+- Owner approved the missing-integer-exponent authoring scope and proposed versioned teacher-owned storage. Base: `326dd08004b145fea5a25472a3a5b854818a621d`.
+- Local branch: `feature/math-02-authoring`. No PR or remote claim published: the owner explicitly requires separate approval before publication, consequential dependencies, merge, migration or deployment. This overrides the normal draft-PR-first checkpoint procedure for this task.
+- Scope: searchable product/quotient/power templates, bounded parameters, deterministic preview, exact integer answer trials, teacher approval and immutable saved revisions. Additive migration proposal tested only against disposable local Postgres.
+- Excludes symbolic answer grading, generated combat sessions, fixed-question/CSV contract changes, reward changes, new dependencies and production changes. C12 / PR #75 is separate.
+- State: IMPLEMENTING LOCALLY. Next: finish contracts/generator, persistence and UI; run mathematical, ownership, migration, CSV/fixed-question and browser regressions; present the tested diff for publication approval.
+
+## Previous package
+
 # MATH-01 — exact grading foundation, deployed November 3, 2026
 
 - Owner authorized a narrow exact numerical/fractional grading foundation and subsequently requested merge and deploy. [PR #96](https://github.com/Orsnoire/FightSchool/pull/96) is merged at `b408f9be70c8458cc8012b327cb8058210276bbf`, with exactly the reviewed final-head tree.
