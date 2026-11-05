@@ -1,11 +1,11 @@
 # CAM-A01 — authenticated guardian acceptance draft, November 5, 2026
 
 - Owner approved opening the existing Cave Key gates for AP Calculus and AP Precalc 2027 and publishing this test-only draft. Both scoped gate updates are committed and independently verified at revision 1; all other campaign fields are unchanged. No student-progress or membership write occurred.
-- Branch: `review/campaign-guardian-acceptance`. Draft PR publication is in progress; its live description will identify the exact published head and CI results. Baseline main: `8605097b13179f77d020a1cd3c1426ef1043aca8`. No competing campaign acceptance PR was found; C12 / PR #75 is separate.
+- Branch: `review/campaign-guardian-acceptance`, [draft PR #98](https://github.com/Orsnoire/FightSchool/pull/98). Published implementation checkpoint: `fd71eb45313bdb2878282bc8a3bba2ec267cfef8`; the live PR records the latest published head and CI results. Baseline main: `8605097b13179f77d020a1cd3c1426ef1043aca8`. No competing campaign acceptance PR was found; C12 / PR #75 is separate.
 - Scope: one opt-in authenticated browser guardian/reward scenario, isolated-target guard, independent reward oracle, read-only provider audit, and one keeper-poll regression. [Design, coverage and dependencies](reviews/2026-11-05-campaign-guardian-acceptance.md).
 - Local verification: 15 focused tests, TypeScript, script syntax/plan-only/disabled-target checks and migrated local audit SQL pass. The new live browser scenario has not run. No application code, dependency, migration, deployment workflow or production acceptance trigger is changed.
-- State: IMPLEMENTED / LOCALLY VERIFIED / DRAFT PUBLICATION APPROVED / LIVE EXECUTION UNAPPROVED. No merge or deployment is requested. No QA identities or environment resources have been created.
-- Exact next action: complete draft publication, record its URL and head/check results, then review. Provisioning and live execution require separate approval. This branch carries the claim; main remains unchanged until a separately authorized merge.
+- State: IMPLEMENTED / LOCALLY VERIFIED / DRAFT PR PUBLISHED / LIVE EXECUTION UNAPPROVED. No merge or deployment is requested. No QA identities or environment resources have been created.
+- Exact next action: review draft PR #98 and its exact-head CI/browser results. Provisioning and live execution require separate approval. This branch carries the claim; main remains unchanged until a separately authorized merge.
 
 ## Previous package
 

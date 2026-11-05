@@ -10,7 +10,7 @@ executed. Its live result remains unverified.
 Current main records MATH-02 accepted; its work is complete. The only open PR
 found before publication was C12 / #75, a separate release/performance project.
 **CAM-A01 — authenticated guardian acceptance** is registered on
-`review/campaign-guardian-acceptance` for draft review and does not supersede C12.
+`review/campaign-guardian-acceptance` / [draft PR #98](https://github.com/Orsnoire/FightSchool/pull/98) and does not supersede C12.
 The branch carries its checkpoint; main is not directly edited by this
 draft-publication approval.
 
