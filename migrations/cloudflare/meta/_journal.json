@@ -183,6 +183,13 @@
       "when": 1793219700000,
       "tag": "0025_campaign_question_bank",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793826982451,
+      "tag": "0026_math_templates",
+      "breakpoints": true
     }
   ]
 }

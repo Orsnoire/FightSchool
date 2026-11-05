@@ -84,6 +84,41 @@ export const appSessions = pgTable(
   }),
 );
 
+// Teacher authoring only: these records are never included in fight/room payloads.
+export const mathTemplates = pgTable("math_templates", {
+  id: uuid("id").primaryKey(),
+  teacherId: uuid("teacher_id").notNull().references(() => teachers.id),
+  createKey: uuid("create_key").notNull(),
+  latestRevision: integer("latest_revision").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => ({
+  ownerCreate: unique("math_templates_owner_create_unique").on(t.teacherId, t.createKey),
+  ownerIndex: index("math_templates_owner_idx").on(t.teacherId, t.updatedAt),
+  revisionCheck: check("math_templates_revision_check", sql`${t.latestRevision} > 0`),
+}));
+
+export const mathTemplateRevisions = pgTable("math_template_revisions", {
+  templateId: uuid("template_id").notNull().references(() => mathTemplates.id),
+  revision: integer("revision").notNull(),
+  mutationId: uuid("mutation_id").notNull(),
+  requestHash: text("request_hash").notNull(),
+  preset: jsonb("preset").notNull().$type<import("../../shared/contracts/math-templates").MathPreset>(),
+  contentHash: text("content_hash").notNull(),
+  preview: jsonb("preview").notNull().$type<import("../../shared/contracts/math-templates").MathPreview>(),
+  state: text("state").notNull().$type<"draft" | "approved">(),
+  approvedBy: uuid("approved_by").references(() => teachers.id),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => ({
+  key: primaryKey({ columns: [t.templateId, t.revision] }),
+  mutationUnique: unique("math_template_revisions_mutation_unique").on(t.templateId, t.mutationId),
+  revisionCheck: check("math_template_revisions_revision_check", sql`${t.revision} > 0`),
+  hashesCheck: check("math_template_revisions_hashes_check", sql`${t.contentHash} ~ '^[a-f0-9]{64}$' AND ${t.requestHash} ~ '^[a-f0-9]{64}$'`),
+  objectsCheck: check("math_template_revisions_objects_check", sql`jsonb_typeof(${t.preset}) = 'object' AND jsonb_typeof(${t.preview}) = 'object'`),
+  approvalCheck: check("math_template_revisions_approval_check", sql`(${t.state} = 'draft' AND ${t.approvedBy} IS NULL AND ${t.approvedAt} IS NULL) OR (${t.state} = 'approved' AND ${t.approvedBy} IS NOT NULL AND ${t.approvedAt} IS NOT NULL)`),
+}));
+
 export interface FightQuestion {
   id: string;
   type: "multiple_choice" | "true_false" | "short_answer";
