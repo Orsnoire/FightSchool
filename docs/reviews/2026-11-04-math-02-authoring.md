@@ -1,6 +1,6 @@
 # MATH-02 missing-exponent authoring pilot
 
-Status: **IMPLEMENTED AND TESTED LOCALLY / DRAFT PR PUBLISHED / CI PENDING / NOT MERGED / NOT DEPLOYED**.
+Status: **IMPLEMENTED / CI VERIFIED / RELEASE PREPARATION AUTHORIZED / NOT MERGED / NOT DEPLOYED**.
 Base: `326dd08004b145fea5a25472a3a5b854818a621d`; branch: `feature/math-02-authoring`.
 [Draft PR #97](https://github.com/Orsnoire/FightSchool/pull/97), authorized November 5.
 Published implementation checkpoint: `32fa766593364a9eb5610b73839cd8c431dd0b42`.
@@ -11,8 +11,10 @@ through GitHub after direct Git push was unavailable. No code changed in transit
 The owner approved the scoped missing-integer-exponent pilot and the proposed
 versioned teacher-owned storage on November 4, 2026, then draft publication on
 November 5. Consequential dependencies, merging, production migration and deployment
-still require explicit approval. The earlier local-only checkpoint followed the
-owner's publication boundary. C12 / PR #75 remains separate.
+were initially reserved. The owner explicitly approved merge, migration and deployment
+on November 5 after the draft passed CI and all four browser jobs. The earlier
+local-only checkpoint followed the owner's publication boundary. Consequential
+dependencies and symbolic/live-session expansion remain outside scope. C12 / PR #75 remains separate.
 
 ## Result and instructional boundary
 
@@ -175,15 +177,22 @@ remain open gates; DOM tests do not substitute for them.
 
 ## Next approval and release decisions
 
-Draft publication is approved and complete. Next: run CI on the final PR head,
-inspect desktop/phone screenshots and resolve any findings, retaining draft status.
-Publication approval is not authorization to merge, migrate or deploy.
+Draft publication and CI/browser review are complete at `234f645`:
+[CI](https://github.com/Orsnoire/FightSchool/actions/runs/42042381980),
+[all four browser jobs](https://github.com/Orsnoire/FightSchool/actions/runs/42042382023).
+Both authoring screenshots were inspected. The owner subsequently authorized
+merge, migration and deployment. See the live PR for final-head release-tooling checks.
 
-The production release adapter deliberately still pins the existing 26-row
-question-bank schema. A future release must explicitly add/review a MATH-02 schema
-stage and rehearse its protected migration, recovery and verification procedure.
-Do not run the old deployment path expecting it to install 0026. No production
-connection, schema write, maintenance action or deployment occurred in this task.
+The release adapter now explicitly recognizes the 27-row `math-authoring` stage;
+historical stages remain bounded. `production-math-migration.mjs` accepts only the
+exact 26-row history/schema, locks existing tables, applies 0026 atomically, and
+checks the new schema, every existing public-table row digest and the original
+ledger prefix. Repeating against the exact 27-row schema is a no-op. Local tests
+inject late failure, changed rows, old ledger drift and pre/post schema drift.
+The exact generated transaction passed twice on an isolated native production
+child. Private branch/recovery identities stay outside Git. Production migration
+still follows protected pause, independent identity/room verification and a native
+recovery copy; then post-migration verification, resume and live acceptance.
 
 Symbolic grammar/libraries, fraction or rational-expression expansion, generated
 sessions, live indeterminate policy, sharing, student response UI, and completion/
