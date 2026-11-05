@@ -7,6 +7,7 @@ import { LootPanel } from "@/features/fight-authoring/LootPanel";
 import { QuestionsPanel } from "@/features/fight-authoring/QuestionsPanel";
 import { useEnemyAuthoring } from "@/features/fight-authoring/useEnemyAuthoring";
 import { useQuestionAuthoring } from "@/features/fight-authoring/useQuestionAuthoring";
+import { useMathAuthoring } from "@/features/math-authoring/useMathAuthoring";
 import { fightValidationMessages, validationSummary } from "@/features/fight-authoring/validation";
 import { useToast } from "@/hooks/use-toast";
 import { useTeacherAuth } from "@/hooks/useTeacherAuth";
@@ -18,10 +19,12 @@ import { enemyTuning, inferEnemyRole } from "@shared/encounter-tiers";
 import { insertFightSchema, type Enemy, type EquipmentItemDb, type Fight, type InsertFight, type LootItem, type Question } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useRoute } from "wouter";
 
+
+const MathAuthoringPanel = lazy(() => import("@/features/math-authoring/MathAuthoringPanel"));
 
 export default function CreateFight() {
   const [, navigate] = useLocation();
@@ -72,6 +75,7 @@ export default function CreateFight() {
   const changeEnemies = (next: Enemy[]) => { setEnemies(next); form.setValue('enemies', next); };
   const changeLoot = (next: LootItem[]) => { setLootTable(next); form.setValue('lootTable', next); };
   const questionEditor = useQuestionAuthoring(questions, changeQuestions);
+  const mathEditor = useMathAuthoring();
   const enemyEditor = useEnemyAuthoring(enemies, changeEnemies, encounterTier);
   const changeTier = (tier: number) => {
     form.setValue('encounterTier', tier); form.setValue('baseEnemyDamage', enemyTuning(tier, 'normal').baseEnemyDamage);
@@ -129,6 +133,7 @@ export default function CreateFight() {
   const onSubmit = (data: InsertFight) => {
     setSaveErrors([]);
     if (questionEditor.editingQuestionId) { toast({ title: "Save or cancel your question changes before saving the fight", variant: "destructive" }); return; }
+    if (mathEditor.dirty || mathEditor.busy) { toast({ title: "Save or discard your template changes before saving the fight", variant: "destructive" }); return; }
     if (enemies.some(e => (e.enemyType || inferEnemyType(e.image)) === "basic")) {
       toast({ title: "Choose a supported type for each retired enemy before saving", variant: "destructive" }); return;
     }
@@ -193,7 +198,7 @@ export default function CreateFight() {
                 <TabsTrigger value="loot" data-testid="tab-loot">Loot ({lootTable.length})</TabsTrigger>
               </TabsList>
 
-              <QuestionsPanel questions={questions} onChange={changeQuestions} editor={questionEditor} />
+              <QuestionsPanel questions={questions} onChange={changeQuestions} editor={questionEditor} mathAuthoring={<Suspense fallback={<p>Loading math templates…</p>}><MathAuthoringPanel editor={mathEditor} /></Suspense>} />
               <EnemiesPanel enemies={enemies} onChange={changeEnemies} encounterTier={encounterTier}
                 enemyDisplayMode={form.watch('enemyDisplayMode')} changeTier={changeTier} editor={enemyEditor} />
               <LootPanel lootTable={lootTable} teacherEquipment={teacherEquipment} equipmentLoading={equipmentLoading} onChange={changeLoot} />

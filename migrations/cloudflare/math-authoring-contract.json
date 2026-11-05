@@ -1,0 +1,8 @@
+{
+  "tables": "4e1586bb472d7cc3a38fb28a2f8ad1c2",
+  "columns": "eafb3fa55b3cb18579ec35d88227f133",
+  "indexes": "e1b363fc1e50bce3dcd33752d6b375db",
+  "routines": "e2d860384fc5b0852ad180224f6f3278",
+  "triggers": "a6db39fd506f0c5546aadfcfca4744f3",
+  "constraints": "373e016a7dd3fa7e864580c4908fcd87"
+}

@@ -6,10 +6,14 @@ import { canonicalCampaignLedger } from './campaign-preview-migration-bridge.mjs
 export function productionReleaseLedger(stage) {
   if (stage === 'before') return canonicalCampaignLedger.slice(0, 20);
   if (stage === 'after') return canonicalCampaignLedger.slice(0, 25);
-  if (stage !== 'question-bank') throw Error('Unknown production schema stage');
+  if (!['question-bank','math-authoring'].includes(stage)) throw Error('Unknown production schema stage');
   const root = new URL('../migrations/cloudflare/', import.meta.url);
-  const entry = JSON.parse(readFileSync(new URL('meta/_journal.json', root), 'utf8')).entries[25];
-  if (entry?.idx !== 25 || entry.tag !== '0025_campaign_question_bank') throw Error('Production question-bank migration changed');
-  const sql = readFileSync(new URL(`${entry.tag}.sql`, root), 'utf8');
-  return [...canonicalCampaignLedger, { hash: createHash('sha256').update(sql).digest('hex'), created_at: entry.when }];
+  const entries = JSON.parse(readFileSync(new URL('meta/_journal.json', root), 'utf8')).entries;
+  const selected = ['0025_campaign_question_bank', ...(stage === 'math-authoring' ? ['0026_math_templates'] : [])];
+  return [...canonicalCampaignLedger, ...selected.map((tag, offset) => {
+    const entry = entries[25 + offset];
+    if (entry?.idx !== 25 + offset || entry.tag !== tag) throw Error('Production release migration changed');
+    const sql = readFileSync(new URL(`${tag}.sql`, root), 'utf8');
+    return { hash: createHash('sha256').update(sql).digest('hex'), created_at: entry.when };
+  })];
 }

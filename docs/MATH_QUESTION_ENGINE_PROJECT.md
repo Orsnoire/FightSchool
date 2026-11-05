@@ -2,10 +2,14 @@
 
 **DESIGN RECORD / FUTURE WORK — October 29, 2026.**
 **Project ID: MATH. MATH-01 exact rational grading slice merged and deployed (November 3, 2026).**
+**MATH-02 missing-exponent authoring pilot: draft PR #97 published (November 5, 2026).**
 
 The owner authorized a narrow first implementation in [PR #96](https://github.com/Orsnoire/FightSchool/pull/96).
 See the [contract, dependencies, decisions and test evidence](reviews/2026-11-03-math-01-exact-grading.md).
-This does not authorize the remaining packages or enable live mathematics grading.
+The owner subsequently approved the bounded MATH-02 authoring pilot and proposed
+versioned personal storage. See its [implementation review](reviews/2026-11-04-math-02-authoring.md)
+for exact scope, tests and outstanding browser/publication gates. Neither approval
+authorizes the remaining packages or enables live mathematics grading.
 
 The owner requested this project be recorded after the mathematics feasibility
 discussion. It captures the agreed direction and requested scope; the proposed
@@ -54,9 +58,11 @@ The October 29 conversation establishes these requirements:
   important usability cases. No OCR/model provider, paid API, self-hosting
   arrangement or blanket prohibition on recognition models has been selected.
 
-The owner authorized recording this project and linking it into design direction.
-Runtime changes, deployments, data migrations, new subscriptions and model hosting
-are outside this documentation task.
+The original October 29 task authorized recording this project and linking it into
+design direction. The subsequent bounded MATH-01 and MATH-02 authorizations above
+supersede that documentation-only boundary for their stated slices. New packages,
+subscriptions/model hosting and MATH-02 production migration, merge
+or deployment are not authorized by this project record.
 
 ## 3. Teacher workflow
 
@@ -243,8 +249,10 @@ This project does not select a symbolic library or require a provider change.
 
 MATH-01's bounded exact rational grading slice is **MERGED / DEPLOYED**
 ([release evidence](releases/2026-11-03-math-01.md)); its template/
-instance contracts and broader symbolic checks remain deferred. MATH-02 through
-MATH-06 are **NOT STARTED**. IDs are planning identifiers, not PR numbers.
+instance contracts and broader symbolic checks remain deferred. MATH-02's bounded
+missing-exponent authoring pilot is **IMPLEMENTED / DRAFT PUBLISHED / CI PENDING**;
+CI/browser acceptance and release gates remain open. MATH-03 through MATH-06 are
+**NOT STARTED**. IDs are planning identifiers, not PR numbers.
 The order is a proposed dependency sequence; choose a bounded first slice and
 register it in active work before implementation.
 
@@ -257,11 +265,13 @@ register it in active work before implementation.
 | MATH-05 — curriculum expansion | Additional tested families across arithmetic, algebra, precalculus, calculus and linear algebra | Each family passes the mathematics, grading, visual and teacher-workflow gates below; publish an honest coverage matrix |
 | MATH-06 — PDF-assisted import | Selectable-text extraction first; evaluated scanned-math/diagram assistance as separate increments | Reviewed extraction fixtures, visible correction flow, model/service failure fallback and documented cost/quality limits |
 
-A useful proposed pilot is rational-expression or exponent-rule practice for
-Math 3/AP Precalculus, with a small arithmetic family to exercise cross-level
-configuration. This is a recommendation, not an approved initial family list.
-Equivalent-expression grading is part of the foundation, not an indefinite
-follow-up after live generation.
+The November 4 approved authoring pilot uses missing-integer-exponent product,
+quotient and power rules for Math 3/AP Precalculus. Integer-only responses reuse
+MATH-01; symbolic answers such as `x^8` remain unsupported. It provides configurable
+previews and versioned teacher approval but cannot generate live fight questions.
+Numerical fractions, full symbolic exponent simplification and rational-expression
+families remain deferred. Equivalent-expression grading and domain/form checks
+must be implemented for each affected family before its live use.
 
 ## 11. Acceptance gates
 
@@ -290,8 +300,8 @@ For each released family and its integration:
 
 ## 12. Open decisions before their affected packages
 
-- Initial family list, implementation priority and relationship to the existing
-  cleanup/release queue.
+- Families beyond the approved missing-integer-exponent authoring pilot,
+  implementation priority and relationship to the existing cleanup/release queue.
 - Symbolic math/parser components, supported expression grammar, runtime
   placement, licensing and resource budgets.
 - Target question count versus hard stop; early enemy defeat, exhausted count,
@@ -303,8 +313,8 @@ For each released family and its integration:
   student errors.
 - Timing, calculator, approximate-answer, units and partial-credit policies
   where relevant to a family.
-- Bank ownership, sharing, moderation and version compatibility; personal use
-  can precede public contribution.
+- Sharing, moderation and future version compatibility beyond MATH-02's approved
+  teacher-owned personal presets and pinned immutable revisions.
 - PDF/OCR depth and optional model deployment; success criteria for geometry
   and graph recognition versus teacher-assisted reconstruction.
 

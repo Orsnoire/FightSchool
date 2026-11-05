@@ -7,6 +7,7 @@ import { handleObjects } from "./routes/objects.ts";
 import { createIdentityRepository, verifyDatabase } from "./db/repository.ts";
 import { handleTeacherAuth } from "./routes/teacher-auth.ts";
 import { handleFights } from "./routes/fights.ts";
+import { handleMathAuthoring } from "./routes/math-authoring";
 import { authenticateSession, type SessionConfig } from "./auth/session.ts";
 import { handleStudentAuth } from "./routes/student-auth.ts";
 import { handleCombatSessions } from "./routes/combat-sessions.ts";
@@ -195,6 +196,11 @@ async function dispatch(request: Request, env: Env, currentRequestId:string):Pro
           secret: env.SESSION_SECRET,
           ttlSeconds: Number(env.SESSION_TTL_SECONDS),
         };
+        if (url.pathname === "/api/math/templates" || url.pathname.startsWith("/api/math/templates/")) {
+          const response = await handleMathAuthoring(request, url, repository, config, gameDatabase(env.DATABASE_URL));
+          response.headers.set("X-Request-Id", currentRequestId);
+          return response;
+        }
         const force = url.pathname.match(
           /^\/api\/combat\/([A-Za-z0-9_-]{1,64})\/(force-question|end)$/,
         );

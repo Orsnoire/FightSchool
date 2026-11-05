@@ -19,7 +19,9 @@ const journal = JSON.parse(read('meta/_journal.json'));
 const legacy = JSON.parse(read('legacy-campaign-preview/_journal.json'));
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 const contract = JSON.parse(read('legacy-campaign-preview/schema-contract.json'));
-const currentContract = JSON.parse(read('campaign-question-bank-contract.json'));
+// Current forward history adds only the two MATH-02 authoring tables. Historical
+// campaign contracts/bridge ledgers remain immutable below.
+const currentContract = JSON.parse(read('math-authoring-contract.json'));
 const fingerprint = async (pg: PGlite) => {
   await pg.exec('SET search_path TO public, pg_catalog');
   return (await pg.query(campaignSchemaFingerprintSQL)).rows[0].fingerprint;
@@ -117,7 +119,9 @@ test('production history upgrades forward without altering AA purchases, saved s
     for (const item of after[3] as any[]) { assert.equal(item.row.stamina_restored, 0); delete item.row.stamina_restored; }
     assert.deepEqual(after, before);
     assert.deepEqual((await ledger(pg)).slice(0, 19), oldLedger);
-    assert.equal((await ledger(pg)).length, 26);
+    assert.equal((await ledger(pg)).length, 27);
+    assert.equal((await snapshot(pg, 'math_templates')).length, 0);
+    assert.equal((await snapshot(pg, 'math_template_revisions')).length, 0);
     assert.equal((await snapshot(pg, 'campaign_players')).length, 0, 'no playtest records seeded');
     assert.deepEqual(await fingerprint(pg), currentContract, 'current contract matches independently migrated canonical history');
   } finally { await pg.close(); }
@@ -156,7 +160,7 @@ test('legacy preview bridges atomically, retains playtest/active snapshots and l
     await migrate(drizzle(pg), { migrationsFolder: root });
     const upgraded = await ledger(pg);
     assert.deepEqual(upgraded.slice(0,bridged.length),bridged,'all bridge ledger rows are retained');
-    assert.equal(upgraded.length,30);
+    assert.equal(upgraded.length,31);
     await migrate(drizzle(pg), { migrationsFolder: root });
     assert.deepEqual(await ledger(pg),upgraded,'normal migration is idempotent');
     assert.deepEqual(await fingerprint(pg),currentContract);
@@ -180,7 +184,7 @@ test('merged roster history upgrades without changing activity samples, retry re
     for (const item of after[2] as any[]) { assert.equal(item.row.stamina_restored, 0); delete item.row.stamina_restored; }
     assert.deepEqual(after, before);
     assert.deepEqual((await ledger(pg)).slice(0, 20), oldLedger);
-    assert.equal((await ledger(pg)).length, 26);
+    assert.equal((await ledger(pg)).length, 27);
     assert.deepEqual(await fingerprint(pg), currentContract);
     await assert.rejects(pg.exec(campaignPreviewBridgeSQL()), /Unrecognized/);
     await pg.exec('ROLLBACK');

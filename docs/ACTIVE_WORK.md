@@ -1,3 +1,15 @@
+# MATH-02 — merge, migration and deployment authorized November 5, 2026
+
+- Owner approved the missing-integer-exponent authoring scope and proposed versioned teacher-owned storage. Base: `326dd08004b145fea5a25472a3a5b854818a621d`.
+- Branch: `feature/math-02-authoring`, [PR #97](https://github.com/Orsnoire/FightSchool/pull/97). The owner explicitly approved merge, migration and deployment after draft review on November 5. No new dependency or symbolic/live-session expansion is authorized.
+- Scope: searchable product/quotient/power templates, bounded parameters, deterministic preview, exact integer answer trials, teacher approval and immutable saved revisions. Additive migration proposal tested only against disposable local Postgres.
+- Excludes symbolic answer grading, generated combat sessions, fixed-question/CSV contract changes, reward changes, new dependencies and production changes. C12 / PR #75 is separate.
+- State: RELEASE PREPARATION / UNMERGED. Runtime `234f645` passed [CI](https://github.com/Orsnoire/FightSchool/actions/runs/42042381980) and [all four browser jobs](https://github.com/Orsnoire/FightSchool/actions/runs/42042382023); both desktop/phone screenshots were inspected. Release preparation adds an explicit `math-authoring` schema stage and guarded 26-to-27 upgrade. Its local test covers drift, atomic rollback, unchanged existing rows/receipts and idempotence; the exact upgrade also passed twice on an isolated native production child, retaining all existing rows and the 26-row ledger prefix. [Scope and evidence](reviews/2026-11-04-math-02-authoring.md).
+- Local Chromium remains unavailable; browser verification comes from CI. The initial exact-label lookup failure was corrected without weakening assertions and is retained in the review.
+- Exact next action: finish final-head CI for release tooling, merge with an expected-head check, run protected preflight/pause, verify independent DB identity and all saved rooms, retain a paused recovery copy, apply the exact guarded migration, verify unchanged rows/rooms, resume and run live authoring plus canonical combat acceptance. No production write has occurred yet. The live PR carries newer CI/release evidence.
+
+## Previous package
+
 # MATH-01 — exact grading foundation, deployed November 3, 2026
 
 - Owner authorized a narrow exact numerical/fractional grading foundation and subsequently requested merge and deploy. [PR #96](https://github.com/Orsnoire/FightSchool/pull/96) is merged at `b408f9be70c8458cc8012b327cb8058210276bbf`, with exactly the reviewed final-head tree.
@@ -45,8 +57,10 @@ recorded and linked from ongoing design direction. Its brief and
 requested scope, proposed packages, acceptance gates and open decisions.
 Status: **MATH-01 EXACT GRADING SLICE MERGED / DEPLOYED**, authorized November 3;
 [PR #96](https://github.com/Orsnoire/FightSchool/pull/96) and [release evidence](releases/2026-11-03-math-01.md).
-See the current checkpoint above. Other packages and broader MATH-01 scope remain
-unstarted; C12 / PR #75 and historical release checkpoints retain their separate status.
+See the current checkpoint above. MATH-02's missing-exponent authoring slice is
+approved and implemented locally; publication/browser gates remain open. Other
+packages and broader MATH-01 scope remain unstarted; C12 / PR #75 and historical
+release checkpoints retain their separate status.
 
 ## Previous beta checkpoint
 

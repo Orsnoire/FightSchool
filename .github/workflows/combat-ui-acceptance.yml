@@ -174,6 +174,7 @@ jobs:
           C11_BASELINE=1 C11_LABEL=before UI_ORIGIN=http://127.0.0.1:4176 node --import tsx tests/browser/authoring-lobby.mjs
           C11_LABEL=after UI_ORIGIN=http://127.0.0.1:4177 node --import tsx tests/browser/authoring-lobby.mjs
           C11_LABEL=after UI_ORIGIN=http://127.0.0.1:4177 node --import tsx tests/browser/fight-validation.mjs
+          UI_ORIGIN=http://127.0.0.1:4177 node --import tsx tests/browser/math-authoring.mjs
       - name: Print authoring/lobby diagnostics
         if: failure()
         run: cat /tmp/c11-before.log /tmp/c11-after.log
@@ -182,6 +183,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: authoring-lobby-evidence
-          path: artifacts/c11-browser
+          path: |
+            artifacts/c11-browser
+            artifacts/math-authoring
           if-no-files-found: ignore
           retention-days: 7
