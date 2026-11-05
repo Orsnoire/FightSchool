@@ -1,6 +1,9 @@
 name: Live Combat Staging Acceptance
 
 on:
+  push:
+    branches: [main]
+    paths: [deploy/production-acceptance.json]
   workflow_dispatch:
     inputs:
       staging_origin:
@@ -21,7 +24,7 @@ concurrency:
 
 jobs:
   accept:
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'cloudflare-migration/live-combat-agentic-acceptance'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.head_ref == 'cloudflare-migration/live-combat-agentic-acceptance'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -31,11 +34,25 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Verify explicit production acceptance request
+        if: github.event_name == 'push'
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const request=JSON.parse(readFileSync('deploy/production-acceptance.json','utf8'));
+          assert.equal(request.mode,'verify');
+          assert.match(request.sourceSha,/^[a-f0-9]{40}$/);
+          assert.equal(request.origin,'https://questacademy.bookwyrminteractive.studio');
+          const ready=await fetch(request.origin+'/api/health/ready',{redirect:'error',signal:AbortSignal.timeout(30000)});
+          assert.equal(ready.status,200);
+          assert.equal((await ready.json()).status,'ready');
+          JS
       - name: Exercise live teacher and student combat
         env:
-          STAGING_ORIGIN: ${{ inputs.staging_origin || 'https://questacademy-staging.coxsonator.workers.dev' }}
+          STAGING_ORIGIN: ${{ inputs.staging_origin || (github.event_name == 'push' && 'https://questacademy.bookwyrminteractive.studio') || 'https://questacademy-staging.coxsonator.workers.dev' }}
         run: node tests/staging/live-combat-acceptance.mjs
       - name: Exercise storage and classroom concurrency
         env:
-          STAGING_ORIGIN: ${{ inputs.staging_origin || 'https://questacademy-staging.coxsonator.workers.dev' }}
+          STAGING_ORIGIN: ${{ inputs.staging_origin || (github.event_name == 'push' && 'https://questacademy.bookwyrminteractive.studio') || 'https://questacademy-staging.coxsonator.workers.dev' }}
         run: node tests/staging/operational-acceptance.mjs
