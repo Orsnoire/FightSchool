@@ -1,0 +1,83 @@
+// Disposable review probes. These document existing behavior; they are not fixes.
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { randomUUID, createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { drizzle } from 'drizzle-orm/pglite';
+import { migrate } from 'drizzle-orm/pglite/migrator';
+import { dataCostFixture } from '../support/data-costs.ts';
+import { fight } from './fixtures.ts';
+import { cleanupDatabase } from '../../scripts/release/fixture-cleanup.mjs';
+import { validateSettings, PRODUCTION } from '../../scripts/deploy-campaign-preview.mjs';
+
+async function fixture() {
+  const f = await dataCostFixture(2,0);
+  const runId=randomUUID(),suffix=`c12-${runId}`,alias=`qa-${suffix}@example.invalid`;
+  await f.pg.query('UPDATE teachers SET email=$1,email_normalized=$1 WHERE id=$2',[alias,fight.teacherId]);
+  const students=f.students.map((s,i)=>({id:s.id,alias:`qa-${suffix}-${i}`}));
+  for(const s of students)await f.pg.query('UPDATE students SET nickname=$1,nickname_normalized=$1 WHERE id=$2',[s.alias,s.id]);
+  const manifest={schemaVersion:1,pending:[],runId,suffix,mode:'isolated',origin:'https://fixture.invalid',status:'passed',teachers:[{id:fight.teacherId,alias}],students,fights:[f.bank.id],guilds:[f.guildId,f.otherGuildId],equipment:[],sessions:[],objects:[]};
+  return {f,manifest,query:(sql:string,params?:any[])=>f.pg.query(sql,params)};
+}
+
+test('review: retained canonical 18-entry history upgrades to 27 without rewriting its receipts or old results',async()=>{
+  const f=await dataCostFixture(2,1,17);
+  try {
+    const entries=JSON.parse(readFileSync('migrations/cloudflare/meta/_journal.json','utf8')).entries;
+    await f.pg.exec('CREATE SCHEMA drizzle; CREATE TABLE drizzle.__drizzle_migrations(id SERIAL PRIMARY KEY,hash text NOT NULL,created_at bigint)');
+    for(const e of entries.slice(0,18))await f.pg.query('INSERT INTO drizzle.__drizzle_migrations(hash,created_at) VALUES($1,$2)',[createHash('sha256').update(readFileSync(`migrations/cloudflare/${e.tag}.sql`)).digest('hex'),e.when]);
+    const oldLedger=(await f.pg.query('SELECT * FROM drizzle.__drizzle_migrations ORDER BY id')).rows;
+    const oldResults=(await f.pg.query('SELECT id,session_id,student_id,xp_earned,gold_reward,totals FROM combat_results ORDER BY id')).rows;
+    await migrate(drizzle(f.pg),{migrationsFolder:'migrations/cloudflare'});
+    const ledger=(await f.pg.query('SELECT * FROM drizzle.__drizzle_migrations ORDER BY id')).rows;
+    assert.equal(ledger.length,27);assert.deepEqual(ledger.slice(0,18),oldLedger);
+    assert.deepEqual((await f.pg.query('SELECT id,session_id,student_id,xp_earned,gold_reward,totals FROM combat_results ORDER BY id')).rows,oldResults);
+    await migrate(drizzle(f.pg),{migrationsFolder:'migrations/cloudflare'});
+    assert.deepEqual((await f.pg.query('SELECT * FROM drizzle.__drizzle_migrations ORDER BY id')).rows,ledger);
+  }finally{await f.pg.close();}
+});
+
+test('review: existing production validator rejects the C12 version metadata binding',()=>{
+  const settings={bindings:[
+    ...Object.entries({ENVIRONMENT:'staging',PUBLIC_ORIGIN:PRODUCTION.origin,ADDITIONAL_PUBLIC_ORIGINS:'https://questacademy-staging.coxsonator.workers.dev',SESSION_COOKIE_NAME:'qa_staging_session',SESSION_TTL_SECONDS:'28800'}).map(([name,text])=>({name,text,type:'plain_text'})),
+    ...['DATABASE_URL','PASSWORD_PEPPER','SESSION_SECRET','STAGING_AUTH_TOKEN'].map(name=>({name,type:'secret_text'})),
+    {name:'COMBAT_SESSIONS',type:'durable_object_namespace',class_name:'CombatSession',namespace_id:'fixture'},
+    {name:'OBJECTS',type:'r2_bucket',bucket_name:'questacademy-objects'},{name:'ASSETS',type:'assets'}]};
+  const request={expectedPreviousSha:'a'.repeat(40),sourceSha:'b'.repeat(40)};
+  assert.doesNotThrow(()=>validateSettings(settings,request,'production'));
+  settings.bindings.push({name:'CF_VERSION_METADATA',type:'version_metadata'});
+  assert.throws(()=>validateSettings(settings,request,'production'),/Unexpected preview bindings/);
+});
+
+test('review: unjournaled math templates block cleanup and roll back earlier deletions',async()=>{
+  const {f,manifest,query}=await fixture();
+  try{
+    await query('INSERT INTO math_templates(id,teacher_id,create_key,latest_revision) VALUES($1,$2,$3,1)',[randomUUID(),fight.teacherId,randomUUID()]);
+    await assert.rejects(cleanupDatabase(query,manifest,{apply:true}),/foreign key constraint/);
+    assert.equal((await query('SELECT count(*)::int n FROM students')).rows[0].n,2);
+    assert.equal((await query('SELECT count(*)::int n FROM math_templates')).rows[0].n,1);
+  }finally{await f.pg.close();}
+});
+
+test('review: unjournaled campaign rows block cleanup and roll back earlier deletions',async()=>{
+  const {f,manifest,query}=await fixture();
+  try{
+    await query("INSERT INTO campaigns(id,teacher_id,guild_id,fight_id,name,dungeon_name,gates,layout,fight_snapshot) VALUES($1,$2,$3,$4,'Keep','Keep','[]','{}','{}')",[randomUUID(),fight.teacherId,f.guildId,f.bank.id]);
+    await assert.rejects(cleanupDatabase(query,manifest,{apply:true}),/foreign key constraint/);
+    assert.equal((await query('SELECT count(*)::int n FROM students')).rows[0].n,2);
+    assert.equal((await query('SELECT count(*)::int n FROM campaigns')).rows[0].n,1);
+  }finally{await f.pg.close();}
+});
+
+test('review: unjournaled AA and activity children cascade without appearing in cleanup counts',async()=>{
+  const {f,manifest,query}=await fixture();
+  try{
+    const sid=f.students[0].id;
+    await query("INSERT INTO aa_purchases(student_id,request_id,upgrade_id,rank,cost,catalog_version,payload,receipt) VALUES($1,$2,'stat:str',1,2,1,'{}','{}')",[sid,randomUUID()]);
+    await query('INSERT INTO student_activity_tracking(student_id,started_at) VALUES($1,0)',[sid]);
+    const result=await cleanupDatabase(query,manifest,{apply:true});
+    assert.equal((await query('SELECT count(*)::int n FROM aa_purchases')).rows[0].n,0);
+    assert.equal((await query('SELECT count(*)::int n FROM student_activity_tracking')).rows[0].n,0);
+    assert.equal(result.counts.aa_purchases,undefined);assert.equal(result.counts.student_activity_tracking,undefined);
+  }finally{await f.pg.close();}
+});

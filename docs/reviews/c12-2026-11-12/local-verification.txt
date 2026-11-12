@@ -1,0 +1,104 @@
+release-tests.log
+✔ preflight uses only GET and does not require a build or database credentials (7.999582ms)
+✔ a delayed pause can be verified with GET only and no redeployment (2.555027ms)
+✔ wrong environment, storage, source and secret configuration stop before any write (6.997468ms)
+✔ deployment requires explicit migration attestation and full SHAs (0.760111ms)
+✔ upload preserves resource identities and secrets without resubmitting values (0.45323ms)
+✔ pause/resume keeps immutable history and refuses wrong windows or runtime (0.754052ms)
+✔ release verification refuses wrong database, history, old objects and changed rooms (2.735198ms)
+✔ deployment propagation retries reads, while database mismatch stops immediately (0.959851ms)
+✔ full deploy rechecks bindings, retains resources and requires database/combat readiness (9.988189ms)
+✔ production inspection is read-only, redacts credentials and rejects target/history drift (13.349908ms)
+✔ production release stages stay bounded and reject unknown stages (1.564539ms)
+✔ production pause retains all resources, never migrates, and checks version races before upload (12.8919ms)
+✔ production releases preserve the explicit guild beta allowlist (0.718279ms)
+✔ acceptance never silently defaults to production or calls it isolated (2.732814ms)
+✔ interrupted fixture runs retain only exact owned identities, never credentials (4.733488ms)
+✔ stress fixture size is bounded and cannot expand live classroom traffic (4.013487ms)
+✔ R2 cleanup retries exact keys and treats denial or partial failure as unfinished (1.722287ms)
+✔ lost creation responses retain intent and block cleanup until reconciled (2.637591ms)
+✔ release gate accepts the exact reviewed merge tree with every required job (2.369047ms)
+✔ release gate rejects unmerged PR (1.389757ms)
+✔ release gate rejects different merge commit (0.906952ms)
+✔ release gate rejects unreviewed merge tree (0.423225ms)
+✔ release gate rejects foreign repository (0.33957ms)
+✔ release gate rejects failed newest rerun (0.493621ms)
+✔ release gate rejects skipped browser job (0.523206ms)
+✔ release gate rejects different checked SHA (0.408773ms)
+✔ mutable refs and command fragments are rejected as release inputs (1.015655ms)
+✔ live identity requires both the intended commit and immutable Worker version (9.736311ms)
+✔ all acceptance entry points refuse missing targets before any network call (418.689966ms)
+✔ production endpoint comparison rejects DNS aliases and malformed inventory hostnames (2.653695ms)
+✔ database URL routing overrides cannot bypass the independently checked hostname (2.369028ms)
+✔ cleanup account must match inventory before an absence check can be trusted (0.874984ms)
+✔ fixture POSTs and R2 PUTs never follow redirects after the health check (52.525152ms)
+✔ isolated acceptance and cleanup share the exact UUID-named workers.dev boundary (1.640203ms)
+✔ generator preserves required runtime settings and emits only isolated bindings without credentials (66.7002ms)
+✔ generator fails closed on external Durable Object namespace rather than carrying production configuration (60.45163ms)
+✔ generator fails closed on Durable Object environment rather than carrying production configuration (64.646401ms)
+✔ generator fails closed on Durable Object transfer rather than carrying production configuration (55.34795ms)
+✔ generator fails closed on export namespace transfer rather than carrying production configuration (60.190599ms)
+✔ generator fails closed on named environment routes and secrets rather than carrying production configuration (53.469561ms)
+✔ generator fails closed on singular route rather than carrying production configuration (63.346409ms)
+✔ generator fails closed on service binding rather than carrying production configuration (59.707768ms)
+✔ generator fails closed on Hyperdrive binding rather than carrying production configuration (61.553455ms)
+✔ generator fails closed on secret store binding rather than carrying production configuration (63.680359ms)
+✔ performance report never averages away a slow classroom repetition or declares signoff (1.901045ms)
+✔ performance report rejects missing, duplicate, failed or mixed-release samples (10.010283ms)
+ℹ tests 46
+ℹ suites 0
+ℹ pass 46
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1298.488808
+
+
+compatibility-tests.log
+✔ guarded production upgrade preserves populated records, is atomic and rejects preview history (4166.116983ms)
+✔ production SQL/journal through roster 0019 and archived preview SQL are immutable (1.36478ms)
+✔ production history upgrades forward without altering AA purchases, saved slots, XP or old results (1446.428098ms)
+✔ legacy preview bridges atomically, retains playtest/active snapshots and ledgers, then a normal forward migration preserves progress (2809.210365ms)
+✔ merged roster history upgrades without changing activity samples, retry receipts or AA/player data (1691.890029ms)
+✔ bridge rejects production, unknown or corrupt history and rolls back an interrupted schema upgrade (15065.905449ms)
+✔ bridge rejects schema drift before aliasing and on completed-history retries (9780.077063ms)
+✔ failure after all bridge DDL/backfills/aliases rolls back rows and routines; retry succeeds (1682.879503ms)
+✔ scoped cleanup preserves outsiders, rolls back faults, rejects cross-room references and retries safely (2689.771228ms)
+✔ cleanup rejects production aliases, pooled production endpoints, foreign R2 keys and missing isolation proof (2.898452ms)
+✔ MATH-02 production upgrade is bounded, data-preserving, atomic and idempotent (2144.40546ms)
+✔ representative history is scoped, bounded, retained by exact IDs and compatible with cleanup (3541.617907ms)
+✔ history refuses production targets and foreign identities before creating any history (2352.978007ms)
+✔ a lost history COMMIT acknowledgement keeps exact scope and blocks cleanup (2289.039433ms)
+✔ 30/60-player profiles contain four starter jobs and a unique valid appearance for every learner (1.67101ms)
+✔ representative class choices resolve through the real engine for both classroom sizes (518.391582ms)
+✔ live health exposes only immutable release identity and is never cached (9.315589ms)
+✔ invalid or overlapping maintenance configuration fails closed (2.007635ms)
+✔ maintenance blocks every public HTTP/socket route before any binding or database access (9.880297ms)
+✔ paused Durable Objects preserve rooms, receipts and all pending work across each entry point (14.194585ms)
+✔ resume shifts timers once, preserving answers, HP, inventory, receipts and retry flags (2.338827ms)
+✔ hibernating rooms apply every missed pause, newer rooms keep their clocks, failed checkpoint retries safely (3.159895ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 37820.99286
+
+
+review-probes.log
+✔ review: retained canonical 18-entry history upgrades to 27 without rewriting its receipts or old results (2737.115173ms)
+✔ review: existing production validator rejects the C12 version metadata binding (1.240112ms)
+✔ review: unjournaled math templates block cleanup and roll back earlier deletions (1583.316583ms)
+✔ review: unjournaled campaign rows block cleanup and roll back earlier deletions (1846.550998ms)
+✔ review: unjournaled AA and activity children cascade without appearing in cleanup counts (2006.547838ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9491.885231

@@ -5,8 +5,7 @@ A persistent educational RPG hosted at https://questacademy.bookwyrminteractive.
 Start with the [documentation index](docs/README.md), [current status](docs/CURRENT_STATUS.md),
 and [cleanup plan](docs/CLEANUP_PLAN.md). C01–C11 are merged, deployed and accepted.
 C11 (Phase 5) is released in [PR #74](https://github.com/Orsnoire/FightSchool/pull/74).
-C12 (Phase 6 release review) is next and unstarted. Read the [active-work checkpoint](docs/ACTIVE_WORK.md);
-[expansion](docs/EXPANSION_PLAN.md) follows the cleanup exit gates.
+C12 (Phase 6 release review) is retired unmerged; its evidence is retained and operational acceptance remains deferred. Continue from current main using the [active-work checkpoint](docs/ACTIVE_WORK.md) and [disposition](docs/reviews/2026-11-12-c12-disposition.md). Select further [expansion](docs/EXPANSION_PLAN.md) as separately scoped work.
 Read [Source of Truth](docs/Source_of_Truth.md) before changing gameplay or architecture.
 The [migration plan](docs/Migration_Plan) is historical; the deployed architecture,
 release evidence and open operational checks are in [the release/recovery record](docs/cloudflare/full-migration.md).

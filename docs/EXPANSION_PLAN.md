@@ -2,10 +2,10 @@
 
 **FUTURE — updated October 29, 2026. No further expansion implementation is started by this plan.**
 
-New feature development follows the [cleanup exit gates](CLEANUP_PLAN.md#exit-gates-before-expansion-resumes).
+C12 was retired unmerged on November 12; its [unperformed acceptance gates](CLEANUP_PLAN.md#exit-gates-before-expansion-resumes) remain deferred and do not block choosing new scoped work from current main. Current release/data-protection requirements remain in force.
 This is the current backlog of remaining product direction, not a claim that
 all ideas are fully specified or an authorization to implement them together.
-Choose the next feature's scope after the cleanup release review. The current
+Choose the next feature's scope from current main; do not resume the retired C12 branch automatically. The current
 [released baseline](CURRENT_STATUS.md) already includes fixed-count goblins,
 waves, static gear art, quests and explicit host-session controls. The separately
 authorized October 12 [swarm/gear/host-control release](combat/swarm-scaling.md)

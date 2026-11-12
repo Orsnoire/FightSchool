@@ -1,10 +1,10 @@
 # QuestAcademy — Source of Truth
 
-> **CURRENT AUTHORITY — October 20, 2026 (UTC).** Start with the [documentation index](README.md),
+> **CURRENT AUTHORITY — C12 disposition updated November 12, 2026.** Start with the [documentation index](README.md),
 > [current status](CURRENT_STATUS.md), [cleanup plan](CLEANUP_PLAN.md) and
-> [expansion plan](EXPANSION_PLAN.md). Cleanup precedes new feature development;
+> [expansion plan](EXPANSION_PLAN.md). The C12 retirement below supersedes its former blanket sequencing requirement;
 > Phases 1–2 are complete with the [resume safeguard](ACTIVE_WORK.md). C01–C11
-> are merged, deployed and accepted. C11 shipped in PR #74 / runtime `a580b30`; C11 is complete, merged, deployed and accepted in PR #74; C12 is active separately in draft PR #75. See the release checkpoint. The separately
+> are merged, deployed and accepted. C11 shipped in PR #74 / runtime `a580b30`; C11 is complete, merged, deployed and accepted in PR #74; C12 is retired unmerged as of November 12, 2026; [its disposition](reviews/2026-11-12-c12-disposition.md) supersedes the earlier automatic-resume and blanket sequencing requirement, without certifying its unperformed operational gates. See the release checkpoint. The separately
 > authorized PR #61 and Usability Patch 1 / PR #64 releases are recorded in current status.
 > Historical migration phases are not the active queue.
 

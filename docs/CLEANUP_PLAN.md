@@ -1,8 +1,8 @@
 # Current cleanup plan
 
-**CURRENT PLAN — October 20, 2026 (UTC). Phases 1–2 complete; C01–C11 COMPLETE, merged, deployed and accepted; C11 is COMPLETE, merged, deployed and accepted in PR #74; C12 is active separately in draft PR #75.**
+**CURRENT PLAN — C12 disposition updated November 12, 2026. Phases 1–2 complete; C01–C11 COMPLETE, merged, deployed and accepted; C11 is COMPLETE, merged, deployed and accepted in PR #74; C12 is RETIRED UNMERGED as of November 12, 2026; its operational gates are deferred.**
 
-Complete the engineering cleanup before new feature development. This plan
+C01–C11 are complete. C12 is retired as a branch-level package and is no longer a prerequisite to choosing new scoped work on current main. Retirement is not acceptance of its unperformed operational gates. See the [disposition](reviews/2026-11-12-c12-disposition.md). This historical plan
 translates the [October 9 review](reviews/2026-10-09-code-review.md) into six phases
 and twelve reviewable packages. `C01`–`C12` are planning IDs, **not GitHub PR
 numbers**. Split a package into smaller PRs when compatibility or review scope
@@ -29,7 +29,7 @@ PR for the latest pushed SHA, validation and exact next action. On interruption,
 reconcile any newer commits instead of starting a competing fix or returning to
 a historical feature branch. Register handoffs when a package finishes.
 
-The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. C06 is complete in [PR #69](https://github.com/Orsnoire/FightSchool/pull/69), merged, deployed and accepted October 17. C07 is complete in [PR #70](https://github.com/Orsnoire/FightSchool/pull/70), merged, deployed and accepted October 17. C08 is COMPLETE, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73. C11 is COMPLETE, merged, deployed and accepted in PR #74; C12 is active separately in draft PR #75.
+The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65, is complete, merged, deployed and accepted. C06 is complete in [PR #69](https://github.com/Orsnoire/FightSchool/pull/69), merged, deployed and accepted October 17. C07 is complete in [PR #70](https://github.com/Orsnoire/FightSchool/pull/70), merged, deployed and accepted October 17. C08 is COMPLETE, merged, deployed and accepted in PR #71; C09 is COMPLETE, merged, deployed and accepted in PR #72; C10 is COMPLETE, merged, deployed and accepted in PR #73. C11 is COMPLETE, merged, deployed and accepted in PR #74; C12 is RETIRED UNMERGED as of November 12, 2026; its operational gates are deferred.
 
 ## Work packages
 
@@ -62,7 +62,7 @@ The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65
 | **5 — C09: API and services** (larger) | F13–F14: split guild/quest/equipment/reward/reporting routes and services; independent domain contracts | Same API behavior, explicit tenant/owner checks, atomic awards and failure paths; one coherent responsibility per extraction | COMPLETE — [PR #72](https://github.com/Orsnoire/FightSchool/pull/72), merged, deployed and accepted; 289 tests, CI/browser and canonical live acceptance pass |
 | **5 — C10: combat modules** (larger) | F13–F14: separate phase transitions, abilities, damage/healing, command parsing, public projection and persistence effects | Same seeded input produces the same outcomes; one serial authority; durable receipts/retries and persisted-room compatibility preserved | COMPLETE — [PR #73](https://github.com/Orsnoire/FightSchool/pull/73), runtime `bb75395`; 298 tests, 80 seeded replay scenarios, fault/recovery gates, all three Chromium jobs, [deployment](https://github.com/Orsnoire/FightSchool/actions/runs/39137219072) and [canonical acceptance](https://github.com/Orsnoire/FightSchool/actions/runs/39137585694) pass; no migration or data reset. [Report](reviews/2026-10-18-c10-combat-modules.md). |
 | **5 — C11: authoring and lobby UI** (larger) | F13–F14: extract question/CSV/enemy/loot authoring and loadout/avatar panels; remove verified unused helpers/types | Teacher workflow, saved drafts, gear and error recovery preserved; import/reference search before deletion; saved-room adapters retained until explicitly retired | COMPLETE / MERGED / DEPLOYED / ACCEPTED — [PR #74](https://github.com/Orsnoire/FightSchool/pull/74), runtime `a580b30`; 300 tests, all four Chromium jobs, [deployment](https://github.com/Orsnoire/FightSchool/actions/runs/39161062489) and [canonical acceptance](https://github.com/Orsnoire/FightSchool/actions/runs/39161276964) pass. No migration or data reset. [Report](reviews/2026-10-18-c11-authoring-lobby.md) |
-| **6 — C12: release review** (medium) | F16 and consolidation: full classroom acceptance, before/after report, commit-pinned releases, environment/fixture isolation and cleanup, recovery/rollback runbook | Exit gates below pass; exact CI/runtime/deploy/acceptance evidence recorded; current status and relevant specs updated | IN PROGRESS — [draft PR #75](https://github.com/Orsnoire/FightSchool/pull/75), `cleanup/c12-release-review`; resume its own checkpoint. Isolated rehearsal and safeguards remain separate and unchanged by PR #79. |
+| **6 — C12: release review** (medium) | F16 and consolidation: full classroom acceptance, before/after report, commit-pinned releases, environment/fixture isolation and cleanup, recovery/rollback runbook | Exit gates below pass; exact CI/runtime/deploy/acceptance evidence recorded; current status and relevant specs updated | RETIRED UNMERGED — [PR #75](https://github.com/Orsnoire/FightSchool/pull/75). Branch/evidence retained; provider gates deferred, not passed. No automatic resume, replacement PR, deployment or cleanup. [Review](reviews/2026-11-12-c12-disposition.md). |
 
 ## Dependencies and execution rules
 
@@ -83,6 +83,8 @@ The separately authorized [Usability Patch 1](USABILITY_PATCH_1.md), PRs #64/#65
    test merely to update documentation.
 
 ## Exit gates before expansion resumes
+
+**November 12 disposition:** the following remains the historical C12 acceptance specification. Its unperformed performance/provider gates are deferred; closing C12 does not mark them passed. They no longer impose a blanket block on new owner-selected work from current main. Current release/data-protection requirements still apply.
 
 - **Correctness:** all three reproduced defects have boundary-level regression
   coverage. Preserve the seven-species roster, minimum-five goblins, answer-based

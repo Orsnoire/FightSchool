@@ -1,3 +1,13 @@
+# C12 retired unmerged — November 12, 2026
+
+- C12 / [PR #75](https://github.com/Orsnoire/FightSchool/pull/75) is retired without merging. Its retained branch at `348b034a0efb6e0f022a0f64f360489794e0f444` is historical reference, not a resume target. [Review and verification](reviews/2026-11-12-c12-disposition.md).
+- Continue new scoped work from current main. No C12 replacement package or PR is required. This decision supersedes earlier C12 resume instructions below; historical release evidence remains unchanged.
+- Retirement does not certify C12 performance, recovery, rollback, credential isolation or classroom-device acceptance. Those unaccepted gates are deferred, not completed.
+- No C12 implementation is ported. Retained rehearsal/preview resources, fixtures, backups and all student data remain untouched; cleanup or provider work requires separate explicit approval.
+- Latest recorded production remains the accepted MATH-02 release below. No deployment or migration is part of this documentation change.
+
+## Accepted baseline and historical checkpoints
+
 # MATH-02 — operationally accepted November 5, 2026
 
 - Owner authorized merge, migration and deployment after draft review. [PR #97](https://github.com/Orsnoire/FightSchool/pull/97) merged at `7562485586160e1c321f21bda902713690159e23`, exactly matching the reviewed tree.
@@ -275,11 +285,9 @@ Earlier checkpoints are preserved in [Git history](https://github.com/Orsnoire/F
 - Additional future work: the teacher create/edit fight panel should preview estimated enemy HP per player with an explicit estimate disclaimer. Recorded in the same expansion backlog; no UI/runtime change is included in this documentation checkpoint.
 - C12 remains separate in PR #75; preserve its work and discovery pointer below. [Balance specification](combat/role-weighted-hp.md).
 
-# C12 active — Phase 6 release review
+# C12 historical claim — retired November 12, 2026
 
-- Resume [draft PR #75](https://github.com/Orsnoire/FightSchool/pull/75), branch `cleanup/c12-release-review`, and that branch's current `docs/ACTIVE_WORK.md` before editing. Initial claim: `7335a21ee74654f1ad5e4883aa46480c149d062c`.
-- The balance runtime above is deployed and accepted; C11 is the preceding release below. C12 is implementation/verification in progress; cleanup exit gates are not yet signed off. No production reset or disruptive drill is authorized.
-- This is the main discovery pointer; the branch checkpoint and live PR carry newer work. Do not start another C12 implementation.
+The former `cleanup/c12-release-review` / PR #75 claim is historical. Its October checkpoint is retained in the branch; do not resume it automatically. The retirement decision at the top of this file and the [review](reviews/2026-11-12-c12-disposition.md) supersede this former active pointer. No operational signoff or resource cleanup is implied.
 
 ## Previous completed release — C11
 
