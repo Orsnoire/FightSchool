@@ -1,7 +1,7 @@
 {
-  "mode": "pause",
+  "mode": "preflight",
   "sourceSha": "4fbbe3c52cd593c340ada3ee89ae6315148c8371",
-  "expectedPreviousSha": "7562485586160e1c321f21bda902713690159e23",
+  "expectedPreviousSha": "4fbbe3c52cd593c340ada3ee89ae6315148c8371",
   "pauseId": "production-pascal-20261124",
   "schemaStage": "math-authoring"
 }
