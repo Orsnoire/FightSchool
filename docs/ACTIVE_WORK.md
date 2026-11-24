@@ -1,3 +1,7 @@
+# Pascal skills in the Math templates catalog — November 24, 2026
+
+- Branch `fix/pascal-template-catalog` places the three released Pascal skills in the existing Math templates browser. Next steps are catalog integration, save/reopen checks, and release verification.
+
 # Pascal’s triangle template quizzes — November 24, 2026
 
 - Branch `feature/pascal-template-quizzes` starts from main `4a2e26c`. Scope covers discoverable randomized Pascal’s triangle/binomial questions, quiz creation, target rounds, timer estimates and round-based enemy HP.
