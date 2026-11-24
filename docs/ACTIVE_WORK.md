@@ -1,6 +1,6 @@
 # Pascal skills in the Math templates catalog — November 24, 2026
 
-- Branch `fix/pascal-template-catalog` places the three released Pascal skills in the existing Math templates browser. Next steps are catalog integration, save/reopen checks, and release verification.
+- Branch `fix/pascal-template-catalog` places the three released Pascal skills in the existing Math templates browser. [PR #100](https://github.com/Orsnoire/FightSchool/pull/100) integrates the three skills with the shared catalog, preview, search and rule filters. Next action is to confirm create/edit browser checks and the controlled rollout.
 
 # Pascal’s triangle template quizzes — November 24, 2026
 

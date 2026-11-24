@@ -26,7 +26,7 @@ function pass(name){checks.push(name);console.log(`PASS: ${name}`);}
 try {
  await api(base+'/catalog',{status:401});
  const owner=await teacher('owner'),other=await teacher('other');const cookie=owner.cookie;
- const catalog=await api(base+'/catalog',{cookie});assert.equal(catalog.data.length,3);assert.match(catalog.cache,/no-store/);pass('teacher-only catalog and non-cacheable responses');
+ const catalog=await api(base+'/catalog',{cookie});assert.deepEqual(catalog.data.map(item=>item.rule),['product','quotient','power','pascal-row-v1','binomial-coefficient-v1','scaled-binomial-v1']);assert.match(catalog.cache,/no-store/);pass('teacher-only catalog and non-cacheable responses');
  for(const rule of ['product','quotient','power']) {
   const preset={schemaVersion:1,familyId:'integer-exponent',familyVersion:1,generatorVersion:1,graderVersion:'exact-rational-v1',title:`Acceptance ${rule} ${suffix}`,note:'Release validation fixture',rule,m:{min:-6,max:6},n:{min:-6,max:6},includeIdentityCases:true,resultSign:'any'};
   const options={seed:7,count:10};const input={preset,...options};

@@ -5,9 +5,12 @@ export const QUIZ_TEMPLATE_IDS = ["pascal-row-v1", "binomial-coefficient-v1", "s
 export type QuizTemplateId = typeof QUIZ_TEMPLATE_IDS[number];
 
 export const PASCAL_TEMPLATES = [
-  { id: "pascal-row-v1", title: "Pascal’s triangle entries", timeLimit: 30 },
-  { id: "binomial-coefficient-v1", title: "Term coefficient in (x + y)ⁿ", timeLimit: 45 },
-  { id: "scaled-binomial-v1", title: "Term coefficient in (ax + by)ⁿ", timeLimit: 60 },
+  { id: "pascal-row-v1", title: "Pascal’s triangle entries", timeLimit: 30,
+    description: "Read a specified entry from a numbered row of the triangle.", keywords: "row position entry" },
+  { id: "binomial-coefficient-v1", title: "Term coefficient in (x + y)ⁿ", timeLimit: 45,
+    description: "Find the coefficient of a specified term in a power of x + y.", keywords: "unscaled unit coefficients expansion" },
+  { id: "scaled-binomial-v1", title: "Term coefficient in (ax + by)ⁿ", timeLimit: 60,
+    description: "Find a term’s coefficient when one or both terms have numerical factors.", keywords: "scaled signed numerical factors expansion" },
 ] as const;
 
 type Variant = Pick<Question, "question" | "type" | "options" | "correctAnswer">;

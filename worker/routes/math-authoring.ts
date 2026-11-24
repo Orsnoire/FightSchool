@@ -1,6 +1,8 @@
+import { MATH_CATALOG } from "../../shared/math/templates/catalog";
+import { QUIZ_TEMPLATE_IDS } from "../../shared/math/templates/pascal";
 import { z } from "zod";
 import { approveMathPresetSchema, exponentRuleSchema, mathPreviewRequestSchema, saveMathPresetSchema } from "../../shared/contracts/math-templates";
-import { canonicalPreset, EXPONENT_CATALOG, MathAuthoringError, mathHash, previewMathTemplate } from "../../shared/math/templates/exponents";
+import { canonicalPreset, MathAuthoringError, mathHash, previewMathTemplate } from "../../shared/math/templates/exponents";
 import { authenticateSession, type SessionConfig, type SessionRepository } from "../auth/session";
 import { MathTemplateConflict, mathTemplateRepository } from "../db/math-template-repository";
 import type { GameDatabase } from "../db/database";
@@ -16,7 +18,7 @@ export async function handleMathAuthoring(request: Request, url: URL, identity: 
   const repository = mathTemplateRepository(db);
   const path = url.pathname;
   try {
-    if (request.method === "GET" && path === "/api/math/templates/catalog") return json(EXPONENT_CATALOG);
+    if (request.method === "GET" && path === "/api/math/templates/catalog") return json(MATH_CATALOG);
     if (request.method === "POST" && path === "/api/math/templates/preview") {
       const input = mathPreviewRequestSchema.parse(await readJson(request, 16_384));
       return json(await previewMathTemplate(input));
@@ -24,7 +26,7 @@ export async function handleMathAuthoring(request: Request, url: URL, identity: 
     if (path === "/api/math/templates") {
       if (request.method === "GET") {
         const q = z.string().max(120).parse(url.searchParams.get("q") ?? "");
-        const rule = url.searchParams.has("rule") ? exponentRuleSchema.parse(url.searchParams.get("rule")) : undefined;
+        const rule = url.searchParams.has("rule") ? exponentRuleSchema.or(z.enum(QUIZ_TEMPLATE_IDS)).parse(url.searchParams.get("rule")) : undefined;
         const state = url.searchParams.has("state") ? z.enum(["draft", "approved"]).parse(url.searchParams.get("state")) : undefined;
         const offset = integerQuery(url.searchParams.get("offset"), 0, 100_000);
         const items = await repository.list(actor.actorId, { q, rule, state, offset });

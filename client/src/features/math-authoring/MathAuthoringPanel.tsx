@@ -3,7 +3,9 @@ import { Input as FormInput } from "@/components/ui/input";
 import type { ComponentProps } from "react";
 import { QuestionPreview } from "@/components/QuestionPreview";
 import { EXPONENT_CATALOG } from "@shared/math/templates/exponents";
-import type { ExponentRule, MathPreset } from "@shared/contracts/math-templates";
+import { findMathSkills, MATH_CATALOG, type MathCatalogRule } from "@shared/math/templates/catalog";
+import { PascalTemplateCard, type QuizSelectionProps } from "./PascalTemplateCard";
+import type { MathPreset } from "@shared/contracts/math-templates";
 import type { MathGradeResult } from "@shared/contracts/math-answers";
 import type { useMathAuthoring } from "./useMathAuthoring";
 
@@ -15,24 +17,26 @@ const gradeLabel = (grade: MathGradeResult) => grade.status === "correct" ? "Cor
   ? `Could not grade: ${grade.reason.replaceAll("_", " ")}. This is not a wrong answer.`
   : grade.reason === "required_form" ? "Equal value, but enter a single integer only." : `Incorrect: ${grade.reason.replaceAll("_", " ")}.`;
 
-export default function MathAuthoringPanel({ editor: e }: { editor: ReturnType<typeof useMathAuthoring> }) {
-  const catalog = EXPONENT_CATALOG.filter(item => (!e.ruleFilter || item.rule === e.ruleFilter) &&
-    `${item.name} ${item.description} ${item.keywords}`.toLowerCase().includes(e.search.toLowerCase()));
+export default function MathAuthoringPanel({ editor: e, ...quiz }: QuizSelectionProps & { editor: ReturnType<typeof useMathAuthoring> }) {
+  const catalog = findMathSkills(e.search, e.ruleFilter);
   const setRange = (variable: "m" | "n", bound: "min" | "max", value: string) =>
     e.update({ ...e.draft, [variable]: { ...e.draft[variable], [bound]: value === "" ? NaN : Number(value) } });
   return <section aria-label="Math templates" className="space-y-4 rounded-lg border bg-card p-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <div><h2 className="text-lg font-semibold">Math templates</h2><p className="text-sm text-muted-foreground">Missing-exponent practice · teacher authoring preview</p></div>
+      <div><h2 className="text-lg font-semibold">Math templates</h2><p className="text-sm text-muted-foreground">Pascal’s triangle, binomial coefficients and exponent rules</p></div>
       <Button type="button" variant="outline" aria-expanded={e.open} onClick={() => e.setOpen(!e.open)} data-testid="button-math-templates">{e.open ? "Hide templates" : "Open templates"}</Button>
     </div>
+    {quiz.selected.length > 0 && <p className="text-sm" role="status">{quiz.selected.length} {quiz.selected.length === 1 ? "skill" : "skills"} selected for this fight</p>}
     {e.open && <div className="space-y-5" data-testid="math-authoring-workspace">
-      <p className="text-sm">Save reusable practice settings and review integer answers here. These templates are not added to fights.</p>
+      <p className="text-sm">Select Pascal skills for this fight and set the target rounds on the Enemies tab. Choose an exponent rule to build a reusable practice preset.</p>
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="space-y-1 text-sm">Search skills or saved titles<Input maxLength={120} value={e.search} onChange={event => e.setSearch(event.target.value)} placeholder="Try multiplication or negative" /></label>
-        <label className="space-y-1 text-sm">Rule filter<select aria-label="Rule filter" form="" className={selectClass} value={e.ruleFilter} onChange={event => e.setRuleFilter(event.target.value as "" | ExponentRule)}><option value="">All rules</option>{EXPONENT_CATALOG.map(item => <option key={item.rule} value={item.rule}>{item.name}</option>)}</select></label>
+        <label className="space-y-1 text-sm">Search skills or saved titles<Input maxLength={120} value={e.search} onChange={event => e.setSearch(event.target.value)} placeholder="Try Pascal or product of powers" /></label>
+        <label className="space-y-1 text-sm">Rule filter<select aria-label="Rule filter" form="" className={selectClass} value={e.ruleFilter} onChange={event => e.setRuleFilter(event.target.value as "" | MathCatalogRule)}><option value="">All rules</option>{MATH_CATALOG.map(item => <option key={item.rule} value={item.rule}>{item.name}</option>)}</select></label>
         <label className="space-y-1 text-sm">Saved status<select aria-label="Saved status" form="" className={selectClass} value={e.stateFilter} onChange={event => e.setStateFilter(event.target.value as "" | "draft" | "approved")}><option value="">All statuses</option><option value="draft">Draft</option><option value="approved">Approved</option></select></label>
       </div>
-      <div className="grid gap-3 md:grid-cols-3">{catalog.map(item => <div key={item.rule} className="space-y-2 rounded-md border p-3">
+      <div className="grid gap-3 md:grid-cols-3">{catalog.map(item => item.family === "pascal"
+        ? <PascalTemplateCard key={item.rule} item={item} {...quiz} />
+        : <div key={item.rule} className="space-y-2 rounded-md border p-3">
         <h3 className="font-medium">{item.name}</h3><p className="text-sm text-muted-foreground">{item.description}</p>
         <Button type="button" variant="outline" disabled={e.busy} onClick={() => e.selectRule(item.rule)}>Use {item.skill.toLowerCase()}</Button>
       </div>)}</div>
@@ -41,7 +45,7 @@ export default function MathAuthoringPanel({ editor: e }: { editor: ReturnType<t
         <h3 className="font-semibold">My templates</h3>
         {e.listLoading && <p role="status">Loading saved templates…</p>}
         {e.listError && <div role="alert">{e.listError} <Button type="button" variant="outline" onClick={e.refreshList}>Retry list</Button></div>}
-        {!e.listLoading && !e.listError && e.items.length === 0 && <p className="text-sm text-muted-foreground">No saved templates match. Choose a skill above to begin.</p>}
+        {!e.listLoading && !e.listError && e.items.length === 0 && <p className="text-sm text-muted-foreground">No saved presets match.</p>}
         {e.items.map(item => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
           <span className="min-w-0 break-words">{item.title} <span className="text-sm text-muted-foreground">· {item.state} · revision {item.latestRevision}</span></span>
           <Button type="button" variant="outline" disabled={e.busy} onClick={() => e.load(item.id)}>Open {item.title}</Button>
@@ -49,7 +53,7 @@ export default function MathAuthoringPanel({ editor: e }: { editor: ReturnType<t
         <div className="flex gap-2">{e.offset > 0 && <Button type="button" variant="outline" onClick={() => e.setOffset(Math.max(0, e.offset - 50))}>Previous templates</Button>}{e.nextOffset !== null && <Button type="button" variant="outline" onClick={() => e.setOffset(e.nextOffset!)}>More templates</Button>}</div>
       </section>
       <div className="space-y-3 border-t pt-4">
-        <h3 className="font-semibold">{e.detail ? `Revision ${e.detail.revision.revision} · ${e.detail.revision.state}` : "New template"}{e.dirty ? " · unsaved changes" : ""}</h3>
+        <h3 className="font-semibold">{e.detail ? `Revision ${e.detail.revision.revision} · ${e.detail.revision.state}` : "New exponent preset"}{e.dirty ? " · unsaved changes" : ""}</h3>
         {e.readOnly && <p role="status">This saved revision is read-only.{e.detail?.supported && <Button type="button" variant="outline" onClick={e.editHistorical}>Create draft from this version</Button>}{!e.detail?.supported && " Choose a supported catalog skill to create a new preset."}</p>}
         {e.detail && <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" disabled={e.busy} onClick={() => e.load(e.detail!.id)}>Reopen latest</Button>

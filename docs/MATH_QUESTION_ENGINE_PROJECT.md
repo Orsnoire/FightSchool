@@ -21,7 +21,7 @@ Register the selected package and its branch/PR when implementation is scheduled
 
 ## November 24 classroom quiz templates
 
-[PR #99](https://github.com/Orsnoire/FightSchool/pull/99) adds three built-in skills to the Questions tab. A teacher can select Pascal row entries, coefficients of a specified term in `(x+y)^n`, or term coefficients with one or both binomial terms scaled. All accept a single integer and run with local arithmetic. Each selected skill has its own question timer.
+[PR #99](https://github.com/Orsnoire/FightSchool/pull/99) adds three built-in skills to the Questions tab. A teacher can select Pascal row entries, coefficients of a specified term in `(x+y)^n`, or term coefficients with one or both binomial terms scaled. In Create Fight and Edit Fight, open Questions → Math templates → Open templates. Search for Pascal or binomial, or choose a skill in the rule filter. Each card includes a worked answer, additional examples and a Use in this fight control. All accept a single integer and run with local arithmetic. Each selected skill has its own question timer.
 
 The Enemies tab sets a pacing target independent of the number of selected skills. Each fixed question gets one slot and additional slots rotate through the selected skills. Each slot contributes its question timer, the 3-second countdown, 4-second feedback, 20-second action and 20-second ability windows, plus the requested 30 seconds per round. The target estimates duration. Existing victory and defeat rules still decide when combat ends.
 
