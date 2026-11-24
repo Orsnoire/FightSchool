@@ -252,10 +252,15 @@ export function effectivePlayerCount(weights: number[]): number {
   return weights.reduce((sum, weight) => sum + Math.round(weight * 100), 0) / 100;
 }
 
+export function referenceRotationDamage(tier: number, questions: number): number {
+  const q = Math.max(1, questions);
+  return referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0);
+}
+
 /** Average raw output per question of the tier's idealized four-player party. */
 export function referenceOutput(tier: number, questions: number): number {
   const q = Math.max(1, questions);
-  return referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0) / q;
+  return referenceRotationDamage(tier, q) / q;
 }
 
 /** The question coefficient is the full reference average output. Attendance is
@@ -264,7 +269,7 @@ export function encounterHpPool(playerWeight: number, tier: number, questions: n
   const q = Math.max(1, questions);
   // Sum whole rotation damage directly to avoid a divide/multiply round-trip
   // turning an exact integer just below itself before the final floor.
-  const output = referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0);
+  const output = referenceRotationDamage(tier, q);
   return maximumHP(playerWeight + output * referenceFraction);
 }
 

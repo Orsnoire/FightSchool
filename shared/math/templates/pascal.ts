@@ -1,65 +1,45 @@
 import type { Question } from "../../schema";
 import { deterministicShuffle } from "../../shuffle";
 
-export const QUIZ_TEMPLATE_IDS = ["pascal-row-v1", "binomial-coefficient-v1", "scaled-binomial-v1", "binomial-expansion-v1"] as const;
+export const QUIZ_TEMPLATE_IDS = ["pascal-row-v1", "binomial-coefficient-v1", "scaled-binomial-v1"] as const;
 export type QuizTemplateId = typeof QUIZ_TEMPLATE_IDS[number];
 
 export const PASCAL_TEMPLATES = [
-  { id: "pascal-row-v1", title: "Complete a Pascal row", timeLimit: 30 },
-  { id: "binomial-coefficient-v1", title: "Find a binomial coefficient", timeLimit: 45 },
-  { id: "scaled-binomial-v1", title: "Find a coefficient in (x ± a)ⁿ", timeLimit: 60 },
-  { id: "binomial-expansion-v1", title: "Choose the full expansion", timeLimit: 60 },
+  { id: "pascal-row-v1", title: "Pascal’s triangle entries", timeLimit: 30 },
+  { id: "binomial-coefficient-v1", title: "Term coefficient in (x + y)ⁿ", timeLimit: 45 },
+  { id: "scaled-binomial-v1", title: "Term coefficient in (ax + by)ⁿ", timeLimit: 60 },
 ] as const;
 
 type Variant = Pick<Question, "question" | "type" | "options" | "correctAnswer">;
 const inline = (latex: string) => `\\(${latex}\\)`;
 const power = (variable: string, n: number) => n === 0 ? "" : n === 1 ? variable : `${variable}^{${n}}`;
 
-function polynomial(coefficients: number[]) {
-  return coefficients.map((c, i) => {
-    const x = power("x", coefficients.length - 1 - i);
-    const sign = c < 0 ? "-" : i ? "+" : "";
-    return sign + (Math.abs(c) === 1 && x ? "" : Math.abs(c)) + x;
-  }).join("");
-}
+const factor = (coefficient: number, variable: string) =>
+  (Math.abs(coefficient) === 1 ? "" : String(Math.abs(coefficient))) + variable;
 
 function buildPool(id: QuizTemplateId): Variant[] {
   const variants: Variant[] = [];
   let row = [1];
-  const integer = (prompt: string, answer: number) => variants.push({
-    question: prompt + " Enter an integer.", type: "short_answer", correctAnswer: String(answer),
-  });
+  function add(prompt: string, answer: number) {
+    variants.push({ question: prompt + " Enter an integer.", type: "short_answer", correctAnswer: String(answer) });
+  }
   for (let n = 1; n <= 8; n++) {
     row = [...row, 0].map((value, i) => value + (row[i - 1] || 0));
-    if (n < 2) continue;
     for (let k = 1; k < n; k++) {
       if (id === "pascal-row-v1") {
-        const sequence = row.map((value, i) => i === k ? "\\square" : value).join(",\\;");
-        integer(`Fill the blank in row ${n} of Pascal’s triangle (top row = 0). ${inline(sequence)}`, row[k]);
-      } else if (id === "binomial-coefficient-v1") {
-        for (const sign of ["+", "-"]) {
-          const term = power("x", n - k) + power("y", k);
-          integer(`What is the coefficient of ${inline(term)} in ${inline(`(x${sign}y)^{${n}}`)}?`, row[k] * (sign === "-" ? (-1) ** k : 1));
-        }
+        add(`In row ${n} of Pascal’s triangle, what is entry ${k + 1} from the left? The top is row 0 and the leftmost entry is entry 1.`, row[k]);
+        continue;
       }
-    }
-    if (n > 5) continue;
-    for (const a of [-3, -2, -1, 1, 2, 3]) {
-      const expression = inline(`(x${a > 0 ? "+" : ""}${a})^{${n}}`);
-      const coefficients = row.map((value, k) => value * a ** k);
-      if (id === "scaled-binomial-v1" && Math.abs(a) > 1) {
-        for (let k = 1; k < n; k++)
-          integer(`What is the coefficient of ${inline(power("x", n - k))} in ${expression}?`, coefficients[k]);
-      } else if (id === "binomial-expansion-v1") {
-        const correctAnswer = inline(polynomial(coefficients));
-        const choices = [
-          correctAnswer,
-          inline(polynomial(coefficients.map((c, k) => k === 1 ? -c : c))),
-          inline(polynomial(coefficients.map((c, k) => k === n ? -c : c))),
-          inline(polynomial(coefficients.map((c, k) => k === 1 ? a : c))),
-        ];
-        variants.push({ type: "multiple_choice", question: `Which polynomial is the expansion of ${expression}?`,
-          options: deterministicShuffle(choices, `choices:${n}:${a}`), correctAnswer });
+      const term = inline(power("x", n - k) + power("y", k));
+      const prompt = (base: string) => `What is the coefficient of ${term} in the expansion of ${inline(`(${base})^{${n}}`)}?`;
+      if (id === "binomial-coefficient-v1") {
+        add(prompt("x+y"), row[k]);
+      } else if (n <= 5) {
+        for (const a of [1, 2, 3]) for (const b of [-3, -2, -1, 1, 2, 3]) {
+          if (a === 1 && Math.abs(b) === 1) continue;
+          const base = factor(a, "x") + (b < 0 ? "-" : "+") + factor(b, "y");
+          add(prompt(base), row[k] * a ** (n - k) * b ** k);
+        }
       }
     }
   }

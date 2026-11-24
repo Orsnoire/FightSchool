@@ -3,7 +3,7 @@ import { isCampaignSessionId } from '../combat/session-kind';
 import { aaTier } from '../../shared/aa';
 import { crossClassSelections } from '../../shared/job-loadouts';
 import { projectCombatLoadout } from '../../shared/combat/loadout';
-import { questionKey } from "../progression/question-key";
+import { masteryQuestionKey } from "../progression/question-key";
 import { snapshotEquipmentLoadout } from '../../shared/equipment-catalog';
 import { equipmentEffects } from "../../shared/tier-one-equipment";
 import { getStudentAvatar } from "./avatar-repository.ts";
@@ -192,7 +192,7 @@ export async function persistCombatResults(
 export async function recordQuestEvidence(db:GameDatabase,state:CombatSnapshot,fight:s.FightRecord, evaluate = true){
  const [live]=await db.select().from(s.liveCombatSessions).where(eq(s.liveCombatSessions.sessionId,state.sessionId));
  if(!live)return;
- const bank=fight.questions.map(questionKey);
+ const bank=fight.questions.map(masteryQuestionKey);
  const entries=Object.values({...state.departedPlayers,...state.pendingPlayers,...state.players}).filter(p=>p.questGuildId&&p.totals.questionsAnswered>0).map(p=>({session:state.sessionId,student:p.studentId,guild:p.questGuildId,fight:fight.id,solo:!!live.soloStudentId,victory:!!state.victory&&!!state.players[p.studentId],answered:p.totals.questionsAnswered,correct:p.totals.questionsCorrect,keys:p.correctQuestionKeys||[],bank,revision:state.revision}));
  if(!entries.length)return;
  await db.execute(sql`INSERT INTO quest_fight_evidence(session_id,student_id,guild_id,fight_id,is_solo_mode,victory,answered,correct,correct_keys,bank_keys,revision,updated_at)
