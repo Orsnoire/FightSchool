@@ -39,7 +39,8 @@ test("teacher UI preserves drafts, renders math, handles ambiguous saves, approv
       import MathAuthoringPanel from "./client/src/features/math-authoring/MathAuthoringPanel";
       export function Harness() {
         const editor = useMathAuthoring(); const [tab,setTab] = useState(true); const [fixed,setFixed] = useState("");
-        return <form id="fixed-fight"><input aria-label="Fixed draft" value={fixed} onChange={e=>setFixed(e.target.value)}/><button type="button" onClick={()=>setTab(!tab)}>Switch tab</button>{tab && <MathAuthoringPanel editor={editor}/>}</form>;
+        const [templates, setTemplates] = useState([]);
+        return <form id="fixed-fight"><input aria-label="Fixed draft" value={fixed} onChange={e=>setFixed(e.target.value)}/><button type="button" onClick={()=>setTab(!tab)}>Switch tab</button>{tab && <MathAuthoringPanel editor={editor} selected={templates} onChange={setTemplates} fixedCount={0}/>}</form>;
       }`, resolveDir: process.cwd(), loader: "tsx" }, outfile: file, bundle: true, platform: "node", format: "esm", packages: "external", jsx: "automatic",
       plugins: [{ name: "dom-without-stylesheets", setup(build) {
         build.onResolve({ filter: /\.css$/ }, args => ({ path: args.path, namespace: "css-stub" }));
