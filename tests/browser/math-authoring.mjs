@@ -114,9 +114,30 @@ try {
       await page.screenshot({ path: `${output}/${viewport.width}-templates.png`, fullPage: true });
       await page.goto(`${origin}/teacher/create`);
       await page.getByTestId('input-title').fill('Pascal practice');
-      for (const skill of ['Pascal’s triangle entries', 'Term coefficient in (x + y)ⁿ', 'Term coefficient in (ax + by)ⁿ'])
-        await page.getByRole('checkbox', { name: skill, exact: true }).check();
-      await page.getByLabel('Pascal’s triangle entries timer').selectOption('45');
+      await page.getByTestId('button-math-templates').click();
+      const catalog = page.getByTestId('math-authoring-workspace');
+      const search = catalog.getByLabel('Search skills or saved titles');
+      const rule = catalog.getByLabel('Rule filter');
+      const skills = ['Pascal’s triangle entries', 'Term coefficient in (x + y)ⁿ', 'Term coefficient in (ax + by)ⁿ'];
+      await search.fill("Pascal's triangle");
+      for (const skill of skills) {
+        await catalog.getByRole('heading', { name: skill, exact: true }).waitFor();
+        await catalog.getByRole('checkbox', { name: `Use ${skill} in this fight`, exact: true }).check();
+      }
+      await search.fill('binomial');
+      await rule.selectOption('scaled-binomial-v1');
+      const scaled = catalog.getByRole('article').filter({ has: page.getByRole('heading', { name: skills[2], exact: true }) });
+      await scaled.getByText('Example and answer').click();
+      const prompt = scaled.getByTestId('rich-content');
+      const text = await prompt.innerText();
+      await scaled.getByRole('button', { name: 'Another example' }).click();
+      assert.notEqual(await prompt.innerText(), text);
+      assert.equal(await catalog.getByRole('heading', { name: skills[0], exact: true }).count(), 0);
+      await rule.selectOption('product');
+      await catalog.getByText('No curated skills match this search.').waitFor();
+      await rule.selectOption('');
+      await search.fill('');
+      await catalog.getByLabel('Pascal’s triangle entries timer').selectOption('45');
       await page.getByTestId('tab-enemies').click();
       const rounds = page.getByRole('slider', { name: 'Target rounds' });
       await rounds.focus();
@@ -137,6 +158,9 @@ try {
       assert.ok(quiz.questions.every(q => q.quizTemplate));
       await page.waitForURL(`${origin}/teacher`);
       await page.goto(`${origin}/teacher/edit/${quiz.id}`);
+      await page.getByTestId('button-math-templates').click();
+      for (const skill of skills) assert.ok(await catalog.getByRole('checkbox', { name: `Use ${skill} in this fight`, exact: true }).isChecked());
+      assert.equal(await catalog.getByLabel('Pascal’s triangle entries timer').inputValue(), '45');
       await page.getByTestId('tab-enemies').click();
       assert.equal(await rounds.inputValue(), '6');
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EnemiesPanel } from "@/features/fight-authoring/EnemiesPanel";
-import { PascalQuizPicker } from "@/features/fight-authoring/PascalQuizPicker";
 import { QuizRoundPlanner } from "@/features/fight-authoring/QuizRoundPlanner";
 import { planQuiz, selectedTemplates, type SelectedTemplate } from "@shared/math/templates/pascal";
 import { FightSettings } from "@/features/fight-authoring/FightSettings";
@@ -208,7 +207,7 @@ export default function CreateFight() {
                 <TabsTrigger value="loot" data-testid="tab-loot">Loot ({lootTable.length})</TabsTrigger>
               </TabsList>
 
-              <QuestionsPanel questions={fixedQuestions} onChange={changeFixed} editor={questionEditor} mathAuthoring={<><PascalQuizPicker selected={templates} onChange={changeTemplates} fixedCount={fixedQuestions.length} /><Suspense fallback={<p>Loading math templates…</p>}><MathAuthoringPanel editor={mathEditor} /></Suspense></>} />
+              <QuestionsPanel questions={fixedQuestions} onChange={changeFixed} editor={questionEditor} mathAuthoring={<Suspense fallback={<p>Loading math templates…</p>}><MathAuthoringPanel editor={mathEditor} selected={templates} onChange={changeTemplates} fixedCount={fixedQuestions.length} /></Suspense>} />
               <EnemiesPanel planner={templates.length ? <QuizRoundPlanner questions={questions} minimum={fixedQuestions.length + templates.length}
                 enemies={enemies} tier={encounterTier || 1} onChange={rounds => changeQuestions(planQuiz(fixedQuestions, templates, rounds))} /> : undefined}
                 enemies={enemies} onChange={changeEnemies} encounterTier={encounterTier}

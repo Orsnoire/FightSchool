@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { MathGradeResult } from "@shared/contracts/math-answers";
 import type { ExponentRule, MathPreset, MathPreview, MathRevisionSummary, MathTemplateDetail, MathTemplateSummary } from "@shared/contracts/math-templates";
+import type { MathCatalogRule } from "@shared/math/templates/catalog";
 import { defaultMathPreset } from "@shared/math/templates/exponents";
 
 async function request<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
@@ -31,7 +32,7 @@ export function useMathAuthoring() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [grades, setGrades] = useState<Record<string, MathGradeResult>>({});
   const [search, setSearch] = useState("");
-  const [ruleFilter, setRuleFilter] = useState<"" | ExponentRule>("");
+  const [ruleFilter, setRuleFilter] = useState<"" | MathCatalogRule>("");
   const [stateFilter, setStateFilter] = useState<"" | "draft" | "approved">("");
   const [offset, setOffset] = useState(0);
   const [items, setItems] = useState<MathTemplateSummary[]>([]);

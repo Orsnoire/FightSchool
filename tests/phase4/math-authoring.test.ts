@@ -17,7 +17,10 @@ test("math authoring persists isolated versioned work through the real Worker an
       const start = f.queries.length;
       await f.api(`${base}/catalog`, "GET", undefined, undefined, 401);
       await f.api(`${base}/catalog`, "GET", f.student.cookie, undefined, 401);
-      assert.equal((await f.api(`${base}/catalog`, "GET", f.teacher.cookie)).data.length, 3);
+      const catalog = (await f.api(`${base}/catalog`, "GET", f.teacher.cookie)).data;
+      assert.deepEqual(catalog.map((item: { rule: string }) => item.rule),
+        ["product", "quotient", "power", "pascal-row-v1", "binomial-coefficient-v1", "scaled-binomial-v1"]);
+      assert.deepEqual((await f.api(`${base}?rule=scaled-binomial-v1`, "GET", f.teacher.cookie)).data, { items: [], nextOffset: null });
       const input = { preset, seed: 7, count: 5 };
       const preview = (await f.api(`${base}/preview`, "POST", f.teacher.cookie, input)).data;
       assert.deepEqual(preview, await previewMathTemplate(input));
