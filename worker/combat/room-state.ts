@@ -1,3 +1,7 @@
+import { drawQuizQuestions } from "../../shared/math/templates/pascal";
+import { instanceLoot } from "../../shared/combat/instance-loot";
+import { deterministicShuffle } from "./random";
+import { initialCombatState } from "./encounter-setup";
 import type { FightRecord } from "../db/schema";
 import type { CombatSnapshot } from "../../shared/combat/model";
 import type { PlaybackGate } from "./playback-gate";
@@ -16,4 +20,14 @@ export interface StoredRoom {
   evidenceSignature?: string;
   evidencePending?: boolean;
   removals?: Record<string, { nickname: string; blocked: boolean; requestedAt?: number; deniedAt?: number }>;
+}
+
+export function createCombatRoom(source: FightRecord, sessionId: string): StoredRoom {
+  const generated = source.questions.some(q => q.quizTemplate)
+    ? drawQuizQuestions(source.questions, crypto.randomUUID()) : source.questions;
+  const fight = { ...source,
+    questions: source.randomizeQuestions ? deterministicShuffle(generated, sessionId) : generated,
+    lootTable: source.campaignContext ? source.lootTable : instanceLoot(source.lootTable, sessionId),
+  };
+  return { fight, snapshot: initialCombatState(sessionId, fight), receipts: [] };
 }

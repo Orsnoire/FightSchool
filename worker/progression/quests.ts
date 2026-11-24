@@ -3,7 +3,7 @@ import {
   type QuestContext,
   type QuestProgress,
 } from "../../shared/quests";
-import { questionKey } from "./question-key";
+import { masteryQuestionKey } from "./question-key";
 import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { GameDatabase } from "../db/database.ts";
 import * as s from "../db/schema.ts";
@@ -330,7 +330,7 @@ async function projectQuests(
         )
     : [];
   const banks = new Map(
-    fights.map((f) => [f.id, f.questions.map(questionKey)]),
+    fights.map((f) => [f.id, f.questions.map(masteryQuestionKey)]),
   );
   const progress = questData(db, guildId, week);
   const views: QuestView[] = [],

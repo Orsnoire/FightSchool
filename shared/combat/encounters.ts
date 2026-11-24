@@ -369,3 +369,31 @@ export function goblinTargets(
   }
   return result;
 }
+
+/** Template quizzes spend the complete projected rotation across the enemies actually present. */
+export function quizHpPool(projectedRotationDamage: number, enemies: number): number {
+  return Math.max(enemies, maximumHP(projectedRotationDamage));
+}
+
+export function allocateQuizHP(enemies: CombatEnemy[], pool: number): CombatEnemy[] {
+  if (!enemies.length) return [];
+  const counts = new Map<EnemyRole, number>();
+  for (const enemy of enemies) {
+    const role = enemy.role || "normal";
+    counts.set(role, (counts.get(role) || 0) + 1);
+  }
+  const totalWeight = [...counts.keys()].reduce((sum, role) => sum + ROLE_SHARES[role], 0);
+  const remaining = quizHpPool(pool, enemies.length) - enemies.length;
+  const shares = enemies.map((enemy, index) => {
+    const role = enemy.role || "normal";
+    const ideal = remaining * ROLE_SHARES[role] / totalWeight / counts.get(role)!;
+    return { index, whole: Math.floor(ideal), remainder: ideal % 1 };
+  });
+  const extras = remaining - shares.reduce((sum, share) => sum + share.whole, 0);
+  const priority = [...shares].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  for (const share of priority.slice(0, extras)) share.whole++;
+  return enemies.map((enemy, i) => {
+    const health = 1 + shares[i].whole;
+    return { ...enemy, health, maxHealth: health };
+  });
+}

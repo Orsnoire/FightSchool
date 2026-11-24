@@ -120,6 +120,7 @@ export const mathTemplateRevisions = pgTable("math_template_revisions", {
 }));
 
 export interface FightQuestion {
+  quizTemplate?: import("../../shared/math/templates/pascal").QuizTemplateId;
   id: string;
   type: "multiple_choice" | "true_false" | "short_answer";
   question: string;
