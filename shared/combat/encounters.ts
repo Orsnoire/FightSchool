@@ -252,10 +252,15 @@ export function effectivePlayerCount(weights: number[]): number {
   return weights.reduce((sum, weight) => sum + Math.round(weight * 100), 0) / 100;
 }
 
+export function referenceRotationDamage(tier: number, questions: number): number {
+  const q = Math.max(1, questions);
+  return referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0);
+}
+
 /** Average raw output per question of the tier's idealized four-player party. */
 export function referenceOutput(tier: number, questions: number): number {
   const q = Math.max(1, questions);
-  return referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0) / q;
+  return referenceRotationDamage(tier, q) / q;
 }
 
 /** The question coefficient is the full reference average output. Attendance is
@@ -264,7 +269,7 @@ export function encounterHpPool(playerWeight: number, tier: number, questions: n
   const q = Math.max(1, questions);
   // Sum whole rotation damage directly to avoid a divide/multiply round-trip
   // turning an exact integer just below itself before the final floor.
-  const output = referenceParty(tier).reduce((sum, player) => sum + performance(player, q).damage, 0);
+  const output = referenceRotationDamage(tier, q);
   return maximumHP(playerWeight + output * referenceFraction);
 }
 
@@ -368,4 +373,32 @@ export function goblinTargets(
     result.push(target.studentId);
   }
   return result;
+}
+
+/** Template quizzes spend the complete projected rotation across the enemies actually present. */
+export function quizHpPool(projectedRotationDamage: number, enemies: number): number {
+  return Math.max(enemies, maximumHP(projectedRotationDamage));
+}
+
+export function allocateQuizHP(enemies: CombatEnemy[], pool: number): CombatEnemy[] {
+  if (!enemies.length) return [];
+  const counts = new Map<EnemyRole, number>();
+  for (const enemy of enemies) {
+    const role = enemy.role || "normal";
+    counts.set(role, (counts.get(role) || 0) + 1);
+  }
+  const totalWeight = [...counts.keys()].reduce((sum, role) => sum + ROLE_SHARES[role], 0);
+  const remaining = quizHpPool(pool, enemies.length) - enemies.length;
+  const shares = enemies.map((enemy, index) => {
+    const role = enemy.role || "normal";
+    const ideal = remaining * ROLE_SHARES[role] / totalWeight / counts.get(role)!;
+    return { index, whole: Math.floor(ideal), remainder: ideal % 1 };
+  });
+  const extras = remaining - shares.reduce((sum, share) => sum + share.whole, 0);
+  const priority = [...shares].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+  for (const share of priority.slice(0, extras)) share.whole++;
+  return enemies.map((enemy, i) => {
+    const health = 1 + shares[i].whole;
+    return { ...enemy, health, maxHealth: health };
+  });
 }

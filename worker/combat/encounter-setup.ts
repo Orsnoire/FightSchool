@@ -1,8 +1,9 @@
+import { QUESTION_LEAD_IN_MS } from "../../shared/combat/round-timing";
 import { type FightRecord } from "../db/schema.ts";
 import { type CombatEnemy, type CombatSnapshot } from "../../shared/combat/model.ts";
 import {
   expandEnemies, encounterBudgetFromEntries, allocateHP, encounterEntry,
-  encounterHpWeight, effectivePlayerCount, encounterHpPool, ROLE_SHARES,
+  encounterHpWeight, effectivePlayerCount, encounterHpPool, quizHpPool, allocateQuizHP, ROLE_SHARES,
 } from "../../shared/combat/encounters";
 import { inferEnemyType, enemyAISchema, resolveEnemyType } from "../../shared/combat/enemy-ai";
 import { CombatRuleError } from "../../shared/combat/errors";
@@ -75,7 +76,10 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
     const entryPerformance = Object.fromEntries(players.map(p => [p.studentId, encounterEntry(p, questions)]));
     const budget = encounterBudgetFromEntries(Object.values(entryPerformance), encounterTier, questions, true);
     const individuals = fight.enemies.some(e => e.swarm) ? initialEnemies(tieredFight, players.length) : state.enemies;
-    const enemies = allocateHP(individuals, budget.hp).map(e => ({
+    const templateQuiz = fight.questions.some(q => q.quizTemplate);
+    const pool = templateQuiz ? quizHpPool(budget.damage, individuals.length) : budget.hp;
+    const allocation = templateQuiz ? allocateQuizHP(individuals, pool) : allocateHP(individuals, pool);
+    const enemies = allocation.map(e => ({
       ...e, magicDefense: tierMagicDefense(encounterTier),
       ...(e.enemyType === "samhain" ? { attackPower: encounterTier, defense: encounterTier } : {}),
     }));
@@ -85,7 +89,7 @@ export function scaleEncounter(state: CombatSnapshot, fight: FightRecord, solo =
       encounterAttendance: players.length, referenceDamage: budget.damage,
       enemyRoundBudget: budget.rawPressure,
       encounterXpFraction: [...present].reduce((n, r) => n + ROLE_SHARES[r], 0),
-      encounterHpPool: budget.hp,
+      encounterHpPool: pool,
     };
   }
   const playerWeight = effectivePlayerCount(players.map(p => encounterHpWeight(p.characterClass)));
@@ -115,8 +119,8 @@ export function startQuestion(
   return {
     ...state,
     currentPhase: "question",
-    questionStartTime: now + 3000,
+    questionStartTime: now + QUESTION_LEAD_IN_MS,
     phaseStartTime: now,
-    phaseDeadline: now + 3000 + timeLimit * 1000,
+    phaseDeadline: now + QUESTION_LEAD_IN_MS + timeLimit * 1000,
   };
 }

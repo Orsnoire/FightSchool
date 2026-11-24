@@ -4,7 +4,10 @@ import { enemySwarmSchema } from "../combat/swarm";
 import { enemyAISchema, ENEMY_TYPES, validEnemyAI } from "../combat/enemy-ai";
 import { equipmentIdSchema } from "../equipment-id";
 
+import { QUIZ_TEMPLATE_IDS } from "../math/templates/pascal";
+
 export const questionSchema = z.object({
+  quizTemplate: z.enum(QUIZ_TEMPLATE_IDS).optional(),
   id: z.string().min(1).max(200),
   type: z.enum(["multiple_choice", "true_false", "short_answer"]),
   question: z.string().min(1).max(20_000),

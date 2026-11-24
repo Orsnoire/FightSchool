@@ -2,6 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EnemiesPanel } from "@/features/fight-authoring/EnemiesPanel";
+import { PascalQuizPicker } from "@/features/fight-authoring/PascalQuizPicker";
+import { QuizRoundPlanner } from "@/features/fight-authoring/QuizRoundPlanner";
+import { planQuiz, selectedTemplates, type SelectedTemplate } from "@shared/math/templates/pascal";
 import { FightSettings } from "@/features/fight-authoring/FightSettings";
 import { LootPanel } from "@/features/fight-authoring/LootPanel";
 import { QuestionsPanel } from "@/features/fight-authoring/QuestionsPanel";
@@ -74,7 +77,14 @@ export default function CreateFight() {
   const changeQuestions = (next: Question[]) => { setQuestions(next); form.setValue('questions', next); };
   const changeEnemies = (next: Enemy[]) => { setEnemies(next); form.setValue('enemies', next); };
   const changeLoot = (next: LootItem[]) => { setLootTable(next); form.setValue('lootTable', next); };
-  const questionEditor = useQuestionAuthoring(questions, changeQuestions);
+  const templates = selectedTemplates(questions);
+  const fixedQuestions = questions.filter(q => !q.quizTemplate);
+  const changeTemplates = (next: SelectedTemplate[]) => {
+    const target = templates.length ? questions.length : Math.max(8, fixedQuestions.length + next.length);
+    changeQuestions(planQuiz(fixedQuestions, next, target));
+  };
+  const changeFixed = (next: Question[]) => changeQuestions(planQuiz(next, templates, questions.length));
+  const questionEditor = useQuestionAuthoring(fixedQuestions, changeFixed);
   const mathEditor = useMathAuthoring();
   const enemyEditor = useEnemyAuthoring(enemies, changeEnemies, encounterTier);
   const changeTier = (tier: number) => {
@@ -189,7 +199,7 @@ export default function CreateFight() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)} className="space-y-6">
-            <FightSettings form={form} encounterTier={encounterTier} changeTier={changeTier} />
+            <FightSettings templateQuiz={templates.length > 0} form={form} encounterTier={encounterTier} changeTier={changeTier} />
 
             <Tabs defaultValue="questions" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
@@ -198,8 +208,10 @@ export default function CreateFight() {
                 <TabsTrigger value="loot" data-testid="tab-loot">Loot ({lootTable.length})</TabsTrigger>
               </TabsList>
 
-              <QuestionsPanel questions={questions} onChange={changeQuestions} editor={questionEditor} mathAuthoring={<Suspense fallback={<p>Loading math templates…</p>}><MathAuthoringPanel editor={mathEditor} /></Suspense>} />
-              <EnemiesPanel enemies={enemies} onChange={changeEnemies} encounterTier={encounterTier}
+              <QuestionsPanel questions={fixedQuestions} onChange={changeFixed} editor={questionEditor} mathAuthoring={<><PascalQuizPicker selected={templates} onChange={changeTemplates} fixedCount={fixedQuestions.length} /><Suspense fallback={<p>Loading math templates…</p>}><MathAuthoringPanel editor={mathEditor} /></Suspense></>} />
+              <EnemiesPanel planner={templates.length ? <QuizRoundPlanner questions={questions} minimum={fixedQuestions.length + templates.length}
+                enemies={enemies} tier={encounterTier || 1} onChange={rounds => changeQuestions(planQuiz(fixedQuestions, templates, rounds))} /> : undefined}
+                enemies={enemies} onChange={changeEnemies} encounterTier={encounterTier}
                 enemyDisplayMode={form.watch('enemyDisplayMode')} changeTier={changeTier} editor={enemyEditor} />
               <LootPanel lootTable={lootTable} teacherEquipment={teacherEquipment} equipmentLoading={equipmentLoading} onChange={changeLoot} />
             </Tabs>

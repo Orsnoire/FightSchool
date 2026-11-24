@@ -13,14 +13,13 @@ import { assertCommandText, decodeCommandText, parseCombatCommand, applyStudentC
 import { publicSnapshot } from "./public-snapshot";
 export { publicSnapshot } from "./public-snapshot";
 import { handleCombatSessions } from "../routes/combat-sessions.ts";
-import { instanceLoot } from "../../shared/combat/instance-loot";
 import type { IdentityRepository } from "../db/repository.ts";
 import { addStudent, removeStudent } from "./participants";
 import { allLivingPlayersAnswered } from "./choices";
-import { initialCombatState, startQuestion, scaleEncounter } from "./encounter-setup";
+import { startQuestion, scaleEncounter } from "./encounter-setup";
 import { advancePhase } from "./phases";
 import { resurrectPlayer, eliminateEnemy, nextWave, endFight } from "./host-controls";
-import { deterministicShuffle } from "./random";
+import { createCombatRoom } from "./room-state";
 interface CombatEnv extends ReleaseEnv {
   DATABASE_URL: string;
   SESSION_COOKIE_NAME?: string;
@@ -379,17 +378,7 @@ export class CombatSessionObject {
           if (!room) {
             const fight = this.repository.findCombatFight ? await this.repository.findCombatFight(actor.sessionId, live.fightId) : await this.repository.findFightById(live.fightId);
             if (!fight) throw new CombatRuleError("Fight unavailable");
-            if (!fight.campaignContext) fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
-            if (fight.randomizeQuestions)
-              fight.questions = deterministicShuffle(
-                fight.questions,
-                actor.sessionId,
-              );
-            room = {
-              fight,
-              snapshot: initialCombatState(actor.sessionId, fight),
-              receipts: [],
-            };
+            room = createCombatRoom(fight, actor.sessionId);
             await this.save(room);
           }
           const projectedState = publicSnapshot(room.snapshot, room.fight);
@@ -409,13 +398,7 @@ export class CombatSessionObject {
           if (live?.soloStudentId && ["waiting", "active"].includes(live.status) && await studentCanAccessSession(this.repository, live, actor.actorId)) {
             const fight = this.repository.findCombatFight ? await this.repository.findCombatFight(actor.sessionId, live.fightId) : await this.repository.findFightById(live.fightId);
             if (fight) {
-              if (!fight.campaignContext) fight.lootTable = instanceLoot(fight.lootTable, actor.sessionId);
-              if(fight.randomizeQuestions)fight.questions=deterministicShuffle(fight.questions,actor.sessionId);
-              room = {
-                fight,
-                snapshot: initialCombatState(actor.sessionId, fight),
-                receipts: [],
-              };
+              room = createCombatRoom(fight, actor.sessionId);
             }
           }
         }

@@ -112,6 +112,35 @@ try {
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no horizontal overflow');
       await page.getByRole('heading', { name: 'Math templates', exact: true }).scrollIntoViewIfNeeded();
       await page.screenshot({ path: `${output}/${viewport.width}-templates.png`, fullPage: true });
+      await page.goto(`${origin}/teacher/create`);
+      await page.getByTestId('input-title').fill('Pascal practice');
+      for (const skill of ['Pascal’s triangle entries', 'Term coefficient in (x + y)ⁿ', 'Term coefficient in (ax + by)ⁿ'])
+        await page.getByRole('checkbox', { name: skill, exact: true }).check();
+      await page.getByLabel('Pascal’s triangle entries timer').selectOption('45');
+      await page.getByTestId('tab-enemies').click();
+      const rounds = page.getByRole('slider', { name: 'Target rounds' });
+      await rounds.focus();
+      await rounds.press('Home');
+      await rounds.press('ArrowRight');
+      await rounds.press('ArrowRight');
+      await rounds.press('ArrowRight');
+      assert.equal(await rounds.inputValue(), '6');
+      await page.getByText('12 min 42 s', { exact: false }).waitFor();
+      await page.getByTestId('button-select-zombie').click();
+      await page.getByTestId('button-add-enemy').click();
+      const save = page.waitForResponse(res => res.url().endsWith('/api/fights') && res.request().method() === 'POST');
+      await page.getByTestId('button-create-fight-submit').click();
+      const created = await save;
+      assert.equal(created.status(), 201);
+      const quiz = await created.json();
+      assert.equal(quiz.questions.length, 6);
+      assert.ok(quiz.questions.every(q => q.quizTemplate));
+      await page.waitForURL(`${origin}/teacher`);
+      await page.goto(`${origin}/teacher/edit/${quiz.id}`);
+      await page.getByTestId('tab-enemies').click();
+      assert.equal(await rounds.inputValue(), '6');
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      await page.screenshot({ path: `${output}/${viewport.width}-pascal-rounds.png` });
       assert.equal(f.roomCalls(), 0);
     } catch (error) {
       await page.screenshot({ path: `${output}/${viewport.width}-failure.png`, fullPage: true }).catch(() => {});

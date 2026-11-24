@@ -19,6 +19,16 @@ authorization to implement every package at once. Follow the
 [active-work checkpoint](ACTIVE_WORK.md) before starting implementation.
 Register the selected package and its branch/PR when implementation is scheduled.
 
+## November 24 classroom quiz templates
+
+[PR #99](https://github.com/Orsnoire/FightSchool/pull/99) adds three built-in skills to the Questions tab. A teacher can select Pascal row entries, coefficients of a specified term in `(x+y)^n`, or term coefficients with one or both binomial terms scaled. All accept a single integer and run with local arithmetic. Each selected skill has its own question timer.
+
+The Enemies tab sets a pacing target independent of the number of selected skills. Each fixed question gets one slot and additional slots rotate through the selected skills. Each slot contributes its question timer, the 3-second countdown, 4-second feedback, 20-second action and 20-second ability windows, plus the requested 30 seconds per round. The target estimates duration. Existing victory and defeat rules still decide when combat ends.
+
+Each new hosted or solo room draws its own deck without replacement per skill until its finite pool is exhausted. The server freezes the questions and answers for shared play and recovery. Going past the target cycles the room’s deck. Reporting records the exact variant and mastery tracks each versioned slot across sessions. The existing questions JSON carries the selected generator version and example for each slot.
+
+Template quizzes spend the joined roster’s projected rotation damage across all enemies. Equivalently this is target rounds times projected damage per round, rounded down with one HP minimum per enemy. Relative role weights distribute the entire pool across the roles present. The editing estimate uses the reference party of four. Waiting-room and start calculations use the same attendance and tier projection.
+
 ## 1. Purpose and teacher outcome
 
 Make reusable mathematics practice practical for teachers: select or enter a

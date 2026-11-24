@@ -1,6 +1,7 @@
 import { type CombatSnapshot, type CombatPlayer } from "../../shared/combat/model.ts";
 import { type FightQuestion } from "../db/schema.ts";
 import { CombatRuleError } from "../../shared/combat/errors";
+import { gradeExactAnswer } from "../../shared/math/grade-answer";
 import { answersMatch } from "../../shared/combat/phaseRules.ts";
 import { recordAttempt } from "../../shared/combat/attempts";
 import { combatActionBlock, actionBlockLabel } from "../../shared/combat/status-effects";
@@ -21,7 +22,11 @@ export function applyAnswer(
   const player = next.players[id];
   player.hasAnswered = true;
   player.currentAnswer = answer;
-  player.lastAnswerCorrect = answersMatch(answer, q.correctAnswer, "trimmed");
+  player.lastAnswerCorrect = q.quizTemplate && q.type === "short_answer"
+    ? gradeExactAnswer(answer.trim().replace(/^−/, "-"), {
+      version: 1, kind: "exact_rational", expected: q.correctAnswer, requiredForm: "integer",
+    }).status === "correct"
+    : answersMatch(answer, q.correctAnswer, "trimmed");
   player.questionAction ||= defaultQuestionAction(player, next);
   recordAttempt(next, player, q, true);
   return next;

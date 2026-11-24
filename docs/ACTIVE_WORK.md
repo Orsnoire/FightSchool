@@ -1,3 +1,8 @@
+# Pascal’s triangle template quizzes — November 24, 2026
+
+- Branch `feature/pascal-template-quizzes` starts from main `4a2e26c`. Scope covers discoverable randomized Pascal’s triangle/binomial questions, quiz creation, target rounds, timer estimates and round-based enemy HP.
+- Implementation is published in [PR #99](https://github.com/Orsnoire/FightSchool/pull/99). The three exact-integer families, timer and round controls, per-room generation, full HP allocation and fixed-quiz compatibility are covered by targeted tests. The owner approved production release after checks. Next action is to verify the final browser/CI results and complete the controlled rollout.
+
 # C12 retired unmerged — November 12, 2026
 
 - C12 / [PR #75](https://github.com/Orsnoire/FightSchool/pull/75) is retired without merging. Its retained branch at `348b034a0efb6e0f022a0f64f360489794e0f444` is historical reference, not a resume target. [Review and verification](reviews/2026-11-12-c12-disposition.md).

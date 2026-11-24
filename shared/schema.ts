@@ -169,6 +169,7 @@ export interface QuestReward {
 
 // Question schema
 export interface Question {
+  quizTemplate?: import("./math/templates/pascal").QuizTemplateId;
   id: string;
   type: QuestionType;
   question: string;

@@ -26,6 +26,7 @@ import { SortableEnemyItem } from "./SortableEnemyItem";
 import type { useEnemyAuthoring } from "./useEnemyAuthoring";
 
 interface EnemiesPanelProps {
+  planner?: React.ReactNode;
   enemies: Enemy[];
   onChange: (enemies: Enemy[]) => void;
   encounterTier: number | null | undefined;
@@ -33,10 +34,11 @@ interface EnemiesPanelProps {
   changeTier: (tier: number) => void;
   editor: ReturnType<typeof useEnemyAuthoring>;
 }
-export function EnemiesPanel({ enemies, onChange, encounterTier, enemyDisplayMode, changeTier, editor }: EnemiesPanelProps) {
+export function EnemiesPanel({ planner, enemies, onChange, encounterTier, enemyDisplayMode, changeTier, editor }: EnemiesPanelProps) {
   const { currentEnemy, setCurrentEnemy, editingEnemyIndex, setEditingEnemyIndex, uploadedEnemyImage, setUploadedEnemyImage, enemyImageInputRef, handleEnemyImageUpload, addEnemy, editEnemy, sensors, handleDragEnd } = editor;
   return (
     <TabsContent value="enemies" className="space-y-4">
+      {planner}
       <Card>
         <CardHeader>
           <CardTitle>{editingEnemyIndex !== null ? 'Edit Enemy' : 'Add Enemy'}</CardTitle>
@@ -117,7 +119,8 @@ export function EnemiesPanel({ enemies, onChange, encounterTier, enemyDisplayMod
           <p className="text-xs text-muted-foreground">Enemies assigned to the same wave fight together. Hosted fights pause between waves; HP and MP carry forward.</p>
           <fieldset className="space-y-3 border rounded-lg p-4"><legend className="px-2 font-medium">Enemy role</legend>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{ENEMY_ROLES.map(role => <label key={role} className={`flex items-center gap-2 rounded border p-3 cursor-pointer ${currentEnemy.role === role ? 'border-primary bg-primary/10' : ''}`}><input type="radio" name="enemy-role" value={role} checked={currentEnemy.role === role} onChange={() => { if (!encounterTier) changeTier(1); setCurrentEnemy(e => ({ ...e, role, difficultyMultiplier: enemyTuning(encounterTier || 1, role).difficultyMultiplier })); }} />{ENEMY_ROLE_LABELS[role]}</label>)}</div>
-            <p className="text-sm text-muted-foreground">{Math.round(ROLE_SHARES[currentEnemy.role || 'normal'] * 100)}% of the full fight HP budget is shared by all enemies of this role across every wave. Missing roles leave their allocation unused. Maximum HP rounds down, with a minimum of 1 HP per enemy even when that exceeds its role’s budget. Swarm/trash shares 10% for the entire fight.</p>
+            {planner ? <p className="text-sm text-muted-foreground">Selected roles divide the full quiz HP pool across all waves. Relative weights are 10 for swarm, 15 for normal, 25 for leader and 50 for boss.</p>
+              : <p className="text-sm text-muted-foreground">{Math.round(ROLE_SHARES[currentEnemy.role || 'normal'] * 100)}% of the full fight HP budget is shared by all enemies of this role across every wave. Missing roles leave their allocation unused. Maximum HP rounds down, with a minimum of 1 HP per enemy even when that exceeds its role’s budget. Swarm/trash shares 10% for the entire fight.</p>}
           </fieldset>
 
           <div className="flex items-center justify-center rounded bg-slate-800 p-3"><RecoloredSprite src={currentEnemy.image || ENEMY_CATALOG.zombie.image} palette={currentEnemy.palette} alt="Enemy color preview" className="h-36 w-36 object-contain" /></div>

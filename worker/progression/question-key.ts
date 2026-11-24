@@ -19,3 +19,8 @@ export function questionKey(q: FightQuestion): string {
   }
   return `${q.id}:${(a >>> 0).toString(16)}${(b >>> 0).toString(16)}`;
 }
+
+/** Reports keep the exact variant; mastery is earned once per authored slot and generator version. */
+export function masteryQuestionKey(q: FightQuestion): string {
+  return q.quizTemplate ? `template:${q.quizTemplate}:${q.id}` : questionKey(q);
+}

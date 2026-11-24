@@ -1,3 +1,4 @@
+import { QUESTION_LEAD_IN_MS, ACTION_WINDOW_MS, ABILITY_WINDOW_MS } from "../../shared/combat/round-timing";
 /** Clones the caller snapshot once, then orchestrates deterministic rules in the existing order.
  * The caller owns timers, durable checkpoints and publication. */
 import { type CombatSnapshot } from "../../shared/combat/model.ts";
@@ -10,12 +11,12 @@ import { rng } from "./random";
 import { completedRounds, participatedRounds } from "./participants";
 import { applyAbility } from "./ability-execution";
 import { abilityProblem, ULTIMATES } from "../../shared/combat/abilities.ts";
-import { questionKey } from "../progression/question-key";
+import { masteryQuestionKey } from "../progression/question-key";
 import { event, leader } from "./state-events";
 import { damagePlayer, hit, heal, resolvedHP } from "./health";
 import { currentHP } from "../../shared/combat/hp";
 import { baseDamage } from "./damage-values";
-import { activeEnemies, performance, encounterEntry, encounterBudgetFromEntries, allocateHP, roundHP } from "../../shared/combat/encounters";
+import { activeEnemies, performance, encounterEntry, encounterBudgetFromEntries, allocateHP, allocateQuizHP, quizHpPool, roundHP } from "../../shared/combat/encounters";
 import { makePlayback, abilityEffect } from "../../shared/combat/presentation";
 import { resolveEnemyTurn } from "./enemy-turn";
 import { abilityDamage } from "../../shared/combat/abilityValues.ts";
@@ -38,8 +39,8 @@ export function advancePhase(
   s.phaseStartTime = now;
   delete s.playback;
   if(s.currentPhase==='wave_break'){
-    s.currentPhase='question';s.questionStartTime=now+3000;
-    s.phaseDeadline=now+3000+fight.questions[s.currentQuestionIndex].timeLimit*1000;return s;
+    s.currentPhase='question';s.questionStartTime=now+QUESTION_LEAD_IN_MS;
+    s.phaseDeadline=now+QUESTION_LEAD_IN_MS+fight.questions[s.currentQuestionIndex].timeLimit*1000;return s;
   }
   if (s.currentPhase === "question") {
     for (const p of Object.values(s.players))
@@ -60,14 +61,14 @@ export function advancePhase(
     s.currentPhase = "actions";
     for (const p of Object.values(s.players)) p.ready = false;
     prepareStatusActions(s, () => rng(s));
-    s.phaseDeadline = now + 20000;
+    s.phaseDeadline = now + ACTION_WINDOW_MS;
     return s;
   }
   if (s.currentPhase === "actions") {
     prepareStatusActions(s, () => rng(s));
     for (const p of Object.values(s.players)) p.ready = false;
     s.currentPhase = "abilities";
-    s.phaseDeadline = now + 20000;
+    s.phaseDeadline = now + ABILITY_WINDOW_MS;
     return s;
   }
   if (s.currentPhase === "abilities") {
@@ -129,7 +130,7 @@ export function advancePhase(
         p.buffs.immunity = { rounds: 1, amount: 0 };
       if (p.lastAnswerCorrect) {
         p.totals.questionsCorrect++;
-        p.correctQuestionKeys = [...new Set([...(p.correctQuestionKeys || []), questionKey(fight.questions[s.currentQuestionIndex])])];
+        p.correctQuestionKeys = [...new Set([...(p.correctQuestionKeys || []), masteryQuestionKey(fight.questions[s.currentQuestionIndex])])];
         p.consecutiveCorrectAnswers = (p.consecutiveCorrectAnswers || 0) + 1;
         const a = p.questionAction;
         // Departure can cancel a saved ally-targeted action before resolution.
@@ -286,9 +287,11 @@ export function advancePhase(
       if(count>(s.encounterAttendance||0)){
         const entries=Object.values(s.entryPerformance);
         const budget=encounterBudgetFromEntries(entries,s.encounterTier||fight.encounterTier||1,q,roleWeighted,s.encounterTier===undefined?0.5:1);
-        const hp=roleWeighted?Math.max(s.encounterHpPool||0,budget.hp):budget.hp;
+        const templateQuiz = fight.questions.some(q => q.quizTemplate);
+        const projectedHP = templateQuiz ? quizHpPool(budget.damage, s.enemies.length) : budget.hp;
+        const hp = roleWeighted ? Math.max(s.encounterHpPool || 0, projectedHP) : projectedHP;
         if(!roleWeighted || hp!==s.encounterHpPool){
-          const nextAllocation=allocateHP(s.enemies,hp,!roleWeighted);
+          const nextAllocation = templateQuiz ? allocateQuizHP(s.enemies, hp) : allocateHP(s.enemies, hp, !roleWeighted);
           s.enemies=s.enemies.map((e,i)=>{
             const maxHealth=nextAllocation[i].maxHealth;
             const health=maxHealth*e.health/e.maxHealth;
@@ -322,9 +325,9 @@ export function advancePhase(
       s.currentQuestionIndex=s.questionOrder[s.questionCursor];
     }else s.currentQuestionIndex=(s.currentQuestionIndex+1)%fight.questions.length;
     s.currentPhase = waveChanged ? "wave_break" : "question";
-    s.questionStartTime = now + 3000;
+    s.questionStartTime = now + QUESTION_LEAD_IN_MS;
     s.phaseDeadline =
-      now + 3000 + fight.questions[s.currentQuestionIndex].timeLimit * 1000;
+      now + QUESTION_LEAD_IN_MS + fight.questions[s.currentQuestionIndex].timeLimit * 1000;
     if(waveChanged)s.phaseDeadline=s.autoAdvanceWaves?now+3000:null;
     return s;
   }
